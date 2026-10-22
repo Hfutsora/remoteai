@@ -1,6 +1,7 @@
 import type { Language } from '../content/types';
 import { resourceGroups } from '../content/resources';
 import { resourcesCopy } from '../content/resources-copy';
+import { resourceDescription, resourceGroupText } from '../content/resource-text';
 import { pagePath, SITE_URL } from './site';
 
 export function resourceListSchema(language: Language) {
@@ -18,7 +19,7 @@ export function resourceListSchema(language: Language) {
         '@type': 'WebSite',
         name: resource.name,
         url: resource.url,
-        description: resource.description[language],
+        description: resourceDescription(resource, language),
       },
     })),
   };
@@ -26,11 +27,16 @@ export function resourceListSchema(language: Language) {
 
 export function resourceMarkdown(language: Language) {
   return [
-    ...resourceGroups.map((group) => [
-      `## ${group.title[language]}`,
-      group.description[language],
-      ...group.items.map((resource) => `- [${resource.name}](${resource.url}): ${resource.description[language]}`),
-    ].join('\n\n')),
+    ...resourceGroups.map((group) => {
+      const text = resourceGroupText(group, language);
+      return [
+        `## ${text.title}`,
+        text.description,
+        ...group.items.map(
+          (resource) => `- [${resource.name}](${resource.url}): ${resourceDescription(resource, language)}`,
+        ),
+      ].join('\n\n');
+    }),
     resourcesCopy(language).sourceNote,
   ].join('\n\n');
 }

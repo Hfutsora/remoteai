@@ -1,9 +1,12 @@
 import type { Route } from '../App';
 import { copy, homeFaqs } from '../content/copy';
-import { findFeature } from '../content/features';
+import { featureContent, findFeature } from '../content/features';
 import { resourcesCopy } from '../content/resources-copy';
 import { resourceListSchema } from './resource-content';
-import { pagePath, SITE_URL, LINKS } from './site';
+import { languages, languageTags, pagePath, SITE_URL, LINKS } from './site';
+import { ui } from './ui-text';
+
+const openGraphLocales = { zh: 'zh_CN', en: 'en_US', ru: 'ru_RU' } satisfies Record<Route['language'], string>;
 
 export function escapeHtml(value: string) {
   return value.replace(
@@ -15,15 +18,14 @@ export function escapeHtml(value: string) {
 export function pageMetadata({ language, path }: Route) {
   const t = copy(language);
   const feature = findFeature(path.split('/')[1]);
-  const homeTitle =
-    language === 'zh'
-      ? 'Remote AI — 开源 Codex 图形化 AI 编程工作台'
-      : 'Remote AI — Open-source graphical AI coding workspace for Codex';
-  if (feature)
+  const homeTitle = ui(language, 'homeTitle');
+  if (feature) {
+    const content = featureContent(feature, language);
     return {
-      title: `${feature[language].title} — ${language === 'zh' ? '功能详解' : 'Feature guide'} | Remote AI`,
-      description: feature[language].summary,
+      title: `${content.title} — ${ui(language, 'featureGuide')} | Remote AI`,
+      description: content.summary,
     };
+  }
   const pages = {
     '': { title: homeTitle, description: homeFaqs[language][0].answer },
     'features/': { title: `${t.nav.features} — Remote AI`, description: t.features.description },
@@ -35,7 +37,7 @@ export function pageMetadata({ language, path }: Route) {
     'resources/': {
       title: `${resourcesCopy(language).title} — Remote AI`, description: resourcesCopy(language).metadata,
     },
-    '404/': { title: '404 — Remote AI', description: language === 'zh' ? '页面不存在。' : 'Page not found.' },
+    '404/': { title: '404 — Remote AI', description: ui(language, 'notFoundDescription') },
   };
   return pages[path as keyof typeof pages] ?? pages['404/'];
 }
@@ -64,21 +66,31 @@ function structuredData(route: Route) {
   const url = new URL(pagePath(language, path), SITE_URL).href;
   const feature = findFeature(path.split('/')[1]);
   const nodes: Record<string, unknown>[] = [
-    { '@type': 'WebSite', '@id': `${SITE_URL}#website`, url: SITE_URL, name: 'Remote AI', inLanguage: ['zh-CN', 'en'] },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}#website`,
+      url: SITE_URL,
+      name: 'Remote AI',
+      inLanguage: languages.map((item) => languageTags[item]),
+    },
     {
       '@type': 'WebPage',
       '@id': `${url}#webpage`,
       url,
       name: meta.title,
       description: meta.description,
-      inLanguage: language === 'zh' ? 'zh-CN' : 'en',
+      inLanguage: languageTags[language],
       isPartOf: { '@id': `${SITE_URL}#website` },
     },
   ];
   if (!path) nodes.push(applicationSchema(language));
   if (path === 'resources/') nodes.push(resourceListSchema(language));
   if (path) nodes.push(breadcrumbSchema(route));
-  const faq = feature?.[language].faqs ?? (!path || path === 'guide/' ? homeFaqs[language] : []);
+  const faq = feature
+    ? featureContent(feature, language).faqs
+    : !path || path === 'guide/'
+      ? homeFaqs[language]
+      : [];
   if (faq.length)
     nodes.push({
       '@type': 'FAQPage',
@@ -131,11 +143,9 @@ export function renderHead(route: Route) {
 }
 
 function alternateTags(path: string) {
-  return [
-    ['zh-CN', path],
-    ['en', `en/${path}`],
-    ['x-default', path],
-  ].map(
+  const alternates = languages.map((language) => [languageTags[language], pagePath(language, path)]);
+  alternates.push(['x-default', path]);
+  return alternates.map(
     ([language, relative]) =>
       `<link rel="alternate" hreflang="${language}" href="${escapeHtml(new URL(relative, SITE_URL).href)}">`,
   );
@@ -149,21 +159,23 @@ function socialTags(options: {
   language: Route['language'];
 }) {
   const { title, description, url, image, language } = options;
-  const properties = {
-    'og:type': 'website',
-    'og:site_name': 'Remote AI',
-    'og:title': title,
-    'og:description': description,
-    'og:url': url,
-    'og:image': image,
-    'og:image:width': '1700',
-    'og:image:height': '925',
-    'og:image:alt': language === 'zh' ? 'Remote AI 的 Codex GUI 工作区' : 'The Remote AI Codex GUI workspace',
-    'og:locale': language === 'zh' ? 'zh_CN' : 'en_US',
-    'og:locale:alternate': language === 'zh' ? 'en_US' : 'zh_CN',
-  };
+  const properties = [
+    ['og:type', 'website'],
+    ['og:site_name', 'Remote AI'],
+    ['og:title', title],
+    ['og:description', description],
+    ['og:url', url],
+    ['og:image', image],
+    ['og:image:width', '1700'],
+    ['og:image:height', '925'],
+    ['og:image:alt', ui(language, 'socialImageAlt')],
+    ['og:locale', openGraphLocales[language]],
+    ...languages
+      .filter((other) => other !== language)
+      .map((other) => ['og:locale:alternate', openGraphLocales[other]]),
+  ];
   return [
-    ...Object.entries(properties).map(([key, value]) => `<meta property="${key}" content="${escapeHtml(value)}">`),
+    ...properties.map(([key, value]) => `<meta property="${key}" content="${escapeHtml(value)}">`),
     '<meta name="twitter:card" content="summary_large_image">',
     `<meta name="twitter:title" content="${escapeHtml(title)}">`,
     `<meta name="twitter:description" content="${escapeHtml(description)}">`,

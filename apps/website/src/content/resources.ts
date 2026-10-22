@@ -1,6 +1,7 @@
-import type { Language } from './types';
+import type { SourceLanguage } from './types';
 
-type LocalizedText = Record<Language, string>;
+/** Chinese and English text. Russian lives in resources-ru.ts; read it through resource-text.ts. */
+type LocalizedText = Record<SourceLanguage, string>;
 
 export interface AiResource {
   name: string;

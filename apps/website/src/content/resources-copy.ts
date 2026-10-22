@@ -1,3 +1,5 @@
+import { withEnglishFallback } from './fallback';
+import { ruResourcesCopy } from './resources-ru';
 import type { Language } from './types';
 
 const zh = {
@@ -16,6 +18,8 @@ const zh = {
   skills: '探索 Skills 与插件',
 };
 
+export type ResourcesCopy = typeof zh;
+
 const en: typeof zh = {
   title: 'AI resources',
   heading: 'Good AI resources.\nAll in one place.',
@@ -32,6 +36,10 @@ const en: typeof zh = {
   skills: 'Discover Skills & plugins',
 };
 
+// Russian copy lives in resources-ru.ts; anything it lacks falls back to English.
+const russian = withEnglishFallback(ruResourcesCopy, en, 'resourcesCopy');
+
 export function resourcesCopy(language: Language) {
+  if (language === 'ru') return russian;
   return language === 'en' ? en : zh;
 }
