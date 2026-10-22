@@ -64,6 +64,7 @@ fn activate(
         return installer::start();
     }
     replacement.replace()?;
+    super::login_provider::install(&replacement.root)?;
     configuration::write(&updated_configuration(original, target))?;
     installer::start()
 }
@@ -80,6 +81,15 @@ fn updated_configuration(
 fn restore(replacement: &mut Replacement, original: &configuration::Configuration) -> Result<()> {
     installer::stop()?;
     replacement.restore()?;
+    if replacement
+        .root
+        .join(super::login_provider::RESOURCE)
+        .exists()
+    {
+        super::login_provider::install(&replacement.root)?;
+    } else {
+        super::login_provider::unregister()?;
+    }
     configuration::write(original)?;
     installer::start()
 }

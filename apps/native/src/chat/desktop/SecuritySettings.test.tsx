@@ -5,6 +5,7 @@ import type { SecuritySettingsProps } from '../../../../../shared/remote-desktop
 
 vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>('react'),
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
+  useState: (value: unknown) => [value, vi.fn()], useEffect: vi.fn(),
 }));
 vi.mock('react-native', () => ({ View: 'View', Pressable: 'Pressable', Text: 'Text', ScrollView: 'ScrollView',
   StyleSheet: { create: <T,>(value: T) => value } }));

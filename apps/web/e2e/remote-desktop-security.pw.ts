@@ -52,6 +52,35 @@ test('legacy hosts show unavailable controls and retain clipboard support', asyn
   await expect(page.getByRole('switch', { name: '同步剪贴板' })).toBeEnabled();
 });
 
+for (const native of [false, true]) {
+  test(`automatic unlock saves, clears credentials, and disables (native=${native})`, async ({ page }, info) => {
+    await open(page, 'security&unlock', native);
+    const toggle = page.getByRole('switch', { name: '自动解锁被控端' });
+    await toggle.click();
+    await page.getByLabel('Windows 账号', { exact: true }).fill('PC\\alice');
+    await page.getByLabel('Windows 登录密码', { exact: true }).fill('fixture-only-password');
+    const panel = page.getByRole('complementary', { name: '安全选项' });
+    expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(400);
+    expect(await panel.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    await page.getByRole('button', { name: '保存并启用' }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: info.outputPath(`unlock-form-${native ? 'desktop' : 'web'}.png`) });
+    await page.getByRole('button', { name: '保存并启用' }).click();
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByLabel('Windows 登录密码', { exact: true })).toHaveCount(0);
+    expect(await page.evaluate(() => window.desktopTest.securityChanges)).toEqual([
+      { autoUnlock: { enabled: true, username: 'PC\\alice', password: 'fixture-only-password' } },
+    ]);
+    expect(await page.evaluate(() => JSON.stringify(window.desktopTest.security))).not.toContain('fixture-only-password');
+    await page.getByRole('button', { name: '修改登录信息' }).click();
+    await expect(page.getByLabel('Windows 登录密码', { exact: true })).toHaveValue('');
+    await page.getByLabel('Windows 登录密码', { exact: true }).fill('not-saved');
+    await page.getByRole('button', { name: '取消', exact: true }).click();
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+    expect(await page.evaluate(() => window.desktopTest.securityChanges.at(-1))).toEqual({ autoUnlock: { enabled: false } });
+  });
+}
+
 test('disabled clipboard sync keeps remote shortcuts without reading or writing local content', async ({ page }) => {
   await open(page, 'security&privacy', true);
   await page.getByRole('switch', { name: '同步剪贴板' }).click();

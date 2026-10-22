@@ -4,6 +4,7 @@ import type { SecuritySettingsProps } from '../../../../../shared/remote-desktop
 import { t, useLanguage } from '../../i18n';
 import { createThemedStyles } from '../../theme/styles';
 import { useDisplaySettingsStyles } from './displaySettingsStyles';
+import { AutoUnlockSettings } from './AutoUnlockSettings';
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
 interface ClipboardActions { busy: boolean; status: string; copy: () => void; paste: () => void }
@@ -41,8 +42,7 @@ export function SecuritySettings(props: SecuritySettingsProps & { clipboardActio
       {notice && <View><Text style={s.description} accessibilityRole="alert">{t(notice.message)}</Text>
         <Pressable accessibilityRole="button" disabled={saving} onPress={notice.run} style={s.choice}>
           <Text style={s.text}>{t(notice.label)}</Text></Pressable></View>}
-      <Toggle icon="lock-open-outline" title="自动解锁被控端" checked={false} disabled change={() => undefined}
-        description="暂不支持自动解锁，请在远程电脑的登录界面手动解锁。" />
+      <AutoUnlockSettings {...props} />
       <Toggle icon="lock-outline" title="远程结束后锁屏" checked={value.lockOnDisconnect}
         disabled={disabled || !supported} change={() => { void update({ lockOnDisconnect: !value.lockOnDisconnect }); }}
         description={supported ? '连接结束或断开后，自动锁定远程电脑。' : '这台电脑暂不支持此安全选项。'} />

@@ -7,6 +7,7 @@ const resourceDirectories = ['resources/desktop-service', 'resources/remote-desk
 const requiredFiles = [
   'resources/desktop-service/node.exe',
   'resources/desktop-service/host.mjs',
+  'resources/desktop-service/desktop-unlock.dll',
   'resources/desktop-service/LICENSE.node',
   'resources/remote-desktop/runtime/desktop-video.exe',
   'resources/remote-desktop/runtime/ffmpeg.exe',

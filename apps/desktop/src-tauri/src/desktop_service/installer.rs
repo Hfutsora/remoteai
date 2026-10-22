@@ -183,6 +183,14 @@ pub(super) fn install(prepared: &Path) -> Result<()> {
     )?;
     configuration::write(&config)?;
     super::assets::verify(&root)?;
+    super::login_provider::install(&root)?;
+    if previous.as_ref().is_some_and(|old| {
+        old.owner_sid != config.owner_sid
+            || old.device_id != config.device_id
+            || old.credential != config.credential
+    }) {
+        crate::remote_desktop::auto_unlock::clear()?;
+    }
     register(&root)?;
     if let Some(previous) = previous.filter(|previous| previous.credential != config.credential) {
         if super::setup::revoke(&previous).is_err() {
@@ -281,6 +289,8 @@ pub(super) fn uninstall() -> Result<()> {
         return Err(ServiceError::Denied);
     }
     stop()?;
+    crate::remote_desktop::auto_unlock::clear()?;
+    super::login_provider::uninstall()?;
     let revocation_pending =
         configuration::read().is_ok_and(|config| super::setup::revoke(&config).is_err());
     let manager = manager(false)?;

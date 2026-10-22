@@ -5,6 +5,7 @@ use sessions::begin_session;
 use sessions::{close, revoke, with_lease};
 use std::time::Instant;
 
+pub(crate) mod auto_unlock;
 pub(crate) mod clipboard;
 mod clipboard_files;
 mod clipboard_platform;
@@ -50,6 +51,9 @@ mod windows_input;
 
 #[derive(Debug, thiserror::Error)]
 pub(super) enum DesktopError {
+    #[cfg(windows)]
+    #[error(transparent)]
+    Unlock(#[from] auto_unlock::Error),
     #[cfg(any(windows, target_os = "macos"))]
     #[error("privacy display unavailable")]
     Privacy,
@@ -186,7 +190,13 @@ pub(crate) enum Key {
 }
 
 fn safe_error(error: DesktopError) -> String {
+    #[cfg(windows)]
+    if let DesktopError::Unlock(error) = &error {
+        return error.to_string();
+    }
     match error {
+        #[cfg(windows)]
+        DesktopError::Unlock(_) => "自动解锁未完成，请重试。",
         #[cfg(any(windows, target_os = "macos"))]
         DesktopError::Privacy => "隐私屏未能切换，请重新连接后重试。",
         #[cfg(any(windows, target_os = "macos"))]
@@ -283,6 +293,8 @@ fn open(
         #[cfg(not(windows))]
         let resolutions = vec![];
         let id = begin_session(display, permissions, expires_at, capture_group)?;
+        #[cfg(windows)]
+        with_lease(&id, |session| session.security.connect(permissions.control))?;
         #[cfg(windows)]
         let security = Some(with_lease(&id, |session| session.security.snapshot())?);
         #[cfg(not(windows))]

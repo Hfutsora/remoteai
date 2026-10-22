@@ -8,6 +8,7 @@ mod control_listener;
 pub(crate) mod delegation;
 mod framing;
 mod installer;
+pub(crate) mod login_provider;
 pub(crate) mod platform;
 mod process;
 mod setup;

@@ -3,8 +3,25 @@ export const remoteDesktopMessages: Record<string, string> = {
   '关闭安全选项': 'Close security options',
   '安全设置选项': 'Security settings',
   '自动解锁被控端': 'Automatically unlock remote computer',
-  '暂不支持自动解锁，请在远程电脑的登录界面手动解锁。':
-    'Automatic unlock is not supported yet. Unlock the remote computer on its sign-in screen.',
+  'Windows 账号': 'Windows account',
+  'Windows 登录密码': 'Windows password',
+  '例如：电脑名\\用户名': 'For example: COMPUTER\\username',
+  '修改登录信息': 'Edit sign-in details',
+  '保存并启用': 'Save and enable',
+  '请填写账号密码，不是 PIN。密码仅加密保存在远程电脑；关闭后会删除。':
+    'Use your account password, not a PIN. It is stored encrypted only on the remote computer and deleted when disabled.',
+  '请填写 Windows 账号和登录密码。': 'Enter your Windows account and password.',
+  '请使用这台电脑已绑定的 Windows 账号。': 'Use the Windows account linked to this computer.',
+  '请先在电脑上更新应用并开启无人值守，再设置自动解锁。':
+    'Update the app and enable unattended access on the computer before setting up automatic unlock.',
+  '自动解锁设置未能保存，请重试。': 'Unable to save automatic unlock settings. Please try again.',
+  '正在解锁远程电脑…': 'Unlocking the remote computer…',
+  '自动解锁已暂停，请检查 Windows 账号和密码后重新保存。':
+    'Automatic unlock is paused. Check your Windows account and password, then save again.',
+  '自动解锁暂时不可用，请重新连接后重试。': 'Automatic unlock is unavailable. Reconnect and try again.',
+  '自动解锁状态未能更新，请重新连接后查看。': 'Unable to refresh the unlock status. Reconnect to check it.',
+  '连接时自动登录或解锁远程电脑。': 'Automatically sign in or unlock the computer when connecting.',
+  '设置 Windows 登录密码后，连接时自动解锁。': 'Set up your Windows password to unlock automatically when connecting.',
   '远程结束后锁屏': 'Lock when disconnected',
   '连接结束或断开后，自动锁定远程电脑。': 'Lock the remote computer when the connection ends or is lost.',
   '被控端静音运行': 'Mute remote speakers',

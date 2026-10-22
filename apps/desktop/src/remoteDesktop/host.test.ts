@@ -34,6 +34,22 @@ it('validates security changes and never lets another viewer change a capture gr
   await expect(host.request(request, 'alice')).rejects.toThrow();
 });
 
+it('sends Windows credentials only to the owning active session and rejects unknown credential fields', async () => {
+  const host = new RemoteDesktopHost(); host.register('alice', []); host.register('bob', []);
+  await host.request(opening, 'alice');
+  const change = { autoUnlock: { enabled: true, username: 'PC\\alice', password: 'fixture-password' } };
+  const request = { action: 'security', id: 'desktop-1', change };
+  await expect(host.request(request, 'bob')).rejects.toThrow('连接已结束');
+  await expect(host.request({ ...request, change: { autoUnlock: { ...change.autoUnlock, path: 'elsewhere' } } }, 'alice'))
+    .rejects.toThrow('安全选项无效');
+  const session = vi.mocked(DesktopHostSession).mock.results[0].value;
+  expect(session.security).not.toHaveBeenCalled();
+  await host.request(request, 'alice');
+  expect(session.security).toHaveBeenCalledWith(change);
+  host.release();
+  await expect(host.request(request, 'alice')).rejects.toThrow();
+});
+
 it('exposes input geometry only to the owner of the active desktop session', async () => {
   const host = new RemoteDesktopHost(); host.register('alice', []); host.register('bob', []);
   await host.request(opening, 'alice');

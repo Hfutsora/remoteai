@@ -38,7 +38,7 @@ fn folder(id: &windows::core::GUID) -> Result<PathBuf> {
 pub(crate) fn install_root() -> Result<PathBuf> {
     Ok(folder(&FOLDERID_ProgramFiles)?.join("Codex Switch Remote Desktop"))
 }
-pub(super) fn data_root() -> Result<PathBuf> {
+pub(crate) fn data_root() -> Result<PathBuf> {
     Ok(folder(&FOLDERID_ProgramData)?.join("CodexSwitchRemoteDesktop"))
 }
 impl Configuration {
@@ -127,7 +127,7 @@ pub(super) fn unseal(bytes: &[u8]) -> Result<Configuration> {
     config.validate()?;
     Ok(config)
 }
-fn protect(bytes: &mut [u8], encrypt: bool) -> Result<Vec<u8>> {
+pub(crate) fn protect(bytes: &mut [u8], encrypt: bool) -> Result<Vec<u8>> {
     let input = CRYPT_INTEGER_BLOB {
         cbData: bytes.len() as u32,
         pbData: bytes.as_mut_ptr(),

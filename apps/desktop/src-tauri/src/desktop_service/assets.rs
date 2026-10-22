@@ -33,6 +33,7 @@ fn file_fingerprint(path: &Path) -> Result<String> {
 pub(super) fn ready() -> bool {
     serde_json::from_str::<BTreeMap<String, String>>(MANIFEST).is_ok_and(|entries| {
         entries.contains_key("resources/desktop-service/node.exe")
+            && entries.contains_key(super::login_provider::RESOURCE)
             && entries.contains_key("resources/desktop-service/host.mjs")
     })
 }

@@ -105,8 +105,8 @@ impl Worker {
         })
     }
     async fn request(&mut self, call: &Call) -> Result<Reply> {
-        let value = json!({"id":call.id,"command":call.command,"args":call.args});
-        let mut bytes = serde_json::to_vec(&value).map_err(|_| ServiceError::Invalid)?;
+        let mut bytes =
+            zeroize::Zeroizing::new(serde_json::to_vec(call).map_err(|_| ServiceError::Invalid)?);
         bytes.push(b'\n');
         self.pipe
             .get_mut()

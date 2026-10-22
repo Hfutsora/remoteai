@@ -1,4 +1,5 @@
 import { imageAiRussian } from '../imageAi';
+import { desktopSecurityRussian } from './desktopSecurity';
 import { projectBrowserRussian } from '../projectBrowser';
 import { dictationRussian } from '../dictation';
 import { gitMessageRussian } from '../gitMessage';
@@ -26,6 +27,7 @@ import { portForwardingRussian } from '../portForwarding';
 import { featureCopyRussian } from '../featureCopy';
 
 export const russian = {
+  ...desktopSecurityRussian,
   ...projectBrowserRussian,
   ...dictationRussian,
   ...gitMessageRussian,

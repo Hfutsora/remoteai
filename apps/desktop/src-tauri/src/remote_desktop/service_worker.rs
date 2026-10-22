@@ -170,7 +170,7 @@ fn serve(mut output: std::fs::File, root: PathBuf) -> crate::desktop_service::Re
     use crate::desktop_service::ServiceError;
     let mut input = BufReader::new(output.try_clone().map_err(|_| ServiceError::Unavailable)?);
     loop {
-        let mut line = String::new();
+        let mut line = zeroize::Zeroizing::new(String::new());
         let count = input
             .by_ref()
             .take((1024 * 1024 + 1) as u64)

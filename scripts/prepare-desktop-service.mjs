@@ -5,6 +5,7 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildDesktopUnlock } from './build-desktop-unlock.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const version = 'v24.21.0';
@@ -23,6 +24,7 @@ export function bundleDesktopService({ write = true, metafile = false } = {}) {
 export async function prepareDesktopService() {
   if (process.platform !== 'win32' || process.arch !== 'x64') return;
   await mkdir(output, { recursive: true });
+  buildDesktopUnlock();
   await bundleDesktopService();
   const archive = resolve(root, '.codex-tmp/desktop-service-runtime', filename);
   const extracted = resolve(root, '.codex-tmp/desktop-service-runtime/extracted');

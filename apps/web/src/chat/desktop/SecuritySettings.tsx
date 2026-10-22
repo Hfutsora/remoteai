@@ -1,4 +1,5 @@
-import { Clipboard, EyeOff, LockKeyhole, ShieldCheck, UnlockKeyhole, VolumeX, X, type LucideIcon } from 'lucide-react';
+import { Clipboard, EyeOff, LockKeyhole, ShieldCheck, VolumeX, X, type LucideIcon } from 'lucide-react';
+import { AutoUnlockSettings } from './AutoUnlockSettings';
 import type { SecuritySettingsProps } from '../../../../../shared/remote-desktop/security';
 import { t } from '../../i18n';
 import './securitySettings.css';
@@ -25,8 +26,7 @@ export function SecuritySettings(props: SecuritySettingsProps) {
     <div className="rd-security-scroll" tabIndex={0} role="region" aria-label={t('安全设置选项')}>
       {notice && <div className="rd-security-notice" role="status"><p>{t(notice.message)}</p>
         <button type="button" disabled={saving} onClick={notice.run}>{t(notice.label)}</button></div>}
-      <Toggle icon={UnlockKeyhole} title="自动解锁被控端" checked={false} disabled change={() => undefined}
-        description="暂不支持自动解锁，请在远程电脑的登录界面手动解锁。" />
+      <AutoUnlockSettings {...props} />
       <Toggle icon={LockKeyhole} title="远程结束后锁屏" checked={value.lockOnDisconnect}
         disabled={disabled || !supported} change={() => { void update({ lockOnDisconnect: !value.lockOnDisconnect }); }}
         description={supported ? '连接结束或断开后，自动锁定远程电脑。' : '这台电脑暂不支持此安全选项。'} />

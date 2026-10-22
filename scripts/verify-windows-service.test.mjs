@@ -9,6 +9,7 @@ import { verifyWindowsService } from './verify-windows-service.mjs';
 const files = [
   'resources/desktop-service/LICENSE.node',
   'resources/desktop-service/host.mjs',
+  'resources/desktop-service/desktop-unlock.dll',
   'resources/desktop-service/node.exe',
   'resources/remote-desktop/runtime/desktop-video.exe',
   'resources/remote-desktop/runtime/ffmpeg.exe',

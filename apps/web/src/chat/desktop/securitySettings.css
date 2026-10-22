@@ -35,3 +35,10 @@
 .rd-security-notice { flex-shrink: 0; font-size: 12px; line-height: 20px; overflow-wrap: anywhere; }
 .rd-security-notice p { margin: 0 0 6px; }
 .rd-security-notice button { padding: 6px 10px; border-radius: 6px; background: #315686; }
+.rd-security-unlock { flex-shrink: 0; min-width: 0; }
+.rd-security-unlock > .rd-security-option { width: 100%; }
+.rd-security-settings .rd-unlock-edit { margin-top: 6px; padding: 6px 10px; background: #315686; border-radius: 6px; }
+.rd-unlock-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 2px 2px; }
+.rd-unlock-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.rd-security-settings .rd-unlock-form input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px;
+  border: 1px solid #637086; border-radius: 8px; background: #131b28; color: #eef3fc; font-size: 16px; }

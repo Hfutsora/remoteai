@@ -1,3 +1,4 @@
+import type { DesktopSecurity } from '../../../shared/remote-desktop/security';
 import type { DesktopDisplay, DesktopInput, DesktopInputFocus, DesktopResolution, DesktopSettings, DesktopSystemPermission }
   from '../../../shared/remote-desktop/protocol';
 import { RemoteDesktopHost } from '../../desktop/src/remoteDesktop/host';
@@ -45,7 +46,9 @@ if (new URLSearchParams(location.search).has('three-displays')) {
 let selected = displays[0];
 const multiDisplay = new URLSearchParams(location.search).has('displays');
 export const desktopTest = { inputs: [] as DesktopInput[], settings: [] as DesktopSettings[],
-  security: { lockOnDisconnect: false, muteHost: false },
+  security: { lockOnDisconnect: false, muteHost: false,
+    autoUnlock: new URLSearchParams(location.search).has('unlock') ? { enabled: false, status: 'disabled' } : undefined,
+  } as DesktopSecurity,
   securityChanges: [] as object[], securityFail: false,
   inputFocus: null as DesktopInputFocus | null, inputFocusReads: 0,
   privacyChanges: [] as boolean[],
@@ -227,7 +230,10 @@ const host = new RemoteDesktopHost(privacyFixture || resolutionFixture || securi
     security: async change => {
       if (desktopTest.securityFail) throw new Error('安全选项未能保存，请重试。');
       desktopTest.securityChanges.push(change);
-      desktopTest.security = { ...desktopTest.security, ...change };
+      const { autoUnlock, ...settings } = change;
+      desktopTest.security = { ...desktopTest.security, ...settings,
+        ...(autoUnlock ? { autoUnlock: { enabled: autoUnlock.enabled, status: autoUnlock.enabled ? 'ready' : 'disabled' } }
+          : {}) };
       return { ...desktopTest.security };
     },
     privacy: async enabled => {
