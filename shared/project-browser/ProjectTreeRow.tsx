@@ -3,15 +3,17 @@ import type { ProjectFile } from '../remote-chat/projectFiles';
 import { useTreeGesture } from './useTreeGesture';
 import type { TreeCommand, TreeMenu } from './useTreeActions';
 
-export function ProjectTreeRow({ entry, depth, expanded, selected, disabled, cut, open, menu, command }: {
+export function ProjectTreeRow({ entry, depth, expanded, selected, disabled, cut, open, menu, command, relativePath }: {
   entry: ProjectFile; depth: number; expanded: boolean; selected: boolean; disabled: boolean; cut: boolean;
   open: () => void; menu: (menu: TreeMenu) => void; command: (entry: ProjectFile, action: TreeCommand) => void;
+  relativePath?: string;
 }) {
   const gesture = useTreeGesture(position => menu({ entry, ...position }));
   const Icon = entry.directory ? (expanded ? FolderOpen : Folder) : File;
   return <button type="button" role="treeitem" aria-level={depth + 1}
     aria-expanded={entry.directory ? expanded : undefined} aria-selected={selected} disabled={disabled}
-    className="pf-tree-row" data-cut={cut || undefined}
+    className="pf-tree-row" data-cut={cut || undefined} data-path={entry.path} aria-label={entry.name}
+    aria-description={relativePath}
     {...gesture} onClick={open} onKeyDown={event => {
       if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
         event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect();
@@ -31,6 +33,7 @@ export function ProjectTreeRow({ entry, depth, expanded, selected, disabled, cut
     }}>
     {entry.directory ? (expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />)
       : <span className="pf-tree-spacer" />}
-    <Icon size={16} /><span>{entry.name}</span>
+    <Icon size={16} /><span className="pf-tree-entry"><span>{entry.name}</span>
+      {relativePath && <small>{relativePath}</small>}</span>
   </button>;
 }

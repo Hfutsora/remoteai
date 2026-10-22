@@ -1,4 +1,10 @@
 export const projectBrowserEnglish: Readonly<Record<string, string>> = {
+  '搜索文件或文件夹': 'Search files or folders',
+  '清空搜索': 'Clear search',
+  '正在搜索…': 'Searching…',
+  '文件搜索失败，请重试。': 'Unable to search files. Please try again.',
+  '未找到匹配的文件或文件夹': 'No matching files or folders',
+  '仅显示部分结果，请输入更具体的名称。': 'Only some results are shown. Enter a more specific name.',
   '引用到聊天': 'Quote in chat',
   '文本操作': 'Text actions',
   '全选': 'Select all',
@@ -143,6 +149,12 @@ export const projectBrowserEnglish: Readonly<Record<string, string>> = {
 };
 
 export const projectBrowserRussian: Readonly<Record<string, string>> = {
+  '搜索文件或文件夹': 'Поиск файлов и папок',
+  '清空搜索': 'Очистить поиск',
+  '正在搜索…': 'Поиск…',
+  '文件搜索失败，请重试。': 'Не удалось выполнить поиск. Попробуйте снова.',
+  '未找到匹配的文件或文件夹': 'Файлы и папки не найдены',
+  '仅显示部分结果，请输入更具体的名称。': 'Показаны не все результаты. Уточните название.',
   '引用到聊天': 'Цитировать в чате',
   '文本操作': 'Действия с текстом',
   '全选': 'Выделить всё',

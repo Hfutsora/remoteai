@@ -29,6 +29,8 @@ pub(crate) struct ProjectFilesRequest {
     #[serde(default)]
     images_only: bool,
     query: Option<String>,
+    #[serde(default)]
+    search_all_directories: bool,
 }
 
 #[derive(Serialize)]
@@ -57,7 +59,7 @@ pub(super) async fn list(client: &Client, options: ProjectFilesRequest) -> Resul
         )
     };
     let data = tauri::async_runtime::spawn_blocking(move || match options.query {
-        Some(query) => search::search(&root, &query),
+        Some(query) => search::search(&root, &query, options.search_all_directories),
         None => browse(&root, &options.directory, options.images_only),
     })
     .await

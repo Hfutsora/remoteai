@@ -12,6 +12,18 @@ function fixture(connected = true) {
   return { client, connected, cwd: '/project' };
 }
 
+it('searches only the host project and rejects malformed or oversized queries', async () => {
+  const options = fixture();
+  const send = (query: unknown) => handleBrowserRequest(JSON.stringify({ type: 'request', id: 8,
+    action: 'list', body: { cwd: '/other', query } }), options);
+  expect(await send('子目录/main')).toMatchObject({ id: 8, data: { entries: [] } });
+  expect(options.client.list).toHaveBeenCalledExactlyOnceWith('/project', undefined, '子目录/main');
+  for (const query of [42, {}, 'x'.repeat(257), '\0']) {
+    expect(await send(query)).toMatchObject({ error: '文件搜索失败，请重试。' });
+  }
+  expect(options.client.list).toHaveBeenCalledTimes(1);
+});
+
 it('routes reads and writes to the host-selected project regardless of the embedded request cwd', async () => {
   const options = fixture();
   const read = { type: 'request', id: 1, action: 'read', body: { cwd: '/other', path: '/project/readme.txt' } };

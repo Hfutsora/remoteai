@@ -16,6 +16,16 @@ export const savedFiles: { path: string; text: string }[] = [];
 export let conflict = false;
 export function causeConflict() { conflict = true; }
 
+function searchFiles(cwd: string, query: string): ProjectFilesResponse {
+  const term = query.toLowerCase().replace(/\\/g, '/');
+  const entries = [...Object.keys(documents), ...directories, 'archive.zip', 'huge.txt']
+    .filter(path => path && path.toLowerCase().includes(term))
+    .map(path => ({ name: path.split('/').at(-1)!, path: `${cwd}/${path}`,
+      directory: directories.has(path), relativePath: path }))
+    .sort((a, b) => Number(b.directory) - Number(a.directory) || a.name.localeCompare(b.name));
+  return { directory: cwd, parent: null, entries, truncated: false };
+}
+
 export async function browserRequest<T>(request: ProjectBrowserRequest): Promise<T> {
   const path = request.operation === 'projectFiles' ? request.directory ?? '' : request.path;
   const relative = path === request.cwd ? '' : path.replace(`${request.cwd}/`, '');
@@ -23,6 +33,7 @@ export async function browserRequest<T>(request: ProjectBrowserRequest): Promise
     return mutateFixture(request, { documents, directories, revisions }) as T;
   }
   if (request.operation === 'projectFiles') {
+    if (request.query !== undefined) return searchFiles(request.cwd, request.query) as T;
     const prefix = relative ? `${relative}/` : '';
     const names = new Map<string, boolean>();
     for (const name of [...Object.keys(documents), ...directories, 'archive.zip', 'huge.txt']) {

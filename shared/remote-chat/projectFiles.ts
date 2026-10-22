@@ -11,6 +11,8 @@ export interface ProjectFilesRequest {
   imagesOnly?: boolean;
   /** Search names and relative paths recursively instead of browsing one directory. */
   query?: string;
+  /** Include dependency, hidden and generated directories when searching the file browser. */
+  searchAllDirectories?: boolean;
 }
 export interface ProjectFilesResponse {
   directory: string;

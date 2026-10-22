@@ -30,7 +30,7 @@ const request = <T,>(action: string, body: object) => new Promise<T>((resolve, r
   send({ type: 'request', id, action, body });
 });
 const client: ProjectBrowserClient = {
-  list: (_cwd, directory) => request('list', { directory }),
+  list: (_cwd, directory, query) => request('list', { directory, query }),
   read: target => request('read', target),
   save: target => request('save', target),
   mutate: target => request('mutate', target),

@@ -69,5 +69,13 @@ export function useProjectTree(client: ProjectBrowserClient, cwd: string, connec
     const paths = new Set(['', ...next]);
     await Promise.all([...paths].map(load));
   };
-  return { directories, expanded, rows: flatten(directories, expanded), toggle, load, refresh, reload };
+  const reveal = async (directory: string) => {
+    if (!withinPath(directory, cwd)) return;
+    const root = normalizedPath(cwd);
+    const parts = normalizedPath(directory).slice(root.length).split('/').filter(Boolean);
+    const paths = parts.map((_, index) => `${root}/${parts.slice(0, index + 1).join('/')}`);
+    setExpanded(value => new Set([...value, ...paths]));
+    await Promise.all(paths.map(load));
+  };
+  return { directories, expanded, rows: flatten(directories, expanded), toggle, load, refresh, reload, reveal };
 }

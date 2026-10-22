@@ -11,7 +11,7 @@ for (const mode of ['local', 'remote']) {
     await page.setViewportSize({ width: 1600, height: 1000 });
     await page.goto(`/e2e/project-browser-harness.html?mode=${mode}`);
     await page.getByRole('button', { name: '文件浏览', exact: true }).click();
-    await page.getByRole('button', { name: '展开文件浏览器' }).click();
+    await page.getByRole('button', { name: '展开详情抽屉' }).click();
     await page.getByRole('treeitem', { name: 'notes.txt', exact: true }).click();
     await page.getByRole('button', { name: '文件浏览设置' }).click();
     await page.getByLabel('文件自动保存', { exact: true }).selectOption('0');

@@ -1,4 +1,4 @@
-//! Bounded project search for composer references. Never traverse symbolic links or junctions.
+//! Bounded project search for file browsing and references. Never traverse symbolic links or junctions.
 use super::{execution_path, GuiError, Result};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -31,9 +31,10 @@ struct SearchState {
     scanned: usize,
     started: Instant,
     truncated: bool,
+    all_directories: bool,
 }
 
-pub(super) fn search(root: &Path, query: &str) -> Result<Value> {
+pub(super) fn search(root: &Path, query: &str, all_directories: bool) -> Result<Value> {
     if !root.is_absolute() || query.len() > 4096 || query.contains('\0') {
         return Err(GuiError::ProjectFiles);
     }
@@ -48,6 +49,7 @@ pub(super) fn search(root: &Path, query: &str) -> Result<Value> {
         scanned: 0,
         started: Instant::now(),
         truncated: false,
+        all_directories,
     };
     while let Some(target) = state.pending.pop_front() {
         if !state.scan_directory(&root, &query, target) {
@@ -84,7 +86,7 @@ impl SearchState {
                 self.truncated = true;
                 continue;
             };
-            let Some(item) = search_entry(root, &entry) else {
+            let Some(item) = search_entry(root, &entry, self.all_directories) else {
                 continue;
             };
             self.record(item, (entry.path(), depth), query);
@@ -94,8 +96,10 @@ impl SearchState {
 
     fn record(&mut self, item: SearchEntry, target: (PathBuf, usize), query: &str) {
         let (path, depth) = target;
-        // Generated folders can be referenced, but their contents should not crowd out source files.
-        if item.directory && !GENERATED_DIRECTORIES.contains(&item.name.as_str()) {
+        // References prioritize source files; the browser also searches dependency and generated contents.
+        if item.directory
+            && (self.all_directories || !GENERATED_DIRECTORIES.contains(&item.name.as_str()))
+        {
             if depth < MAX_DEPTH {
                 self.pending.push_back((path, depth + 1));
             } else {
@@ -108,13 +112,13 @@ impl SearchState {
     }
 }
 
-fn search_entry(root: &Path, entry: &fs::DirEntry) -> Option<SearchEntry> {
+fn search_entry(root: &Path, entry: &fs::DirEntry, all_directories: bool) -> Option<SearchEntry> {
     let metadata = fs::symlink_metadata(entry.path()).ok()?;
     if is_link(&metadata) || (!metadata.is_file() && !metadata.is_dir()) {
         return None;
     }
     let name = entry.file_name().to_string_lossy().into_owned();
-    if metadata.is_dir() && EXCLUDED_DIRECTORIES.contains(&name.as_str()) {
+    if !all_directories && metadata.is_dir() && EXCLUDED_DIRECTORIES.contains(&name.as_str()) {
         return None;
     }
     let path = entry.path();

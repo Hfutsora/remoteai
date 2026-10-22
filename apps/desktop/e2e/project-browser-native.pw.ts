@@ -51,6 +51,10 @@ test('bundled native editor: offline assets, mobile search/fold/save and close g
   });
   await page.route('**/native-browser.html', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('/native-browser.html');
+  const search = page.getByRole('searchbox', { name: '搜索文件或文件夹' });
+  await search.fill('MAIN.TS');
+  await expect(page.getByRole('treeitem', { name: 'main.ts', exact: true })).toContainText('src/main.ts');
+  await page.getByRole('button', { name: '清空搜索' }).click();
   const folder = page.getByRole('treeitem', { name: 'src', exact: true });
   await longPress(page, folder);
   await expect(page.getByRole('menuitem', { name: '下载为 ZIP', exact: true })).toBeVisible();

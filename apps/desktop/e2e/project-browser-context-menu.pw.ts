@@ -5,7 +5,7 @@ const item = (page: Page, name: string) => page.getByRole('menuitem', { name, ex
 
 async function rightClickRow(page: Page, name: string, offset = 20) {
   const bounds = (await row(page, name).boundingBox())!;
-  const point = { x: bounds.x + offset, y: bounds.y + bounds.height / 2 };
+  const point = { x: Math.floor(bounds.x + offset), y: Math.floor(bounds.y + bounds.height / 2) };
   // Use real hit testing so a backdrop intercepting the next right click fails the assertion.
   await page.mouse.click(point.x, point.y, { button: 'right' });
   return point;

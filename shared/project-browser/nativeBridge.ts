@@ -1,4 +1,4 @@
-import { PROJECT_FILE_LIMIT, type ProjectBrowserClient } from './protocol';
+import { PROJECT_FILE_LIMIT, PROJECT_SEARCH_QUERY_LIMIT, type ProjectBrowserClient } from './protocol';
 import type { DocumentsSnapshot } from './documents';
 import { withinPath, type BrowserHost, type EntryAction } from './entryActions';
 import { validFileSelection } from './fileSelection';
@@ -46,7 +46,12 @@ export async function handleBrowserRequest(raw: string, options: {
     if (!options.connected) throw new Error('连接已断开，重新连接后即可继续。');
     const target = object(message.body);
     if (message.action === 'list' && (target.directory === undefined || typeof target.directory === 'string')) {
-      return { type: 'reply', id, data: await options.client.list(options.cwd, target.directory as string | undefined) };
+      if (target.query !== undefined && (typeof target.query !== 'string'
+        || target.query.length > PROJECT_SEARCH_QUERY_LIMIT || target.query.includes('\0'))) {
+        throw new Error('文件搜索失败，请重试。');
+      }
+      return { type: 'reply', id, data: await options.client.list(options.cwd,
+        target.directory as string | undefined, target.query as string | undefined) };
     }
     if (typeof target.path !== 'string' || target.path.length > 4096) throw new Error('文件暂时无法读取，请重试。');
     const file = { cwd: options.cwd, path: target.path };
