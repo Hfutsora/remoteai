@@ -251,8 +251,7 @@ fn with_session<T>(id: &str, operation: impl FnOnce(&mut Session) -> Result<T>) 
 fn open(
     display_id: Option<String>,
     permissions: permissions::Permissions,
-    expires_at: Option<u64>,
-    capture_group: Option<String>,
+    options: sessions::Options,
 ) -> Result<displays::Opened> {
     #[cfg(windows)]
     let _desktop = input_desktop::InputDesktop::enter()?;
@@ -265,18 +264,19 @@ fn open(
     {
         return Err(DesktopError::Invalid);
     }
-    if capture_group
+    if options
+        .capture_group
         .as_ref()
         .is_some_and(|group| uuid::Uuid::parse_str(group).is_err())
     {
         return Err(DesktopError::Invalid);
     }
-    lease::deadline(expires_at)?;
+    lease::deadline(options.expires_at)?;
     #[cfg(target_os = "macos")]
     macos::authorize_open(permissions.control)?;
     #[cfg(not(any(windows, target_os = "macos")))]
     {
-        let _ = (display_id, expires_at, capture_group);
+        let _ = (display_id, options);
         Err(DesktopError::Unsupported)
     }
     #[cfg(any(windows, target_os = "macos"))]
@@ -292,9 +292,14 @@ fn open(
         };
         #[cfg(not(windows))]
         let resolutions = vec![];
-        let id = begin_session(display, permissions, expires_at, capture_group)?;
+        let id = begin_session(display, permissions, options)?;
         #[cfg(windows)]
-        with_lease(&id, |session| session.security.connect(permissions.control))?;
+        if let Err(error) = with_lease(&id, |session| session.security.connect(permissions)) {
+            if let Err(cleanup) = close(&id) {
+                eprintln!("desktop security open cleanup: {cleanup}");
+            }
+            return Err(error);
+        }
         #[cfg(windows)]
         let security = Some(with_lease(&id, |session| session.security.snapshot())?);
         #[cfg(not(windows))]

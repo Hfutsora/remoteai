@@ -47,7 +47,12 @@ fn snapshot_inner() -> Result<Snapshot, Error> {
             status: Status::Disabled,
         });
     };
-    reconcile(&mut value)?;
+    if reconcile(&mut value).is_err() {
+        return Ok(Snapshot {
+            enabled: true,
+            status: Status::Unavailable,
+        });
+    }
     let status = if value.pending.is_some() {
         Status::Unlocking
     } else if value.blocked {
@@ -84,9 +89,16 @@ pub(in crate::remote_desktop) fn apply(mut change: Change) -> Result<(), Error> 
     };
     storage::cancel()?;
     storage::save(&value)?;
-    connect()
+    // Saving must not be reported as failed merely because the current console cannot sign in yet.
+    connect_saved();
+    Ok(())
 }
-pub(in crate::remote_desktop) fn connect() -> Result<(), Error> {
+pub(in crate::remote_desktop) fn connect_saved() {
+    if let Err(error) = connect() {
+        eprintln!("automatic unlock could not start: {error}");
+    }
+}
+fn connect() -> Result<(), Error> {
     if !supported() {
         return Ok(());
     }

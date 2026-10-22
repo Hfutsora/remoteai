@@ -64,7 +64,8 @@ export function SecuritySettings(props: SecuritySettingsProps & { clipboardActio
           <Text style={s.text}>{t(enabled ? '启用' : '不启用')}</Text></Pressable>)}</View>
       </View>
       <Toggle icon="content-copy" title="同步剪贴板" checked={clipboard.enabled}
-        disabled={!connected || !clipboard.available} change={clipboard.toggle}
+        disabled={!connected || !clipboard.available || saving || (!control && value.clipboardSync !== undefined)}
+        change={clipboard.toggle}
         description="开启后，可在本机和远程电脑之间复制粘贴。" />
       {clipboard.enabled && <View style={s.choices}>
         {[{ label: '复制到本机', run: clipboardActions.copy }, { label: '粘贴到远程电脑', run: clipboardActions.paste }]
@@ -74,13 +75,18 @@ export function SecuritySettings(props: SecuritySettingsProps & { clipboardActio
       </View>}
       {!!clipboardActions.status && <Text style={s.description} accessibilityRole="alert">
         {t(clipboardActions.status)}</Text>}
-      {!!error && <Text style={panel.error} accessibilityRole="alert">{t(error)}</Text>}
       {!control && <Text style={s.description}>{t('仅观看')}</Text>}
     </ScrollView>
+    {(error || saving || props.saved) && <View style={s.feedback}>
+      {error ? <Text style={panel.error} accessibilityRole="alert">{t(error)}</Text>
+        : <Text style={s.description} accessibilityLiveRegion="polite">
+          {t(saving ? '正在保存…' : '已保存在远程电脑，下次连接自动生效。')}</Text>}
+    </View>}
   </View>;
 }
 
 const useStyles = createThemedStyles(() => ({
+  feedback: { flexShrink: 0, padding: 10, borderTopWidth: 1, borderTopColor: '#394354' },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 12,
     backgroundColor: '#ffffff07', borderWidth: 1, borderColor: '#394354', borderRadius: 12 },
   section: { paddingVertical: 14, paddingHorizontal: 12,

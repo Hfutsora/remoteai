@@ -20,6 +20,7 @@ interface Options {
 export function useDesktopSession({ client, active, connected = true, createPeer }: Options) {
   const available = useRef(connected); available.current = connected;
   const receiver = useRef<DesktopDisplaySession>();
+  const privacyRestore = useRef({ failed: false });
   const security = useDesktopSecurity(receiver, active);
   const settingsRef = useRef(DEFAULT_SETTINGS);
   const closing = useRef(Promise.resolve());
@@ -43,6 +44,7 @@ export function useDesktopSession({ client, active, connected = true, createPeer
 
   useEffect(() => {
     if (!active) return;
+    privacyRestore.current = { failed: false };
     const controller = new DesktopRecovery(() => setAttempt(value => value + 1), setStatus, client.permissionStatus);
     controller.setAvailable(available.current);
     recovery.current = controller;
@@ -67,7 +69,7 @@ export function useDesktopSession({ client, active, connected = true, createPeer
         setResolutions(value.resolutions ?? []);
         settingsRef.current = { ...settingsRef.current, displayId: value.displayId };
         setSettings(settingsRef.current);
-      } });
+      } }, privacyRestore.current);
     session.mute(mutedRef.current);
     receiver.current = session;
     void closing.current.then(() => { if (receiver.current === session) return session.start(settingsRef.current); });

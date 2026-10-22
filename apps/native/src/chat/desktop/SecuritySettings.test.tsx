@@ -21,7 +21,7 @@ function nodes(tree: ReactNode): ReactElement<Props>[] {
   });
 }
 const props: SecuritySettingsProps = { connected: true, control: true, supported: true,
-  value: { lockOnDisconnect: false, muteHost: false }, saving: false, error: '', update: vi.fn(async () => {}),
+  value: { lockOnDisconnect: false, muteHost: false }, saving: false, error: '', update: vi.fn(async () => true),
   privacy: { available: true, enabled: false, toggle: vi.fn(async () => {}) },
   clipboard: { available: true, enabled: true, toggle: vi.fn() }, close: vi.fn() };
 const clipboardActions = { busy: false, status: '', copy: vi.fn(), paste: vi.fn() };

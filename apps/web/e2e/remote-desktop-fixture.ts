@@ -46,10 +46,10 @@ if (new URLSearchParams(location.search).has('three-displays')) {
 let selected = displays[0];
 const multiDisplay = new URLSearchParams(location.search).has('displays');
 export const desktopTest = { inputs: [] as DesktopInput[], settings: [] as DesktopSettings[],
-  security: { lockOnDisconnect: false, muteHost: false,
+  security: { lockOnDisconnect: false, muteHost: false, clipboardSync: true, privacyScreen: false,
     autoUnlock: new URLSearchParams(location.search).has('unlock') ? { enabled: false, status: 'disabled' } : undefined,
   } as DesktopSecurity,
-  securityChanges: [] as object[], securityFail: false,
+  securityChanges: [] as object[], securityFail: false, securityNoop: false,
   inputFocus: null as DesktopInputFocus | null, inputFocusReads: 0,
   privacyChanges: [] as boolean[],
   resolutionChanges: [] as DesktopResolution[],
@@ -230,6 +230,7 @@ const host = new RemoteDesktopHost(privacyFixture || resolutionFixture || securi
     security: async change => {
       if (desktopTest.securityFail) throw new Error('安全选项未能保存，请重试。');
       desktopTest.securityChanges.push(change);
+      if (desktopTest.securityNoop) return { ...desktopTest.security };
       const { autoUnlock, ...settings } = change;
       desktopTest.security = { ...desktopTest.security, ...settings,
         ...(autoUnlock ? { autoUnlock: { enabled: autoUnlock.enabled, status: autoUnlock.enabled ? 'ready' : 'disabled' } }
@@ -241,9 +242,11 @@ const host = new RemoteDesktopHost(privacyFixture || resolutionFixture || securi
         throw new Error('请在电脑上确认安装，完成后再点一次隐私屏。');
       }
       desktopTest.privacyChanges.push(enabled);
+      desktopTest.security.privacyScreen = enabled;
       selected = enabled ? { ...displays[0], id: 'private', name: 'Privacy' } : displays[0];
       for (const capture of captures.values()) capture.display = selected;
-      return { displays: enabled ? [selected] : displays, displayId: selected.id, privacyScreen: enabled, resolutions };
+      return { displays: enabled ? [selected] : displays, displayId: selected.id, privacyScreen: enabled, resolutions,
+        ...(securityFixture ? { security: { ...desktopTest.security } } : {}) };
     },
     resolution: async size => {
       desktopTest.resolutionChanges.push(size);

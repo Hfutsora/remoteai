@@ -9,7 +9,7 @@ mod storage;
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-pub(super) use windows::{apply, cancel, connect, snapshot};
+pub(super) use windows::{apply, cancel, connect_saved, snapshot};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

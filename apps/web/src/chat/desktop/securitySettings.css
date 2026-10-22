@@ -32,6 +32,7 @@
   overflow-wrap: anywhere; }
 .rd-security-error { color: #ffadb2; }
 .rd-security-hint { color: #aab6c9; }
+.rd-security-feedback { flex-shrink: 0; padding: 10px 14px; border-top: 1px solid #394354; }
 .rd-security-notice { flex-shrink: 0; font-size: 12px; line-height: 20px; overflow-wrap: anywhere; }
 .rd-security-notice p { margin: 0 0 6px; }
 .rd-security-notice button { padding: 6px 10px; border-radius: 6px; background: #315686; }

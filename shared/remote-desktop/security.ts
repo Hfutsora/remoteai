@@ -1,13 +1,16 @@
-/** Security changes belong to the active viewer's capture group and expire with its last display. */
+/** Preferences are persisted by the controlled computer and returned on each connection. */
 export interface DesktopSecurity {
   lockOnDisconnect: boolean;
   muteHost: boolean;
+  clipboardSync?: boolean;
+  privacyScreen?: boolean;
   autoUnlock?: { enabled: boolean; status: 'disabled' | 'ready' | 'unlocking' | 'failed' | 'unavailable' };
 }
 export type AutoUnlockChange = { enabled: false } | { enabled: true; username: string; password: string };
 export interface DesktopSecurityChange {
   lockOnDisconnect?: boolean;
   muteHost?: boolean;
+  clipboardSync?: boolean;
   autoUnlock?: AutoUnlockChange;
 }
 export const DEFAULT_DESKTOP_SECURITY: DesktopSecurity = { lockOnDisconnect: false, muteHost: false };
@@ -18,7 +21,7 @@ export function validateDesktopSecurity(value: unknown): DesktopSecurityChange {
   }
   const entries = Object.entries(value);
   if (entries.some(([key, item]) => key === 'autoUnlock' ? !validUnlock(item)
-    : !['lockOnDisconnect', 'muteHost'].includes(key) || typeof item !== 'boolean')) {
+    : !['lockOnDisconnect', 'muteHost', 'clipboardSync'].includes(key) || typeof item !== 'boolean')) {
     throw new Error('安全选项无效，请重试。');
   }
   return Object.fromEntries(entries);
@@ -56,7 +59,8 @@ export interface SecuritySettingsProps {
   value: DesktopSecurity;
   saving: boolean;
   error: string;
-  update: (change: DesktopSecurityChange) => Promise<void>;
+  update: (change: DesktopSecurityChange) => Promise<boolean>;
+  saved?: boolean;
   privacy: { available: boolean; enabled: boolean; toggle: () => Promise<void> };
   clipboard: { available: boolean; enabled: boolean; toggle: () => void };
   notice?: { message: string; label: string; run: () => void };

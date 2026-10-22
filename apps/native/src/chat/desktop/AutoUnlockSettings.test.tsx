@@ -19,7 +19,7 @@ function nodes(tree: ReactNode): ReactElement<Props>[] {
 }
 const props: SecuritySettingsProps = { connected: true, control: true, supported: true,
   value: { lockOnDisconnect: false, muteHost: false, autoUnlock: { enabled: true, status: 'ready' } },
-  saving: false, error: '', update: vi.fn(async () => {}), close: vi.fn(),
+  saving: false, error: '', update: vi.fn(async () => true), close: vi.fn(),
   privacy: { available: true, enabled: false, toggle: vi.fn() },
   clipboard: { available: true, enabled: true, toggle: vi.fn() } };
 beforeEach(() => { form.editing = false; vi.clearAllMocks(); vi.stubGlobal('React', React); });

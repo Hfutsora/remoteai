@@ -46,10 +46,15 @@ export function SecuritySettings(props: SecuritySettingsProps) {
         </div>
       </section>
       <Toggle icon={Clipboard} title="同步剪贴板" checked={clipboard.enabled}
-        disabled={!connected || !clipboard.available} change={clipboard.toggle}
+        disabled={!connected || !clipboard.available || saving || (!control && value.clipboardSync !== undefined)}
+        change={clipboard.toggle}
         description="开启后，可在本机和远程电脑之间复制粘贴。" />
-      {error && <p className="rd-security-error" role="alert">{t(error)}</p>}
       {!control && <p className="rd-security-hint">{t('仅观看')}</p>}
     </div>
+    {(error || saving || props.saved) && <div className="rd-security-feedback">
+      {error ? <p className="rd-security-error" role="alert">{t(error)}</p>
+        : <p className="rd-security-hint" role="status">
+          {t(saving ? '正在保存…' : '已保存在远程电脑，下次连接自动生效。')}</p>}
+    </div>}
   </aside>;
 }

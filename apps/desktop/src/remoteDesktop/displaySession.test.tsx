@@ -3,6 +3,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useDesktopSession } from '../../../../shared/remote-desktop/useDesktopSession';
+import { DesktopDisplaySession } from '../../../../shared/remote-desktop/displaySession';
+import type { DesktopSecurity } from '../../../../shared/remote-desktop/security';
 import type { DesktopCapabilities, DesktopClient, DesktopDisplays, DesktopResolution, DesktopSettings }
   from '../../../../shared/remote-desktop/protocol';
 import type { DesktopDirectRetry } from '../../../../shared/remote-desktop/directRetry';
@@ -19,19 +21,24 @@ interface FakeSession {
 }
 const runtime = vi.hoisted(() => ({
   sessions: [] as FakeSession[], multiDisplay: false, openFailure: '',
+  security: undefined as DesktopSecurity | undefined, privacyFailure: '',
 }));
 vi.mock('../../../../shared/remote-desktop/receiver', () => ({ DesktopReceiver: class {
   sessionId = `desktop-${runtime.sessions.length}`;
   start = vi.fn(async (settings: DesktopSettings) => {
     if (runtime.openFailure) { this.options.failed(runtime.openFailure); return; }
-    this.options.displays({ displays: [], displayId: runtime.multiDisplay ? settings.displayId : 'first' });
-    if (runtime.multiDisplay) this.options.capabilities({ displaySessions: true, control: true, privacyScreen: true });
+    this.options.displays({ displays: [], displayId: runtime.multiDisplay ? settings.displayId : 'first',
+      security: runtime.security });
+    if (runtime.multiDisplay || runtime.security) {
+      this.options.capabilities({ displaySessions: true, control: true, privacyScreen: true });
+    }
     this.options.stream({} as MediaStream);
   });
   stop = vi.fn(async () => { this.options.stream(undefined); });
   input = vi.fn(); settings = vi.fn(); mute = vi.fn();
   security = vi.fn(async (change: object) => ({ lockOnDisconnect: false, muteHost: false, ...change }));
   privacy = vi.fn(async (enabled: boolean) => {
+    if (runtime.privacyFailure) throw new Error(runtime.privacyFailure);
     this.options.displays({ displayId: enabled ? 'private' : 'first', privacyScreen: enabled });
   });
   resolution = vi.fn(async (size: DesktopResolution) => {
@@ -49,17 +56,35 @@ function Harness({ active = true, connected = true }) {
 }
 beforeEach(async () => {
   runtime.sessions.length = 0; runtime.multiDisplay = false; runtime.openFailure = '';
+  runtime.security = undefined; runtime.privacyFailure = '';
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   root = createRoot(document.createElement('div'));
   await act(async () => root.render(<Harness />));
 });
 afterEach(async () => { await act(async () => root.unmount()); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
+it('restores host privacy preferences once and does not loop after a failed restore', async () => {
+  runtime.security = { lockOnDisconnect: true, muteHost: false, privacyScreen: true };
+  runtime.privacyFailure = '隐私屏未能切换，请重新连接后重试。';
+  const status = vi.fn();
+  const options = { client, createPeer, status, stream: vi.fn(), stats: vi.fn() };
+  const restore = { failed: false };
+  const first = new DesktopDisplaySession(options, restore);
+  await first.start({ fps: 'auto', quality: 'auto' });
+  expect(runtime.sessions.at(-1)!.privacy).toHaveBeenCalledWith(true);
+  expect(status).toHaveBeenCalledWith(runtime.privacyFailure);
+  await first.stop();
+  const reconnected = new DesktopDisplaySession(options, restore);
+  await reconnected.start({ fps: 'auto', quality: 'auto' });
+  expect(runtime.sessions.at(-1)!.privacy).not.toHaveBeenCalled();
+  await reconnected.stop();
+});
+
 it('serializes security updates, retains values through privacy and discards replies from a closed session', async () => {
   const current = runtime.sessions[0];
   let complete!: (value: { lockOnDisconnect: boolean; muteHost: boolean }) => void;
   current.security.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
-  let updating!: Promise<void>;
+  let updating!: Promise<boolean>;
   await act(async () => { updating = session.security.update({ lockOnDisconnect: true }); });
   expect(session.security.saving).toBe(true);
   await act(async () => session.security.update({ muteHost: true }));

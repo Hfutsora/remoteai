@@ -8,6 +8,7 @@ export const remoteDesktopMessages: Record<string, string> = {
   '例如：电脑名\\用户名': 'For example: COMPUTER\\username',
   '修改登录信息': 'Edit sign-in details',
   '保存并启用': 'Save and enable',
+  '已保存在远程电脑，下次连接自动生效。': 'Saved on the remote computer. These settings apply on your next connection.',
   '请填写账号密码，不是 PIN。密码仅加密保存在远程电脑；关闭后会删除。':
     'Use your account password, not a PIN. It is stored encrypted only on the remote computer and deleted when disabled.',
   '请填写 Windows 账号和登录密码。': 'Enter your Windows account and password.',
