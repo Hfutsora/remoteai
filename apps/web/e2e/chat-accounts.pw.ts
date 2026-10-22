@@ -8,7 +8,7 @@ test('keeps chat usable after service takeover and recovers from incomplete acco
   await page.goto('/web/e2e/chat-accounts-harness.html');
   await page.getByRole('button', { name: '打开聊天列表' }).click();
   await expect(page.getByRole('button', { name: '保留的聊天' })).toBeVisible();
-  await page.getByRole('button', { name: '账户与电脑' }).click();
+  await page.getByRole('button', { name: '打开头像菜单' }).click();
   await page.getByRole('button', { name: '切换账户' }).click();
   await expect(page.getByText('电脑上的聊天暂不可用，请在电脑上重新打开 Remote AI。')).toBeVisible();
   await expect(page.getByText('暂无可选账户，请先在电脑上添加账户。')).toHaveCount(0);
@@ -17,7 +17,7 @@ test('keeps chat usable after service takeover and recovers from incomplete acco
   response = { running: true };
   await page.reload();
   await page.getByRole('button', { name: '打开聊天列表' }).click();
-  await page.getByRole('button', { name: '账户与电脑' }).click();
+  await page.getByRole('button', { name: '打开头像菜单' }).click();
   await page.getByRole('button', { name: '切换账户' }).click();
   await expect(page.getByRole('alert')).toHaveText('暂时无法读取电脑的账户，请重试。');
   const bounds = await page.getByRole('alert').boundingBox();

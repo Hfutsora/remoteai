@@ -45,11 +45,11 @@ html:has(.app-shell.chat-active), body:has(.app-shell.chat-active) { overscroll-
   min-height: 40px; flex-shrink: 0; border: 0; border-radius: 28px; background: var(--app-surface, #fff);
   padding: 8px 14px; color: var(--app-ink, #25332b); font: inherit;
   box-shadow: 0 2px 10px #00000008; cursor: pointer; }
-.chat-profile-trigger { flex: 1; min-width: 0; min-height: 40px; padding: 8px 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;
-  border: 0; border-radius: 8px; background: transparent; color: var(--chat-ink);
-  font: inherit; cursor: pointer; }
-.chat-profile-trigger:hover { background: var(--chat-pale); }
+.chat-profile-trigger { display: flex; align-items: center; justify-content: center; flex: 0 0 52px;
+  width: 52px; height: 52px; box-sizing: border-box; padding: 0;
+  border: 5px solid var(--chat-background); border-radius: 50%; background: #304e63; color: #fff;
+  font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+.chat-profile-trigger:hover { filter: brightness(1.1); }
 .chat-profile-trigger:focus-visible { outline: 2px solid var(--chat-green); outline-offset: 2px; }
 .chat-profile-option { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px;
   padding: 12px; border: 0; border-radius: 12px; background: transparent; color: var(--app-ink, #25332b);

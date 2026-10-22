@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { BarChart3, Download, Monitor, User } from 'lucide-react';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import type { GuiAccountChoice, GuiAccountsClient } from '../../../../shared/remote-chat/guiAccounts';
+import { guiAccountAvatar } from '../../../../shared/remote-chat/guiAccountAvatar';
 import { useGuiAccounts } from '../../../../shared/remote-chat/client/useGuiAccounts';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
 import { ChatGuiUpdateSheet } from './ChatGuiUpdateSheet';
@@ -26,6 +27,7 @@ export function ChatProfileMenu(props: Props) {
   const accounts = useGuiAccounts(client, ready, panel === 'accounts' ? ACCOUNT_REFRESH_MS : 0);
   const selection = accounts.snapshot?.selection;
   const current = accounts.snapshot?.choices.find(choice => selection?.kind === choice.kind && selection.id === choice.id);
+  const { initials } = guiAccountAvatar(accounts.snapshot, t("我"));
   const disabled = accounts.loading || Boolean(accounts.saving) || !ready || !accounts.snapshot?.running;
   const choices = accounts.snapshot?.choices.filter(choice =>
     `${choice.name} ${choice.detail} ${choice.searchDetail ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())) ?? [];
@@ -45,8 +47,8 @@ export function ChatProfileMenu(props: Props) {
   </>;
   return <>
     {settings ? connectionOptions : <button type="button" className="chat-profile-trigger"
-      aria-label={t("账户与电脑")} aria-expanded={panel !== null} onClick={() => setPanel('profile')}>
-      {current?.name.trim() || t("账户与电脑")}</button>}
+      aria-label={t("打开头像菜单")} aria-expanded={panel !== null} onClick={() => setPanel('profile')}>
+      {initials}</button>}
     {panel === 'update' && active && props.variant !== 'settings' && <ChatGuiUpdateSheet client={props.guiTools}
       active={active} connected={ready} running={props.running} deviceName={deviceName}
       onClose={close} onBack={() => setPanel('profile')} />}
