@@ -1,7 +1,7 @@
 import { guiText } from "../../../i18n/guiText";
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Button, Segmented } from 'antd';
-import { ChevronRight, Folder, RefreshCw, SquarePen } from 'lucide-react';
+import { ChevronRight, Folder, RefreshCw, Search, SquarePen } from 'lucide-react';
 import type { ChatSidebarActions } from '../../../../../web/src/chat/ConnectedChat';
 import type { ChatController, ChatState } from '../../../../../web/src/chat/types';
 import { useThreadGroups } from '../../../../../../shared/remote-chat/client/useThreadGroups';
@@ -13,9 +13,6 @@ import { ThreadPagination } from '../ThreadPagination';
 import { ResizableThreadSidebar } from '../ResizableThreadSidebar';
 import { useThreadScrollPagination } from '../useThreadPagination';
 import { RemoteThreadDialogs, RemoteThreadMenu } from './RemoteThreadMenu';
-import { SidebarSearchInput } from '../../../../../../shared/chat/SidebarSearchInput';
-import { useChatSearch } from '../../../../../../shared/chat/useChatSearch';
-import { ChatSearchResults } from '../../../../../web/src/chat/ChatSearchResults';
 import styles from '../styles.module.less';
 import groupsStyle from '../ThreadGroup.module.less';
 import navigationStyle from '../GuiNavigation.module.less';
@@ -24,13 +21,10 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
   state: ChatState; controller: ChatController; actions: ChatSidebarActions;
   accountPicker: ReactNode; focusMode: GuiFocusMode;
 }) {
-  const [query, setQuery] = useState('');
-  const searching = Boolean(query.trim());
-  const search = useChatSearch({ controller, query, archived: state.archived, ready: state.ready });
   const { groups, toggle, toggleCollapse } = useThreadGroups(state);
   const threadActions = useThreadActions(state, controller);
   const pagination = useThreadScrollPagination({
-    enabled: state.ready && !searching,
+    enabled: state.ready,
     loading: state.loading,
     scope: JSON.stringify([state.archived, state.search, state.ready]),
     cursor: state.cursor,
@@ -42,8 +36,10 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
       <div className={styles.sidebarActions}>
         <FocusModeButton {...focusMode} />
         <Button type="text" size="small" icon={<RefreshCw size={15} />} aria-label={guiText("刷新对话")}
-          loading={searching ? search.loading : Boolean(state.listRefreshing)} disabled={!state.ready}
-          onClick={() => { if (searching) search.reload(); else void controller.list(); }} />
+          loading={Boolean(state.listRefreshing)} disabled={!state.ready}
+          onClick={() => void controller.list()} />
+        <Button type="text" size="small" icon={<Search size={15} />} aria-label={guiText("搜索对话")}
+          disabled={!state.ready} onClick={actions.openSearch} />
       </div>
     </div>
     <nav className={navigationStyle.navigation} aria-label={guiText("Codex GUI 导航")}>
@@ -51,15 +47,11 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
         <SquarePen size={18} strokeWidth={1.6} /><span>{guiText("新对话")}</span>
       </button>
     </nav>
-    <SidebarSearchInput inset value={query} onChange={setQuery} label={guiText('搜索对话')}
-      clearLabel={guiText('清空搜索')} onSubmit={search.reload} />
     <Segmented className={styles.threadFilter} block size="small" value={state.archived ? 'archived' : 'recent'}
       options={[{ label: guiText("最近"), value: 'recent' }, { label: guiText("已归档"), value: 'archived' }]}
       disabled={!state.ready || state.loading}
       onChange={value => { void controller.list({ archived: value === 'archived' }); }} />
-    <div className={styles.threadList} aria-busy={searching ? search.loading : state.loading} {...pagination}>
-      {searching ? <ChatSearchResults state={state} search={search} query={query}
-        select={thread => { void controller.select(thread); actions.onClose(); }} /> : <>
+    <div className={styles.threadList} aria-busy={state.loading} {...pagination}>
       {groups.map(group => <section className={groupsStyle.group} aria-label={group.label} key={group.cwd}>
         <div className={groupsStyle.header}>
           <button type="button" className={groupsStyle.heading} aria-expanded={!group.collapsed}
@@ -97,7 +89,6 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
       </section>)}
       {!state.threads.length && <p className={styles.listEmpty}>{state.ready ? guiText("还没有对话") : guiText("连接电脑后查看对话")}</p>}
       {state.cursor && <ThreadPagination loading={state.loading} />}
-      </>}
     </div>
     {accountPicker}
     <RemoteThreadDialogs actions={threadActions} />

@@ -59,7 +59,7 @@ async function chooseHost(page: Page, name: string) {
   await expect(page.getByRole('menu', { name: '主机列表' })).toBeHidden();
 }
 
-test('searches remote chats directly in the sidebar without opening a dialog', async ({ context, page }) => {
+test('keeps remote search in its header dialog without filtering the sidebar', async ({ context, page }) => {
   const host = await context.newPage();
   await host.goto(`/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=false&title=Search%20example`
     + `&socket=${encodeURIComponent(endpoint)}`);
@@ -68,20 +68,32 @@ test('searches remote chats directly in the sidebar without opening a dialog', a
   await page.goto(`/e2e/remote-gui-harness.html?socket=${encodeURIComponent(endpoint)}`);
   await chooseHost(page, 'Office PC');
   const sidebar = page.locator('.gui-remote-sidebar:visible');
-  const search = sidebar.getByRole('textbox', { name: '搜索对话', exact: true });
-  await search.click();
-  await expect(search).toBeFocused();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(sidebar.getByRole('textbox', { name: '搜索对话', exact: true })).toHaveCount(0);
+  const trigger = sidebar.getByRole('button', { name: '搜索对话', exact: true });
+  await expect(trigger).toBeEnabled();
+  await page.screenshot({ path: '../../.codex-tmp/remote-search-sidebar.png' });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: '搜索聊天', exact: true });
+  const search = dialog.getByRole('textbox', { name: '搜索聊天', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(search).toBeInViewport();
   await search.fill('不存在');
-  await expect(sidebar.getByText('没有找到相关聊天')).toBeVisible();
-  await search.fill('Search');
+  await expect(dialog.getByText('没有找到相关聊天')).toBeVisible();
   await expect(sidebar.getByRole('button', { name: 'Search example', exact: true })).toBeVisible();
-  await page.screenshot({ path: '../../.codex-tmp/remote-inline-search.png' });
-  await sidebar.getByRole('button', { name: 'Search example', exact: true }).click();
+  await search.fill('Search');
+  await expect(dialog.getByRole('button', { name: 'Search example', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Search example', exact: true })).toBeInViewport();
+  await page.screenshot({ path: '../../.codex-tmp/remote-search-dialog.png', animations: 'disabled' });
+  await dialog.getByRole('button', { name: 'Search example', exact: true }).click();
+  await expect(dialog).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Search example', exact: true })).toBeVisible();
-  await search.press('Escape');
+  await trigger.click();
   await expect(search).toBeEmpty();
-  await expect(search).toBeFocused();
+  await search.fill('不存在');
+  await dialog.getByRole('button', { name: '清空搜索', exact: true }).click();
+  await expect(search).toBeEmpty();
+  await search.press('Escape');
+  await expect(dialog).toBeHidden();
   await expect(sidebar.getByRole('button', { name: 'Search example', exact: true })).toBeVisible();
 });
 

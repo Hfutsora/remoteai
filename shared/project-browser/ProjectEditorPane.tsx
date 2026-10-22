@@ -9,7 +9,7 @@ import { frameStyle, type EditorFrame } from './editorLayout';
 import type { BrowserHost } from './entryActions';
 
 export interface EditorPaneOptions {
-  store: ProjectDocuments; cwd: string; connected: boolean; t: BrowserTranslate;
+  store: ProjectDocuments; connected: boolean; t: BrowserTranslate;
   actions: ReturnType<typeof useTabActions>; back: () => void; settings: () => void; settingsOpen: boolean;
   quoteSelection?: BrowserHost['quoteSelection'];
 }
@@ -17,13 +17,11 @@ export interface EditorPaneOptions {
 export function ProjectEditorPane({ group, frame, options }: {
   group: EditorGroup; frame: EditorFrame; options: EditorPaneOptions;
 }) {
-  const { store, cwd, connected, t, actions } = options;
+  const { store, connected, t, actions } = options;
   const tabs = group.paths.flatMap(path => { const tab = store.get(path); return tab ? [tab] : []; });
   const active = store.get(group.activePath);
   const blocked = !!store.getSnapshot().mutationPath || !!actions.pending || actions.busy;
   const save = () => { if (connected && active && !blocked) void store.save(active.path); };
-  const relativePath = group.activePath?.replace(/\\/g, '/')
-    .replace(`${cwd.replace(/\\/g, '/').replace(/\/$/, '')}/`, '');
   return <section className="pf-editor-pane" data-group={group.id}
     data-active={group.id === store.getSnapshot().activeGroupId} style={frameStyle(frame)}
     aria-label={t('编辑区域')} onPointerDownCapture={() => store.focusGroup(group.id)}
@@ -51,7 +49,6 @@ export function ProjectEditorPane({ group, frame, options }: {
             || active.loading || active.saving || blocked}
           onClick={save}><Save size={16} aria-hidden="true" /></button>}
       </div>
-      <span className="pf-file-path">{relativePath}</span>
     </header>
     {!active && <div className="pf-empty"><FileSearch size={36} /><p>{t('选择文件以查看内容')}</p></div>}
     {tabs.map(tab => <ProjectFilePanel key={tab.path} tab={tab} active={tab.path === group.activePath}

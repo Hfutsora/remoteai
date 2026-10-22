@@ -60,6 +60,19 @@ afterEach(async () => {
   controller.stop(); container.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
+it.each([true, false])('opens the remote search dialog only when connected: %s', async ready => {
+  Object.assign(controller.snapshot(), { ready });
+  await render();
+  const search = container.querySelector<HTMLButtonElement>('button[aria-label="搜索对话"]')!;
+  expect(search).not.toBeNull();
+  expect(search.disabled).toBe(!ready);
+  expect(container.querySelector('input[aria-label="搜索对话"]')).toBeNull();
+  await act(async () => search.click());
+  expect(actions.openSearch).toHaveBeenCalledTimes(ready ? 1 : 0);
+  expect(request).not.toHaveBeenCalled();
+  expect(list().textContent).toContain('已有对话');
+});
+
 it('keeps remote chats usable during background sync and queues a fresh manual request', async () => {
   let finish!: (value: unknown) => void;
   let finishManual!: (value: unknown) => void;

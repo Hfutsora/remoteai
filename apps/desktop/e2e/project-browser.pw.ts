@@ -18,6 +18,8 @@ for (const mode of ['local', 'remote']) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await openBrowser(page, mode);
     const outer = page.getByRole('separator', { name: '调整详情抽屉宽度' });
+    // Wait for the drawer to settle before recording coordinates for the pointer drag.
+    await outer.hover();
     const before = Number(await outer.getAttribute('aria-valuenow'));
     const bounds = (await outer.boundingBox())!;
     await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 180);

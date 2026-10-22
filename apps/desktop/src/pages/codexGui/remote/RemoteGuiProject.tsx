@@ -19,15 +19,17 @@ export function RemoteGuiProject({ state, controller, computers, active }: {
     <div className={styles.projectBar}>
       <RemoteProjectPicker key={`${computers.current?.deviceId}:${state.selected?.id ?? 'draft'}`}
         state={state} controller={controller} active={active} />
-      {!state.selected && <WorkspacePicker key={cwd} cwd={cwd} disabled={!canChoose}
-        remote localLabel={guiText("工作树")} enabled={active && state.ready}
-        request={controller.guiTools.workspace} onBusyChange={controller.setWorkspaceBusy}
-        onChange={path => controller.chooseDraftProject(directoryProject(path))} />}
-      <GuiToolbox trigger="git" active={active} connected={state.ready && !state.workspaceBusy} cwd={cwd}
-        git={controller.guiTools.git} />
-      <ProjectBrowserButton client={controller.guiTools.projectBrowser} cwd={cwd}
-        active={active} connected={state.ready && !state.workspaceBusy}
-        className={workspaceStyles.trigger} desktopStyle />
+      <div className={styles.projectBarActions}>
+        {!state.selected && <WorkspacePicker key={cwd} cwd={cwd} disabled={!canChoose}
+          remote localLabel={guiText("工作树")} enabled={active && state.ready}
+          request={controller.guiTools.workspace} onBusyChange={controller.setWorkspaceBusy}
+          onChange={path => controller.chooseDraftProject(directoryProject(path))} />}
+        <GuiToolbox trigger="git" active={active} connected={state.ready && !state.workspaceBusy} cwd={cwd}
+          git={controller.guiTools.git} />
+        <ProjectBrowserButton client={controller.guiTools.projectBrowser} cwd={cwd}
+          active={active} connected={state.ready && !state.workspaceBusy}
+          className={workspaceStyles.trigger} desktopStyle />
+      </div>
       <GuiHostPicker navigation={computers} active={active} />
     </div>
   </div>;

@@ -45,9 +45,11 @@ export function ProjectPicker({ value, projects, disabled, onChange, onError,
       projects={[...saved, ...projects.map(path => ({ path, name: folderName(path) }))]}
       onChange={onChange} onClear={() => onChange('')} onOpen={() => setSaved(readProjects())}
       onAdd={() => setCreating(true)} addLabel={guiText('新建项目')} />}
-    {!running && gitEnabled && onBusyChange && <WorkspacePicker key={value} cwd={value} disabled={disabled}
-      onChange={onChange} onBusyChange={onBusyChange} localLabel={hostPicker ? guiText('工作树') : undefined} />}
-    {actions}
+    <div className={layout.projectBarActions}>
+      {!running && gitEnabled && onBusyChange && <WorkspacePicker key={value} cwd={value} disabled={disabled}
+        onChange={onChange} onBusyChange={onBusyChange} localLabel={hostPicker ? guiText('工作树') : undefined} />}
+      {actions}
+    </div>
     {!running && !(gitEnabled && onBusyChange) && !hostPicker && <span className={layout.localLabel}>
       {isDesktopApp ? guiText('本地') : guiText('Remote AI 主机')}</span>}
     {hostPicker}

@@ -192,8 +192,15 @@
   padding: 0 28px; flex-shrink: 0; box-sizing: border-box; }
 .composerWrap { --gui-composer-padding: 12px; position: relative; padding-bottom: 14px; }
 .projectBar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 5px 10px 8px; min-width: 0;
-  > button { max-width: 50%; > span:last-child { overflow: hidden; text-overflow: ellipsis; } }
+  container: gui-project-bar / inline-size;
+  > button, .projectBarActions > button {
+    max-width: 50%; > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  }
   :global(.ant-select) { width: 120px; } }
+.projectBarActions { display: contents; }
+@container gui-project-bar (max-width: 640px) {
+  .projectBarActions { display: none; }
+}
 .localLabel { font-size: calc(var(--gui-font-size, 14px) - 2px); color: var(--gui-muted); margin-left: auto; }
 .composer { position: relative; border: 1px solid var(--gui-border); border-radius: 18px;
   background: var(--gui-composer-surface);

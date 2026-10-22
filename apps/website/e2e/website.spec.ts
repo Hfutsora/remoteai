@@ -87,10 +87,11 @@ test('narrow screens keep navigation and long feature pages usable', async ({ pa
   await expect(page).toHaveURL(/\/guide\/$/);
 });
 
-test('core content, FAQ and mobile navigation remain usable without JavaScript', async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+test('core content, FAQ and mobile navigation remain usable without JavaScript', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false,
+    viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
-  await page.goto(`http://127.0.0.1:4175${basePath}features/codex-gui/`);
+  await page.goto('features/codex-gui/');
   await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.getByRole('heading', { name: '把上下文交代清楚，再开始' })).toBeVisible();
   await page.getByText('一定要先选择项目吗？', { exact: true }).click();
@@ -103,7 +104,7 @@ test('core content, FAQ and mobile navigation remain usable without JavaScript',
   await page.getByRole('navigation', { name: '按需探索' }).getByRole('link', { name: /评测与学习/ }).click();
   await expect(page).toHaveURL(/\/resources\/#learn$/);
   await expect(page.getByRole('heading', { name: '评测与学习 4', exact: true })).toBeInViewport();
-  await page.goto(`http://127.0.0.1:4175${basePath}ru/`);
+  await page.goto('ru/');
   await page.locator('.site-footer').getByRole('link', { name: 'ИИ-ресурсы', exact: true }).click();
   await expect(page).toHaveURL(/\/ru\/resources\/$/);
   await expect(page.locator('.resource-card')).toHaveCount(26);

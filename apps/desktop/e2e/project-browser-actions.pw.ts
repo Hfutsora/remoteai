@@ -15,6 +15,16 @@ async function create(page: Page, name: string, folder: boolean) {
   await page.getByRole('button', { name: '确定', exact: true }).click();
 }
 
+async function expectFilePath(page: Page, path: string) {
+  await page.getByRole('tab', { name: '草稿.txt', exact: true }).hover();
+  const tooltip = page.getByRole('tooltip');
+  await expect(tooltip).toContainText(path);
+  expect((await tooltip.boundingBox())!.width).toBeLessThanOrEqual(400);
+  await expect(page.locator('.pf-file-path')).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toBeHidden();
+}
+
 test('folder actions: create, rename with draft, copy, cut, paste and delete', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await open(page);
@@ -34,7 +44,7 @@ test('folder actions: create, rename with draft, copy, cut, paste and delete', a
   await page.getByRole('textbox', { name: '名称', exact: true }).fill('改名目录');
   await page.getByRole('button', { name: '确定', exact: true }).click();
   await expect(editor).toContainText('keep draft');
-  await expect(page.locator('.pf-file-path')).toContainText('改名目录/草稿.txt');
+  await expectFilePath(page, '改名目录/草稿.txt');
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await expect(page.getByText('已保存', { exact: true })).toBeVisible();
   await row(page, '改名目录').click({ button: 'right' }); await menu(page, '复制').click();
@@ -43,7 +53,7 @@ test('folder actions: create, rename with draft, copy, cut, paste and delete', a
   await row(page, '改名目录').click({ button: 'right' }); await menu(page, '剪切').click();
   await expect(row(page, '改名目录')).toHaveAttribute('data-cut', 'true');
   await row(page, 'src').click({ button: 'right' }); await menu(page, '粘贴').click();
-  await expect(page.locator('.pf-file-path')).toContainText('src/改名目录/草稿.txt');
+  await expectFilePath(page, 'src/改名目录/草稿.txt');
   await row(page, '改名目录').click({ button: 'right' }); await menu(page, '删除').click();
   await expect(page.getByRole('alertdialog')).toContainText('无法撤销');
   await page.getByRole('button', { name: '取消', exact: true }).click();

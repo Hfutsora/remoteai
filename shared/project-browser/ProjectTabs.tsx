@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ellipsis, X } from 'lucide-react';
+import { Tooltip } from 'antd';
 import { isDirty, type DocumentTab } from './documents';
 import type { BrowserTranslate } from './ProjectTree';
 import { TabMenu } from './TabMenu';
@@ -21,22 +22,26 @@ function ProjectTab({ tab, active, choose, close, menu, navigate, blocked, t }: 
   const button = useRef<HTMLButtonElement>(null);
   const gesture = useTreeGesture(point => { button.current?.focus(); menu(point); });
   const name = tab.path.split(/[\\/]/).at(-1) ?? tab.path;
-  return <div className="pf-tab" data-path={tab.path} data-active={active} {...gesture}>
-    <button ref={button} type="button" role="tab" aria-selected={active} aria-label={name}
-      aria-haspopup="menu" tabIndex={active ? 0 : -1} onClick={choose} onKeyDown={event => {
-        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-          event.preventDefault();
-          const rect = event.currentTarget.getBoundingClientRect();
-          menu({ x: rect.left, y: rect.bottom }); return;
-        }
-        if (navigate(event.key)) event.preventDefault();
-      }}>
-      <span className="pf-tab-name">{name}</span>
-      {isDirty(tab) && <span className="pf-dirty-dot" aria-label={t('未保存')} />}
-    </button>
-    <button type="button" className="pf-tab-close" aria-label={`${t('关闭文件')} ${name}`}
-      disabled={tab.saving || blocked} onClick={close}><X size={14} /></button>
-  </div>;
+  return <Tooltip title={tab.path} placement="bottomLeft"
+    styles={{ root: { maxWidth: 'min(400px, calc(100vw - 16px))' },
+      body: { overflowWrap: 'anywhere', whiteSpace: 'normal' } }}>
+    <div className="pf-tab" data-path={tab.path} data-active={active} {...gesture}>
+      <button ref={button} type="button" role="tab" aria-selected={active} aria-label={name}
+        aria-haspopup="menu" tabIndex={active ? 0 : -1} onClick={choose} onKeyDown={event => {
+          if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+            event.preventDefault();
+            const rect = event.currentTarget.getBoundingClientRect();
+            menu({ x: rect.left, y: rect.bottom }); return;
+          }
+          if (navigate(event.key)) event.preventDefault();
+        }}>
+        <span className="pf-tab-name">{name}</span>
+        {isDirty(tab) && <span className="pf-dirty-dot" aria-label={t('未保存')} />}
+      </button>
+      <button type="button" className="pf-tab-close" aria-label={`${t('关闭文件')} ${name}`}
+        disabled={tab.saving || blocked} onClick={close}><X size={14} /></button>
+    </div>
+  </Tooltip>;
 }
 
 export function ProjectTabs({ tabs, activePath, choose, close, t, groupId, blocked, connected, command }: Props) {

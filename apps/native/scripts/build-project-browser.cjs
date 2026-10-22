@@ -13,7 +13,8 @@ function licenseNotices(inputs) {
     const license = ['LICENSE', 'LICENSE.md', 'LICENSE.txt'].find(name => fs.existsSync(path.join(directory, name)));
     if (!license) return '';
     const { name } = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8'));
-    return `${name}\n${fs.readFileSync(path.join(directory, license), 'utf8').replace(/\r\n/g, '\n')}`;
+    const notice = fs.readFileSync(path.join(directory, license), 'utf8').replace(/\r\n/g, '\n');
+    return `${name}\n${notice.replace(/[ \t]+$/gm, '')}`;
   }).filter(Boolean).join('\n\n').replace(/--/g, '—');
 }
 
