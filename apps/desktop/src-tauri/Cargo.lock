@@ -1581,7 +1581,7 @@ dependencies = [
 
 [[package]]
 name = "csw"
-version = "1.0.21"
+version = "2.0.18"
 dependencies = [
  "aes-gcm 0.10.3",
  "arboard",
