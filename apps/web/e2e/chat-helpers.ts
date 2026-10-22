@@ -34,7 +34,8 @@ export async function connect(page: Page) {
   await navigate(page, '聊天');
   await expect(page.getByRole('textbox', { name: '聊天消息' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '新聊天', exact: true })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: '搜索聊天' })).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: '搜索聊天' }))
+    .toHaveCount((page.viewportSize()?.width ?? 0) > 860 ? 1 : 0);
 }
 export async function send(page: Page, text: string) {
   await page.getByRole('textbox', { name: '聊天消息' }).fill(text);

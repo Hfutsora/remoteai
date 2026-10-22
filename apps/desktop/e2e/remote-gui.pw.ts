@@ -59,6 +59,32 @@ async function chooseHost(page: Page, name: string) {
   await expect(page.getByRole('menu', { name: '主机列表' })).toBeHidden();
 }
 
+test('searches remote chats directly in the sidebar without opening a dialog', async ({ context, page }) => {
+  const host = await context.newPage();
+  await host.goto(`/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=false&title=Search%20example`
+    + `&socket=${encodeURIComponent(endpoint)}`);
+  await expect(host.locator('#status')).toHaveText('registered');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/e2e/remote-gui-harness.html?socket=${encodeURIComponent(endpoint)}`);
+  await chooseHost(page, 'Office PC');
+  const sidebar = page.locator('.gui-remote-sidebar:visible');
+  const search = sidebar.getByRole('textbox', { name: '搜索对话', exact: true });
+  await search.click();
+  await expect(search).toBeFocused();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await search.fill('不存在');
+  await expect(sidebar.getByText('没有找到相关聊天')).toBeVisible();
+  await search.fill('Search');
+  await expect(sidebar.getByRole('button', { name: 'Search example', exact: true })).toBeVisible();
+  await page.screenshot({ path: '../../.codex-tmp/remote-inline-search.png' });
+  await sidebar.getByRole('button', { name: 'Search example', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Search example', exact: true })).toBeVisible();
+  await search.press('Escape');
+  await expect(search).toBeEmpty();
+  await expect(search).toBeFocused();
+  await expect(sidebar.getByRole('button', { name: 'Search example', exact: true })).toBeVisible();
+});
+
 test('remote chat sidebar resizes and restores its width after hiding and mobile layout',
   async ({ context, page }) => {
     test.setTimeout(90_000);

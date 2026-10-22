@@ -245,11 +245,43 @@ test('answers asynchronous questions without blocking the draft and preserves in
   await expect(page.getByRole('button', { name: /回答补充问题/ })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: '聊天消息' })).toHaveValue('草稿保持不变');
   await openChatList(page);
-  await page.getByRole('button', { name: '搜索聊天', exact: true }).click();
+  const desktop = (page.viewportSize()?.width ?? 0) > 860;
+  if (!desktop) await page.getByRole('button', { name: '搜索聊天', exact: true }).click();
   await page.getByRole('textbox', { name: '搜索聊天' }).fill('不存在');
   await expect(page.getByText('没有找到相关聊天')).toBeVisible();
-  await closeSheet(page);
+  if (desktop) await page.getByRole('button', { name: '清空搜索', exact: true }).click();
+  else await closeSheet(page);
   await expect(page.getByRole('button', { name: '移动端聊天体验', exact: true })).toBeVisible();
+});
+
+test('searches directly in the desktop sidebar and restores chats when cleared', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Inline search is for the desktop layout');
+  const sidebar = page.locator('.chat-sidebar');
+  const search = sidebar.getByRole('textbox', { name: '搜索聊天' });
+  await search.click();
+  await expect(search).toBeFocused();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await search.fill('移动端');
+  await expect(sidebar.getByRole('button', { name: '移动端聊天体验', exact: true })).toBeVisible();
+  await expect(sidebar.locator('.chat-project-group')).toHaveCount(0);
+  await screenshot(page, info, 'inline-sidebar-search');
+  await sidebar.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '移动端聊天体验', exact: true })).toBeVisible();
+  await search.fill('不存在');
+  await expect(sidebar.getByText('没有找到相关聊天')).toBeVisible();
+  await search.press('Escape');
+  await expect(search).toBeEmpty();
+  await expect(search).toBeFocused();
+  await expect(sidebar.getByRole('region', { name: '演示项目', exact: true })).toBeVisible();
+  await search.fill('移动端');
+  await sidebar.getByRole('button', { name: '最近聊天 ▾', exact: true }).click();
+  await expect(sidebar.getByText('没有找到相关聊天')).toBeVisible();
+  await expect(search).toHaveValue('移动端');
+  await sidebar.getByRole('button', { name: '已归档 ▾', exact: true }).click();
+  await expect(sidebar.getByRole('button', { name: '移动端聊天体验', exact: true })).toBeVisible();
+  await sidebar.getByRole('button', { name: '清空搜索', exact: true }).click();
+  await expect(search).toBeFocused();
+  await expect(sidebar.getByRole('region', { name: '演示项目', exact: true })).toBeVisible();
 });
 
 test('cancels a question without sending an answer and keeps it dismissed after reload',

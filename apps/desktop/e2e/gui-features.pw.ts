@@ -57,14 +57,14 @@ async function mockCommands(page: Page, migrationError?: string) {
     if (command === "codex_gui_usage_summary") result = { totalTokens: 0, estimatedCostUsd: 0,
       primaryRemainingPercent: null, primaryRemainingAggregated: false, providerEstimatedCost: null };
     if (command === "codex_gui_request") {
-      const request = args.request as { operation: string };
+      const request = args.request as { operation: string; search?: string; archived?: boolean };
       let data: unknown = { data: [], nextCursor: null };
       if (request.operation === "models") data = { data: [{ id: "test-model", model: "test-model",
         displayName: "测试模型", isDefault: true, defaultReasoningEffort: "medium",
         supportedReasoningEfforts: [{ reasoningEffort: "medium", description: "" }] }], nextCursor: null };
-      if (request.operation === "list") data = { data: migrated
+      if (request.operation === "list") data = { data: (migrated
         ? [thread, { ...thread, id: sourceThread.sessionId, name: sourceThread.title, cwd: sourceThread.cwd }]
-        : [thread], nextCursor: null };
+        : [thread]).filter(entry => !request.archived && entry.name.includes(request.search ?? '')), nextCursor: null };
       if (request.operation === "read") data = { thread };
       if (request.operation === "goals") data = { goals: [] };
       if (request.operation === "plugins") data = { marketplaces: [], marketplaceLoadErrors: [] };
@@ -80,6 +80,31 @@ async function openGui(page: Page, suffix = "") {
   const expand = page.getByRole("button", { name: "展开对话列表" });
   if (await expand.isVisible()) await expand.click();
 }
+
+test('searches local chats directly in the sidebar without opening a dialog', async ({ page }) => {
+  await mockCommands(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openGui(page);
+  const search = page.getByRole('textbox', { name: '搜索对话', exact: true });
+  await search.click();
+  await expect(search).toBeFocused();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await search.fill('不存在');
+  await expect(page.getByText('没有找到匹配的对话')).toBeVisible();
+  await search.fill('保留');
+  await expect(page.getByRole('button', { name: '保留的对话', exact: true })).toBeVisible();
+  await page.screenshot({ path: '../../.codex-tmp/local-inline-search.png' });
+  await page.getByRole('button', { name: '保留的对话', exact: true }).click();
+  await expect(search).toHaveValue('保留');
+  await page.locator('.ant-segmented-item').filter({ hasText: '已归档' }).click();
+  await expect(page.getByText('没有找到匹配的对话')).toBeVisible();
+  await expect(search).toHaveValue('保留');
+  await page.locator('.ant-segmented-item').filter({ hasText: '最近' }).click();
+  await expect(page.getByRole('button', { name: '保留的对话', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '清空搜索', exact: true }).click();
+  await expect(search).toBeEmpty();
+  await expect(search).toBeFocused();
+});
 
 test("local chat sidebar resizes, remembers its width and adapts to the available space", async ({ page }) => {
   await mockCommands(page);
