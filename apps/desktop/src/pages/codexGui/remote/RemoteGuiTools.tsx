@@ -7,14 +7,13 @@ import type { ChatController } from '../../../../../../shared/remote-chat/client
 import type { TerminalPanelState } from '../terminal/useTerminalPanel';
 import { Installer } from '../Installer';
 import { CliUpdateIcon } from '../CliUpdateIcon';
-import { useRemoteCliInstaller } from './useRemoteCliInstaller';
+import type { useRemoteCliInstaller } from './useRemoteCliInstaller';
 
-export function RemoteGuiTools({ controller, state, active, terminal }: {
-  controller: ChatController; state: ChatState; active: boolean;
+export function RemoteGuiTools({ controller, state, installer, terminal }: {
+  controller: ChatController; state: ChatState; installer: ReturnType<typeof useRemoteCliInstaller>;
   terminal: TerminalPanelState & { error?: string; busy?: boolean };
 }) {
   const connected = state.mode === 'direct' || state.mode === 'relay';
-  const installer = useRemoteCliInstaller(controller.guiTools, active && connected);
   const [reconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState('');
   const running = state.sending || Boolean(state.selected?.turns?.some(turn => turn.status === 'inProgress'));

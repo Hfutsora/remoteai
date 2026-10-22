@@ -213,7 +213,8 @@ export function ChatComposer(props: ComposerProps) {
         </div>
       </div>
     </form>
-    <ComposerFooter desktop={desktop} connectionInfo={props.connectionInfo} tokenUsage={tokenUsage}
+    <ComposerFooter desktop={desktop} cliVersion={props.cliVersion}
+      connectionInfo={props.connectionInfo} tokenUsage={tokenUsage}
       readConversationMetrics={props.readConversationMetrics} threadId={threadId} active={active && ready} />
     {active && !busy && editing && <ChatImageEditor key={editing.id} image={editing}
       save={url => draft.replaceImage(editing, url)} close={() => setEditingId(null)} />}

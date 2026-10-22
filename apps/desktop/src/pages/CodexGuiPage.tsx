@@ -179,7 +179,7 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
             disabled={state.connection !== "ready" || state.sending || state.archived || Boolean(state.workspaceBusy)
               || Boolean(state.deleting) || state.compacting === state.selected} />
           <Composer ref={composer} state={state} controller={controller} active={conversationActive}
-            hostPicker={hostPicker} />
+            hostPicker={hostPicker} cliVersion={installer.version} />
         </>} /></ConversationRetryProvider>}
       {isDesktopApp && terminal.tabs.length > 0 && <Suspense fallback={null}>
         <TerminalPanel panel={terminal} active={conversationActive} api={terminalApi} />

@@ -40,7 +40,8 @@ export interface ComposerHandle { addQuote: (quote: ReplyQuote) => boolean }
 
 export const Composer = forwardRef<ComposerHandle, {
   state: GuiState; controller: GuiController; active: boolean; hostPicker?: ReactNode;
-}>(function Composer({ state, controller, active, hostPicker }, ref) {
+  cliVersion?: string | null;
+}>(function Composer({ state, controller, active, hostPicker, cliVersion }, ref) {
   const fileInput = useRef<HTMLInputElement>(null);
   const composer = useRef<HTMLDivElement>(null);
   const dropTarget = useRef<HTMLDivElement>(null);
@@ -171,7 +172,7 @@ export const Composer = forwardRef<ComposerHandle, {
         </div>
       </div>
     </div>
-    <div className={styles.composerHint}><span>{guiText("Enter 发送 · Shift + Enter 换行")}</span>
+    <div className={styles.composerHint}><span>Codex{cliVersion ? ` ${cliVersion}` : ''}</span>
       <ConversationTokenStatus threadId={state.selected} tokens={current?.tokens ?? 0}
         active={active && state.connection === 'ready'} /></div>
     {dialog === "files" && <ComposerFilesDialog onAdd={addAttachments} onImages={() => fileInput.current?.click()}

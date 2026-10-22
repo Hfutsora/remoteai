@@ -15,6 +15,7 @@ import { useRemoteTerminalPanel } from '../../../../../../shared/remote-chat/use
 import { remoteTerminalApi } from './terminalApi';
 import { useTerminalLinkTunnels } from '../terminal/useTerminalLinkTunnels';
 import { RemoteGuiTools } from './RemoteGuiTools';
+import { useRemoteCliInstaller } from './useRemoteCliInstaller';
 import { GuiRemoteDesktop } from '../GuiRemoteDesktop';
 import styles from '../styles.module.less';
 import './remoteGui.less';
@@ -32,6 +33,8 @@ export default function RemoteGuiWorkspace(props: {
 }) {
   const { active, identity, device, computers } = props;
   const chat = useRemoteGui(identity, device.deviceId, active);
+  const installer = useRemoteCliInstaller(chat.controller.guiTools,
+    active && (chat.state.mode === 'direct' || chat.state.mode === 'relay'));
   const scope = JSON.stringify([identity.baseUrl, identity.userId, device.deviceId]);
   useDesktopDownloads({ identity, device, controller: chat.controller });
   const terminal = useRemoteTerminalPanel({ client: chat.controller.guiTools.terminal, connected: chat.state.ready,
@@ -49,6 +52,7 @@ export default function RemoteGuiWorkspace(props: {
     <ConfigProvider getPopupContainer={popupContainer}>
     <RemoteFileEnvironment controller={chat.controller} ready={chat.state.ready} threadId={chat.state.selected?.id ?? null}>
     <ConnectedChat chat={chat} active={active} device={device} devices={computers.devices} email="" desktopDiffs
+      cliVersion={installer.version}
       renderUserMessage={props => <RemoteUserMessage {...props} state={chat.state}
         controller={chat.controller} active={active} />}
       scope={scope} draggableHeader={isDesktopApp} scrollableComposer
@@ -61,8 +65,8 @@ export default function RemoteGuiWorkspace(props: {
           active={active} connected={chat.state.ready} />}
         <GuiRemoteDesktop client={chat.controller.guiTools.desktop} active={active}
           connected={chat.state.mode === 'direct' || chat.state.mode === 'relay'} /></>}
-      headerActions={<><RemoteGuiTools controller={chat.controller} state={chat.state} active={active}
-        terminal={terminal} />
+      headerActions={<><RemoteGuiTools controller={chat.controller} state={chat.state}
+        installer={installer} terminal={terminal} />
         <span className="gui-remote-focus"><FocusModeButton {...props.focusMode} /></span></>}
       headerEnd={props.focusMode.focused && props.windowControls
         && <div className={styles.focusWindowControls}>{props.windowControls}</div>}

@@ -23,6 +23,7 @@ import { ChatSidebar } from './ChatSidebar';
 import { useDesktopLayout, usePanelVisibility } from '../useDesktopLayout';
 import { ChatDevices } from './ChatDevices';
 import { ChatConnectionInfo } from './ChatConnectionInfo';
+import { useRemoteCliInstaller } from '../../../../shared/remote-chat/useRemoteCliInstaller';
 import { ChatTaskStatus } from './ChatTaskStatus';
 import { visibleChatError } from '../../../../shared/remote-chat/chatError';
 import { TaskReviewProvider } from '../../../../shared/remote-chat/TaskReviewContext';
@@ -54,6 +55,7 @@ export interface ConnectedChatProps {
   renderSidebar?: (actions: ChatSidebarActions) => ReactNode;
   renderUserMessage?: RenderUserMessage;
   composerHeader?: ReactNode;
+  cliVersion?: string | null;
   conversationFooter?: ReactNode;
   desktopDiffs?: boolean;
   readClipboardImages?: () => Promise<File[]>;
@@ -70,7 +72,7 @@ export interface ChatSidebarActions {
 export function ConnectedChat({ chat, device, devices, active, scope, email, chooseDevice,
   chooseLocal, accountPicker, headerActions, headerConnectionActions, headerEnd, renderSidebar, composerHeader,
   conversationFooter, renderUserMessage, draggableHeader, scrollableComposer,
-  readClipboardImages, nativeFileDrop, desktopDiffs, deviceRefresh }: ConnectedChatProps) {
+  readClipboardImages, nativeFileDrop, desktopDiffs, deviceRefresh, cliVersion }: ConnectedChatProps) {
   useLanguage();
   const { state, controller, foreground } = chat;
   const [drawer, setDrawer] = useState(false);
@@ -86,6 +88,8 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
   useChatDrawerSwipe({ enabled: active && !desktop && !pickingDevice && !searching && !tokenSummary,
     open: drawer, onOpenChange: setDrawer });
   const ready = state.ready;
+  const installer = useRemoteCliInstaller(controller.guiTools,
+    cliVersion === undefined && desktop && active && foreground && ready);
   const error = visibleChatError(state.error);
   const cwd = state.selected?.cwd ?? state.draftProject?.cwd ?? '';
   const catalog = useChatCatalog(controller, cwd, ready);
@@ -111,6 +115,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
         || state.compacting === state.selected?.id} answer={controller.answerAsyncQuestion} />
     {composerHeader}
     <ChatComposer suggestions={remotePromptSuggestion(state, controller.suggestNextPrompt, { scope })}
+      cliVersion={cliVersion === undefined ? installer.version : cliVersion}
       recoveredEdit={controller.messageEditor.recoveredDrafts.get(state.selected?.id ?? '')}
       consumeRecoveredEdit={() => controller.messageEditor.recoveredDrafts.delete(state.selected?.id ?? '')}
       connectionInfo={<ChatConnectionInfo state={state} controller={controller} device={device} active={active}

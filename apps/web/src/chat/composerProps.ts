@@ -26,6 +26,7 @@ export interface ComposerProps {
   consumeRecoveredEdit?: () => void;
   projectPicker?: ReactNode;
   connectionInfo?: ReactNode;
+  cliVersion?: string | null;
   suggestions?: PromptSuggestionSource;
   connection: ChatConnectionProps;
   readClipboardImages?: () => Promise<File[]>;
