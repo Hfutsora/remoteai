@@ -8,6 +8,8 @@
   button { border: 0; border-radius: 4px; background: transparent; color: var(--gui-muted); cursor: pointer;
     padding: 3px 8px; &[aria-pressed='true'] { background: var(--green-soft); color: var(--ink); } } }
 .folderGroup { min-width: 0; margin-top: 16px; }
+.continuous .toolbar { padding: 0; }
+.continuous .toolbar + .folderGroup { margin-top: 8px; }
 .folderHeader { display: flex; align-items: center; gap: 8px; padding: 4px 2px;
   > svg { flex-shrink: 0; color: var(--gui-muted); } }
 .folderInfo { flex: 1; min-width: 0; }
