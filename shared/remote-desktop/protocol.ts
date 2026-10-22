@@ -1,6 +1,7 @@
 import type { IceServer } from '../remote-chat/protocol';
 import { getInterfaceLanguage } from '../i18n/interfaceLanguage';
 import { translateText } from '../i18n/translate';
+import type { DesktopSecurity, DesktopSecurityChange } from './security';
 
 export const DESKTOP_OPERATION = 'remoteDesktop';
 export const MAX_FPS = 144;
@@ -23,6 +24,7 @@ export type DesktopPlatform = 'windows' | 'macos';
 export type DesktopSystemPermission = 'screenRecording' | 'accessibility';
 export interface DesktopPermissionStatus { required: DesktopSystemPermission | null }
 export interface DesktopDisplays {
+  security?: DesktopSecurity;
   displaySessions?: boolean;
   resolutions?: DesktopResolution[];
   privacyScreen?: boolean;
@@ -30,6 +32,7 @@ export interface DesktopDisplays {
 }
 export interface DesktopResolution { width: number; height: number }
 export interface DesktopCapabilities {
+  security?: boolean;
   inputFocus?: boolean;
   displaySessions?: boolean;
   clipboardNative?: boolean;
@@ -71,6 +74,7 @@ export type DesktopInput =
   | { kind: 'keyboard'; code: string; down: boolean }
   | { kind: 'key'; key: 'enter' | 'backspace' | 'escape' | 'tab' | 'desktop' | 'windows' };
 export interface DesktopClient {
+  security?(id: string, change: DesktopSecurityChange): Promise<DesktopSecurity>;
   inputFocus?(id: string): Promise<DesktopInputFocus | null>;
   permissionStatus?(): Promise<DesktopPermissionStatus>;
   nativeMedia?: import('./nativeMedia').NativeMediaFactory;
@@ -90,6 +94,7 @@ export function desktopClient(request: <T>(body: object) => Promise<T>,
   return {
     diagnostic,
     nativeMedia,
+    security: (id, change) => call('security', { id, change }),
     inputFocus: id => call('inputFocus', { id }),
     permissionStatus: () => call('permissions', {}),
     open: (id, settings) => call('open', { id, settings }),

@@ -6,7 +6,7 @@ import type { FileOffer, FileRead } from './fileClipboard';
 
 /** Older hosts retain native editing; only negotiated hosts may automatically replace their clipboard. */
 export function sessionClipboard(receiver: () => Pick<DesktopReceiver, 'clipboard' | 'input'> | undefined,
-  capabilities: DesktopCapabilities) {
+  capabilities: DesktopCapabilities, sync = true) {
   const current = () => {
     const session = receiver();
     if (!session) throw new Error('请等待桌面连接后重试。');
@@ -20,6 +20,7 @@ export function sessionClipboard(receiver: () => Pick<DesktopReceiver, 'clipboar
   const shortcut = (code: string) => sendDesktopChord(event => current().input(event),
     [capabilities.platform === 'macos' ? 'MetaLeft' : 'ControlLeft', code]);
   return {
+    syncEnabled: sync,
     fileStreaming: capabilities.clipboardFiles === true,
     registerFiles: (offer: FileOffer, read: (request: FileRead) => Promise<string>) =>
       sharing().files.register(offer, read),
@@ -34,6 +35,7 @@ export function sessionClipboard(receiver: () => Pick<DesktopReceiver, 'clipboar
       return sharing().write(content, paste, progress, revision);
     },
     copy: async (key: 'copy' | 'cut', progress?: ClipboardProgress, files = false) => {
+      if (!sync) { shortcut(key === 'copy' ? 'KeyC' : 'KeyX'); return undefined; }
       if (capabilities.clipboardNative) {
         return files && capabilities.clipboardFiles ? current().clipboard.copy(key, progress, true)
           : current().clipboard.copy(key, progress);
@@ -42,6 +44,7 @@ export function sessionClipboard(receiver: () => Pick<DesktopReceiver, 'clipboar
       return undefined;
     },
     paste: async (preferLocal: boolean) => {
+      if (!sync) { shortcut('KeyV'); return undefined; }
       if (capabilities.clipboardNative) return current().clipboard.paste(preferLocal);
       shortcut('KeyV');
       return undefined;

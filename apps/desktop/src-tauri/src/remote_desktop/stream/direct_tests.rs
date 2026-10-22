@@ -347,6 +347,8 @@ async fn retaining_a_relay_invalidates_a_pending_backup_commit() {
     let previous_lease = lease.lock().unwrap().insert(
         stream.id.clone(),
         crate::remote_desktop::Session {
+            #[cfg(windows)]
+            security: Default::default(),
             permissions: crate::remote_desktop::permissions::Permissions::default(),
             id: stream.id.clone(),
             capture_group: None,

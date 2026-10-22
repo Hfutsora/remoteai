@@ -12,6 +12,7 @@ import { DesktopDirectUpgrade, type DirectPeer } from './directUpgrade';
 import { DesktopRelayStandby } from './relayStandby';
 import { DesktopDirectRetry } from './directRetry';
 import { desktopVideoCodecs } from './codecs';
+import type { DesktopSecurityChange } from './security';
 import { closeNativeMedia, openNativeMedia, nativeMediaIceServers, type NativeMediaSession } from './nativeMedia';
 
 export interface ReceiverOptions {
@@ -39,6 +40,12 @@ export class DesktopReceiver {
   private readonly id = `desktop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   get sessionId() { return this.id; }
   get closed() { return this.stopped; }
+  async security(change: DesktopSecurityChange) {
+    if (this.stopped || !this.capabilities.security || !this.options.client.security) {
+      throw new Error('这台电脑暂不支持此安全选项。');
+    }
+    return this.options.client.security(this.id, change);
+  }
   private pc?: RTCPeerConnection;
   private channel?: RTCDataChannel;
   private clipboardChannel?: RTCDataChannel;

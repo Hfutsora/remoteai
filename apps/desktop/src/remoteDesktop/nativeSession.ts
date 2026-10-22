@@ -6,6 +6,7 @@ import { openDesktopCapture, type DesktopCaptureSettings } from './displays';
 import { desktopFailure } from '../../../../shared/remote-desktop/diagnostics';
 import type { ConnectionDiagnostic, DiagnosticFields } from '../../../../shared/remote-chat/diagnostics';
 import { desktopProfile } from '../../../../shared/remote-desktop/profiles';
+import type { DesktopSecurity, DesktopSecurityChange } from '../../../../shared/remote-desktop/security';
 
 const STATUS_INTERVAL = 2000;
 const PRIVACY_POLL_INTERVAL = 250;
@@ -91,6 +92,12 @@ export class NativeDesktopSession {
   async inputFocus() {
     if (!this.id || this.stopped || this.changingPrivacy) return null;
     return invoke<DesktopInputFocus | null>('remote_desktop_input_focus', { id: this.id });
+  }
+  async security(change: DesktopSecurityChange) {
+    if (!this.id || this.stopped) throw new Error('桌面连接已结束。');
+    const state = await invoke<DesktopSecurity>('remote_desktop_security', { id: this.id, change });
+    this.displays.security = state;
+    return state;
   }
   async update(settings: DesktopSettings) {
     await invoke('remote_desktop_stream_update', { id: this.id, profile: profile(settings, this.displays) });

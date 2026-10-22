@@ -14,6 +14,7 @@ interface FakeSession {
   start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn>; input: ReturnType<typeof vi.fn>;
   settings: ReturnType<typeof vi.fn>; mute: ReturnType<typeof vi.fn>; sessionId: string;
   privacy: ReturnType<typeof vi.fn>;
+  security: ReturnType<typeof vi.fn>;
   resolution: ReturnType<typeof vi.fn<(size: DesktopResolution) => Promise<void>>>;
 }
 const runtime = vi.hoisted(() => ({
@@ -29,6 +30,7 @@ vi.mock('../../../../shared/remote-desktop/receiver', () => ({ DesktopReceiver: 
   });
   stop = vi.fn(async () => { this.options.stream(undefined); });
   input = vi.fn(); settings = vi.fn(); mute = vi.fn();
+  security = vi.fn(async (change: object) => ({ lockOnDisconnect: false, muteHost: false, ...change }));
   privacy = vi.fn(async (enabled: boolean) => {
     this.options.displays({ displayId: enabled ? 'private' : 'first', privacyScreen: enabled });
   });
@@ -52,6 +54,26 @@ beforeEach(async () => {
   await act(async () => root.render(<Harness />));
 });
 afterEach(async () => { await act(async () => root.unmount()); vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+it('serializes security updates, retains values through privacy and discards replies from a closed session', async () => {
+  const current = runtime.sessions[0];
+  let complete!: (value: { lockOnDisconnect: boolean; muteHost: boolean }) => void;
+  current.security.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+  let updating!: Promise<void>;
+  await act(async () => { updating = session.security.update({ lockOnDisconnect: true }); });
+  expect(session.security.saving).toBe(true);
+  await act(async () => session.security.update({ muteHost: true }));
+  expect(current.security).toHaveBeenCalledOnce();
+  await act(async () => { complete({ lockOnDisconnect: true, muteHost: false }); await updating; });
+  expect(session.security.value.lockOnDisconnect).toBe(true);
+  await act(async () => current.options.displays({ displayId: 'private', privacyScreen: true }));
+  expect(session.security.value.lockOnDisconnect).toBe(true);
+  current.security.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+  await act(async () => { updating = session.security.update({ muteHost: true }); });
+  await act(async () => root.render(<Harness active={false} />));
+  await act(async () => { complete({ lockOnDisconnect: true, muteHost: true }); await updating; });
+  expect(session.security.value).toEqual({ lockOnDisconnect: false, muteHost: false });
+});
 
 it('uses host resolutions, prevents overlapping changes and refreshes display dimensions', async () => {
   const current = runtime.sessions[0];

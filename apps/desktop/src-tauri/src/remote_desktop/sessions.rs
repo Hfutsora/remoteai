@@ -67,9 +67,17 @@ pub(super) fn begin_session(
         release(guard.remove(&id))?;
     }
     let id = uuid::Uuid::new_v4().to_string();
+    #[cfg(windows)]
+    let security = guard
+        .values()
+        .find(|session| capture_group.is_some() && session.capture_group == capture_group)
+        .map(|session| session.security.clone())
+        .unwrap_or_default();
     guard.insert(
         id.clone(),
         Session {
+            #[cfg(windows)]
+            security,
             privacy: None,
             permissions,
             id: id.clone(),
@@ -120,21 +128,20 @@ fn release(_session: Option<Session>) -> Result<()> {
 }
 
 pub(super) fn close(id: &str) -> Result<()> {
-    let session = SESSIONS
+    // Finish group cleanup before another viewer can open and inherit an about-to-be-locked desktop.
+    let mut guard = SESSIONS
         .get_or_init(Default::default)
         .lock()
-        .map_err(|_| DesktopError::Platform)?
-        .remove(id);
-    release(session)
+        .map_err(|_| DesktopError::Platform)?;
+    release(guard.remove(id))
 }
 
 pub(super) fn revoke() -> Result<()> {
-    let sessions = std::mem::take(
-        &mut *SESSIONS
-            .get_or_init(Default::default)
-            .lock()
-            .map_err(|_| DesktopError::Platform)?,
-    );
+    let mut guard = SESSIONS
+        .get_or_init(Default::default)
+        .lock()
+        .map_err(|_| DesktopError::Platform)?;
+    let sessions = std::mem::take(&mut *guard);
     let mut result = Ok(());
     for session in sessions.into_values() {
         if let Err(error) = release(Some(session)) {

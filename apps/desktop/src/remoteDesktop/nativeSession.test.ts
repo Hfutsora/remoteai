@@ -5,6 +5,20 @@ import { DEFAULT_SETTINGS } from '../../../../shared/remote-desktop/protocol';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 const call = vi.mocked(invoke);
+it('routes security changes to the active native lease and rejects writes after close', async () => {
+  const original = call.getMockImplementation()!;
+  const state = { lockOnDisconnect: true, muteHost: false };
+  call.mockImplementation(async (command, args) => command === 'remote_desktop_security'
+    ? state : original(command, args));
+  const session = new NativeDesktopSession(DEFAULT_SETTINGS, []);
+  await session.open();
+  await expect(session.security({ lockOnDisconnect: true })).resolves.toEqual(state);
+  expect(call).toHaveBeenCalledWith('remote_desktop_security', {
+    id: 'native-lease', change: { lockOnDisconnect: true },
+  });
+  await session.close();
+  await expect(session.security({ muteHost: true })).rejects.toThrow('桌面连接已结束');
+});
 it.each([false, true])('resizes a privacy=%s desktop and updates capture without replacing the peer', async privacyScreen => {
   const original = call.getMockImplementation()!;
   const resolution = { width: 1920, height: 1080 };

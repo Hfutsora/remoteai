@@ -5,6 +5,8 @@ import type { DesktopClient } from '../../../../../shared/remote-desktop/protoco
 import type { LocalDesktopClipboard } from '../../../../../shared/remote-desktop/clipboard';
 import { useDesktopSession } from '../../../../../shared/remote-desktop/useDesktopSession';
 import { DisplaySettings } from './DisplaySettings';
+import { SecuritySettings } from './SecuritySettings';
+import { desktopSecuritySettings } from '../../../../../shared/remote-desktop/securitySettings';
 import { DesktopTitlebar } from './DesktopTitlebar';
 import { useDesktopWindow, type DesktopWindowState } from './useDesktopWindow';
 import { DesktopStats } from './DesktopStats';
@@ -57,8 +59,9 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
   const statusAction = desktopStatusAction(session);
   const viewOnly = session.capabilities.control === false;
   const [display, setDisplay] = useState(false);
+  const [security, setSecurity] = useState(false);
   const [keyboard, setKeyboard] = useState(false);
-  const keyboardViewport = useKeyboardViewport(shown && (keyboard || display));
+  const keyboardViewport = useKeyboardViewport(shown && (keyboard || display || security));
   const [direct, setDirect] = useState(false);
   const [statsVisible, setStatsVisible] = useState(true);
   const hardware = useHardwarePointer();
@@ -66,7 +69,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
   const clipboard = useDesktopClipboard({ active: shown && !!session.stream,
     connected: active && !!session.stream,
     clipboard: session.clipboard, localClipboard });
-  const panelVisible = !viewOnly && !hardware && !direct && !display && !keyboard && !clipboard.open;
+  const panelVisible = !viewOnly && !hardware && !direct && !display && !security && !keyboard && !clipboard.open;
   const panel = useMousePanel(shown && panelVisible && !!session.stream);
   const video = useRef<HTMLVideoElement>(null);
   const playback = useDesktopPlayback(video, session.stream, session.muted);
@@ -127,7 +130,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
       {session.stream && !hardware && <DesktopMouse pointer={session.pointer} viewport={viewport} panel={panel}
         visible={panelVisible} wheel={wheel}
         horizontal={!!session.capabilities.horizontalScroll} />}
-      {session.status && <div className={`rd-status${session.stream ? '' : ' rd-status-empty'}`} role="status">
+      {session.status && !security && <div className={`rd-status${session.stream ? '' : ' rd-status-empty'}`} role="status">
         <span>{t(session.status)}</span>
         <button disabled={!connected || session.saving} onClick={statusAction.run}>
           {t(statusAction.label)}</button></div>}
@@ -138,6 +141,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
         stats={{ visible: statsVisible, toggle: () => setStatsVisible(!statsVisible) }}
         close={() => setDisplay(false)} />}
       {clipboard.open && <DesktopClipboardPanel clipboard={clipboard} />}
+      {security && <SecuritySettings {...desktopSecuritySettings(session, () => setSecurity(false))} />}
       <DesktopClipboardNotice clipboard={clipboard} />
       {viewOnly && session.stream && <div className="rd-clipboard-notice" role="status">{t('仅观看')}</div>}
       {!viewOnly && hardware && session.stream && !session.capabilities.keyboard && !clipboard.status
@@ -148,11 +152,11 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
       {!hardware && <button disabled={viewOnly} aria-label={t(direct ? '切换为鼠标模式' : '切换为触屏模式')} className="rd-mode"
         onClick={() => switchMode(!direct)}>{direct ? <Hand /> : <Mouse />}<span>{t(direct ? '触屏' : '鼠标')}</span></button>}
       <button disabled={viewOnly} aria-pressed={keyboard} onClick={() => {
-        setKeyboard(!keyboard); setDisplay(false); clipboard.setOpen(false);
+        setKeyboard(!keyboard); setDisplay(false); setSecurity(false); clipboard.setOpen(false);
       }}>
         <Keyboard /><span>{t('键盘')}</span></button>
-      <button aria-pressed={clipboard.open} onClick={() => {
-        clipboard.setOpen(!clipboard.open); setKeyboard(false); setDisplay(false);
+      <button aria-pressed={clipboard.open} disabled={!session.security.clipboardSync} onClick={() => {
+        clipboard.setOpen(!clipboard.open); setKeyboard(false); setDisplay(false); setSecurity(false);
       }}><Clipboard /><span>{t('剪贴板')}</span></button>
       <button aria-label={t(audioUnavailable ? '声音暂不可用' : silent ? '开启声音' : '静音')}
         aria-pressed={!silent && !audioUnavailable} disabled={audioUnavailable} onClick={toggleAudio}>
@@ -161,12 +165,11 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
         <Monitor /><span>{t('显示桌面')}</span></button>
       <button disabled={viewOnly} onClick={() => session.input({ kind: 'key', key: 'windows' })}>
         <Grid2X2 /><span>{t('所有窗口')}</span></button>
-      <button aria-pressed={session.privacyScreen}
-        disabled={viewOnly || session.saving || !session.stream || !session.capabilities.privacyScreen}
-        onClick={() => { void session.togglePrivacy(); }}>
-        <Shield /><span>{t('隐私屏')}</span></button>
+      <button aria-pressed={security} onClick={() => {
+        setSecurity(!security); setDisplay(false); setKeyboard(false); clipboard.setOpen(false);
+      }}><Shield /><span>{t('安全选项')}</span></button>
       <button aria-pressed={display} onClick={() => {
-        setDisplay(!display); setKeyboard(false); clipboard.setOpen(false);
+        setDisplay(!display); setKeyboard(false); setSecurity(false); clipboard.setOpen(false);
       }}>
         <Settings2 /><span>{t('显示')}</span></button>
       {!desktopWindow && document.fullscreenEnabled

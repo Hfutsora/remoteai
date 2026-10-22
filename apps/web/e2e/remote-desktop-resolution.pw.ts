@@ -10,7 +10,10 @@ test('changes ordinary and private desktop resolution without reconnecting', asy
   await expect.poll(() => page.locator('video').evaluate(video => video.videoWidth)).toBeGreaterThan(0);
   const before = await page.evaluate(() => ({ closed: window.desktopTest.closed, captures: window.desktopTest.captures }));
   for (const privateScreen of [false, true]) {
-    if (privateScreen) await page.getByRole('button', { name: '隐私屏', exact: true }).click();
+    if (privateScreen) {
+      await page.getByRole('button', { name: '安全选项', exact: true }).click();
+      await page.getByRole('button', { name: '启用', exact: true }).click();
+    }
     await page.getByRole('button', { name: '显示', exact: true }).click();
     const size = privateScreen ? '2560 × 1440' : '1920 × 1080';
     const choice = page.getByRole('combobox', { name: '分辨率', exact: true });

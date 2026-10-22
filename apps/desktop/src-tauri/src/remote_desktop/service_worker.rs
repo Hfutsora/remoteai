@@ -36,6 +36,11 @@ struct Update {
     profile: super::stream::Profile,
 }
 #[derive(Deserialize)]
+struct Security {
+    id: String,
+    change: super::security::Change,
+}
+#[derive(Deserialize)]
 struct Request {
     request: super::stream::OpenRequest,
 }
@@ -126,6 +131,10 @@ async fn execute(call: Call, root: PathBuf) -> Result<Value, String> {
                 )
                 .await?,
             )
+        }
+        "remote_desktop_security" => {
+            let args: Security = decode(call.args)?;
+            encode(super::security::remote_desktop_security(args.id, args.change).await?)
         }
         "remote_desktop_stream_close" | "remote_desktop_close" => {
             let args: Id = decode(call.args)?;

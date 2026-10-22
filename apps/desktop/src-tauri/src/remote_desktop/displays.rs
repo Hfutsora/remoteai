@@ -27,6 +27,8 @@ pub(crate) struct DisplayInfo {
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Opened {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub security: Option<super::security::Snapshot>,
     #[serde(default)]
     pub display_sessions: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

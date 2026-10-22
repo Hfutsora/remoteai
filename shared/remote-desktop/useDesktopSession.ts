@@ -6,6 +6,7 @@ import { DesktopDirectRetry } from './directRetry';
 import { changeDesktopDisplay } from './displayActions';
 import { waitingForDesktopPermission } from './permissionWait';
 import { sessionClipboard } from './sessionClipboard';
+import { useDesktopSecurity } from './useDesktopSecurity';
 import { DEFAULT_SETTINGS, validateSettings, type DesktopCapabilities, type DesktopClient, type DesktopDisplay,
   type DesktopResolution, type DesktopSettings, type DesktopStats }
   from './protocol';
@@ -19,6 +20,7 @@ interface Options {
 export function useDesktopSession({ client, active, connected = true, createPeer }: Options) {
   const available = useRef(connected); available.current = connected;
   const receiver = useRef<DesktopDisplaySession>();
+  const security = useDesktopSecurity(receiver, active);
   const settingsRef = useRef(DEFAULT_SETTINGS);
   const closing = useRef(Promise.resolve());
   const updating = useRef(false);
@@ -52,12 +54,14 @@ export function useDesktopSession({ client, active, connected = true, createPeer
   useEffect(() => {
     setStream(undefined); setStats(undefined); setHasAudio(false); setCapabilities({}); setPrivacyScreen(false);
     setResolutions([]);
+    security.receive();
     if (!active) return;
     if (!available.current) { recovery.current?.failed(DESKTOP_OFFLINE_STATUS); return; }
     const session = new DesktopDisplaySession({ client, createPeer, directRetry, stream: setStream, status: setStatus,
       connected: () => recovery.current?.connected(),
       failed: message => { pointer.release(); recovery.current?.failed(message); },
       stats: setStats, audio: setHasAudio, capabilities: setCapabilities, displays: value => {
+        if (value.security) security.receive(value.security);
         setPrivacyScreen(value.privacyScreen === true);
         setDisplays(value.displays ?? []);
         setResolutions(value.resolutions ?? []);
@@ -100,9 +104,9 @@ export function useDesktopSession({ client, active, connected = true, createPeer
     change: (size: DesktopResolution) => changeDesktopDisplay({ ...displayAction,
       allowed: capabilities.resolution === true && capabilities.control !== false,
       message: '正在切换分辨率，请稍候。', run: current => current.resolution(size) }) };
-  const clipboard = sessionClipboard(() => receiver.current, capabilities);
+  const clipboard = sessionClipboard(() => receiver.current, capabilities, security.clipboardSync);
   return { stream, status, stats, settings, displays, update, saving, pointer, muted, mute, hasAudio, clipboard, capabilities,
-    privacyScreen, togglePrivacy, resolution, frameRendered: () => receiver.current?.frameRendered(stream),
+    security, privacyScreen, togglePrivacy, resolution, frameRendered: () => receiver.current?.frameRendered(stream),
     waitingForPermission: waitingForDesktopPermission(status),
     input: (input: Parameters<DesktopDisplaySession['input']>[0]) => receiver.current?.input(input),
     inputFocus: async () => await receiver.current?.inputFocus() ?? null,

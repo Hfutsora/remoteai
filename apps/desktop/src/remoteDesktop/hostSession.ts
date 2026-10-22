@@ -5,6 +5,7 @@ import { NativeDesktopSession } from './nativeSession';
 import type { ConnectionDiagnostic } from '../../../../shared/remote-chat/diagnostics';
 import { desktopFailure } from '../../../../shared/remote-desktop/diagnostics';
 import type { DesktopCaptureSettings } from './displays';
+import type { DesktopSecurityChange } from '../../../../shared/remote-desktop/security';
 
 /** Keep a working capture fallback for Windows installations without a supported native encoder. */
 export class HostSession {
@@ -38,6 +39,7 @@ export class HostSession {
   private offer(offer: Awaited<ReturnType<NativeDesktopSession['open']>>) {
     const policy = offer.permissions;
     return { ...offer, capabilities: { platform: offer.platform, displaySessions: offer.displaySessions === true,
+      security: this.session instanceof NativeDesktopSession && !!offer.security && policy?.control === true,
       privacyScreen: this.session instanceof NativeDesktopSession && policy?.control !== false,
       resolution: this.session instanceof NativeDesktopSession && policy?.control !== false
         && !!offer.resolutions?.length,
@@ -49,6 +51,10 @@ export class HostSession {
   }
   signal(signal: DesktopSignal) { return this.session.signal(signal); }
   inputFocus() { return this.session.inputFocus(); }
+  async security(change: DesktopSecurityChange) {
+    if (!(this.session instanceof NativeDesktopSession)) throw new Error('这台电脑暂不支持此安全选项。');
+    return this.session.security(change);
+  }
   async privacy(enabled: boolean) {
     if (!(this.session instanceof NativeDesktopSession)) throw new Error('这台电脑暂不支持隐私屏。');
     return this.session.privacy(enabled);

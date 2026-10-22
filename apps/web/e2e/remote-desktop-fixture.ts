@@ -45,6 +45,8 @@ if (new URLSearchParams(location.search).has('three-displays')) {
 let selected = displays[0];
 const multiDisplay = new URLSearchParams(location.search).has('displays');
 export const desktopTest = { inputs: [] as DesktopInput[], settings: [] as DesktopSettings[],
+  security: { lockOnDisconnect: false, muteHost: false },
+  securityChanges: [] as object[], securityFail: false,
   inputFocus: null as DesktopInputFocus | null, inputFocusReads: 0,
   privacyChanges: [] as boolean[],
   resolutionChanges: [] as DesktopResolution[],
@@ -206,19 +208,28 @@ if (window.desktopRelayFixture) {
 // The privacy fixture substitutes display management only; media still uses the production peer.
 const privacyFixture = new URLSearchParams(location.search).has('privacy');
 const resolutionFixture = new URLSearchParams(location.search).has('resolutions');
+const securityFixture = new URLSearchParams(location.search).has('security');
 const resolutions = new URLSearchParams(location.search).has('many-resolutions')
   ? Array.from({ length: 25 }, (_, index) => ({ width: 640 + index * 80, height: 360 + index * 45 }))
   : [{ width: 1600, height: 900 }, { width: 1920, height: 1080 }, { width: 2560, height: 1440 }];
-const host = new RemoteDesktopHost(privacyFixture || resolutionFixture ? (settings, ice, expiry, diagnostic) => {
+const host = new RemoteDesktopHost(privacyFixture || resolutionFixture || securityFixture ? (settings, ice, expiry, diagnostic) => {
   const session = new HostSession(settings, ice, expiry, diagnostic);
   return {
     get closed() { return session.closed; },
     open: async () => {
       const offer = await session.open();
       return { ...offer, resolutions: resolutionFixture ? resolutions : [],
-        capabilities: { ...offer.capabilities, privacyScreen: privacyFixture, resolution: resolutionFixture } };
+        ...(securityFixture ? { security: { ...desktopTest.security } } : {}),
+        capabilities: { ...offer.capabilities, security: securityFixture,
+          privacyScreen: privacyFixture, resolution: resolutionFixture } };
     },
     signal: signal => session.signal(signal), update: settings => session.update(settings), close: () => session.close(),
+    security: async change => {
+      if (desktopTest.securityFail) throw new Error('安全选项未能保存，请重试。');
+      desktopTest.securityChanges.push(change);
+      desktopTest.security = { ...desktopTest.security, ...change };
+      return { ...desktopTest.security };
+    },
     privacy: async enabled => {
       if (enabled && desktopTest.privacyInstallationRequired) {
         throw new Error('请在电脑上确认安装，完成后再点一次隐私屏。');

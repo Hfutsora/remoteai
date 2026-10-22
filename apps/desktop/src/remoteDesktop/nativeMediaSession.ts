@@ -5,6 +5,7 @@ import { closeNativeMedia, openNativeMedia, nativeMediaIceServers }
   from '../../../../shared/remote-desktop/nativeMedia';
 import type { ConnectionDiagnostic } from '../../../../shared/remote-chat/diagnostics';
 import type { DesktopHostSession } from './hostRegistry';
+import type { DesktopSecurityChange } from '../../../../shared/remote-desktop/security';
 
 interface Options {
   id: string;
@@ -40,6 +41,10 @@ export class NativeMediaHostSession implements DesktopHostSession {
   }
   async update(settings: DesktopSettings) { await this.session?.update(settings); }
   async inputFocus() { return !this.stopped ? await this.session?.inputFocus?.() ?? null : null; }
+  async security(change: DesktopSecurityChange) {
+    if (!this.session?.security || this.stopped) throw new Error('这台电脑暂不支持此安全选项。');
+    return this.session.security(change);
+  }
   async privacy(enabled: boolean) {
     if (!this.session?.privacy || this.stopped) throw new Error('这台电脑暂不支持隐私屏。');
     return this.session.privacy(enabled);

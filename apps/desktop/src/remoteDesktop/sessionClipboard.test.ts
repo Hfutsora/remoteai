@@ -10,6 +10,18 @@ function fixture() {
   return { clipboard, input, receiver };
 }
 
+it('turning off synchronization keeps native editing and never transfers clipboard contents', async () => {
+  const { receiver, clipboard, input } = fixture();
+  const session = sessionClipboard(() => receiver, { clipboard: true, clipboardNative: true, control: true }, false);
+  await session.copy('copy'); await session.copy('cut'); await session.paste(true);
+  expect(clipboard.copy).not.toHaveBeenCalled(); expect(clipboard.paste).not.toHaveBeenCalled();
+  expect(clipboard.read).not.toHaveBeenCalled(); expect(clipboard.write).not.toHaveBeenCalled();
+  expect(input.mock.calls.map(([event]) => event.code)).toEqual([
+    'ControlLeft', 'KeyC', 'KeyC', 'ControlLeft', 'ControlLeft', 'KeyX', 'KeyX', 'ControlLeft',
+    'ControlLeft', 'KeyV', 'KeyV', 'ControlLeft',
+  ]);
+});
+
 it('uses native gestures even when clipboard sharing is disabled', async () => {
   const { receiver, clipboard } = fixture();
   const session = sessionClipboard(() => receiver, { clipboard: false, clipboardNative: true, control: true });

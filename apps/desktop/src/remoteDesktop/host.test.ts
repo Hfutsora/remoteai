@@ -13,10 +13,26 @@ vi.mock('./hostSession', () => ({ HostSession: vi.fn(class {
   inputFocus = vi.fn(async () => ({ top: 0.7, bottom: 0.72, lineHeight: 0.02 }));
   privacy = vi.fn(async (enabled: boolean) => ({ privacyScreen: enabled, displayId: 'private' }));
   resolution = vi.fn(async () => ({ displayId: 'selected' }));
+  security = vi.fn(async (change: object) => ({ lockOnDisconnect: false, muteHost: false, ...change }));
   close = vi.fn(() => { this.closed = true; });
 }) }));
 beforeEach(() => vi.clearAllMocks());
 const opening = { action: 'open', id: 'desktop-1', settings: DEFAULT_SETTINGS };
+
+it('validates security changes and never lets another viewer change a capture group', async () => {
+  const host = new RemoteDesktopHost(); host.register('alice', []); host.register('bob', []);
+  await host.request(opening, 'alice');
+  const request = { action: 'security', id: 'desktop-1', change: { lockOnDisconnect: true } };
+  await expect(host.request(request, 'bob')).rejects.toThrow('连接已结束');
+  for (const change of [null, [], { muteHost: 'true' }, { unexpected: true }]) {
+    await expect(host.request({ ...request, change }, 'alice')).rejects.toThrow('安全选项无效');
+  }
+  const session = vi.mocked(DesktopHostSession).mock.results[0].value;
+  expect(session.security).not.toHaveBeenCalled();
+  await expect(host.request(request, 'alice')).resolves.toEqual({ lockOnDisconnect: true, muteHost: false });
+  host.release();
+  await expect(host.request(request, 'alice')).rejects.toThrow();
+});
 
 it('exposes input geometry only to the owner of the active desktop session', async () => {
   const host = new RemoteDesktopHost(); host.register('alice', []); host.register('bob', []);

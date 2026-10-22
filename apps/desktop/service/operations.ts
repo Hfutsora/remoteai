@@ -8,6 +8,10 @@ class ServiceDesktop extends NativeDesktopSession {
   async open() {
     const offer = await super.open(); const policy = offer.permissions;
     return { ...offer, capabilities: { control: policy?.control ?? false, keyboard: policy?.control ?? false,
+      security: !!offer.security && policy?.control === true,
+      platform: offer.platform, displaySessions: offer.displaySessions === true,
+      privacyScreen: policy?.control === true, resolution: policy?.control === true && !!offer.resolutions?.length,
+      clipboardNative: true, clipboardFiles: offer.platform === 'windows', inputFocus: policy?.control === true,
       clipboard: !!policy && (policy.clipboardRead || policy.clipboardWrite), horizontalScroll: policy?.control ?? false } };
   }
 }

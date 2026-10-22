@@ -11,21 +11,22 @@ import { useNativeFileClipboard, type FileClipboardSession } from './useNativeFi
 
 interface Options {
   active: boolean; connected?: boolean;
-  clipboard: Pick<DesktopClipboard, 'read' | 'write' | 'copy' | 'paste'> & FileClipboardSession;
+  clipboard: Pick<DesktopClipboard, 'read' | 'write' | 'copy' | 'paste'> & FileClipboardSession & { syncEnabled?: boolean };
   localClipboard?: LocalDesktopClipboard;
 }
 export function useDesktopClipboard({ active, connected = active, clipboard, localClipboard }: Options) {
-  const { local, streaming } = useNativeFileClipboard(localClipboard ?? browserDesktopClipboard, clipboard, connected);
+  const sync = clipboard.syncEnabled !== false;
+  const { local, streaming } = useNativeFileClipboard(localClipboard ?? browserDesktopClipboard, clipboard, connected && sync);
   const [open, setOpen] = useState(false);
   const [received, setReceived] = useState<ClipboardContent>();
   const [needsSave, setNeedsSave] = useState(false);
-  const { busy, status, progress, setStatus, run, report } = useClipboardQueue(active, open);
+  const { busy, status, progress, setStatus, run, report } = useClipboardQueue(active && sync, open);
   const origin = useRef(new ClipboardOrigin());
   const pendingCopies = useRef(0);
   useEffect(() => {
-    if (!active) { setOpen(false); setReceived(undefined); setNeedsSave(false); }
+    if (!active || !sync) { setOpen(false); setReceived(undefined); setNeedsSave(false); }
     return () => { origin.current.reset(); pendingCopies.current = 0; };
-  }, [active]);
+  }, [active, sync]);
 
   const readLocalForPaste = () => local.read().catch(error => {
     if (error instanceof ClipboardReadUnavailableError) return undefined;
@@ -48,6 +49,10 @@ export function useDesktopClipboard({ active, connected = active, clipboard, loc
   };
   const copy = (shortcut?: 'copy' | 'cut') => {
     if (!active) return;
+    if (!sync) {
+      if (shortcut) void clipboard.copy(shortcut).catch(() => setStatus('剪贴板操作失败，请重试。'));
+      return;
+    }
     pendingCopies.current += 1;
     void run(async current => {
       setReceived(undefined); setNeedsSave(false); origin.current.remember();
@@ -78,6 +83,10 @@ export function useDesktopClipboard({ active, connected = active, clipboard, loc
     });
   };
   const pasteAutomatic = (read: () => Promise<ClipboardContent | undefined>) => {
+    if (!active) return;
+    if (!sync) {
+      void clipboard.paste(false).catch(() => setStatus('剪贴板操作失败，请重试。')); return;
+    }
     // Browser paste data may predate a copy still in flight. Such a gesture belongs to the remote clipboard.
     const copying = pendingCopies.current > 0;
     void run(async current => {

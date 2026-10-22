@@ -19,6 +19,9 @@ import { useDesktopZoom } from '../../../../../shared/remote-desktop/useDesktopZ
 import { useInputViewport } from '../../../../../shared/remote-desktop/useInputViewport';
 import { useDesktopInputFocus } from '../../../../../shared/remote-desktop/useDesktopInputFocus';
 import { DisplaySettings } from './DisplaySettings';
+import { SecuritySettings } from './SecuritySettings';
+import { desktopSecuritySettings } from '../../../../../shared/remote-desktop/securitySettings';
+import { useSecurityClipboard } from './useSecurityClipboard';
 import { DesktopKeyboard } from './DesktopKeyboard';
 import { DesktopStats } from './DesktopStats';
 import { useDesktopWindow } from './useDesktopWindow';
@@ -44,10 +47,13 @@ export function RemoteDesktop({ client, active, close }: {
   const orientation = useTerminalOrientation(active, { initialLandscape: true, waitForShow: Platform.OS === 'ios' });
   const window = useDesktopWindow(orientation.landscape);
   const [display, setDisplay] = useState(false);
+  const [security, setSecurity] = useState(false);
+  const securityClipboard = useSecurityClipboard(session.clipboard,
+    active && !!session.stream && session.security.clipboardSync);
   const [keyboard, setKeyboard] = useState(false);
   const [direct, setDirect] = useState(false);
   const [statsVisible, setStatsVisible] = useState(true);
-  const panelVisible = !viewOnly && !direct && !display && !keyboard;
+  const panelVisible = !viewOnly && !direct && !display && !security && !keyboard;
   const panel = useMousePanel(active && panelVisible && !!session.stream);
   const [source, setSource] = useState({ width: 16, height: 9 });
   const [size, setSize] = useState({ width: 400, height: 600 });
@@ -71,7 +77,8 @@ export function RemoteDesktop({ client, active, close }: {
     run: () => void; selected?: boolean; disabled?: boolean }[] = [
     { label: direct ? t("触屏") : t("鼠标"), action: direct ? t("切换为鼠标模式") : t("切换为触屏模式"),
       icon: direct ? 'hand-left-outline' : 'mouse', run: () => switchMode(!direct), selected: true, disabled: viewOnly },
-    { label: t("键盘"), icon: 'keypad-outline', run: () => { setKeyboard(!keyboard); setDisplay(false); },
+    { label: t("键盘"), icon: 'keypad-outline', run: () => {
+      setKeyboard(!keyboard); setDisplay(false); setSecurity(false); },
       selected: keyboard, disabled: viewOnly },
     { label: session.muted ? t("开启声音") : t("声音"),
       action: audioUnavailable ? t("声音暂不可用") : session.muted ? t("开启声音") : t("静音"),
@@ -79,10 +86,10 @@ export function RemoteDesktop({ client, active, close }: {
       run: () => session.mute(!session.muted), selected: !session.muted && !audioUnavailable, disabled: audioUnavailable },
     { label: t("显示桌面"), icon: 'desktop-outline', run: () => session.input({ kind: 'key', key: 'desktop' }), disabled: viewOnly },
     { label: t("所有窗口"), icon: 'grid-outline', run: () => session.input({ kind: 'key', key: 'windows' }), disabled: viewOnly },
-    { label: t("隐私屏"), icon: 'shield-checkmark-outline', run: () => { void session.togglePrivacy(); },
-      selected: session.privacyScreen,
-      disabled: viewOnly || session.saving || !session.stream || !session.capabilities.privacyScreen },
-    { label: t("显示"), icon: 'options-outline', run: () => { setDisplay(!display); setKeyboard(false); }, selected: display },
+    { label: t("安全选项"), icon: 'shield-checkmark-outline', run: () => {
+      setSecurity(!security); setDisplay(false); setKeyboard(false); }, selected: security },
+    { label: t("显示"), icon: 'options-outline', run: () => {
+      setDisplay(!display); setKeyboard(false); setSecurity(false); }, selected: display },
     { label: t("旋转"), icon: 'phone-landscape-outline', run: orientation.rotate },
     { label: t("关闭"), icon: 'close', run: close },
   ];
@@ -121,7 +128,7 @@ export function RemoteDesktop({ client, active, close }: {
             {session.stream && <DesktopMouse pointer={session.pointer} viewport={viewport} panel={panel}
               visible={panelVisible} wheel={wheel}
               horizontal={!!session.capabilities.horizontalScroll} />}
-            {!!(session.status || orientation.error) && <View pointerEvents="box-none" style={s.messageLayer}>
+            {!security && !!(session.status || orientation.error) && <View pointerEvents="box-none" style={s.messageLayer}>
               <View style={s.message}>
                 <Text accessibilityRole="alert" style={[s.text, s.messageText]}>
                   {t(session.status || orientation.error)}</Text>
@@ -135,6 +142,8 @@ export function RemoteDesktop({ client, active, close }: {
               saving={session.saving || !session.stream}
               stats={{ visible: statsVisible, toggle: () => setStatsVisible(!statsVisible) }}
               close={() => setDisplay(false)} />}
+            {security && <SecuritySettings {...desktopSecuritySettings(session, () => setSecurity(false))}
+              clipboardActions={securityClipboard} />}
           </View>
           {orientation.landscape
             ? <ScrollView style={s.rail} contentContainerStyle={[s.toolbar, s.railContent]}

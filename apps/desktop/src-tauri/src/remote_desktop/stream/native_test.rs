@@ -57,6 +57,12 @@ async fn native_capture_reaches_a_real_browser_decoder() {
     let (stream, offer) = Stream::open(path, request)
         .await
         .expect("native capture and encoder");
+    if std::env::var_os("CSW_NATIVE_TEST_MUTE_HOST").is_some() {
+        let change = serde_json::from_value(serde_json::json!({ "muteHost": true })).unwrap();
+        crate::remote_desktop::security::remote_desktop_security(id.clone(), change)
+            .await
+            .expect("host speaker mute");
+    }
     if std::env::var("CSW_NATIVE_TEST_CODEC").as_deref() == Ok("h265") {
         assert_eq!(
             stream.profile.borrow().codec,
@@ -91,6 +97,10 @@ async fn native_capture_reaches_a_real_browser_decoder() {
     let connection = stream.stats.lock().await.connection;
     stopped.store(true, Ordering::Relaxed);
     stream.close().await;
+    // Await security cleanup before this test's runtime exits, including on a failed browser assertion.
+    crate::remote_desktop::remote_desktop_close(id)
+        .await
+        .expect("native lease cleanup");
     worker.join().expect("test bridge stopped");
     let output = result.expect("browser process");
     println!("{}", String::from_utf8_lossy(&output.stdout));

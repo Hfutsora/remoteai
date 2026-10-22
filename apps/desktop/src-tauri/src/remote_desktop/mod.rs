@@ -20,6 +20,7 @@ mod lease;
 mod macos;
 #[cfg(any(target_os = "macos", test))]
 mod macos_keymap;
+pub(crate) mod security;
 mod sessions;
 #[cfg(target_os = "macos")]
 use macos::{input as platform_input, monitors};
@@ -128,6 +129,8 @@ struct Session {
     display: monitors::Monitor,
     #[cfg(any(windows, target_os = "macos"))]
     input: platform_input::InputState,
+    #[cfg(windows)]
+    security: security::Guard,
 }
 
 #[derive(Deserialize)]
@@ -280,7 +283,12 @@ fn open(
         #[cfg(not(windows))]
         let resolutions = vec![];
         let id = begin_session(display, permissions, expires_at, capture_group)?;
+        #[cfg(windows)]
+        let security = Some(with_lease(&id, |session| session.security.snapshot())?);
+        #[cfg(not(windows))]
+        let security = None;
         Ok(displays::Opened {
+            security,
             display_sessions: true,
             resolutions,
             platform: Some(if cfg!(target_os = "macos") {

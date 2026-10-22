@@ -10,8 +10,9 @@ const clipboard = { read: vi.fn(), write: vi.fn(), copy: vi.fn(), paste: vi.fn()
 const localClipboard = { files: true, read: vi.fn(), write: vi.fn() };
 let state: ReturnType<typeof useDesktopClipboard>;
 let root: Root;
-function Harness({ active = true, native = true }) {
-  state = useDesktopClipboard({ active, clipboard, localClipboard: native ? localClipboard : undefined });
+function Harness({ active = true, native = true, sync = true }) {
+  state = useDesktopClipboard({ active, clipboard: { ...clipboard, syncEnabled: sync },
+    localClipboard: native ? localClipboard : undefined });
   return null;
 }
 function deferred<T>() {
@@ -30,6 +31,17 @@ beforeEach(() => {
   act(() => root.render(<Harness />));
 });
 afterEach(() => { act(() => root.unmount()); vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+it('disabling sync cancels a queued transfer and blocks late writes to the local clipboard', async () => {
+  const reading = deferred<ClipboardContent>(); clipboard.copy.mockReturnValueOnce(reading.promise);
+  await act(async () => { state.copy('copy'); state.pasteLocal(); });
+  act(() => root.render(<Harness sync={false} />));
+  await act(async () => reading.resolve(text('late private contents')));
+  expect(localClipboard.write).not.toHaveBeenCalled(); expect(clipboard.write).not.toHaveBeenCalled();
+  localClipboard.read.mockClear();
+  await act(async () => state.pasteShortcut!());
+  expect(localClipboard.read).not.toHaveBeenCalled(); expect(clipboard.paste).toHaveBeenLastCalledWith(false);
+});
 
 it('queues consecutive paste gestures without overlapping or losing transfers', async () => {
   const first = deferred<void>(); clipboard.write.mockImplementationOnce(() => first.promise);

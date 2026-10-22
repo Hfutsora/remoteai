@@ -1,4 +1,5 @@
 import { DesktopReceiver, type ReceiverOptions } from './receiver';
+import type { DesktopSecurityChange } from './security';
 import type { DesktopCapabilities, DesktopDisplays, DesktopResolution, DesktopSettings, DesktopStats } from './protocol';
 
 export const BACKGROUND_DISPLAY_FPS = 1;
@@ -27,6 +28,12 @@ export class DesktopDisplaySession {
   constructor(private readonly options: ReceiverOptions) {}
 
   get displayId() { return this.selected?.displays.displayId; }
+  async security(change: DesktopSecurityChange) {
+    if (this.stopped || !this.selected || this.switching) throw new Error('请等待桌面连接后重试。');
+    const state = await this.selected.receiver.security(change);
+    for (const entry of this.sessions) entry.displays.security = state;
+    return state;
+  }
   get clipboard() {
     if (!this.selected) throw new Error('请等待桌面连接后重试。');
     return this.selected.receiver.clipboard;
@@ -57,7 +64,7 @@ export class DesktopDisplaySession {
       audio: value => { entry.audio = value; if (visible()) this.options.audio?.(value); },
       capabilities: value => { entry.capabilities = value; if (visible()) this.options.capabilities?.(value); },
       displays: value => {
-        entry.displays = value;
+        entry.displays = { ...entry.displays, ...value };
         entry.settings = { ...entry.settings, displayId: value.displayId };
         if (visible()) this.options.displays?.(value);
       },

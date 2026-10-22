@@ -6,6 +6,8 @@ use crate::remote_desktop::{
 
 fn session(display: &str, group: Option<&str>) -> Session {
     Session {
+        #[cfg(windows)]
+        security: Default::default(),
         id: format!("lease-{display}"),
         capture_group: group.map(String::from),
         permissions: Default::default(),

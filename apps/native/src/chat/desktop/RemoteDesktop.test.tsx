@@ -36,6 +36,7 @@ vi.mock('../terminal/useTerminalOrientation', () => ({ useTerminalOrientation: (
 vi.mock('../../../../../shared/remote-desktop/useDesktopSession', () => ({ useDesktopSession: (options: unknown) => {
   runtime.session(options);
   return { stream: runtime.stream, pointer: {}, input: runtime.input, hasAudio: true, muted: false, mute: runtime.mute,
+    security: { clipboardSync: true }, clipboard: {},
     status: runtime.status, waitingForPermission: runtime.waitingForPermission, retry: runtime.retry,
     privacyScreen: runtime.privacy, togglePrivacy: runtime.togglePrivacy, frameRendered: runtime.frameRendered,
     capabilities: { control: !runtime.viewOnly, keyboard: !runtime.viewOnly, privacyScreen: runtime.privacyAvailable } };
@@ -51,6 +52,8 @@ vi.mock('./useTrackpad', () => ({ useTrackpad: () => ({ panHandlers: {} }) }));
 vi.mock('./MousePad', () => ({ DesktopMouse: 'DesktopMouse' }));
 vi.mock('./DesktopStats', () => ({ DesktopStats: 'DesktopStats' }));
 vi.mock('./DisplaySettings', () => ({ DisplaySettings: 'DisplaySettings' }));
+vi.mock('./SecuritySettings', () => ({ SecuritySettings: 'SecuritySettings' }));
+vi.mock('./useSecurityClipboard', () => ({ useSecurityClipboard: () => ({}) }));
 vi.mock('./DesktopKeyboard', () => ({ DesktopKeyboard: 'DesktopKeyboard' }));
 
 interface Props {
@@ -111,16 +114,13 @@ it.each(['ios', 'android'] as const)('coordinates automatic landscape with modal
   expect(runtime.onShow).toHaveBeenCalledOnce();
 });
 
-it.each(['ios', 'android'] as const)('shows the opt-in privacy switch with capability gating on %s', platform => {
+it.each(['ios', 'android'] as const)('opens security options without immediately changing privacy on %s', platform => {
   Platform.OS = platform;
-  let button = render().find(node => node.props.accessibilityLabel === '隐私屏')!;
-  expect(button.props.accessibilityState?.selected).toBe(false);
-  button.props.onPress!(); expect(runtime.togglePrivacy).toHaveBeenCalledOnce();
-  runtime.privacy = true;
-  expect(render().find(node => node.props.accessibilityLabel === '隐私屏')!.props.accessibilityState?.selected).toBe(true);
-  runtime.privacyAvailable = false;
-  button = render().find(node => node.props.accessibilityLabel === '隐私屏')!;
-  expect(button.props.disabled).toBe(true);
+  const button = render().find(node => node.props.accessibilityLabel === '安全选项')!;
+  expect(button.props.disabled).not.toBe(true);
+  button.props.onPress!();
+  expect(runtime.dimensions).toHaveBeenCalledWith(true);
+  expect(runtime.togglePrivacy).not.toHaveBeenCalled();
 });
 
 it.each(['ios', 'android'] as const)('keeps video and privacy retry available while installation awaits approval on %s',
@@ -132,25 +132,26 @@ it.each(['ios', 'android'] as const)('keeps video and privacy retry available wh
     expect(alert.props.children).toBe(runtime.status);
     expect(StyleSheet.flatten(alert.props.style)).toMatchObject({ maxWidth: 400, flexShrink: 1 });
     expect(elements.some(node => node.type === RTCView)).toBe(true);
-    const button = elements.find(node => node.props.accessibilityLabel === '隐私屏')!;
+    const button = elements.find(node => node.props.accessibilityLabel === '安全选项')!;
     expect(button.props.disabled).toBeFalsy();
     expect(button.props.accessibilityState?.selected).toBe(false);
     button.props.onPress!();
-    expect(runtime.togglePrivacy).toHaveBeenCalledOnce();
+    expect(runtime.togglePrivacy).not.toHaveBeenCalled();
     const retry = elements.find(node => node.type === Pressable && nodes(node.props.children)
       .some(child => child.type === Text && child.props.children === '重试隐私屏'))!;
     retry.props.onPress!();
-    expect(runtime.togglePrivacy).toHaveBeenCalledTimes(2);
+    expect(runtime.togglePrivacy).toHaveBeenCalledOnce();
     expect(runtime.retry).not.toHaveBeenCalled();
   });
 
 it('keeps display controls available but disables remote input in view-only mode', () => {
   runtime.viewOnly = true;
   const elements = render();
-  for (const label of ['键盘', '显示桌面', '所有窗口', '隐私屏']) {
+  for (const label of ['键盘', '显示桌面', '所有窗口']) {
     expect(elements.find(node => node.props.accessibilityLabel === label)?.props.disabled).toBe(true);
   }
   expect(elements.find(node => node.props.accessibilityLabel === '显示')?.props.disabled).not.toBe(true);
+  expect(elements.find(node => node.props.accessibilityLabel === '安全选项')?.props.disabled).not.toBe(true);
 });
 
 it('uses native iOS video, forwards ICE configuration and keeps control actions available', () => {
