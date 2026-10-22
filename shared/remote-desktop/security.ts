@@ -45,7 +45,7 @@ export function autoUnlockDescription(state?: DesktopSecurity['autoUnlock']) {
     case 'failed': return '自动解锁已暂停，请检查 Windows 账号和密码后重新保存。';
     case 'unavailable': return '自动解锁暂时不可用，请重新连接后重试。';
     case 'ready': return '连接时自动登录或解锁远程电脑。';
-    default: return '设置 Windows 登录密码后，连接时自动解锁。';
+    default: return '首次开启时，在此填写远程电脑的 Windows 账号和密码。';
   }
 }
 

@@ -21,7 +21,8 @@ export const remoteDesktopMessages: Record<string, string> = {
   '自动解锁暂时不可用，请重新连接后重试。': 'Automatic unlock is unavailable. Reconnect and try again.',
   '自动解锁状态未能更新，请重新连接后查看。': 'Unable to refresh the unlock status. Reconnect to check it.',
   '连接时自动登录或解锁远程电脑。': 'Automatically sign in or unlock the computer when connecting.',
-  '设置 Windows 登录密码后，连接时自动解锁。': 'Set up your Windows password to unlock automatically when connecting.',
+  '首次开启时，在此填写远程电脑的 Windows 账号和密码。':
+    'When first enabling this, enter the remote computer’s Windows account and password here.',
   '远程结束后锁屏': 'Lock when disconnected',
   '连接结束或断开后，自动锁定远程电脑。': 'Lock the remote computer when the connection ends or is lost.',
   '被控端静音运行': 'Mute remote speakers',
