@@ -45,6 +45,30 @@ afterEach(async () => {
   container.remove(); controller.dispose(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
+it.each(["ready", "offline"] as const)("opens local search only from its connected header button: %s", async connection => {
+  state = { ...state, connection };
+  await render();
+  const search = container.querySelector<HTMLButtonElement>('button[aria-label="搜索对话"]')!;
+  expect(search.disabled).toBe(connection !== "ready");
+  expect(document.querySelector('input[aria-label="搜索对话"]')).toBeNull();
+  await act(async () => search.click());
+  expect(Boolean(document.querySelector('[role="dialog"]'))).toBe(connection === "ready");
+  expect(container.querySelector('input[aria-label="搜索对话"]')).toBeNull();
+});
+
+it("clears the local search when closing the dialog while preserving the archive scope", async () => {
+  const filter = vi.spyOn(controller, "filter").mockImplementation(() => {});
+  state = { ...state, search: "会话", archived: true };
+  await render();
+  const search = container.querySelector<HTMLButtonElement>('button[aria-label="搜索对话"]')!;
+  await act(async () => search.click());
+  expect(document.querySelector<HTMLInputElement>('input[aria-label="搜索对话"]')!.value).toBe("会话");
+  const close = document.querySelector<HTMLButtonElement>('.ant-modal-close')!;
+  await act(async () => close.click());
+  expect(filter).toHaveBeenCalledExactlyOnceWith("", true);
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+});
+
 it("offers a compact confirmation and sends the selected conversation to trash", async () => {
   await render();
   await openThreadMenu();

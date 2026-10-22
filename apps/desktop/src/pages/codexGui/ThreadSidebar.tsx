@@ -3,7 +3,7 @@ import { useGuiLanguage } from '../../i18n/useGuiLanguage';
 import { useMemo, useState, type ReactNode } from "react";
 import { App, Button, Input, Modal, Segmented, Spin } from "antd";
 import { ThreadContextMenu } from "../../../../../shared/chat/ThreadContextMenu";
-import { Archive, Pencil, Pin, RefreshCw, Split, Trash2 } from "lucide-react";
+import { Archive, Pencil, Pin, RefreshCw, Search, Split, Trash2 } from "lucide-react";
 import type { GuiController } from "./controller";
 import type { GuiState, Thread } from "./types";
 import { ThreadGroup } from "./ThreadGroup";
@@ -31,12 +31,17 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
   view?: GuiView; onNavigate?: (view: GuiView) => void; scheduledTasksAvailable?: boolean;
 } & GuiFocusMode) {
   const language = useGuiLanguage();
-  const pagination = useThreadPagination({ state, controller, enabled: true });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const pagination = useThreadPagination({ state, controller, enabled: !searchOpen });
   const [renaming, setRenaming] = useState<Thread | null>(null);
   const [deleting, setDeleting] = useState<Thread | null>(null);
   const { message } = App.useApp();
   const [name, setName] = useState("");
   const { views, toggle } = useThreadGroupViews();
+  const closeSearch = () => {
+    setSearchOpen(false);
+    if (state.search) controller.filter("", state.archived);
+  };
   const groups = useMemo(() => threadGroups(state),
     [state.threads, state.pins, state.projects, state.pinnedProjects, state.conversations, state.pendingRequest, language]);
   const renderThread = (thread: Thread) => {
@@ -79,16 +84,16 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
         <FocusModeButton focused={focused} onToggleFocus={onToggleFocus} />
         <Button type="text" size="small" icon={<RefreshCw size={15} />} aria-label={guiText("刷新对话")}
           loading={state.loading} disabled={state.connection !== "ready"} onClick={() => void controller.refresh()} />
+        <Button type="text" size="small" icon={<Search size={15} />} aria-label={guiText("搜索对话")}
+          disabled={state.connection !== "ready"} onClick={() => { onNavigate("conversation"); setSearchOpen(true); }} />
       </div>
     </div>
     <GuiNavigation view={view} sending={state.sending} onNavigate={onNavigate}
       scheduledTasksAvailable={scheduledTasksAvailable}
       onNewConversation={() => { onNavigate("conversation"); controller.newConversation(); }} />
-    <ThreadSearch state={state} controller={controller}
-      onFocus={() => onNavigate('conversation')} />
     <Segmented className={styles.threadFilter} block size="small" value={state.archived ? "archived" : "recent"}
       options={[{ label: guiText("最近"), value: "recent" }, { label: guiText("已归档"), value: "archived" }]}
-      onChange={(value) => controller.filter(state.search, value === "archived")} disabled={state.connection !== "ready"} />
+      onChange={(value) => controller.filter("", value === "archived")} disabled={state.connection !== "ready"} />
     <div className={styles.threadList} aria-busy={state.loading} {...pagination}>
       {groups.map((group) => {
         const key = `${state.archived ? "archived" : "recent"}:${group.id}`;
@@ -111,6 +116,7 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
       {state.cursor && <ThreadPagination loading={state.loading} />}
     </div>
     {accountPicker}
+    {searchOpen && <ThreadSearch state={state} controller={controller} onClose={closeSearch} />}
     <Modal title={guiText("删除这条对话？")} open={Boolean(deleting)} width={400} okText={guiText("移入回收站")} cancelText={guiText("取消")}
       confirmLoading={Boolean(state.deleting)} okButtonProps={{ danger: true }}
       closable={!state.deleting} maskClosable={!state.deleting} keyboard={!state.deleting}

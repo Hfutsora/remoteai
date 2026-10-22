@@ -1,23 +1,79 @@
-import { useEffect, useState } from 'react';
-import { guiText } from '../../i18n/guiText';
-import { SidebarSearchInput } from '../../../../../shared/chat/SidebarSearchInput';
-import type { GuiController } from './controller';
-import type { GuiState } from './types';
+import { guiText } from "../../i18n/guiText";
+import { useEffect, useRef, useState } from "react";
+import { Button, Input, Modal, Spin, type InputRef } from "antd";
+import { ArrowUpRight, Folder, MessageSquare, Search } from "lucide-react";
+import type { GuiController } from "./controller";
+import type { GuiState } from "./types";
+import { projectName, threadTitle } from "./ThreadSidebar";
+import styles from "./threadSearch.module.less";
 
 const SEARCH_DELAY_MS = 300;
+const SEARCH_MODAL_WIDTH = 720;
 
-export function ThreadSearch({ state, controller, onFocus }: {
-  state: GuiState; controller: GuiController; onFocus: () => void;
-}) {
+interface Props {
+  state: GuiState;
+  controller: GuiController;
+  onClose: () => void;
+}
+
+export function ThreadSearch({ state, controller, onClose }: Props) {
   const [query, setQuery] = useState(state.search);
   const search = query.trim();
-  useEffect(() => { setQuery(state.search); }, [state.search]);
+  const input = useRef<InputRef>(null);
+  const loading = state.loading || search !== state.search;
+  let sectionTitle = state.archived ? guiText("已归档对话") : guiText("最近对话");
+  if (search) sectionTitle = guiText("搜索结果");
   useEffect(() => {
-    if (search === state.search || state.connection !== 'ready') return;
+    if (search === state.search || state.connection !== "ready") return;
     const timer = setTimeout(() => controller.filter(search, state.archived), SEARCH_DELAY_MS);
     return () => clearTimeout(timer);
   }, [search, state.search, state.archived, state.connection, controller]);
-  return <SidebarSearchInput inset value={query} onChange={setQuery} label={guiText('搜索对话')}
-    clearLabel={guiText('清空搜索')} onFocus={onFocus}
-    onSubmit={() => { if (state.connection === 'ready') controller.filter(search, state.archived); }} />;
+
+  return <Modal open centered className={styles.modal} title={guiText("搜索对话")} footer={null}
+    width={SEARCH_MODAL_WIDTH} onCancel={onClose}
+    afterOpenChange={(open) => { if (open) input.current?.focus(); }}>
+    <p className={styles.description}>{guiText("找到之前的对话，接着聊。")}</p>
+    <Input ref={input} className={styles.search} prefix={<Search size={20} aria-hidden="true" />}
+      placeholder={guiText("输入关键词，搜索对话")} aria-label={guiText("搜索对话")}
+      value={query} allowClear onChange={(event) => setQuery(event.target.value)} />
+    <div className={styles.sectionHeading}>
+      <span>{sectionTitle}</span>
+      {!loading && <span className={styles.count}>
+        {state.threads.length}{state.cursor ? "+" : ""} {guiText("条对话")}</span>}
+    </div>
+    <div className={styles.results} aria-label={guiText("对话列表")} aria-busy={loading}>
+      <ThreadSearchResults state={state} controller={controller} onClose={onClose} search={search} loading={loading} />
+      {state.cursor && <Button type="text" block loading={loading} disabled={state.connection !== "ready"}
+        onClick={() => void controller.refresh(true)}>{guiText("加载更多")}</Button>}
+    </div>
+    <div className={styles.footer}><span>{guiText("选择对话，继续聊天")}</span><span><kbd>Esc</kbd> {guiText("关闭")}</span></div>
+  </Modal>;
+}
+
+function ThreadSearchResults({ state, controller, onClose, search, loading }: Props & {
+  search: string; loading: boolean;
+}) {
+  if (loading) return <div className={styles.empty} role="status">
+    <Spin size="small" /><span>{guiText("正在查找对话…")}</span>
+  </div>;
+  if (!state.threads.length) return <div className={styles.empty} role="status">
+    <Search size={28} strokeWidth={1.5} aria-hidden="true" />
+    <span>{search ? guiText("没有找到匹配的对话") : guiText("还没有对话")}</span>
+    {search && <span className={styles.emptyHint}>{guiText("换个关键词试试")}</span>}
+  </div>;
+  return <>{state.threads.map((thread) => <button key={thread.id} className={styles.result}
+    type="button" aria-label={threadTitle(thread)}
+    disabled={state.sending || state.connection !== "ready"} onClick={() => {
+      void controller.select(thread.id);
+      onClose();
+    }}>
+    <span className={styles.threadIcon}><MessageSquare size={18} aria-hidden="true" /></span>
+    <span className={styles.details}>
+      <span className={styles.title}>{threadTitle(thread)}</span>
+      <span className={styles.project}><Folder size={12} aria-hidden="true" />
+        <span>{projectName(thread.cwd)}</span>
+      </span>
+    </span>
+    <ArrowUpRight className={styles.openIcon} size={17} aria-hidden="true" />
+  </button>)}</>;
 }

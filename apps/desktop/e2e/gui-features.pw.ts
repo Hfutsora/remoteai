@@ -81,29 +81,61 @@ async function openGui(page: Page, suffix = "") {
   if (await expand.isVisible()) await expand.click();
 }
 
-test('searches local chats directly in the sidebar without opening a dialog', async ({ page }) => {
+test('opens local search from the header icon and restores the list after closing', async ({ page }) => {
   await mockCommands(page);
   await page.setViewportSize({ width: 1280, height: 900 });
   await openGui(page);
-  const search = page.getByRole('textbox', { name: '搜索对话', exact: true });
-  await search.click();
-  await expect(search).toBeFocused();
+  const trigger = page.getByRole('button', { name: '搜索对话', exact: true });
+  await expect(page.getByRole('textbox', { name: '搜索对话', exact: true })).toHaveCount(0);
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.screenshot({ path: '../../.codex-tmp/local-search-sidebar.png' });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: '搜索对话', exact: true });
+  const search = dialog.getByRole('textbox', { name: '搜索对话', exact: true });
+  await expect(search).toBeFocused();
+  await expect(search).toBeInViewport();
   await search.fill('不存在');
-  await expect(page.getByText('没有找到匹配的对话')).toBeVisible();
+  await expect(dialog.getByText('没有找到匹配的对话')).toBeVisible();
   await search.fill('保留');
+  const result = dialog.getByRole('button', { name: '保留的对话', exact: true });
+  await expect(result).toBeInViewport();
+  await page.screenshot({ path: '../../.codex-tmp/local-search-dialog.png', animations: 'disabled' });
+  await result.click();
+  await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: '保留的对话', exact: true })).toBeVisible();
-  await page.screenshot({ path: '../../.codex-tmp/local-inline-search.png' });
-  await page.getByRole('button', { name: '保留的对话', exact: true }).click();
-  await expect(search).toHaveValue('保留');
+  await trigger.click();
+  await expect(search).toBeEmpty();
+  await search.fill('不存在');
+  await expect(dialog.getByText('没有找到匹配的对话')).toBeVisible();
+  await search.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: '保留的对话', exact: true })).toBeVisible();
+  await trigger.click();
+  await expect(search).toBeEmpty();
+});
+
+test('keeps archived local search in the dialog at a narrow desktop width', async ({ page }) => {
+  await mockCommands(page);
+  await page.setViewportSize({ width: 800, height: 700 });
+  await openGui(page);
   await page.locator('.ant-segmented-item').filter({ hasText: '已归档' }).click();
-  await expect(page.getByText('没有找到匹配的对话')).toBeVisible();
-  await expect(search).toHaveValue('保留');
+  const trigger = page.getByRole('button', { name: '搜索对话', exact: true });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: '搜索对话', exact: true });
+  const search = dialog.getByRole('textbox', { name: '搜索对话', exact: true });
+  await expect(dialog.getByText('已归档对话', { exact: true })).toBeVisible();
+  await search.fill('保留');
+  await expect(dialog.getByText('没有找到匹配的对话')).toBeVisible();
+  await search.fill('');
+  await expect(dialog.getByText('还没有对话')).toBeVisible();
+  await expect(search).toBeInViewport();
+  await page.screenshot({ path: '../../.codex-tmp/local-search-dialog-narrow.png', animations: 'disabled' });
+  await search.press('Escape');
   await page.locator('.ant-segmented-item').filter({ hasText: '最近' }).click();
   await expect(page.getByRole('button', { name: '保留的对话', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '清空搜索', exact: true }).click();
+  await trigger.click();
   await expect(search).toBeEmpty();
-  await expect(search).toBeFocused();
+  await expect(dialog.getByText('最近对话', { exact: true })).toBeVisible();
 });
 
 test("local chat sidebar resizes, remembers its width and adapts to the available space", async ({ page }) => {
