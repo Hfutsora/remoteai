@@ -3,17 +3,19 @@ import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import type { ThreadActionsModel } from '../../../../shared/remote-chat/client/useThreadActions';
 import { THREAD_NAME_LIMIT } from '../../../../shared/remote-chat/client/threadActions';
 import { t } from '../i18n';
+import { useDesktopLayout } from '../useDesktopLayout';
 import './thread-actions.css';
 
 export function ChatThreadActions({ actions }: { actions: ThreadActionsModel }) {
-  if (!actions.target) return null;
+  const desktop = useDesktopLayout();
+  if (!actions.target || (desktop && actions.view === 'menu')) return null;
   const { view, name, busy, error, reason } = actions;
   const archive = actions.target.archived ? 'unarchive' : 'archive';
   const titles = { menu: t('操作 - {name}', { name: actions.target.title }),
     rename: t('重命名对话'), delete: t('删除这条对话？') };
   const hint = reason(view === 'menu' ? archive : view);
   return <AdaptiveSheet open title={titles[view]} truncateTitle width={400} onClose={actions.close}
-    onBack={view !== 'menu' && !busy ? () => actions.changeView('menu') : undefined}>
+    onBack={!desktop && view !== 'menu' && !busy ? () => actions.changeView('menu') : undefined}>
     <div className="chat-thread-actions" aria-busy={busy}>
       {view === 'menu' && <>
         <button type="button" disabled={!!reason('rename')} onClick={() => actions.changeView('rename')}>

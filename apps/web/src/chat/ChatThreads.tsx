@@ -61,7 +61,7 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
               disabled={state.sending} onClick={() => newChat(group)}><Plus size={18} aria-hidden="true" /></button>}
           </div>
           {group.data.map(thread => <ChatThreadRow key={thread.id} thread={thread} state={state}
-            select={() => { void controller.select(thread); onClose(); }} openActions={() => actions.open(thread)} />)}
+            select={() => { void controller.select(thread); onClose(); }} actions={actions} />)}
           {group.canToggle && <button type="button" className="chat-group-more" aria-expanded={group.expanded}
             aria-label={`${group.expanded ? t("收起") : t("展开显示")}：${group.label}`} onClick={() => toggle(group.cwd)}>
             {group.expanded ? t("收起") : t("展开显示")}</button>}

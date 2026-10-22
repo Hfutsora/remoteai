@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { App, Dropdown, Input, Modal } from 'antd';
+import { App, Input, Modal } from 'antd';
+import { ThreadContextMenu } from '../../../../../../shared/chat/ThreadContextMenu';
 import { Archive, Pencil, Pin, Split, Trash2 } from 'lucide-react';
 import { guiText } from '../../../i18n/guiText';
 import type { ChatController, ChatState, Thread } from '../../../../../web/src/chat/types';
@@ -32,13 +33,13 @@ export function RemoteThreadMenu({ thread, state, controller, actions, onClose, 
       disabled: disabled(archive) },
     { key: 'delete', label: guiText('删除'), icon: <Trash2 size={14} />, danger: true, disabled: disabled('delete') },
   ];
-  return <Dropdown trigger={['contextMenu']} overlayStyle={{ maxWidth: 400 }} menu={{ items,
+  return <ThreadContextMenu menu={{ items,
     onClick: ({ key }) => {
       if (key === 'pin') run(pin);
       if (key === 'archive') run(archive);
       if (key === 'fork') void controller.forkConversation(thread).then(opened => { if (opened) onClose(); });
       if (key === 'rename' || key === 'delete') { actions.open(thread); actions.changeView(key); }
-    } }}>{children}</Dropdown>;
+    } }}>{children}</ThreadContextMenu>;
 }
 
 export function RemoteThreadDialogs({ actions }: { actions: ThreadActionsModel }) {

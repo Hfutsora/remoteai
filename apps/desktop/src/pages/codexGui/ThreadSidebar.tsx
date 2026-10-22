@@ -1,7 +1,8 @@
 import { guiText } from "../../i18n/guiText";
 import { useGuiLanguage } from '../../i18n/useGuiLanguage';
 import { useMemo, useState, type ReactNode } from "react";
-import { App, Button, Dropdown, Input, Modal, Segmented, Spin } from "antd";
+import { App, Button, Input, Modal, Segmented, Spin } from "antd";
+import { ThreadContextMenu } from "../../../../../shared/chat/ThreadContextMenu";
 import { Archive, Pencil, Pin, RefreshCw, Split, Trash2 } from "lucide-react";
 import type { GuiController } from "./controller";
 import type { GuiState, Thread } from "./types";
@@ -52,7 +53,7 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
         disabled: running || busy || needsInput || Boolean(state.queued[thread.id]?.length)
           || state.connection !== "ready" },
     ];
-    return <Dropdown key={thread.id} trigger={["contextMenu"]} overlayStyle={{ maxWidth: 400 }}
+    return <ThreadContextMenu key={thread.id}
       menu={{ items, onClick: ({ key }) => {
         if (key === "pin") controller.pin(thread.id);
         if (key === "rename") { setRenaming(thread); setName(threadTitle(thread)); }
@@ -69,7 +70,7 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
             unread={Boolean(state.threadReadState[thread.id]?.unread)} />
         </button>
       </div>
-    </Dropdown>;
+    </ThreadContextMenu>;
   };
   return <ResizableThreadSidebar>
     <div className={styles.sidebarHeading} data-tauri-drag-region={isDesktopApp || undefined}>
