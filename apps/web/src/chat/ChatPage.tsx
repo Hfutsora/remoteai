@@ -12,6 +12,12 @@ import { useDownloadConnection } from '../downloads/useDownloadConnection';
 import { useRetainedChatDevices } from '../../../../shared/remote-chat/useRetainedChatDevices';
 import type { ComputerListRefresh } from '../../../../shared/remote-chat/ComputerSearchBar';
 import { useComputerListRefresh } from './useComputerListRefresh';
+import { useDesktopLayout } from '../useDesktopLayout';
+import { useRemoteCliInstaller } from '../../../../shared/remote-chat/useRemoteCliInstaller';
+import { GuiRemoteDesktop } from '../../../desktop/src/pages/codexGui/GuiRemoteDesktop';
+import { RemoteGuiTools } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiTools';
+import { RemoteGuiProject } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiProject';
+import './desktopTools.css';
 
 interface Props { session: AuthSession; devices: RemoteDevice[]; active: boolean }
 
@@ -51,14 +57,25 @@ function WebChat({ session, device, selected, ...props }: Props & {
   deviceRefresh: ComputerListRefresh;
 }) {
   const chat = useChat(session, device?.deviceId ?? '', props.active && Boolean(device));
+  const desktop = useDesktopLayout();
+  const installer = useRemoteCliInstaller(chat.controller.guiTools,
+    desktop && props.active && chat.foreground && chat.state.ready);
   useEffect(() => {
     if (selected && chat.state.ready && device) saveLastConnectedDevice(session, device.deviceId);
   }, [selected, chat.state.ready, device?.deviceId, session.baseUrl, session.email]);
   useDownloadConnection({ session, deviceId: device?.deviceId ?? '', deviceName: device?.name ?? '',
     controller: chat.controller, enabled: selected });
   return <ConnectedChat {...props} chat={chat} device={device} email={session.email}
-    headerEnd={<div className="chat-header-tools">
+    cliVersion={installer.version}
+    composerHeader={desktop && <RemoteGuiProject state={chat.state} controller={chat.controller}
+      active={props.active && chat.foreground} computers={{ ...props.deviceRefresh, allowLocal: false,
+        current: device ?? null, devices: props.devices, authenticated: true, login: () => {},
+        choose: selected => { if (selected) props.chooseDevice(selected.deviceId); } }} />}
+    headerActions={<div className="chat-header-tools">
       <ChatTools client={chat.controller.guiTools} active={props.active}
+        desktopActions={<><GuiRemoteDesktop client={chat.controller.guiTools.desktop} active={props.active}
+          connected={chat.state.mode === 'direct' || chat.state.mode === 'relay'} />
+          <RemoteGuiTools controller={chat.controller} state={chat.state} installer={installer} /></>}
         connected={chat.state.ready} deviceName={device?.name}
         cwd={chat.state.selected?.cwd ?? chat.state.draftProject?.cwd ?? ''} />
     </div>}

@@ -196,7 +196,9 @@ for (const blocked of [false, true]) {
     await expect(page.getByRole('button', { name: '打开工具箱', exact: true })).toHaveCount(0);
     await page.screenshot({ path: `../../.codex-tmp/gui-local-git-${blocked ? 'relay' : 'p2p'}.png` });
     await page.getByRole('button', { name: '打开 Git', exact: true }).click();
-    await expect(page.locator('.git-project')).toContainText('/local/workspace');
+    await expect(page.getByRole('dialog', { name: 'Git', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '选择项目文件夹：workspace', exact: true }))
+      .toHaveAttribute('title', '/local/workspace');
     await checkGitDiffReview(page, `gui-local-git-diff-${blocked ? 'relay' : 'p2p'}`);
     await page.getByRole('button', { name: '关闭详情抽屉', exact: true }).click();
     await chooseComputer(page, 'Office PC');
@@ -210,8 +212,10 @@ for (const blocked of [false, true]) {
     await expect(page.getByRole('button', { name: '打开工具箱', exact: true })).toHaveCount(0);
     await page.screenshot({ path: `../../.codex-tmp/gui-remote-git-${blocked ? 'relay' : 'p2p'}.png` });
     await page.locator('.gui-remote-project').getByRole('button', { name: '打开 Git', exact: true }).click();
-    await expect(page.locator('.git-project:visible')).toContainText('F:/projects/demo');
-    await expect(page.locator('.chat-terminal-device:visible')).toContainText('Office PC');
+    await expect(page.getByRole('dialog', { name: 'Git', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '选择远程项目', exact: true }))
+      .toHaveAttribute('title', 'F:/projects/demo');
+    await expect(page.getByRole('button', { name: '切换主机：Office PC', exact: true })).toBeVisible();
     await expect.poll(() => office.evaluate(() => window.chatTest.demoState().operations
       .some(operation => operation.operation === 'guiGitChanges' && operation.cwd === 'F:/projects/demo'))).toBe(true);
     await checkGitDiffReview(page, `gui-remote-git-diff-${blocked ? 'relay' : 'p2p'}`);

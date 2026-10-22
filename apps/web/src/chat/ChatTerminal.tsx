@@ -1,8 +1,8 @@
 import { lazy, Suspense, useContext, useMemo } from 'react';
 import { WorkspaceDrawerContext, workspaceTabId } from '../../../../shared/chat/workspaceDrawer';
 import { WorkspaceDrawerTab } from '../../../../shared/chat/WorkspaceDrawerTab';
-import { Drawer, Spin } from 'antd';
-import { SquareTerminal } from 'lucide-react';
+import { Button, Drawer, Spin, Tooltip } from 'antd';
+import { PanelBottom, SquareTerminal } from 'lucide-react';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
 import { useRemoteTerminalLauncher } from '../../../../shared/remote-chat/useRemoteTerminalLauncher';
 import { remoteTerminalApi } from '../../../../shared/remote-chat/terminalApi';
@@ -45,10 +45,13 @@ export function ChatTerminal({ client, cwd, active, connected, deviceName, launc
           {panel.error ? t('重试') : t('新建终端')}</button></>}
   </div>;
   return <>
-    {!hideTrigger && <button type="button" className="chat-terminal-toggle" aria-label={label} data-error={!!panel.error}
+    {!hideTrigger && (desktop ? <Tooltip title={label} styles={{ root: { maxWidth: 400 } }}>
+      <Button type="text" icon={<PanelBottom size={16} />} aria-label={label} aria-expanded={Boolean(visible)}
+        disabled={panel.busy || (!connected && !panel.tabs.length && !panel.error)} onClick={toggle} />
+    </Tooltip> : <button type="button" className="chat-terminal-toggle" aria-label={label} data-error={!!panel.error}
       aria-expanded={visible} disabled={panel.busy || (!connected && !panel.tabs.length && !panel.error)}
       onClick={toggle}>
-      <SquareTerminal size={22} /></button>}
+      <SquareTerminal size={22} /></button>)}
     {(panel.open || panel.tabs.length > 0) && (shared ? <WorkspaceDrawerTab active={active && panel.open}
       tab={{ id, title: t('远程终端'), icon: TERMINAL_ICON }}>{content}</WorkspaceDrawerTab>
       : <Drawer open={visible} placement="bottom" height="90%"

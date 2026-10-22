@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { connect, fixtureUrl, login, openChatList, operationCount, screenshot, state } from './chat-helpers';
+import { openChatTool } from './chat-tool-actions';
 
 test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile' && !info.title.startsWith('desktop'),
   'Phone terminal drawer'));
@@ -71,14 +72,17 @@ test('keeps terminal controls and the current command visible when a phone rotat
   for (const viewport of [{ width: 844, height: 390 }, { width: 915, height: 412 },
     { width: 915, height: 250 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
-    await expect(drawer.getByRole('button', { name: '收起终端', exact: true })).toBeInViewport({ ratio: 1 });
+    const desktop = viewport.width > 860;
+    await expect(drawer.getByRole('button', {
+      name: desktop ? '最小化详情抽屉' : '收起终端', exact: true,
+    })).toBeInViewport({ ratio: 1 });
     await expect(drawer.getByRole('button', { name: '新建终端', exact: true })).toBeInViewport({ ratio: 1 });
     const keys = drawer.getByRole('button', { name: 'Ctrl+C', exact: true });
     await expect(keys).toBeInViewport({ ratio: 1 });
     await expect(command).toBeInViewport({ ratio: 1 });
     await expect.poll(async () => (await command.boundingBox())!.y + (await command.boundingBox())!.height)
       .toBeLessThanOrEqual((await keys.boundingBox())!.y);
-    if (viewport.width > viewport.height) {
+    if (viewport.width > viewport.height && !desktop) {
       await expect.poll(async () => Math.round((await drawer.boundingBox())!.width)).toBe(viewport.width);
       await expect.poll(async () => Math.round((await drawer.boundingBox())!.height)).toBe(viewport.height);
     }
@@ -186,19 +190,16 @@ test('desktop browser restores retained terminals in a wide drawer', async ({ pa
   test.skip(info.project.name !== 'desktop', 'Wide terminal drawer');
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page); await connect(page);
-  const toggle = page.locator('.chat-header').getByRole('button', { name: '打开工具' });
-  await expect(toggle).toBeEnabled(); await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   const drawer = page.getByRole('dialog', { name: '远程终端', exact: true });
   await expect(drawer).toBeVisible();
   await expect(page.locator('.xterm-rows')).toContainText('Remote shell ready');
   const bounds = (await drawer.boundingBox())!;
-  expect(Math.round(bounds.width)).toBe(896);
+  expect(Math.round(bounds.width)).toBe(560);
   const opened = await operationCount(request, 'guiTerminalOpen');
-  await drawer.getByRole('button', { name: '收起终端', exact: true }).click();
+  await drawer.getByRole('button', { name: '最小化详情抽屉', exact: true }).click();
   await page.reload(); await connect(page);
-  await expect(toggle).toBeEnabled(); await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await expect(page.locator('.xterm-rows')).toContainText('Remote shell ready');
   expect(await operationCount(request, 'guiTerminalOpen')).toBe(opened);
   expect(await operationCount(request, 'guiTerminalClose')).toBe(0);
@@ -209,44 +210,43 @@ test('desktop and mobile terminals are isolated by project and restored after re
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page); await connect(page);
   const chooseRootProject = async () => {
-    await page.getByRole('button', { name: '选择项目', exact: true }).click();
+    const desktop = info.project.name === 'desktop';
+    await page.getByRole('button', { name: desktop ? '选择远程项目' : '选择项目', exact: true }).click();
+    await page.getByRole('button', { name: desktop ? '选择其他文件夹…' : '新建项目', exact: true }).click();
     await page.getByRole('button', { name: '此电脑', exact: true }).click();
     await page.getByRole('button', { name: 'F:', exact: true }).click();
     await page.getByRole('button', { name: 'projects', exact: true }).click();
     await page.getByRole('button', { name: '选择此文件夹', exact: true }).click();
   };
-  const toggle = page.locator('.chat-header').getByRole('button', { name: '打开工具' });
   const drawer = page.getByRole('dialog', { name: '远程终端', exact: true });
   const rows = page.locator('.xterm-rows');
-  const hide = () => drawer.getByRole('button', { name: '收起终端', exact: true }).click();
+  const hide = () => drawer.getByRole('button', {
+    name: info.project.name === 'desktop' ? '最小化详情抽屉' : '收起终端', exact: true,
+  }).click();
   const type = async (text: string) => {
     const input = page.locator('.xterm-helper-textarea');
     await input.fill(text); await input.press('Enter');
     await expect(rows).toContainText(text);
   };
   await chooseRootProject();
-  await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await type('parent-project-marker');
   await hide();
   await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-  await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await expect(rows).toContainText('Remote shell ready');
   await expect(rows).not.toContainText('parent-project-marker');
   await type('demo-project-marker');
   await hide();
   await openChatList(page);
   await page.getByRole('button', { name: /在 .* 中新建对话/ }).click();
-  await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await expect(rows).toContainText('demo-project-marker');
   expect(await operationCount(request, 'guiTerminalOpen')).toBe(2);
   await hide();
   await chooseRootProject();
-  await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await expect(rows).toContainText('parent-project-marker');
   await expect(rows).not.toContainText('demo-project-marker');
   expect(await operationCount(request, 'guiTerminalClose')).toBe(0);
@@ -255,8 +255,7 @@ test('desktop and mobile terminals are isolated by project and restored after re
   await page.reload(); await connect(page);
   await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-  await toggle.click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await expect(rows).toContainText('demo-project-marker');
   await expect(rows).not.toContainText('parent-project-marker');
   expect(await operationCount(request, 'guiTerminalOpen')).toBe(2);

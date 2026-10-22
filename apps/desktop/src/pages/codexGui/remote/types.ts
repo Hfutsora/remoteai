@@ -7,6 +7,7 @@ export interface GuiDeviceDirectory {
   devices: GuiComputer[];
 }
 export interface GuiComputerNavigation {
+  allowLocal?: boolean;
   current: GuiComputer | null;
   devices: GuiComputer[];
   authenticated: boolean;

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { WorkspaceDrawerContext, workspaceTabId } from '../../../../shared/chat/workspaceDrawer';
 import { Popover } from 'antd';
 import { FolderSearch, GitBranch, Monitor, SquareTerminal, Wrench } from 'lucide-react';
@@ -14,6 +14,7 @@ import { useProjectBrowsers } from '../../../../shared/project-browser/useProjec
 
 interface Props {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
+  desktopActions?: ReactNode;
 }
 export function ChatTools(props: Props) {
   const browsers = useProjectBrowsers();
@@ -30,16 +31,19 @@ export function ChatTools(props: Props) {
   </>;
 }
 
-function ProjectTools({ client, openFiles, ...props }: Props & { openFiles: () => void }) {
+function ProjectTools({ client, openFiles, desktopActions, ...props }: Props & { openFiles: () => void }) {
   const workspace = useContext(WorkspaceDrawerContext);
-  const wide = useDesktopLayout();
+  const desktopLayout = useDesktopLayout();
+  const wide = desktopLayout && Boolean(desktopActions);
   const [menu, setMenu] = useState(false);
   const [launchId, setLaunchId] = useState(0);
   const [git, setGit] = useState(false);
   const [desktop, setDesktop] = useState(false);
   useEffect(() => { if (!props.active) setMenu(false); }, [props.active]);
   return <>
-    <Popover trigger="click" placement="bottomRight" arrow={false} open={menu && props.active} onOpenChange={setMenu}
+    {wide && desktopActions}
+    {!wide && <Popover trigger="click" placement="bottomRight" arrow={false}
+      open={menu && props.active} onOpenChange={setMenu} styles={{ root: { maxWidth: 400 } }}
       content={<div className="chat-tools-menu">
         <button type="button" disabled={!props.connected}
           onClick={() => { setMenu(false); setDesktop(true); }}>
@@ -51,15 +55,15 @@ function ProjectTools({ client, openFiles, ...props }: Props & { openFiles: () =
           setMenu(false); setGit(true); workspace?.tabs.open(workspaceTabId.git(props.cwd));
         }}>
           <GitBranch size={20} />{t('Git')}</button>
-        {!wide && <button type="button" disabled={!props.connected || !props.cwd}
+        <button type="button" disabled={!props.connected || !props.cwd}
           onClick={() => { setMenu(false); openFiles(); }}>
-          <FolderSearch size={20} />{t('文件浏览')}</button>}
+          <FolderSearch size={20} />{t('文件浏览')}</button>
       </div>}>
       <button type="button" className="chat-terminal-toggle" aria-label={t('打开工具')}
         aria-expanded={menu && props.active}>
         <Wrench size={22} /></button>
-    </Popover>
-    <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger />
+    </Popover>}
+    <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger={!wide} />
     {git && <ChatGit {...props} client={client.git} onClose={() => setGit(false)} />}
     {desktop && <RemoteDesktop client={client.desktop} active={props.active} connected={props.connected}
       close={() => setDesktop(false)} />}

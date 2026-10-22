@@ -26,6 +26,7 @@ import { UsageStatus } from "./UsageStatus";
 import { ConversationTokenStatus } from './ConversationTokenStatus';
 import { ProjectPicker } from "./ProjectPicker";
 import { GuiToolbox } from "./GuiToolbox";
+import { useLocalGitDownloads } from '../../downloads/localGitDownloads';
 import { LocalProjectBrowser } from './LocalProjectBrowser';
 import { useComposerFileReferences } from '../../../../../shared/chat/ChatFileReferences';
 import { localGitClient } from "./localGitClient";
@@ -42,6 +43,7 @@ export const Composer = forwardRef<ComposerHandle, {
   state: GuiState; controller: GuiController; active: boolean; hostPicker?: ReactNode;
   cliVersion?: string | null;
 }>(function Composer({ state, controller, active, hostPicker, cliVersion }, ref) {
+  useLocalGitDownloads();
   const fileInput = useRef<HTMLInputElement>(null);
   const composer = useRef<HTMLDivElement>(null);
   const dropTarget = useRef<HTMLDivElement>(null);

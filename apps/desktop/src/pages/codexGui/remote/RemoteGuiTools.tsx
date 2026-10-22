@@ -11,13 +11,13 @@ import type { useRemoteCliInstaller } from './useRemoteCliInstaller';
 
 export function RemoteGuiTools({ controller, state, installer, terminal }: {
   controller: ChatController; state: ChatState; installer: ReturnType<typeof useRemoteCliInstaller>;
-  terminal: TerminalPanelState & { error?: string; busy?: boolean };
+  terminal?: TerminalPanelState & { error?: string; busy?: boolean };
 }) {
   const connected = state.mode === 'direct' || state.mode === 'relay';
   const [reconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState('');
   const running = state.sending || Boolean(state.selected?.turns?.some(turn => turn.status === 'inProgress'));
-  const terminalLabel = terminal.open ? guiText("收起远程终端") : guiText("打开远程终端");
+  const terminalLabel = terminal?.open ? guiText("收起远程终端") : guiText("打开远程终端");
   const reconnect = async () => {
     if (reconnecting) return;
     if (!connected) { controller.connectNow(); return; }
@@ -41,12 +41,12 @@ export function RemoteGuiTools({ controller, state, installer, terminal }: {
         icon={<CliUpdateIcon version={installer.version} release={installer.release} />}
         aria-label={guiText("远程 Codex CLI 更新")} />
     </Popover>
-    <Tooltip title={terminalLabel} styles={{ root: { maxWidth: 400 } }}>
+    {terminal && <Tooltip title={terminalLabel} styles={{ root: { maxWidth: 400 } }}>
       <Button type="text" icon={<PanelBottom size={16} />} aria-label={terminalLabel}
         aria-expanded={terminal.open} disabled={terminal.busy || (!connected && !terminal.open)}
         onClick={terminal.toggle} />
-    </Tooltip>
-    {terminal.error && !terminal.open && <span role="alert" style={{ maxWidth: 400 }}>{terminal.error}</span>}
+    </Tooltip>}
+    {terminal?.error && !terminal.open && <span role="alert" style={{ maxWidth: 400 }}>{terminal.error}</span>}
     {error && <Popover open content={<Alert type="error" message={error} closable onClose={() => setError('')} />}
       placement="bottomRight" styles={{ root: { maxWidth: 400 } }}><span /></Popover>}
   </div>;

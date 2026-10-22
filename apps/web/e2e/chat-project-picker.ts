@@ -2,6 +2,18 @@ import { expect, type Page, type APIRequestContext } from '@playwright/test';
 import { connect, settled, state } from './chat-helpers';
 import { LONG_PROJECT_NAME } from '../../desktop/e2e/demo-project-directories';
 
+function projectControls(page: Page) {
+  const desktop = (page.viewportSize()?.width ?? 0) > 860;
+  const choices = desktop ? page.getByRole('menu', { name: '项目', exact: true })
+    : page.locator('.chat-project-choices');
+  return {
+    desktop, choices,
+    trigger: page.getByRole('button', { name: desktop ? '选择远程项目' : '选择项目', exact: true }),
+    option: (name: string | RegExp) => choices.getByRole(desktop ? 'menuitemradio' : 'button', { name }),
+    checked: desktop ? 'aria-checked' : 'aria-pressed',
+  };
+}
+
 export async function projectPickerJourney({ page, request, relay }: {
   page: Page; request: APIRequestContext; relay: boolean;
 }) {
@@ -13,23 +25,25 @@ export async function projectPickerJourney({ page, request, relay }: {
   if (relay && (page.viewportSize()?.width ?? 0) < 860) await page.setViewportSize({ width: 320, height: 740 });
   await connect(page);
   await expect(page.getByRole('status').filter({ hasText: relay ? 'Relay' : 'P2P' })).toBeVisible({ timeout: 16_000 });
-  const project = page.getByRole('button', { name: '选择项目', exact: true });
+  const controls = projectControls(page);
+  const project = controls.trigger;
   const draft = page.getByRole('textbox', { name: '聊天消息' });
-  await expect(project).toHaveText('未选择项目');
+  await expect(project).toHaveText(controls.desktop ? '选择项目' : '未选择项目');
   await draft.fill('保留这条尚未发送的消息');
   await expect(page.locator('.chat-header').getByRole('button', { name: '选择项目' })).toHaveCount(0);
   const triggerBounds = await project.boundingBox();
   const composerBounds = await page.locator('.chat-composer').boundingBox();
   expect(triggerBounds!.y + triggerBounds!.height).toBeLessThanOrEqual(composerBounds!.y);
   await project.click();
-  const choices = page.locator('.chat-project-choices');
-  await choices.getByRole('button', { name: /演示项目/ }).click();
+  await controls.option(/演示项目/).click();
   await expect(project).toHaveText('演示项目');
   await expect(draft).toHaveValue('保留这条尚未发送的消息');
   expect((await state(request)).operations.some(entry => entry.operation === 'start')).toBe(false);
   await project.click();
-  await expect(choices.getByRole('button', { name: /演示项目/ })).toHaveAttribute('aria-pressed', 'true');
-  await choices.getByRole('button', { name: '新建项目', exact: true }).click();
+  await expect(controls.option(/演示项目/)).toHaveAttribute(controls.checked, 'true');
+  await page.getByRole('button', {
+    name: controls.desktop ? '选择其他文件夹…' : '新建项目', exact: true,
+  }).click();
   await chooseNewProjectFolder(page);
   await expect(project).toHaveText(LONG_PROJECT_NAME);
   await expect(draft).toHaveValue('保留这条尚未发送的消息');
@@ -39,10 +53,11 @@ export async function projectPickerJourney({ page, request, relay }: {
   await page.screenshot({ path: `../../.codex-tmp/project-switch-${page.viewportSize()?.width}-${relay}.png`,
     animations: 'disabled' });
   await project.click();
-  await expect(choices.getByRole('button', { name: LONG_PROJECT_NAME, exact: false })).toBeVisible();
+  await expect(controls.option(LONG_PROJECT_NAME)).toBeVisible();
   await page.screenshot({ path: `../../.codex-tmp/project-choices-${page.viewportSize()?.width}-${relay}.png`,
     animations: 'disabled' });
-  await page.getByRole('button', { name: /^(关闭|Close)$/ }).click();
+  if (controls.desktop) await page.getByRole('textbox', { name: '搜索项目', exact: true }).press('Escape');
+  else await page.getByRole('button', { name: /^(关闭|Close)$/ }).click();
   await expect(project).toHaveText(LONG_PROJECT_NAME);
   await page.getByRole('button', { name: '发送消息', exact: true }).click();
   await expect.poll(async () => (await state(request)).operations.find((entry) => entry.operation === 'start')?.cwd)
@@ -68,16 +83,15 @@ async function chooseNewProjectFolder(page: Page) {
 }
 
 async function switchExistingConversation(page: Page, request: APIRequestContext) {
-  const project = page.getByRole('button', { name: '选择项目', exact: true });
+  const controls = projectControls(page);
+  const project = controls.trigger;
   const draft = page.getByRole('textbox', { name: '聊天消息' });
-  const choices = page.locator('.chat-project-choices');
   await settled(page);
   const selected = (await state(request)).threads.find(thread => thread.cwd === `F:/projects/${LONG_PROJECT_NAME}`)!;
   await draft.fill('切换项目后继续这段对话');
   await project.click();
-  await expect(choices.getByRole('button', { name: LONG_PROJECT_NAME, exact: false }))
-    .toHaveAttribute('aria-pressed', 'true');
-  await choices.getByRole('button', { name: /演示项目/ }).click();
+  await expect(controls.option(LONG_PROJECT_NAME)).toHaveAttribute(controls.checked, 'true');
+  await controls.option(/演示项目/).click();
   await expect(project).toHaveText('演示项目');
   await expect(draft).toHaveValue('切换项目后继续这段对话');
   await expect.poll(async () => (await state(request)).operations

@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { connect, fixtureUrl, login, navigate, openChatList, screenshot, state } from './chat-helpers';
+import { openChatTool } from './chat-tool-actions';
 import { checkInternalGitDrawer } from '../../desktop/e2e/git-drawer-checks';
 import { readFile } from 'node:fs/promises';
 
@@ -23,8 +24,7 @@ test('mobile long presses open file, folder and commit actions without opening d
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page); await connect(page); await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-  await page.getByRole('button', { name: '打开工具', exact: true }).click();
-  await page.getByRole('button', { name: 'Git', exact: true }).click();
+  await openChatTool(page, 'Git');
   const drawer = page.getByRole('dialog', { name: 'Git', exact: true });
   const file = drawer.getByRole('button', { name: '查看 src/app.ts', exact: true });
   await holdRow(page, file);
@@ -82,20 +82,22 @@ test('AI commit settings sync across remote viewers and generate only selected f
     for (const viewer of [page, other]) {
       await login(viewer); await connect(viewer); await openChatList(viewer);
       await viewer.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-      await viewer.getByRole('button', { name: '打开工具', exact: true }).click();
-      await viewer.getByRole('button', { name: 'Git', exact: true }).click();
+      await openChatTool(viewer, 'Git');
     }
     const auto = page.getByRole('checkbox', { name: '自动生成提交说明', exact: true });
     const remoteAuto = other.getByRole('checkbox', { name: '自动生成提交说明', exact: true });
-    await auto.check();
+    await auto.click();
+    await expect(auto).toBeChecked();
     await expect(remoteAuto).toBeChecked();
     await expect(other.getByRole('textbox', { name: '提交说明', exact: true })).toBeDisabled();
-    await remoteAuto.uncheck();
+    await remoteAuto.click();
+    await expect(remoteAuto).not.toBeChecked();
     await expect(auto).not.toBeChecked();
     await page.getByRole('checkbox', { name: '选择 src/app.ts', exact: true }).check();
     await page.getByRole('button', { name: 'AI 生成', exact: true }).click();
     await expect(page.getByRole('textbox', { name: '提交说明', exact: true })).toHaveValue('feat: 更新 src/app.ts');
-    await auto.check();
+    await auto.click();
+    await expect(auto).toBeChecked();
     await page.getByRole('button', { name: '提交并推送', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Git', exact: true }).getByRole('status'))
       .toHaveText('提交并推送完成');
@@ -113,8 +115,7 @@ test('remote commit context actions and patches reach this browser download mana
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page); await connect(page); await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-  await page.getByRole('button', { name: '打开工具', exact: true }).click();
-  await page.getByRole('button', { name: 'Git', exact: true }).click();
+  await openChatTool(page, 'Git');
   const drawer = page.getByRole('dialog', { name: 'Git', exact: true });
   await drawer.getByRole('tab', { name: '提交记录', exact: true }).click();
   const row = drawer.locator('.git-history-row').nth(1);
@@ -158,10 +159,8 @@ test('tools open Git changes, commit only checked files and draw merge history',
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page); await connect(page); await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-  await page.getByRole('button', { name: '打开工具', exact: true }).click();
-  await expect(page.getByRole('button', { name: '终端', exact: true })).toBeVisible();
-  await screenshot(page, info, 'tools-menu');
-  await page.getByRole('button', { name: 'Git', exact: true }).click();
+  await screenshot(page, info, 'tools-layout');
+  await openChatTool(page, 'Git');
   const drawer = page.getByRole('dialog', { name: 'Git', exact: true });
   await expect(drawer).toBeVisible();
   const app = drawer.getByRole('checkbox', { name: '选择 src/app.ts', exact: true });
@@ -278,8 +277,7 @@ test('tools open Git changes, commit only checked files and draw merge history',
   expect(actions.find(op => op.action === 'update')?.strategy).toBe('merge');
   expect(actions.find(op => op.action === 'pull')?.strategy).toBe('rebase');
   await drawer.getByRole('button', { name: desktop ? '关闭详情抽屉' : '关闭 Git', exact: true }).click();
-  await page.getByRole('button', { name: '打开工具', exact: true }).click();
-  await page.getByRole('button', { name: '终端', exact: true }).click();
+  await openChatTool(page, '终端');
   await expect(page.getByRole('dialog', { name: '远程终端', exact: true })).toBeVisible();
   await expect(page.locator('.xterm-rows')).toContainText('Remote shell ready');
 });
@@ -288,8 +286,7 @@ test('remote Git file actions send only the confirmed files', async ({ page, req
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page); await connect(page); await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
-  await page.getByRole('button', { name: '打开工具', exact: true }).click();
-  await page.getByRole('button', { name: 'Git', exact: true }).click();
+  await openChatTool(page, 'Git');
   const drawer = page.getByRole('dialog', { name: 'Git', exact: true });
   await drawer.getByRole('checkbox', { name: '选择 src/app.ts', exact: true }).check();
   await drawer.getByRole('button', { name: '回退所选文件', exact: true }).click();

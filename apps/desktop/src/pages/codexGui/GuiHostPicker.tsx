@@ -14,10 +14,11 @@ export function GuiHostPicker({ navigation, active }: { navigation: GuiComputerN
   const search = useRef<InputRef>(null);
   const list = useRef<HTMLDivElement>(null);
   const currentId = navigation.current?.deviceId;
-  const label = navigation.current?.name ?? guiText("本地");
+  const allowLocal = navigation.allowLocal !== false;
+  const label = navigation.current?.name ?? guiText(allowLocal ? "本地" : "选择电脑");
   const keyword = query.trim().toLocaleLowerCase();
   const devices = navigation.devices.filter(device => device.name.toLocaleLowerCase().includes(keyword));
-  const showLocal = guiText("本地").includes(keyword);
+  const showLocal = allowLocal && guiText("本地").includes(keyword);
   useEffect(() => { setOpen(false); }, [active, currentId]);
   const close = () => { setOpen(false); trigger.current?.focus(); };
   const choose = (device: GuiComputerNavigation['current']) => {
@@ -66,7 +67,8 @@ export function GuiHostPicker({ navigation, active }: { navigation: GuiComputerN
     styles={{ root: { maxWidth: 400 }, body: { padding: 0, borderRadius: 20, overflow: 'hidden' } }}>
     <button ref={trigger} type="button" className={`${projectStyles.name} ${styles.trigger}`}
       aria-label={guiText("切换主机：{value1}", { value1: label })} aria-haspopup="menu" aria-expanded={open && active}>
-      {currentId ? <Monitor size={16} /> : <Laptop size={16} />}<span>{label}</span><ChevronDown size={13} />
+      {currentId || !allowLocal ? <Monitor size={16} /> : <Laptop size={16} />}
+      <span>{label}</span><ChevronDown size={13} />
     </button>
   </Popover>;
 }
