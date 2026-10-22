@@ -66,8 +66,10 @@ export async function prepareDesktopPrivacy() {
   run(cmake, ['--build', build, '--config', 'Release', '--parallel']);
   run(process.execPath, [join(root, 'scripts/test-desktop-privacy.mjs'),
     join(build, process.platform === 'win32' ? 'Release/privacy-protocol-test.exe' : 'privacy-protocol-test')]);
-  if (process.platform === 'win32') await driver();
-  else run('codesign', ['--force', '--sign', '-', join(destination, 'desktop-privacy')]);
+  if (process.platform === 'win32') {
+    run(join(build, 'Release/privacy-windows-restore-test.exe'), []);
+    await driver();
+  } else run('codesign', ['--force', '--sign', '-', join(destination, 'desktop-privacy')]);
   await cp(join(source, 'LICENSE-DeskPad'), join(destination, 'LICENSE-DeskPad'));
 }
 

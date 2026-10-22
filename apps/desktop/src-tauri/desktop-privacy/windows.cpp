@@ -1,6 +1,8 @@
 #include "platform.hpp"
+#include "recovery.hpp"
 #include "windows_driver.hpp"
 #include "windows_desktop.hpp"
+#include "windows_restore.hpp"
 #include <wtsapi32.h>
 #include <algorithm>
 #include <cwctype>
@@ -41,7 +43,7 @@ bool owned_adapter(const DISPLAYCONFIG_PATH_INFO& path) {
     InputDesktopScope desktop;
     DISPLAYCONFIG_ADAPTER_NAME name{};
     name.header = {DISPLAYCONFIG_DEVICE_INFO_GET_ADAPTER_NAME, sizeof(name), path.targetInfo.adapterId, 0};
-    if (DisplayConfigGetDeviceInfo(&name.header)) return false;
+    if (DisplayConfigGetDeviceInfo(&name.header)) throw std::runtime_error("display adapter identity unavailable");
     auto instance = privacy_device_instance();
     std::replace(instance.begin(), instance.end(), L'\\', L'#');
     auto device = std::wstring(name.adapterDevicePath);
@@ -55,6 +57,30 @@ void apply(Topology& value) {
         static_cast<UINT32>(value.modes.size()), value.modes.data(),
         SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES);
     if (result) throw std::runtime_error("display configuration failed: " + std::to_string(result));
+}
+void verify_restored_display() {
+    const auto active = topology();
+    if (std::none_of(active.paths.begin(), active.paths.end(), [](const auto& path) {
+        return !owned_adapter(path);
+    }))
+        throw std::runtime_error("waiting for an ordinary display before releasing privacy display");
+}
+bool ordinary_display_available() {
+    const auto available = topology(QDC_ALL_PATHS);
+    return std::any_of(available.paths.begin(), available.paths.end(), [](const auto& path) {
+        return path.targetInfo.targetAvailable && !owned_adapter(path);
+    });
+}
+void restore_saved_configuration() {
+    InputDesktopScope desktop;
+    const auto result = SetDisplayConfig(0, nullptr, 0, nullptr, SDC_APPLY | SDC_USE_DATABASE_CURRENT);
+    if (result) throw std::runtime_error("saved display restoration failed: " + std::to_string(result));
+}
+DisplayRestoration restore_topology(Topology& original) {
+    return restore_display_configuration(ordinary_display_available, [&](DisplayConfiguration configuration) {
+        if (configuration == DisplayConfiguration::Original) apply(original);
+        else restore_saved_configuration();
+    }, verify_restored_display);
 }
 bool session_locked() {
     DWORD session = 0, bytes = 0;
@@ -100,6 +126,8 @@ class WindowsPrivacy final : public PrivacyPlatform {
     Topology original;
     bool created = false;
     bool private_screen = false;
+    bool release_display = false;
+    PrivacyRecovery recovery;
     std::wstring selected;
     std::string discover() {
         for (int attempt = 0; attempt < 100; ++attempt) {
@@ -137,6 +165,9 @@ public:
         if (!exclusive || GetLastError() == ERROR_ALREADY_EXISTS) throw std::runtime_error("privacy already active");
         original = topology();
         if (original.paths.empty()) throw std::runtime_error("no original desktop");
+        // A screen retained for a headless host predates this session and must remain
+        // usable after it ends, including after another monitor is connected.
+        release_display = std::none_of(original.paths.begin(), original.paths.end(), owned_adapter);
         ensure_privacy_driver();
         created = true;
         set_privacy_device_enabled(true);
@@ -162,9 +193,14 @@ public:
     }
     void restore(bool lock) override {
         if (!created) return;
-        if (lock && private_screen) lock_session();
-        apply(original);
-        set_privacy_device_enabled(false);
+        recovery.run(lock && private_screen, lock_session,
+            [&] {
+                if (restore_topology(original) == DisplayRestoration::Retained) release_display = false;
+            }, [&] {
+                if (!release_display || !ordinary_display_available()) return;
+                verify_restored_display();
+                set_privacy_device_enabled(false);
+            });
         created = false; private_screen = false;
     }
 };

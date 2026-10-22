@@ -1,4 +1,5 @@
 #include "platform.hpp"
+#include "recovery.hpp"
 #import "CGVirtualDisplayPrivate.h"
 #include <dlfcn.h>
 #include <csignal>
@@ -45,6 +46,7 @@ class MacPrivacy final : public PrivacyPlatform {
     EnableDisplay enable = nullptr;
     LockScreen lock_screen = nullptr;
     bool private_screen = false;
+    PrivacyRecovery recovery;
     void configure(bool restore) {
         CGDisplayConfigRef configuration = nullptr;
         check(CGBeginDisplayConfiguration(&configuration));
@@ -126,9 +128,9 @@ public:
     }
     void restore(bool lock) override {
         if (!display) return;
-        if (lock && private_screen) confirm_lock();
-        configure(true); restore_layout();
-        display = nil; private_screen = false;
+        recovery.run(lock && private_screen, [&] { confirm_lock(); },
+            [&] { configure(true); restore_layout(); }, [&] { display = nil; });
+        private_screen = false;
     }
 };
 }
