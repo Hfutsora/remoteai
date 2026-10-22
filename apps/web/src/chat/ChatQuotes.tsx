@@ -29,7 +29,7 @@ export function ChatQuotesProvider({ scope, children, sending, enabled }: {
   }, [scope, sending]);
   const add = (quote: ChatQuote) => {
     const result = appendQuote(current.current, quote);
-    if (result.error) { Toast.show({ content: result.error }); return false; }
+    if (result.error) { Toast.show({ content: t(result.error) }); return false; }
     current.current = result.quotes;
     setQuotes(result.quotes);
     return true;

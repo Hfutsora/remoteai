@@ -1,4 +1,5 @@
 import { guiText } from "../../i18n/guiText";
+import { backendText } from "../../../../../shared/i18n/backend/translateBackendMessage";
 import { useEffect, useRef, useState } from 'react';
 import { Popover, type InputRef } from 'antd';
 import { Check, ChevronDown, Laptop, Monitor } from 'lucide-react';
@@ -56,10 +57,11 @@ export function GuiHostPicker({ navigation, active }: { navigation: GuiComputerN
       {!navigation.devices.length && !navigation.loading && !navigation.error
         && <p className={projectStyles.empty}>{guiText("在其他主机上打开 Remote AI，登录同一账户即可连接。")}</p>}
     </>}
-    {navigation.error && <p className={`${projectStyles.empty} ${styles.error}`} role="alert">{navigation.error}</p>}
+    {navigation.error && <p className={`${projectStyles.empty} ${styles.error}`} role="alert">{backendText(navigation.error)}</p>}
     <ComputerSearchBar inputRef={search} query={query} onQueryChange={setQuery}
       searchLabel={guiText("搜索主机")} refreshLabel={guiText("刷新主机列表")}
       refresh={navigation.authenticated ? navigation : undefined} />
+
   </div>;
   return <Popover trigger="click" placement="topRight" arrow={false} open={open && active} content={panel}
     onOpenChange={next => { setOpen(next); if (next) { setQuery(''); navigation.refresh(); } }}
