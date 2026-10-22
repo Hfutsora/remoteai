@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, Copy, Download, FilePlus, FolderOpen, FolderPlus,
   Scissors, ClipboardPaste, Pencil, Trash2, Terminal, Link, Quote } from 'lucide-react';
 import type { BrowserHost } from './entryActions';
@@ -6,6 +6,7 @@ import { normalizedPath } from './entryActions';
 import type { TreeCommand, TreeMenu as Menu } from './useTreeActions';
 import type { BrowserTranslate } from './ProjectTree';
 import { TreeSubmenu } from './TreeSubmenu';
+import { useTreeMenuDismiss } from './useTreeMenuDismiss';
 import { focusFirstMenuItem, MENU_MARGIN, moveMenuFocus, SUBMENU_GAP } from './treeMenuNavigation';
 
 export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
@@ -13,21 +14,12 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
   command: (action: TreeCommand) => void; t: BrowserTranslate;
 }) {
   const element = useRef<HTMLDivElement>(null);
-  const pressedInMenu = useRef(false);
+  useTreeMenuDismiss(element, close);
   const [submenu, setSubmenu] = useState<'new' | 'open'>();
   const [compact, setCompact] = useState(false);
   const [position, setPosition] = useState({ left: menu.x, top: menu.y });
   const stackedSubmenu = compact ? submenu : undefined;
   const root = normalizedPath(menu.entry.path) === normalizedPath(cwd);
-  useEffect(() => {
-    const escape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || element.current?.contains(event.target as Node)) return;
-      event.preventDefault(); event.stopPropagation(); close();
-    };
-    // A touch release can return focus to the pressed row after the menu has opened.
-    document.addEventListener('keydown', escape, true);
-    return () => document.removeEventListener('keydown', escape, true);
-  }, [close]);
   useLayoutEffect(() => {
     const positionMenu = () => {
       const rect = element.current?.getBoundingClientRect();
@@ -56,14 +48,7 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
       setSubmenu(undefined);
     }
   };
-  return <div className="pf-menu-backdrop" onPointerDown={() => { pressedInMenu.current = true; }}
-    onClickCapture={event => {
-      // Ignore the synthetic click from releasing the touch that opened this menu.
-      if (!pressedInMenu.current && event.detail !== 0) { event.preventDefault(); event.stopPropagation(); }
-      pressedInMenu.current = false;
-    }} onClick={event => {
-    if (event.target === event.currentTarget) { event.stopPropagation(); close(); }
-  }} onContextMenu={event => event.preventDefault()}>
+  return <div className="pf-menu-backdrop pf-tree-menu-layer" onContextMenu={event => event.preventDefault()}>
     <div ref={element} role="menu" aria-label={t('文件操作')} className="pf-tree-menu" style={position}
       onPointerOver={event => {
         if (event.pointerType === 'mouse' && !compact) clearOtherSubmenu(event.target);

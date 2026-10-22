@@ -1,6 +1,8 @@
 .pf-tree-row, .pf-tree-heading > span { -webkit-touch-callout: none; user-select: none; touch-action: pan-y; }
 .pf-tree-row[data-cut=true] { opacity: .5; }
 .pf-menu-backdrop { position: fixed; inset: 0; z-index: 20; }
+.pf-tree-menu-layer { pointer-events: none; }
+.pf-tree-menu-layer .pf-tree-menu { pointer-events: auto; }
 .pf-tree-menu { position: fixed; width: 232px; max-width: min(400px, calc(100vw - 16px));
   max-height: calc(100dvh - 16px); overflow-y: auto; padding: 5px; border: 1px solid var(--pf-border);
   border-radius: 9px; background: var(--pf-surface); box-shadow: 0 8px 28px #0003; color: var(--pf-ink); }
