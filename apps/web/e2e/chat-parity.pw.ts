@@ -1,7 +1,7 @@
 import { expect, test, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
 import { openChatList, connect, fixtureUrl, login, operationCount, screenshot, send, settled, state } from './chat-helpers';
 
-const closeSheet = (page: Page) => page.getByRole('button', { name: '关闭', exact: true }).last().click();
+const closeSheet = (page: Page) => page.getByRole('button', { name: /^(关闭|关闭详情抽屉)$/ }).last().click();
 async function selectChat(page: Page) {
   await openChatList(page);
   await page.getByRole('button', { name: '移动端聊天体验', exact: true }).click();
@@ -51,30 +51,35 @@ test('renders rich replies, folded work, nested output, file previews and reply 
   await page.getByRole('button', { name: /^文件修改/ }).click();
   if (desktop) {
     await page.getByRole('button', { name: /^查看文件修改记录：/ }).click();
-    await expect(page.getByRole('complementary', { name: '文件更改详情' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: '文件更改详情', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '关闭详情抽屉' }).click();
   } else {
-    await expect(page.locator('.ant-drawer-right .chat-diff')).toBeVisible();
-    await page.locator('.chat-diff-file summary').first().click();
-    await expect(page.locator('.chat-diff-line.remove').first()).toBeVisible();
+    const details = page.getByRole('tabpanel', { name: '文件修改', exact: true });
+    await expect(details.locator('.chat-diff')).toBeVisible();
+    await details.locator('.chat-diff-file summary').first().click();
+    await expect(details.locator('.chat-diff-line.remove').first()).toBeVisible();
   }
   if (desktop) await page.getByRole('button', { name: /^文件修改/ }).click();
-  else await page.getByRole('button', { name: '返回上一层' }).click();
+  else {
+    await closeSheet(page);
+    await page.getByRole('button', { name: /查看处理过程/ }).click();
+  }
   await expect(page.getByRole('button', { name: /^文件修改/ })).toBeVisible();
   if (desktop) await page.getByRole('button', { name: /查看处理过程/ }).click();
   else await closeSheet(page);
   await page.getByRole('button', { name: /查看本轮修改：3 个文件/ }).click();
   if (desktop) {
-    const details = page.getByRole('complementary', { name: '文件更改详情' });
+    const details = page.getByRole('dialog', { name: '文件更改详情', exact: true });
     await expect(details).toBeVisible();
     await expect(details).toContainText('3 个文件');
     await details.getByRole('button', { name: '并排', exact: true }).click();
     await expect(details.getByText('修改前', { exact: true })).toBeVisible();
   } else {
-    await expect(page.locator('.ant-drawer-right .chat-diff')).toBeVisible();
-    await expect(page.locator('.chat-diff > section')).toHaveCount(2);
-    await page.locator('.chat-diff-file summary').first().click();
-    await expect(page.locator('.chat-diff-line.add').first()).toBeVisible();
+    const details = page.getByRole('tabpanel', { name: '本轮修改', exact: true });
+    await expect(details.locator('.chat-diff')).toBeVisible();
+    await expect(details.locator('.chat-diff > section')).toHaveCount(2);
+    await details.locator('.chat-diff-file summary').first().click();
+    await expect(details.locator('.chat-diff-line.add').first()).toBeVisible();
   }
   await screenshot(page, info, 'grouped-diff');
   if (desktop) await page.getByRole('button', { name: '关闭详情抽屉' }).click();
