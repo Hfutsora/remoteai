@@ -102,9 +102,16 @@ test('help remains responsive during requests and session polling on every sideb
     await expect.poll(() => stats.polls).toBeGreaterThanOrEqual(3);
     expect(stats.asks).toBe(1);
     for (const menu of await page.locator('aside button').all()) {
+      await menu.click();
+      await expect(panel).not.toBeVisible();
+      if (await page.getByLabel('Current page').textContent() === 'codexGui') {
+        await expect(page.getByRole('button', { name: '问题解答助手', exact: true })).toHaveCount(0);
+        continue;
+      }
       await page.getByRole('button', { name: '问题解答助手', exact: true }).click();
       await expect(panel).toContainText('可以在 Codex 页面');
-      await menu.click(); await expect(panel).not.toBeVisible();
+      await page.locator('button[aria-controls="remote-ai-help"]').click();
+      await expect(panel).not.toBeVisible();
     }
     await page.getByRole('button', { name: '问题解答助手', exact: true }).click();
     await page.screenshot({ path: '../../.codex-tmp/help-pending-desktop.png', animations: 'disabled' });

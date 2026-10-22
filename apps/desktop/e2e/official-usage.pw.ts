@@ -36,7 +36,7 @@ test('official quota stays responsive during polling on wide and narrow screens'
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/#token-usage');
   const panel = page.locator('section').filter({ has: page.getByRole('heading', { name: '官方账户跨设备用量' }) });
-  await expect(panel.getByRole('cell', { name: '18/30USD', exact: true })).toBeVisible();
+  await expect(panel.getByRole('cell', { name: /^18\s*\/\s*30\s*USD$/ })).toBeVisible();
   await expect(panel.getByRole('cell', { name: '30.00 USD', exact: true })).toBeVisible();
   await expect(panel.getByRole('cell', { name: '6.00 USD', exact: true })).toBeVisible();
   holdResponse = true;
@@ -49,12 +49,12 @@ test('official quota stays responsive during polling on wide and narrow screens'
   await expect(panel.getByRole('cell', { name: 'Laptop', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(panel.getByRole('heading')).toBeVisible();
-  await expect(panel.getByRole('cell', { name: '18/30USD', exact: true })).toBeAttached();
+  await expect(panel.getByRole('cell', { name: /^18\s*\/\s*30\s*USD$/ })).toBeAttached();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   holdResponse = false;
   fixture.accounts[0].remainingUsd = 24;
   fixture.accounts[0].primary = { ...fixture.accounts[0].primary!, consumedUsd: 8, capacityUsd: 40, remainingUsd: 24 };
   await pending[0].fulfill({ json: fixture });
-  await expect(panel.getByRole('cell', { name: '24/40USD', exact: true })).toBeAttached();
+  await expect(panel.getByRole('cell', { name: /^24\s*\/\s*40\s*USD$/ })).toBeAttached();
   expect(errors).toEqual([]);
 });

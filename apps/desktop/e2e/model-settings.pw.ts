@@ -27,7 +27,7 @@ test('cycles lightning speed across desktop clients while usage polling is pendi
 });
 
 for (const width of [1280, 390]) {
-  test(`discovers a new model while the picker and usage polling are open at ${width}px`, async ({ page }) => {
+  test(`refreshes models while the picker and usage polling remain responsive at ${width}px`, async ({ page }) => {
     const backend = modelSettingsBackend();
     await backend.attach(page.context());
     await page.setViewportSize({ width, height: 900 });
@@ -38,6 +38,10 @@ for (const width of [1280, 390]) {
       await trigger(page).click();
       await page.getByRole("button", { name: "选择模型", exact: true }).click();
       await expect(page.getByRole("menuitemradio", { name: "模型一" })).toBeEnabled();
+      const refresh = page.getByRole("button", { name: "刷新", exact: true });
+      await refresh.click();
+      await expect.poll(backend.discoveryRequests).toBe(1);
+      await expect(refresh).toBeDisabled();
       const beats = Number(await page.getByLabel("刷新次数").textContent());
       await expect.poll(async () => Number(await page.getByLabel("刷新次数").textContent())).toBeGreaterThan(beats);
       await expect(page.getByText("正在刷新用量")).toBeVisible();

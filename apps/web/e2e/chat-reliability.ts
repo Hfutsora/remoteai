@@ -13,7 +13,13 @@ export async function reliabilityJourney(page: Page, request: APIRequestContext,
   const relay = info.title.endsWith('over relay');
   await expect(page.getByText(relay ? '已通过中转连接' : '已直连电脑', { exact: true })).toBeVisible();
   const panel = page.locator('.connection-health');
-  expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(400);
+  const desktop = page.viewportSize()!.width >= 768;
+  await expect(panel.locator('.connection-health-steps')).toHaveCSS('display', desktop ? 'grid' : 'flex');
+  // Desktop uses two columns; each text area stays compact after the opening animation settles.
+  const copy = panel.locator('.connection-health-copy p, .connection-health-addresses p');
+  await expect.poll(() => copy.evaluateAll(nodes =>
+    Math.max(...nodes.map(node => node.getBoundingClientRect().width)))).toBeLessThanOrEqual(400);
+  await expect.poll(() => panel.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   await expect(panel.getByText('正常', { exact: true })).toHaveCount(4);
   await expect(panel.getByText('连接正常，可以发送任务', { exact: true })).toBeVisible();
   await expect(panel.getByText('本机公网 IP 和端口', { exact: true })).toBeVisible();

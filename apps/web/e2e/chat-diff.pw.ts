@@ -13,7 +13,7 @@ async function open(page: Page, value = fixture()) {
   await page.route('**/display-fixture.json', route => route.fulfill({ json: value }));
   await page.goto('e2e/chat-display-harness.html');
 }
-const panel = (page: Page) => page.getByRole('complementary', { name: '文件更改详情' });
+const panel = (page: Page) => page.getByRole('dialog', { name: '文件更改详情', exact: true });
 const summary = (page: Page) => page.getByRole('region', { name: '本轮修改', exact: true });
 const update = (page: Page, value: Thread) => page.evaluate(detail =>
   window.dispatchEvent(new CustomEvent('display-fixture', { detail })), value);
@@ -90,11 +90,12 @@ test('keeps the selected diff current and preserves the draft when switching to 
   await expect(panel(page)).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: '消息' })).toHaveValue('Keep this draft');
   await page.getByRole('button', { name: '查看本轮修改：5 个文件', exact: true }).click();
-  await expect(page.locator('.ant-drawer-right .chat-diff')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '本轮修改', exact: true }).locator('.chat-diff')).toBeVisible();
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await expect(page.locator('.ant-drawer-right .chat-diff')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: '本轮修改', exact: true })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '消息' })).toHaveValue('Keep this draft');
   await summary(page).getByRole('button', { name: `查看 ${paths[0]} 的差异`, exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '本轮修改', exact: true })).toHaveCount(0);
   await expect(panel(page)).toContainText('const streamedValue = 42;');
 });
 
@@ -103,7 +104,7 @@ test('translates desktop diff controls without translating file paths or code', 
   await page.addInitScript(() => localStorage.setItem('codex-switch.web.language.v1', 'en'));
   await open(page);
   await page.getByRole('button', { name: 'View diff for src/first/index.ts', exact: true }).click();
-  const details = page.getByRole('complementary', { name: 'File change details' });
+  const details = page.getByRole('dialog', { name: 'File change details', exact: true });
   await expect(details).toContainText('const newValue = 0;');
   await details.getByRole('button', { name: 'Side by side', exact: true }).click();
   await expect(details.getByText('Before', { exact: true })).toBeVisible();

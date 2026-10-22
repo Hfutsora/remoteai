@@ -61,6 +61,8 @@ export function titleBackend(settingsStatus = 200) {
       }
       if (command === 'get_cloud_auth_state') result = { baseUrl: 'https://title-config.test' };
       if (command === 'codex_gui_connect') result = [];
+      if (command === 'codex_gui_queue_read') result = { revision: 0, threads: {} };
+      if (command === 'codex_gui_queue_save') result = args.snapshot;
       if (command === 'codex_gui_model_settings') result = { threadId: args.threadId ?? null, selection: null, revision: 0 };
       if (command === 'codex_gui_set_model_settings') result = {
         threadId: args.threadId ?? null, selection: args.selection, revision: 1,

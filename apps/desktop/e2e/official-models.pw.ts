@@ -43,12 +43,14 @@ test("failed settings saves preserve both the schedule draft and unsaved model J
   await interval.fill("1.5");
   await expect(save).toBeDisabled();
   await interval.fill("45");
+  await page.getByText("JSON 编辑", { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "JSON 编辑", exact: true })).toBeChecked();
   const models = page.getByRole("textbox", { name: "模型列表内容" });
   await models.fill('{"models":[{"slug":"unsaved"}]}');
   await save.click();
   await expect(page.getByText("自动更新设置已更改，请重新加载后再保存。", { exact: true })).toBeVisible();
   await expect(interval).toHaveValue("45");
-  await expect(models).toHaveValue('{"models":[{"slug":"unsaved"}]}');
+  await expect(models).toHaveText('{"models":[{"slug":"unsaved"}]}');
   await expect(page.getByText("每 30 分钟更新", { exact: true })).toBeVisible();
   expect(backend.saves).toHaveLength(1);
   const notice = page.locator(".ant-message-notice").last();

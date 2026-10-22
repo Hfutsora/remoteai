@@ -15,14 +15,18 @@ test('navigates enabled options with arrows, wraps and keeps the active option v
   const input = page.getByRole('textbox', { name: '聊天消息' });
   const active = page.locator('.chat-menu-options [aria-current="true"]');
   const popover = page.locator('.chat-composer-popover');
+  const options = page.locator('.chat-menu-options [role="menuitem"]:not(:disabled)');
+  const nextLabel = await options.nth(1).getAttribute('aria-label');
+  const lastLabel = await options.last().getAttribute('aria-label');
+  expect(await options.count()).toBeGreaterThan(30);
   await expect(page.getByRole('menuitem', { name: '压缩上下文' })).toBeDisabled();
   await expect(active).toHaveAccessibleName('目标模式');
   await input.press('ArrowDown');
-  await expect(active).toHaveAccessibleName('使用技能 skill-0');
+  await expect(active).toHaveAccessibleName(nextLabel!);
   await input.press('ArrowUp');
   await expect(active).toHaveAccessibleName('目标模式');
   await input.press('ArrowUp');
-  await expect(active).toHaveAccessibleName('使用技能 代码检查');
+  await expect(active).toHaveAccessibleName(lastLabel!);
   await expect(input).toBeFocused();
   await expect(input).toHaveAttribute('aria-activedescendant', (await active.getAttribute('id'))!);
   await expect.poll(() => popover.evaluate(node => node.scrollTop)).toBeGreaterThan(0);
@@ -89,10 +93,12 @@ test('leaves composition keys and modified arrows to the input', async ({ page, 
     await expect(input).toHaveValue('/review');
   }
   await input.fill('/');
+  const nextLabel = await page.locator('.chat-menu-options [role="menuitem"]:not(:disabled)')
+    .nth(1).getAttribute('aria-label');
   await input.press('Shift+ArrowDown');
   await expect(active).toHaveAccessibleName('目标模式');
   await input.press('ArrowDown');
-  await expect(active).toHaveAccessibleName('使用技能 skill-0');
+  await expect(active).toHaveAccessibleName(nextLabel!);
   expect(await operationCount(request, 'send')).toBe(0);
 });
 

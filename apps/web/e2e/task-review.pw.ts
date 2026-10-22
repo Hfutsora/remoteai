@@ -19,8 +19,9 @@ test('reviews task changes with versioned checks, comments, restore preview and 
     .toBeLessThan(2);
   await screenshot(page, info, 'review-header-entry');
   await review.click();
-  const changes = info.project.name === 'mobile' ? page.locator('.ant-drawer-right .chat-diff')
-    : page.getByRole('complementary', { name: '文件更改详情' });
+  const changes = info.project.name === 'mobile'
+    ? page.getByRole('dialog', { name: '本轮修改', exact: true }).locator('.chat-diff')
+    : page.getByRole('dialog', { name: '文件更改详情', exact: true });
   await expect(changes).toBeVisible();
   await expect(page.locator('.chat-review-panel')).toHaveCount(0);
   await page.getByRole('button', { name: /关闭详情抽屉|^关闭$/ }).last().click();
@@ -56,8 +57,12 @@ test('reviews task changes with versioned checks, comments, restore preview and 
   await expect.poll(async () => (await state(request)).operations
     .filter(row => ['send', 'queueEnqueue'].includes(String(row.operation)))
     .some(row => JSON.stringify(row).includes('验收意见：\\n请补充边界检查'))).toBe(true);
-  await page.getByRole('dialog').filter({ has: panel }).getByRole('button', { name: '关闭', exact: true }).click();
-  await page.getByRole('button', { name: '打开工具', exact: true }).click();
-  await page.getByRole('button', { name: 'Git', exact: true }).click();
+  await page.getByRole('dialog').filter({ has: panel })
+    .getByRole('button', { name: '关闭详情抽屉', exact: true }).click();
+  if (info.project.name === 'desktop') await page.getByRole('button', { name: '打开 Git', exact: true }).click();
+  else {
+    await page.getByRole('button', { name: '打开工具', exact: true }).click();
+    await page.getByRole('button', { name: 'Git', exact: true }).click();
+  }
   await expect(page.getByRole('dialog', { name: 'Git', exact: true })).toBeVisible();
 });

@@ -12,7 +12,8 @@ export async function composerLayout(page: Page) {
   if (desktop) {
     await expect(page.locator('.chat-composer')).not.toHaveClass(/is-compact/);
     expect((await input.boundingBox())!.height).toBeGreaterThanOrEqual(83);
-    await expect(page.getByText('Enter 发送 · Shift + Enter 换行')).toBeVisible();
+    await expect(page.locator('.chat-composer-hint')).toContainText('Codex');
+    await expect(page.locator('.chat-conversation-metrics')).toContainText('tokens');
   } else await expect(page.locator('.chat-composer')).toHaveClass(/is-compact/);
   await expect(send).toHaveCSS('border-radius', '50%');
   for (const text of ['一行消息', '第一行\n第二行\n第三行', '多行消息\n'.repeat(60)]) {
