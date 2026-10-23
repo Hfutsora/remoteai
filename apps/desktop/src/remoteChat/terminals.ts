@@ -50,7 +50,9 @@ export class RemoteTerminals {
   }
 
   private async open(body: Record<string, unknown>, owner: string) {
-    if (typeof body.cwd !== 'string') throw new Error('请选择有效的项目目录。');
+    if (typeof body.cwd !== 'string' || (body.projectCwd !== undefined && typeof body.projectCwd !== 'string')) {
+      throw new Error('请选择有效的项目目录。');
+    }
     const sessions = this.owners.get(owner) ?? new Set<Session>();
     if (sessions.size >= MAX_TERMINALS) throw new Error('终端较多，请先关闭一个再试。');
     this.owners.set(owner, sessions);
@@ -63,7 +65,7 @@ export class RemoteTerminals {
         if (event.type === 'exit') session.exited = true;
       });
       // Rust resolves symlinks and the default home directory; retain the original project association separately.
-      session.info = { ...info, projectCwd: body.cwd };
+      session.info = { ...info, projectCwd: body.projectCwd ?? body.cwd };
       return session.info;
     } catch (error) { sessions.delete(session); throw error; }
   }

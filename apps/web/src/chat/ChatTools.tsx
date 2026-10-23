@@ -5,7 +5,7 @@ import { Popover } from 'antd';
 import { FolderSearch, GitBranch, Monitor, SquareTerminal, Wrench } from 'lucide-react';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
 import { useDesktopLauncher } from '../../../../shared/remote-desktop/useDesktopLauncher';
-import { ChatTerminal } from './ChatTerminal';
+import { ChatTerminal, type ChatTerminalPanel } from './ChatTerminal';
 import { ChatGit } from './git/ChatGit';
 import { RemoteDesktop } from './desktop/RemoteDesktop';
 import { t } from '../i18n';
@@ -17,6 +17,7 @@ import { useProjectBrowsers } from '../../../../shared/project-browser/useProjec
 interface Props {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   desktopActions?: ReactNode;
+  terminal?: ChatTerminalPanel;
 }
 export function ChatTools(props: Props) {
   const browsers = useProjectBrowsers();
@@ -39,7 +40,7 @@ export function ChatTools(props: Props) {
   </>;
 }
 
-function ProjectTools({ client, openFiles, wide, ...props }: Props & {
+function ProjectTools({ client, openFiles, wide, terminal, ...props }: Props & {
   openFiles: () => void; openDesktop: () => void; wide: boolean;
 }) {
   const workspace = useContext(WorkspaceDrawerContext);
@@ -69,7 +70,7 @@ function ProjectTools({ client, openFiles, wide, ...props }: Props & {
         aria-expanded={menu && props.active}>
         <Wrench size={22} /></button>
     </Popover>}
-    <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger={!wide} />
+    <ChatTerminal {...props} client={client.terminal} panel={terminal} launchId={launchId} hideTrigger={!wide} />
     {git && <ChatGit {...props} client={client.git} onClose={() => setGit(false)} />}
   </>;
 }

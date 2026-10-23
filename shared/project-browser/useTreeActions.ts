@@ -57,7 +57,8 @@ export function useTreeActions(options: {
     void run(async () => {
       if (action === 'reference') await options.host.reference?.(entry);
       if (action === 'copyPath') { await options.host.copyPath(entry.path); setMessage('路径已复制。'); }
-      if (action === 'explorer' || action === 'terminal') await options.host.open?.(entry, action);
+      if (action === 'explorer') await options.host.open?.(entry);
+      if (action === 'terminal') options.host.openTerminal?.(entry);
       if (action === 'download') {
         const text = await options.host.download?.({ cwd: options.cwd, path: entry.path });
         if (text) setMessage(text);

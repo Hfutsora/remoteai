@@ -70,6 +70,26 @@ it('does not let a stale initial list replace a newly opened terminal', async ()
   } finally { await act(async () => test.root.unmount()); }
 });
 
+it('adds a directory shell without replacing an existing shell and restores it after reconnecting', async () => {
+  const test = fixture();
+  const directory = `${info.cwd}/src`;
+  const opened = { ...info, id: 'new', cwd: directory, projectCwd: info.cwd };
+  test.client.open.mockResolvedValue(opened);
+  try {
+    await test.render();
+    await act(async () => test.panel().addInDirectory(directory));
+    expect(test.client.open).toHaveBeenCalledWith(directory, { cols: 80, rows: 24 }, info.cwd);
+    expect(test.panel().tabs.map(tab => tab.id)).toEqual([info.id, opened.id]);
+    expect(test.panel().selected).toBe(opened.id);
+    expect(test.panel().open).toBe(true);
+    await test.render(false);
+    test.client.list.mockResolvedValue([info, opened]);
+    await test.render();
+    expect(test.panel().tabs.map(tab => tab.cwd)).toEqual([info.cwd, directory]);
+    expect(test.client.close).not.toHaveBeenCalled();
+  } finally { await act(async () => test.root.unmount()); }
+});
+
 it('switches project views without closing shells and filters lists from older PCs', async () => {
   const test = fixture();
   const other = { ...info, id: 'other', cwd: '/other-project' };

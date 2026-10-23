@@ -51,6 +51,23 @@ it('retains project identity when Rust resolves a symlink or chooses the default
   await expect(terminals.request({ operation: 'guiTerminalList', cwd: 1 }, 'account')).rejects.toThrow('项目目录');
 });
 
+it('retains new directory shells with the active project across list requests', async () => {
+  const terminals = new RemoteTerminals();
+  let sequence = 0;
+  vi.mocked(terminalApi.open).mockImplementation(async cwd => ({ id: `shell-${++sequence}`, cwd, shell: 'bash' }));
+  const client = createGuiToolsClient(<T>(body: object) =>
+    terminals.request(body as Record<string, unknown>, 'account') as Promise<T>);
+  const size = { cols: 80, rows: 24 };
+  const first = await client.terminal.open('/project', size);
+  const second = await client.terminal.open('/project/sub', size, '/project');
+  const third = await client.terminal.open('/project/sub', size, '/project');
+  expect(second).toMatchObject({ cwd: '/project/sub', projectCwd: '/project' });
+  expect(await client.terminal.list('/project')).toEqual([first, second, third]);
+  expect(await client.terminal.list('/project/sub')).toEqual([]);
+  await expect(terminals.request({ ...open('/project'), projectCwd: 1 }, 'account')).rejects.toThrow('项目目录');
+  expect(terminalApi.open).toHaveBeenCalledTimes(3);
+});
+
 it.each([
   ['F:\\Projects\\Demo\\', 'f:/projects/demo'],
   ['\\\\?\\F:\\projects\\demo', 'f:/projects/demo/'],

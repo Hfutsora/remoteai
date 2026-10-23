@@ -41,7 +41,10 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
       className={action === 'delete' ? 'pf-danger' : undefined} onClick={() => command(action)}>
       <Icon size={16} /><span>{t(label)}</span></button>;
   const newItems = <>{item('createFile', "client.projectBrowser.newFile", FilePlus)}{item('createFolder', "client.projectBrowser.newFolder", FolderPlus)}</>;
-  const openItems = <>{item('explorer', "client.projectBrowser.systemFileBrowser", FolderOpen)}{item('terminal', "client.projectBrowser.terminal", Terminal)}</>;
+  const openItems = <>
+    {host.open && item('explorer', "client.projectBrowser.systemFileBrowser", FolderOpen)}
+    {host.openTerminal && item('terminal', "client.projectBrowser.terminal", Terminal)}
+  </>;
   const clearOtherSubmenu = (target: EventTarget) => {
     const button = (target as HTMLElement).closest('button');
     if (button?.closest('[role="menu"]') === element.current && !button.hasAttribute('aria-haspopup')) {
@@ -76,10 +79,12 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
         <div role="separator" />
         {item('rename', "client.projectBrowser.renamed", Pencil, root)}{item('delete', "client.projectBrowser.deleted", Trash2, root)}
         <div role="separator" />
-        {host.open ? <TreeSubmenu label={t("client.projectBrowser.openIn")} icon={FolderOpen} active={submenu === 'open'}
+        {(host.open || host.openTerminal) && <TreeSubmenu
+          label={t("client.projectBrowser.openIn")} icon={FolderOpen} active={submenu === 'open'}
           compact={compact} open={() => setSubmenu('open')}
-          close={() => setSubmenu(current => current === 'open' ? undefined : current)}>{openItems}</TreeSubmenu>
-          : item('download', menu.entry.directory ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download, !host.download)}
+          close={() => setSubmenu(current => current === 'open' ? undefined : current)}>{openItems}</TreeSubmenu>}
+        {!host.open && item('download', menu.entry.directory
+          ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download, !host.download)}
       </>}
     </div>
   </div>;

@@ -8,6 +8,7 @@ import { ChatTools } from '../../web/src/chat/ChatTools';
 import { createGuiToolsClient } from '../../../shared/remote-chat/guiTools';
 import type { ProjectBrowserRequest } from '../../../shared/project-browser/protocol';
 import { guiApi } from '../src/pages/codexGui/api';
+import { displayText } from '../src/i18n/uiText';
 import { browserRequest, browserRoot, savedFiles, causeConflict, seedLargeDirectory } from './project-browser-fixture';
 import { ProjectBrowser } from '../../../shared/project-browser/ProjectBrowser';
 import type { BrowserHost } from '../../../shared/project-browser/entryActions';
@@ -27,7 +28,8 @@ Object.assign(window, { savedFiles, causeConflict });
 const browserActions: { path: string; action: string }[] = [];
 const fixtureHost: BrowserHost = {
   copyPath: async path => { browserActions.push({ path, action: 'copyPath' }); },
-  open: async (entry, action) => { browserActions.push({ path: entry.path, action }); },
+  open: async entry => { browserActions.push({ path: entry.path, action: 'explorer' }); },
+  openTerminal: entry => { browserActions.push({ path: entry.path, action: 'terminal' }); },
 };
 Object.assign(window, { browserActions });
 document.documentElement.dataset.theme = dark ? 'dark' : 'light';
@@ -50,7 +52,7 @@ function App() {
   const [project, setProject] = useState(browserRoot);
   const Workspace = mode === 'web' || mode === 'mobile' ? ChatDetailsWorkspace : DetailsWorkspace;
   if (mode === 'standalone') return <div style={{ height: '100dvh' }}>
-    <ProjectBrowser client={client.projectBrowser} cwd={project} connected={connected} t={text => text}
+    <ProjectBrowser client={client.projectBrowser} cwd={project} connected={connected} t={displayText}
       host={fixtureHost} onClose={() => {}} preferences={{ delay: 0, change: () => {} }} />
   </div>;
   return <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm }}>

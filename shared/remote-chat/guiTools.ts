@@ -77,8 +77,9 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
       link: (id: string, input: TerminalLinkRequest) =>
         request<TerminalLinkReply>({ operation: 'guiTerminalLink', id, request: input }),
       list: (cwd: string) => request<TerminalInfo[]>({ operation: 'guiTerminalList', cwd }),
-      open: (cwd: string, size: TerminalSize) =>
-        request<TerminalInfo>({ operation: 'guiTerminalOpen', cwd, size }),
+      open: (cwd: string, size: TerminalSize, projectCwd?: string) =>
+        request<TerminalInfo>({ operation: 'guiTerminalOpen', cwd, size,
+          ...(projectCwd === undefined ? {} : { projectCwd }) }),
       read: (id: string, cursor: number) => request<TerminalRead>({ operation: 'guiTerminalRead', id, cursor }),
       write: (id: string, data: string) => request<void>({ operation: 'guiTerminalWrite', id, data }),
       resize: (id: string, size: TerminalSize) => request<void>({ operation: 'guiTerminalResize', id, size }),

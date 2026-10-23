@@ -36,6 +36,7 @@ import { useDreamSkin } from "./codexGui/useDreamSkin";
 import { FocusModeButton, type GuiFocusMode } from "./codexGui/FocusModeButton";
 import { useTerminalPanel } from "./codexGui/terminal/useTerminalPanel";
 import { terminalApi } from "./codexGui/terminal/api";
+import { TerminalLaunchContext } from '../../../../shared/terminal/TerminalLaunchContext';
 import { MobileConnectionStatus } from "./codexGui/MobileConnectionStatus";
 import { AssistanceButton } from '../remoteAssistance/AssistanceButton';
 import { GUI_VIEW_TITLES, type GuiView } from "./codexGui/GuiNavigation";
@@ -113,7 +114,9 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
       if (!state.selected && controller.getSnapshot().settings.cwd !== state.settings.cwd) return false;
       return controller.send(text, [image]);
     } }}><DiffTextContext.Provider value={diffText}><WorkspaceOperationContext.Provider value={{ busy: Boolean(state.workspaceBusy),
-    setBusy: controller.setWorkspaceBusy }}><DetailsWorkspace selected={state.selected} active={conversationActive}>
+    setBusy: controller.setWorkspaceBusy }}>
+    <TerminalLaunchContext.Provider value={isDesktopApp ? terminal.addInDirectory : undefined}>
+    <DetailsWorkspace selected={state.selected} active={conversationActive}>
     <ChatFileReferencesProvider>
     <div className={`${styles.page} ${collapsed ? styles.collapsed : ""}`}
       data-dream-skin={skinStyle ? "true" : undefined} style={skinStyle}>
@@ -184,11 +187,12 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
             hostPicker={hostPicker} cliVersion={installer.version} />
         </>} /></ConversationRetryProvider>}
       {isDesktopApp && terminal.tabs.length > 0 && <Suspense fallback={null}>
-        <TerminalPanel panel={terminal} active={conversationActive} api={terminalApi} />
+        <TerminalPanel panel={terminal} active={conversationActive} api={terminalApi} notice={terminal.error} />
       </Suspense>}
       </div>
     </div>
     </div>
   </ChatFileReferencesProvider></DetailsWorkspace>
+  </TerminalLaunchContext.Provider>
   </WorkspaceOperationContext.Provider></DiffTextContext.Provider></ImageAiContext.Provider>;
 }

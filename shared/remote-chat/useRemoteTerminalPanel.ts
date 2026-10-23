@@ -58,20 +58,22 @@ export function useRemoteTerminalPanel(options: {
     return () => { cancelled = true; };
   }, [scope, connected]);
 
-  const create = async (current: () => boolean) => {
-    const session = await client.open(cwd, INITIAL_SIZE);
+  const create = async (current: () => boolean, directory = cwd) => {
+    const session = await (directory === cwd ? client.open(cwd, INITIAL_SIZE)
+      : client.open(directory, INITIAL_SIZE, cwd));
     // A late open remains on its original project even after switching away.
     if (!current()) return;
     update(previous => ({ tabs: [...previous.tabs.filter(tab => tab.id !== session.id), asTab(session)],
       selected: session.id, open: true }));
   };
-  const add = () => { void run(async current => {
+  const addInDirectory = (directory: string) => { void run(async current => {
     const sessions = await list();
     if (!current()) return;
     restore(sessions);
     if (sessions.length >= MAX_REMOTE_TERMINALS) { update({ error: '终端较多，请先关闭一个再试。' }); return; }
-    await create(current);
+    await create(current, directory);
   }); };
+  const add = () => addInDirectory(cwd);
   const toggle = () => {
     if (panel.open) { update({ open: false }); return; }
     if (panel.tabs.length) { update({ open: true }); return; }
@@ -95,5 +97,5 @@ export function useRemoteTerminalPanel(options: {
   const select = (selected: SetStateAction<string>) => update(previous => ({
     selected: typeof selected === 'function' ? selected(previous.selected) : selected,
   }));
-  return { ...panel, add, remove, toggle, select, hide: () => update({ open: false }) };
+  return { ...panel, add, addInDirectory, remove, toggle, select, hide: () => update({ open: false }) };
 }

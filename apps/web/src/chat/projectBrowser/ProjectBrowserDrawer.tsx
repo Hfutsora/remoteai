@@ -9,6 +9,8 @@ import type { ProjectBrowserHandle } from '../../../../../shared/project-browser
 import { useGitTheme } from '../git/gitTheme';
 import { browserHost } from './browserHost';
 import type { BrowserHost } from '../../../../../shared/project-browser/entryActions';
+import { TerminalLaunchContext } from '../../../../../shared/terminal/TerminalLaunchContext';
+import { terminalDirectory } from '../../../../../shared/project-browser/terminalDirectory';
 import { t, useLanguage } from '../../i18n';
 import './projectBrowserDrawer.css';
 
@@ -27,10 +29,12 @@ export function ProjectBrowserDrawer({ client, cwd, connected, active, onClose,
   const reference = useChatFileReference();
   const quoteSelection = useChatFileSelection();
   const workspace = useContext(WorkspaceDrawerContext);
+  const launchTerminal = useContext(TerminalLaunchContext);
   const save = useCallback(() => browser.current?.saveActive(), []);
   const hide = workspace?.tabs.hide;
   const actionsHost = useMemo<BrowserHost>(() => ({
     ...(suppliedHost ?? browserHost(client)),
+    openTerminal: launchTerminal ? entry => launchTerminal(terminalDirectory(entry)) : suppliedHost?.openTerminal,
     reference: async entry => {
       const focus = reference(entry);
       hide?.();
@@ -41,7 +45,7 @@ export function ProjectBrowserDrawer({ client, cwd, connected, active, onClose,
       hide?.();
       requestAnimationFrame(focus);
     },
-  }), [suppliedHost, client, reference, quoteSelection, hide]);
+  }), [suppliedHost, client, reference, quoteSelection, hide, launchTerminal]);
   return <WorkspaceDrawerTab active={active}
     tab={{ id: workspaceTabId.files(cwd), title: t("client.projectBrowser.browseFiles"), icon: FILES_ICON, save }}
     className="project-browser-drawer" style={theme}>

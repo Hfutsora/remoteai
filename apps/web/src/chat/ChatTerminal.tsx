@@ -21,18 +21,30 @@ const subscribeLandscape = (notify: () => void) => {
   return () => query.removeEventListener('change', notify);
 };
 
-/** Switching projects detaches the view; each PC retains the project's terminal sessions. */
-export function ChatTerminal({ client, cwd, active, connected, deviceName, launchId = 0, hideTrigger = false }: {
+interface Props {
   client: GuiToolsClient['terminal']; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   launchId?: number; hideTrigger?: boolean;
-}) {
+}
+export type ChatTerminalPanel = ReturnType<typeof useRemoteTerminalLauncher>;
+
+/** Switching projects detaches the view; each PC retains the project's terminal sessions. */
+export function ChatTerminal(props: Props & { panel?: ChatTerminalPanel }) {
+  return props.panel ? <TerminalView {...props} panel={props.panel} /> : <StandaloneTerminal {...props} />;
+}
+
+function StandaloneTerminal(props: Props) {
+  const panel = useRemoteTerminalLauncher(props);
+  return <TerminalView {...props} panel={panel} />;
+}
+
+function TerminalView({ client, active, connected, deviceName, launchId = 0, hideTrigger = false, panel }:
+  Props & { panel: ChatTerminalPanel }) {
   useLanguage();
   const desktop = useDesktopLayout();
   const phoneLandscape = useSyncExternalStore(subscribeLandscape,
     () => window.matchMedia(PHONE_LANDSCAPE).matches, () => false);
   const docked = desktop && !phoneLandscape;
   const host = useContext(ChatTerminalHostContext);
-  const panel = useRemoteTerminalLauncher({ client, cwd, connected });
   const api = useMemo(() => remoteTerminalApi(client), [client]);
   const visible = active && panel.open;
   useToolLaunch(launchId, panel.toggle, connected && !panel.busy);

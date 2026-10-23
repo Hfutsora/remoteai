@@ -15,6 +15,8 @@ import type { ComputerListRefresh } from '../../../../shared/remote-chat/Compute
 import { useComputerListRefresh } from './useComputerListRefresh';
 import { useDesktopLayout } from '../useDesktopLayout';
 import { useRemoteCliInstaller } from '../../../../shared/remote-chat/useRemoteCliInstaller';
+import { useRemoteTerminalLauncher } from '../../../../shared/remote-chat/useRemoteTerminalLauncher';
+import { TerminalLaunchContext } from '../../../../shared/terminal/TerminalLaunchContext';
 import { GuiRemoteDesktop } from '../../../desktop/src/pages/codexGui/GuiRemoteDesktop';
 import { RemoteGuiTools } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiTools';
 import { RemoteGuiProject } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiProject';
@@ -68,6 +70,9 @@ function WebChat({ session, device, selected, ...props }: Props & {
 }) {
   const chat = useChat(session, device?.deviceId ?? '', props.active && Boolean(device));
   const desktop = useDesktopLayout();
+  const cwd = chat.state.selected?.cwd ?? chat.state.draftProject?.cwd ?? '';
+  const terminal = useRemoteTerminalLauncher({ client: chat.controller.guiTools.terminal,
+    cwd, connected: chat.state.ready });
   const installer = useRemoteCliInstaller(chat.controller.guiTools,
     desktop && props.active && chat.foreground && chat.state.ready);
   useEffect(() => {
@@ -75,7 +80,7 @@ function WebChat({ session, device, selected, ...props }: Props & {
   }, [selected, chat.state.ready, device?.deviceId, session.baseUrl, session.email]);
   useDownloadConnection({ session, deviceId: device?.deviceId ?? '', deviceName: device?.name ?? '',
     controller: chat.controller, enabled: selected });
-  return <>
+  return <TerminalLaunchContext.Provider value={terminal.addInDirectory}>
     {props.tokenSummary && <ChatTokenSummary read={chat.controller.readTokenSummary} ready={chat.state.ready}
       deviceName={device?.name} onClose={props.closeTokenSummary} />}
     <ConnectedChat {...props} chat={chat} device={device} email={session.email}
@@ -85,13 +90,13 @@ function WebChat({ session, device, selected, ...props }: Props & {
         current: device ?? null, devices: props.devices, authenticated: true, login: () => {},
         choose: selected => { if (selected) props.chooseDevice(selected.deviceId); } }} />}
     headerActions={<div className="chat-header-tools">
-      <ChatTools client={chat.controller.guiTools} active={props.active}
+      <ChatTools client={chat.controller.guiTools} active={props.active} terminal={terminal}
         desktopActions={<><GuiRemoteDesktop client={chat.controller.guiTools.desktop} active={props.active}
           connected={chat.state.mode === 'direct' || chat.state.mode === 'relay'} />
           <RemoteGuiTools controller={chat.controller} state={chat.state} installer={installer} active={props.active} /></>}
         connected={chat.state.ready} deviceName={device?.name}
-        cwd={chat.state.selected?.cwd ?? chat.state.draftProject?.cwd ?? ''} />
+        cwd={cwd} />
     </div>}
     scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])} />
-  </>;
+  </TerminalLaunchContext.Provider>;
 }

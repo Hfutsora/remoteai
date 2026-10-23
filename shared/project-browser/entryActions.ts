@@ -13,7 +13,8 @@ export interface BrowserHost {
   copyPath: (path: string) => Promise<void>;
   reference?: (entry: ProjectFile) => Promise<void>;
   quoteSelection?: (selection: FileSelection) => Promise<void>;
-  open?: (entry: ProjectFile, application: 'explorer' | 'terminal') => Promise<void>;
+  open?: (entry: ProjectFile) => Promise<void>;
+  openTerminal?: (entry: ProjectFile) => void;
   download?: (target: ProjectFileTarget) => Promise<string>;
 }
 
