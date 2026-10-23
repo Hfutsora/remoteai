@@ -5,7 +5,7 @@ import { profileRole } from './i18n/profile';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Dialog, Form, Input, PullToRefresh, SafeArea, SpinLoading, TabBar, Toast } from "antd-mobile";
 import { Dropdown, Tooltip, type MenuProps } from "antd";
-import { ChevronRight, CircleGauge, Laptop, LayoutDashboard, LogOut, Menu, MonitorCog,
+import { ChevronRight, CircleGauge, Compass, LayoutDashboard, LogOut, Menu, MonitorCog,
   MessageSquare, PanelLeftClose, PanelLeftOpen, RefreshCw, Server, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { defaultApiBaseUrl, deviceStatusWebSocketUrl, getActiveSession, parseDeviceStatusMessage } from "./api";
 import { useAppDispatch, useAppSelector } from "./hooks";
@@ -21,6 +21,8 @@ import { useRevokeDesktopService } from './devices/useRevokeDesktopService';
 import { useRemoteModelRestartPrompt } from "./devices/useRemoteModelRestartPrompt";
 import { RemoteModelSwitchSheet } from "./components/RemoteModelSwitchSheet";
 import { TotpPage } from "./components/TotpPage";
+import { DiscoveryBackButton, DiscoveryPage } from './discovery/DiscoveryPage';
+import { isDiscoveryPage, primaryNavigationPage } from '../../../shared/navigation/discovery';
 import { AccountsPage } from "./accounts/AccountsPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { loadRefreshMinutes, REFRESH_INTERVAL_EVENT } from "./settings/refreshInterval";
@@ -257,8 +259,7 @@ function DevicesPage() {
 const navItems: Array<{ key: AppPage; label: string; icon: typeof LayoutDashboard }> = [
   { key: "chat", get label() { return t("client.app.chat"); }, icon: MessageSquare },
   { key: "accounts", get label() { return t("client.app.accounts"); }, icon: LayoutDashboard },
-  { key: "devices", get label() { return t("client.app.devices"); }, icon: Laptop },
-  { key: "totp", label: "2FA", icon: ShieldCheck },
+  { key: "discover", get label() { return t("client.discovery.title"); }, icon: Compass },
   { key: "settings", get label() { return t("client.app.settings"); }, icon: Settings },
 ];
 
@@ -270,7 +271,7 @@ function AppShell() {
   const { page, profile, devices, refreshing, error } = useAppSelector((state) => state.data);
   const lastRefreshRef = useRef(Date.now());
   const totpManager = useTotpVault(session);
-  const onlineCount = devices.filter((item) => item.online).length;
+  const activeNavigationPage = primaryNavigationPage(page);
 
   useEffect(() => {
     if (!error) return;
@@ -340,13 +341,18 @@ function AppShell() {
 
   const pageDescriptions: Record<Exclude<AppPage, 'chat'>, string> = {
     accounts: t("client.app.welcomeBackYourAccountsAtAGlance"),
+    discover: t('client.discovery.title'),
     devices: t("client.app.viewAndControlYourDesktopDevices"), totp: t("client.app.manageAndSyncYour2faCodes"), settings: t("client.app.managePreferencesAndAccountSecurity"),
   };
   const otherPages = {
+    discover: <DiscoveryPage onOpen={destination => dispatch(pageChanged(destination))} />,
     accounts: <AccountsPage />, devices: <DevicesPage />,
     totp: <TotpPage manager={totpManager} />, settings: <SettingsPage totpManager={totpManager} />,
   };
-  const shellClass = `app-shell${page === 'chat' ? ' chat-active' : ''}${menuVisible ? '' : ' main-menu-collapsed'}`;
+  const pageTitle = page === 'devices' ? t('client.app.devices')
+    : page === 'totp' ? t('client.discovery.twoFactor') : navItems.find(item => item.key === page)?.label;
+  const shellClass = ['app-shell', page === 'chat' && 'chat-active', page === 'discover' && 'discovery-active',
+    !menuVisible && 'main-menu-collapsed'].filter(Boolean).join(' ');
   const MenuToggleIcon = menuVisible ? PanelLeftClose : PanelLeftOpen;
   return <div className={shellClass}>
     <aside className="desktop-sidebar">
@@ -359,11 +365,10 @@ function AppShell() {
       </div>
       <nav>{navItems.map((item) => <Tooltip key={item.key} placement="right"
         title={menuVisible ? undefined : item.label}>
-        <button type="button" aria-label={item.label} aria-current={page === item.key ? 'page' : undefined}
-          className={`sidebar-nav-${item.key}${page === item.key ? ' active' : ''}`}
+        <button type="button" aria-label={item.label} aria-current={activeNavigationPage === item.key ? 'page' : undefined}
+          className={`sidebar-nav-${item.key}${activeNavigationPage === item.key ? ' active' : ''}`}
           onClick={() => dispatch(pageChanged(item.key))}>
           <item.icon size={19} /><span>{item.label}</span>
-          {item.key === "devices" && onlineCount ? <b>{onlineCount}</b> : null}
         </button>
       </Tooltip>)}</nav>
       <div className="sidebar-live"><span><i />  {t("client.app.connected")}</span><p>{t("client.app.manageYourAccountsAndDevices")}</p></div>
@@ -380,19 +385,25 @@ function AppShell() {
     </aside>
     <div className="content-shell">
       {page !== 'chat' && <header className="desktop-topbar"><div>
-        <span>{navItems.find((item) => item.key === page)?.label}</span><strong>{pageDescriptions[page]}</strong></div>
+        <span>{pageTitle}</span><strong>{pageDescriptions[page]}</strong></div>
         <div><Tooltip title={t("client.app.refreshAllData")}><button className="icon-button" type="button"
           onClick={() => void dispatch(refreshAll())}>
           <RefreshCw size={18} className={refreshing ? "spin" : ""} /></button></Tooltip>
           <span className="topbar-date">{new Intl.DateTimeFormat(getLocale(),
             { month: "long", day: "numeric", weekday: "short" }).format(new Date())}</span></div></header>}
       <main className="main-content">
+        {isDiscoveryPage(page) && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
         {session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
           active={page === "chat"} />}
         {page !== "chat" && otherPages[page]}
       </main>
     </div>
-    <div className="mobile-tabbar"><TabBar activeKey={page} onChange={(key) => dispatch(pageChanged(key as AppPage))}>{navItems.map((item) => <TabBar.Item key={item.key} title={item.label} icon={<item.icon size={21} />} badge={item.key === "devices" && onlineCount ? onlineCount : undefined} />)}</TabBar><SafeArea position="bottom" /></div>
+    <div className="mobile-tabbar">
+      <TabBar activeKey={activeNavigationPage}>
+        {navItems.map(item => <TabBar.Item key={item.key} title={item.label} icon={<item.icon size={21} />}
+          onClick={() => dispatch(pageChanged(item.key))} />)}
+      </TabBar><SafeArea position="bottom" />
+    </div>
   </div>;
 }
 

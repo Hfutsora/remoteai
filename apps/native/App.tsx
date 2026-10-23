@@ -75,6 +75,8 @@ import { useRevokeDesktopService } from './src/devices/useRevokeDesktopService';
 import { RemoteModelSwitchSheet } from './src/components/RemoteModelSwitchSheet';
 import { QuotaConsumptionSheet } from './src/components/QuotaConsumptionSheet';
 import { TotpPage } from './src/totp/TotpPage';
+import { DiscoveryBackButton, DiscoveryPage } from './src/discovery/DiscoveryPage';
+import { isDiscoveryPage, primaryNavigationPage } from '../../shared/navigation/discovery';
 import { usePageStyles as useTotpPageStyles } from './src/totp/pageStyles';
 import { ChatPage } from './src/chat/ChatPage';
 import { palette as chatPalette } from './src/chat/styles';
@@ -583,7 +585,7 @@ function DeviceManagementPage({
   </>;
 }
 
-type AppPage = 'accounts' | 'devices' | 'chat' | 'totp' | 'admin' | 'settings' | 'about'
+type AppPage = 'accounts' | 'devices' | 'chat' | 'discover' | 'totp' | 'admin' | 'settings' | 'about'
   | 'token-summary' | 'downloads';
 const DEFAULT_APP_PAGE: AppPage = 'chat';
 
@@ -593,9 +595,9 @@ function BottomNavigation({ activePage, onChange }: {
 }) {
   const resolveThemeColor = useThemeColor();
   const styles = useStyles();
-  const totpPageStyles = useTotpPageStyles();
   useLanguage();
   const settingsActive = ['admin', 'about', 'settings'].includes(activePage);
+  const discoveryActive = primaryNavigationPage(activePage) === 'discover';
   // Keep the home-indicator area inside the navigation background.
   return <SafeAreaView edges={['bottom']} style={styles.bottomNavigation} accessibilityRole="tablist">
     <Pressable accessibilityRole="tab" accessibilityState={{ selected: activePage === 'chat' }}
@@ -609,18 +611,11 @@ function BottomNavigation({ activePage, onChange }: {
         size={23} color={activePage === 'accounts' ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
       <Text style={[styles.navText, activePage === 'accounts' && styles.navTextActive]}>{t("client.app.accounts")}</Text>
     </Pressable>
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: activePage === 'devices' }}
-      onPress={() => onChange('devices')} style={styles.navItem}>
-      <Ionicons name="server-outline" size={23} color={activePage === 'devices' ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
-      <Text style={[styles.navText, activePage === 'devices' && styles.navTextActive]}>{t("client.app.devices")}</Text>
-    </Pressable>
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: activePage === 'totp' }}
-      onPress={() => onChange('totp')} style={styles.navItem}>
-      <View style={activePage === 'totp' ? totpPageStyles.activeTab : totpPageStyles.tab}>
-        <Ionicons name={activePage === 'totp' ? 'shield-checkmark' : 'shield-checkmark-outline'}
-          size={23} color={activePage === 'totp' ? resolveThemeColor('#008956', 'accent') : resolveThemeColor('#858991', 'muted')} />
-        <Text style={[styles.navText, activePage === 'totp' && styles.navTextActive]}>2FA</Text>
-      </View>
+    <Pressable accessibilityRole="tab" accessibilityState={{ selected: discoveryActive }}
+      onPress={() => onChange('discover')} style={styles.navItem}>
+      <Ionicons name={discoveryActive ? 'compass' : 'compass-outline'} size={23}
+        color={discoveryActive ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
+      <Text style={[styles.navText, discoveryActive && styles.navTextActive]}>{t('client.discovery.title')}</Text>
     </Pressable>
     <Pressable accessibilityRole="tab" accessibilityState={{ selected: settingsActive }}
       onPress={() => onChange('settings')} style={styles.navItem}>
@@ -1051,7 +1046,8 @@ function AppContent() {
       return undefined;
     }
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      setActivePage(activePage === 'about' ? 'settings' : DEFAULT_APP_PAGE);
+      if (isDiscoveryPage(activePage)) setActivePage('discover');
+      else setActivePage(activePage === 'about' ? 'settings' : DEFAULT_APP_PAGE);
       return true;
     });
     return () => subscription.remove();
@@ -1290,6 +1286,7 @@ function AppContent() {
   return <SafeAreaView edges={showBottomNavigation ? ['top', 'left', 'right'] : undefined}
     style={[styles.app, activePage === 'totp' && totpPageStyles.page,
     activePage === 'accounts' && accountStyles.page,
+    activePage === 'discover' && styles.discoveryCanvas,
     activePage === 'chat' && styles.chatCanvas,
     (activePage === 'settings' || activePage === 'about' || activePage === 'downloads') && styles.settingsCanvas]}>
     <ThemeStatusBar />
@@ -1300,7 +1297,9 @@ function AppContent() {
       notification={chatNotification.target} notificationError={chatNotification.error}
       notificationHandled={chatNotification.handled} />
     {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('settings')} />}
-    {activePage === 'chat' || activePage === 'token-summary' || activePage === 'downloads'
+    {activePage === 'discover' && <DiscoveryPage onOpen={setActivePage} />}
+    {isDiscoveryPage(activePage) && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
+    {activePage === 'chat' || activePage === 'token-summary' || activePage === 'downloads' || activePage === 'discover'
       ? null : activePage === 'accounts'
       ? <Dashboard session={session} accounts={accounts} devices={devices} loading={loading}
         syncingServer={syncingServer} refreshingUsage={refreshingUsage} consumingQuota={consumingQuota}
@@ -1360,6 +1359,7 @@ export default function App() {
 }
 
 const useStyles = createThemedStyles((color) => ({
+  discoveryCanvas: { backgroundColor: color('#ededed', 'canvas') },
   settingsCanvas: { backgroundColor: color('#fff', 'surface') },
   chatCanvas: { backgroundColor: color(chatPalette.background, 'canvas') },
   flex: { flex: 1 }, app: { flex: 1, backgroundColor: color(COLORS.canvas, 'canvas') }, boot: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: color(COLORS.canvas, 'canvas'), gap: 12 }, bootText: { color: color(COLORS.ink, 'ink'), fontSize: 18, fontWeight: '700' }, startupError: { flex: 1, padding: 28, justifyContent: 'center', backgroundColor: color(COLORS.canvas, 'canvas') }, startupErrorTitle: { color: color(COLORS.ink, 'ink'), fontSize: 22, fontWeight: '800' }, startupErrorMessage: { color: color(COLORS.muted, 'muted'), fontSize: 15, lineHeight: 22, marginTop: 12 }, startupErrorDetail: { color: color(COLORS.danger, 'danger'), fontSize: 12, marginTop: 20 },

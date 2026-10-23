@@ -16,10 +16,14 @@ test('switches appearance across pages and restores it after reloading', async (
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('.settings-group').first()).toHaveCSS('background-color', 'rgb(27, 32, 30)');
   await page.screenshot({ path: testInfo.outputPath('dark-settings.png'), fullPage: true });
-  for (const label of ['账号', '设备', '2FA', '聊天']) {
+  for (const label of ['账号', '发现', '设备', '2FA', '聊天']) {
     await navigate(page, label);
     if (label === '账号') {
       await expect(page.locator('.account-row').first()).toHaveCSS('background-color', 'rgb(27, 32, 30)');
+    }
+    if (label === '发现') {
+      await expect(page.locator('.discovery-page')).toHaveCSS('background-color', 'rgb(18, 22, 20)');
+      await expect(page.locator('.discovery-row').first()).toHaveCSS('background-color', 'rgb(27, 32, 30)');
     }
     if (label === '聊天') {
       await expect(page.locator('.chat-page')).toHaveCSS('background-color', 'rgb(18, 22, 20)');
