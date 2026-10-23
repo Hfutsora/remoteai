@@ -10,6 +10,7 @@ macro_rules! log_proxy_error {
     }};
 }
 
+mod aggregate_capacity;
 mod anthropic_reasoning;
 mod anthropic_stream;
 mod anthropic_upstream;
@@ -129,6 +130,7 @@ include!("sse.rs");
 #[cfg(test)]
 mod tests {
     include!("tests/aggregate_failover.rs");
+    include!("tests/aggregate_recovery.rs");
     include!("tests/aggregate_official.rs");
     include!("tests/shared_groups.rs");
     include!("tests/provider_request_options.rs");

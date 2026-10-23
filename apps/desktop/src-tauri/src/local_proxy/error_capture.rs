@@ -4,6 +4,10 @@ use super::error_capture_diagnostics::{CaptureDiagnostics, Observation};
 use super::stream_completion::{CompletionEvent, StreamCompletion};
 
 const MAX_CAPTURE_BYTES: usize = 64 * 1024;
+// Terminal Responses frames repeat the output and can exceed the diagnostic sample budget.
+// Health checks must validate those frames before releasing a recovering member. Keep a
+// separate hard bound so an unbounded upstream frame still cannot exhaust proxy memory.
+const MAX_HEALTH_CAPTURE_BYTES: usize = 8 * 1024 * 1024;
 const MAX_ERROR_MESSAGE_CHARS: usize = 1000;
 const GENERIC_UPSTREAM_ERROR: &str = "The upstream service returned an error.";
 const INTERRUPTED_STREAM_ERROR: &str = "上游已结束传输，但没有发送完整的响应结束事件。";
@@ -96,7 +100,7 @@ impl ErrorCapture {
         }
         if !self.event_stream {
             self.buffer_bytes = self.buffer_bytes.saturating_add(bytes.len() as u64);
-            let remaining = MAX_CAPTURE_BYTES.saturating_sub(self.buffer.len());
+            let remaining = self.capture_limit().saturating_sub(self.buffer.len());
             self.buffer
                 .extend_from_slice(&bytes[..bytes.len().min(remaining)]);
             return errors;
@@ -207,8 +211,15 @@ impl ErrorCapture {
 
     fn push_byte(&mut self, byte: u8) {
         self.buffer_bytes = self.buffer_bytes.saturating_add(1);
-        if self.buffer.len() < MAX_CAPTURE_BYTES {
+        if self.buffer.len() < self.capture_limit() {
             self.buffer.push(byte);
+        }
+    }
+
+    fn capture_limit(&self) -> usize {
+        match self.purpose {
+            CapturePurpose::Diagnostics => MAX_CAPTURE_BYTES,
+            CapturePurpose::MemberHealth => MAX_HEALTH_CAPTURE_BYTES,
         }
     }
 
