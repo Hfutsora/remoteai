@@ -19,6 +19,7 @@ import { ChatProcessing } from './ChatProcessing';
 import { currentRunningTurn } from '../../../../shared/chat/runningTurn';
 import { ChatImageContext } from './ChatImage';
 import { ChatFileContext } from './ChatFileLink';
+import { ChatAttachmentMetadata } from './ChatAttachmentMetadata';
 import { ChatThreads } from './ChatThreads';
 import { ChatListButton } from './ChatListButton';
 import { ChatSidebar } from './ChatSidebar';
@@ -149,6 +150,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     send: imageAiSender(controller, prepareImageEdit) }}>
     <ChatImageContext.Provider value={{ threadId: state.selected?.id ?? null, ready,
       load: controller.imagePreview, save: controller.managedPreviews ? controller.savePreviewImage : undefined }}>
+    <ChatAttachmentMetadata controller={controller} ready={ready} threadId={state.selected?.id ?? null}>
     <ChatFileContext.Provider value={{ threadId: state.selected?.id ?? null, ready, client: controller.files,
       load: controller.textPreview }}>
     <ChatDetailsWorkspace selected={state.selected?.id ?? null} active={active} enabled={showDesktopDiffs}>
@@ -212,5 +214,5 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     {pickingDevice && <ChatDevices chooseLocal={chooseLocal} devices={devices} onClose={() => setPickingDevice(false)}
       refresh={deviceRefresh} choose={(id) => { chooseDevice(id); setPickingDevice(false); }} />}
   </ChatQuotesProvider></ChatFileReferencesProvider></ChatDetailsWorkspace>
-  </ChatFileContext.Provider></ChatImageContext.Provider></ImageAiContext.Provider>;
+  </ChatFileContext.Provider></ChatAttachmentMetadata></ChatImageContext.Provider></ImageAiContext.Provider>;
 }

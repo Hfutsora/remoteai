@@ -134,7 +134,7 @@ test('sends skills, plugin and file capsules and keeps goal controls removable',
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('menuitem', { name: '文件', exact: true }).click();
   await (await chooser).setFiles({ name: 'test.txt', mimeType: 'text/plain', buffer: Buffer.from('Web file test') });
-  await expect(page.getByRole('button', { name: '移除test.txt' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '移除附件：test.txt' })).toBeVisible();
   await screenshot(page, info, 'composer-capsules');
   await page.getByRole('button', { name: '发送消息' }).click();
   await settled(page);

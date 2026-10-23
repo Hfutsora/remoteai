@@ -12,6 +12,9 @@ import { ChatCopyButton } from './ChatCopyButton';
 import { ChatQuoteButton } from './ChatQuotes';
 import { messageReferences } from '../../../../shared/chat/messageReferences';
 import { ChatMessageReferences } from './ChatMessageReferences';
+import { messageAttachments } from '../../../../shared/chat/messageAttachments';
+import { MessageAttachments } from '../../../../shared/chat/SentMessageAttachments';
+import { ChatFileLink } from './ChatFileLink';
 
 export const ChatMessage = memo(function ChatMessage({ item, onOpen, process = false, running = false, onQuote,
   desktop = false, onInspect }: {
@@ -28,6 +31,7 @@ export const ChatMessage = memo(function ChatMessage({ item, onOpen, process = f
   const content = quotedMessage(text);
   const images = itemImageSources(item);
   const references = messageReferences(item);
+  const files = messageAttachments(user ? content.text : '', references);
   return <article className={user ? 'chat-user-message-wrap' : 'chat-assistant-message'}
     data-quote-source={desktop && !user ? item.id : undefined}>
     {user && desktop && images.length > 0 && <div className="chat-sent-images">
@@ -35,11 +39,13 @@ export const ChatMessage = memo(function ChatMessage({ item, onOpen, process = f
     </div>}
     {user ? (!desktop || content.text || content.quotes.length > 0 || references.length > 0)
       && <div className="chat-user-message">
-      <ChatMessageReferences references={references} />
+      <ChatMessageReferences references={files.references} />
       {content.quotes.map((quote, index) => <details className="chat-message-quote" key={index}>
         <summary><Quote size={14} /><span>{quote}</span></summary><blockquote>{quote}</blockquote>
       </details>)}
-      {content.text && <ChatMarkdown text={content.text} desktop={desktop} />}
+      <MessageAttachments key={text} attachments={files.attachments} t={t}
+        renderFile={file => <ChatFileLink href={file.path}>{file.name}</ChatFileLink>} />
+      {files.text && <ChatMarkdown text={files.text} desktop={desktop} />}
       {!desktop && images.map((source, index) => <ChatImage key={index} source={source} />)}
     </div> : <ChatMarkdown text={text} process={process} desktop={desktop} />}
     {!!text.trim() && !running && !(desktop && process) && <div className="chat-message-actions" data-quote-exclude>

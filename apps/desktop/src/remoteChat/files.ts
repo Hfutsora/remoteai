@@ -20,7 +20,7 @@ export class RemoteFiles {
     if (body.operation === 'guiFileApplications') return invoke('codex_gui_file_applications');
     if (body.operation === 'guiFileAction') {
       // Saving on the viewer uses its download manager, not an unattended dialog on the host.
-      if (!['open', 'copyFile', 'copyPath', 'copyContents', 'reveal'].includes(String(object(body.action).type))) {
+      if (!['open', 'copyFile', 'copyPath', 'copyContents', 'reveal', 'metadata'].includes(String(object(body.action).type))) {
         throw new Error('请选择有效的文件操作。');
       }
       return invoke('codex_gui_file_action', { request: { target: body.target, action: body.action } });

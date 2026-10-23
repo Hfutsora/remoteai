@@ -4,8 +4,11 @@ import type { TerminalLinkReply, TerminalLinkRequest } from '../terminal/links';
 export type FileTarget = FileReference & { threadId: string | null };
 export interface FileApplication { id: string; name: string; kind: 'editor' | 'terminal' | 'system'; icon?: string }
 export type FileAction = { type: 'open'; application: string }
-  | { type: 'copyFile' | 'copyPath' | 'copyContents' | 'saveAs' | 'reveal' };
-export interface FileActionResult { path: string; text?: string; saved: boolean }
+  | { type: 'copyFile' | 'copyPath' | 'copyContents' | 'saveAs' | 'reveal' | 'metadata' };
+export interface FileMetadata {
+  name: string; path: string; directory: boolean; size: number | null; modifiedAt?: number;
+}
+export interface FileActionResult { path: string; text?: string; saved: boolean; metadata?: FileMetadata }
 export type PreviewKind = 'html' | 'markdown' | 'text' | 'image' | 'pdf' | 'video' | 'audio';
 export interface FilePreviewData extends FileReference {
   sessionId: string; name: string; kind: PreviewKind; text: string | null; url: string;

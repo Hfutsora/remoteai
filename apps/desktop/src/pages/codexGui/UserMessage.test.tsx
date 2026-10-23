@@ -127,3 +127,18 @@ it("does not show a bubble, timestamp or actions for context-only messages", asy
     item={{ id: "hidden", type: "userMessage", content: [{ type: "text", text: awareness }] }} />));
   expect(container.innerHTML).toBe("");
 });
+
+it("collapses historical files without changing the copied or editable message", async () => {
+  const text = '检查日志\n文件：C:/uploads/report.jsonl';
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  vi.stubGlobal('navigator', { clipboard: { writeText } });
+  vi.mocked(guiApi.request).mockResolvedValue({ data: [] });
+  await act(async () => root.render(<UserMessage onEdit={vi.fn()} item={{ id: 'file', type: 'userMessage',
+    text }} />));
+  expect(container.textContent).toContain('1 个附件');
+  expect(container.textContent).not.toContain('C:/uploads/report.jsonl');
+  await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="复制消息"]')?.click());
+  expect(writeText).toHaveBeenCalledWith(text);
+  await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="编辑消息"]')?.click());
+  expect(container.querySelector('[role="textbox"]')?.textContent).toContain('文件：C:/uploads/report.jsonl');
+});

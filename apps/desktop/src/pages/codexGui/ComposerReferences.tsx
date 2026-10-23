@@ -5,6 +5,8 @@ import { isDesktopApp } from "../../api/backend";
 import { ComposerFileImage } from "./ComposerFileImage";
 import imageStyles from "./ImageAttachments.module.less";
 import styles from "./ComposerExtras.module.less";
+import { ComposerAttachment } from '../../../../../shared/chat/ComposerAttachment';
+import { AttachmentMetadataProvider } from './AttachmentMetadataProvider';
 
 const referencePrefix = { file: "", folder: "", plugin: "", conversation: "@", coze: "#" } as const;
 
@@ -18,13 +20,16 @@ export function ComposerReferences({ items, disabled, active = true, onRemove }:
   if (!items.length) return null;
   const images = items.filter(isImage);
   const references = items.filter((item) => !isImage(item));
-  return <>
+  return <AttachmentMetadataProvider>
     {images.length > 0 && <div className={imageStyles.attachments} aria-label={uiText("client.composer.localImageAttachments")}>
       {images.map((item) => <ComposerFileImage key={item.path} item={item} disabled={disabled}
         active={active} onRemove={onRemove} />)}
     </div>}
     {references.length > 0 && <div className={styles.references} aria-label={uiText("client.composer.filePluginAndConversationReferences")}>
       {references.map((item) => {
+        if (item.kind === 'file' || item.kind === 'folder') return <ComposerAttachment key={attachmentKey(item)}
+          file={{ ...item, kind: item.kind }} t={uiText} active={active} disabled={disabled}
+          onRemove={() => onRemove(attachmentKey(item))} />;
         const Icon = { plugin: Blocks, folder: Folder, file: File, conversation: MessageSquare, coze: GitBranch }[item.kind];
         return <span className={styles.reference} key={attachmentKey(item)}>
           <Icon size={15} aria-hidden="true" /><span>{referencePrefix[item.kind]}{item.name}</span>
@@ -33,5 +38,5 @@ export function ComposerReferences({ items, disabled, active = true, onRemove }:
         </span>;
       })}
     </div>}
-  </>;
+  </AttachmentMetadataProvider>;
 }

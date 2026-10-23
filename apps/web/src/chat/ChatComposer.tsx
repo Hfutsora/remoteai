@@ -4,7 +4,7 @@ import { ComposerSuggestion } from './ComposerSuggestion';
 import { ComposerInput } from './ComposerInput';
 import { t, useLanguage } from '../i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, ChevronDown, File, Folder, MessageSquare, Pause, Play, Plus,
+import { ArrowUp, ChevronDown, Pause, Play, Plus,
   SlidersHorizontal, Square, X } from 'lucide-react';
 import { COMPOSER_ACTION_LABELS } from '../../../../shared/remote-chat/composerAction';
 import { composerLabel } from '../../../../shared/remote-chat/composer';
@@ -20,8 +20,7 @@ import { ComposerGoal } from './ComposerGoal';
 import { ChatAttachmentPreviews } from './ChatAttachments';
 import { pickChatImages } from './pickChatImages';
 import { ChatImageEditor } from './ChatImageEditor';
-import { ChatUploadProgress } from './ChatUploadProgress';
-import { itemUploadProgress } from '../../../../shared/remote-chat/uploadProgress';
+import { ComposerAttachments } from './ComposerAttachments';
 import { ChatQueue } from './ChatQueue';
 import { ComposerQuotes } from './ChatQuotes';
 import { ComposerAddMenu, ComposerPluginMenu, ChatCommandMenu, type ComposerAddAction } from './ComposerMenus';
@@ -144,16 +143,8 @@ export function ChatComposer(props: ComposerProps) {
           <ChatAttachmentPreviews images={draft.images} busy={busy} remove={draft.removeImage}
             upload={sending ? uploadProgress : undefined} reconnecting={!ready}
             add={() => setAdding(true)} edit={id => { menu.input.current?.blur(); setEditingId(id); }} />
-          <div className="chat-composer-capsules">{attachments.items.map((item, index) =>
-            <span className="chat-capsule" key={`${item.path}:${index}`}>
-              {item.kind === 'conversation' && <MessageSquare size={14} />}
-              {item.kind === 'folder' && <Folder size={14} />}
-              {item.kind !== 'conversation' && item.kind !== 'folder' && <File size={14} />}
-              <span title={item.name}>{item.kind === 'conversation' ? `@${item.name}` : item.name}</span>
-              {item.data && <ChatUploadProgress inline reconnecting={!ready}
-                progress={itemUploadProgress(sending ? uploadProgress : undefined, 'attachment', index)} />}
-              <button type="button" aria-label={t("client.chat.remove", { value1: item.name })}
-                disabled={busy} onClick={() => attachments.remove(item)}><X size={14} /></button></span>)}</div>
+          <ComposerAttachments items={attachments.items} busy={busy} active={active} ready={ready}
+            uploadProgress={sending ? uploadProgress : undefined} remove={attachments.remove} />
           <ComposerQuotes disabled={busy} />
           {(goalMode.enabled || goal) && <ComposerGoal key={`goal:${threadId}:${active}`}
             goal={goalMode.enabled ? null : goal} draft={draft.text}
