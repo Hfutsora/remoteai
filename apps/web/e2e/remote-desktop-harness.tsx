@@ -4,6 +4,7 @@ import { ChatTools } from '../src/chat/ChatTools';
 import { GuiToolbox } from '../../desktop/src/pages/codexGui/GuiToolbox';
 import { GuiRemoteDesktop } from '../../desktop/src/pages/codexGui/GuiRemoteDesktop';
 import { client, desktopTest } from './remote-desktop-fixture';
+import { RemoteDesktopComputersHarness } from './remote-desktop-computers-harness';
 import '../src/styles.css';
 import '../src/chat/chat.css';
 import '../../desktop/src/pages/codexGui/remote/remoteGui.less';
@@ -39,4 +40,5 @@ function Harness() {
     <input aria-label="本机聊天消息" />
   </main>;
 }
-createRoot(document.getElementById('root')!).render(<Harness />);
+createRoot(document.getElementById('root')!).render(new URLSearchParams(location.search).has('computers')
+  ? <RemoteDesktopComputersHarness /> : <Harness />);

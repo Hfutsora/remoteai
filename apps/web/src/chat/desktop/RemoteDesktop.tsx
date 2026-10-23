@@ -40,24 +40,26 @@ const createPeer = (configuration: RTCConfiguration) => new RTCPeerConnection(co
 
 interface Props {
   client: DesktopClient; active: boolean; close: () => void; localClipboard?: LocalDesktopClipboard;
+  /** Hide a retained computer's viewer without ending its media session or resetting its window. */
+  visible?: boolean;
   connected?: boolean;
   nativeWindow?: boolean;
   windowState?: DesktopWindowState;
 }
 
 export function RemoteDesktop(props: Props) {
-  return <DesktopErrorBoundary active={props.active} close={props.close}>
+  return <DesktopErrorBoundary active={props.active && props.visible !== false} close={props.close}>
     <DesktopViewer {...props} />
   </DesktopErrorBoundary>;
 }
 
-function DesktopViewer({ client, active, connected = true, close, localClipboard, nativeWindow = false,
+function DesktopViewer({ client, active, visible = true, connected = true, close, localClipboard, nativeWindow = false,
   windowState }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const windowControls = useDesktopWindow(root, active, windowState);
-  const shown = active && !windowControls.minimized;
-  const visible = usePageVisibility();
-  const session = useDesktopSession({ client, active: active && visible, connected, createPeer });
+  const shown = active && visible && !windowControls.minimized;
+  const pageVisible = usePageVisibility();
+  const session = useDesktopSession({ client, active: active && pageVisible, connected, createPeer });
   const statusAction = desktopStatusAction(session);
   const viewOnly = session.capabilities.control === false;
   const [display, setDisplay] = useState(false);
@@ -111,7 +113,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
   };
   if (!active) return null;
   return createPortal(<><div ref={root} tabIndex={-1} className="rd-root" style={keyboardViewport}
-    hidden={windowControls.minimized}
+    hidden={!shown}
     role="dialog" aria-modal="true"
     aria-label={t("client.remoteDesktop.remoteDesktop")} onContextMenu={event => event.preventDefault()}>
     {desktopWindow && <DesktopTitlebar displays={session.displays} selected={session.settings.displayId}
@@ -185,7 +187,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
       platform={session.capabilities.platform} mobile={!hardware}
       supported={!!session.capabilities.keyboard} />}
   </div>
-    {windowControls.minimized && !windowState && <button type="button" className="rd-restore"
+    {visible && windowControls.minimized && !windowState && <button type="button" className="rd-restore"
       aria-label={t("client.remoteDesktop.restoreRemoteDesktop")} onClick={windowControls.restore}>
       <Monitor size={22} /><span>{t("client.remoteDesktop.remoteDesktop")}</span>
     </button>}

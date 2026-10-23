@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Tooltip } from 'antd';
 import { Monitor } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
@@ -15,7 +15,6 @@ export function GuiRemoteDesktop({ client, active, connected }: {
 }) {
   const [opened, setOpened] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  useEffect(() => { if (!active) { setOpened(false); setMinimized(false); } }, [active]);
   const background = opened && minimized && active;
   const label = uiText(background ? "client.remoteDesktop.restoreRemoteDesktop" : "client.remoteDesktop.openRemoteDesktop");
   const open = () => { setMinimized(false); setOpened(true); };
@@ -29,7 +28,7 @@ export function GuiRemoteDesktop({ client, active, connected }: {
       </button>
     </Tooltip>
     <Suspense fallback={null}>
-      {opened && <RemoteDesktop client={client} active={active} connected={connected} close={close}
+      {opened && <RemoteDesktop client={client} active visible={active} connected={connected} close={close}
         windowState={{ minimized, setMinimized }} nativeWindow={isTauri()}
         localClipboard={isTauri() ? localDesktopClipboard : undefined} />}
     </Suspense>
