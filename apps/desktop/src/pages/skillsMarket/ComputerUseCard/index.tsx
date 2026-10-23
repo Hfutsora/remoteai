@@ -1,3 +1,4 @@
+import { pluginSearch } from '@remoteai/i18n/copy/desktop/pluginSearch';
 import { displayError } from '../../../i18n/uiText';
 import { useEffect } from "react";
 import { Popconfirm } from "antd";
@@ -13,10 +14,7 @@ import styles from "./index.module.less";
 interface Props { homeId: string; active: boolean; onBusyChange: (busy: boolean) => void }
 
 export function computerUseMatches(query: string) {
-  return ("computer use cua 电脑助手 桌面 应用 自动化 windows macos mac 苹果 截图 点击 输入 remote ai"
-    + " assistant desktop app automation screenshot click type"
-    + " компьютерный помощник рабочий стол приложения автоматизация снимок экрана")
-    .includes(query.trim().toLocaleLowerCase());
+  return pluginSearch.computer.includes(query.trim().toLocaleLowerCase());
 }
 
 function statusText(status: ComputerUseStatus | null) {

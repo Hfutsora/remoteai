@@ -1,3 +1,5 @@
+import inlineCopy from '@remoteai/i18n/copy/inline/desktop/utils/format';
+import { interpolate as interpolateCopy } from '@remoteai/i18n';
 import { getLocale } from "../i18n";
 import { uiText } from "../i18n/uiText";
 import type { Language } from "../i18n";
@@ -46,18 +48,18 @@ export function resetCountdownWithDays(timestamp: number | null | undefined, lan
   const hours = Math.floor((totalSeconds % 86_400) / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
   const seconds = totalSeconds % 60;
-  return `${days}${(language !== "zh" && language !== "en" ? uiText("client.mobile.d", {}, language) : language === "zh" ? "天" : "d")} ${padTimePart(hours)}:${padTimePart(minutes)}:${padTimePart(seconds)}`;
+  return `${days}${(language !== "zh" && language !== "en" ? uiText("client.mobile.d", {}, language) : language === "zh" ? inlineCopy["text_49da61ce"] : inlineCopy["d_18ac3e73"])} ${padTimePart(hours)}:${padTimePart(minutes)}:${padTimePart(seconds)}`;
 }
 
 export function resetClockLabel(timestamp: number | null | undefined, language: Language) {
   const clock = resetClockTime(timestamp);
-  if (!clock) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetTimeUnknown", {}, language) : language === "zh" ? "重置时间未知" : "Reset time unknown");
-  return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsIn", { value1: clock }, language) : language === "zh" ? `${clock}后重置` : `Resets at ${clock}`);
+  if (!clock) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetTimeUnknown", {}, language) : language === "zh" ? inlineCopy["text_2446e1e4"] : inlineCopy["Reset_time_unknown_bc41e55d"]);
+  return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsIn", { value1: clock }, language) : language === "zh" ? interpolateCopy(inlineCopy["value1_f1cf293f"], { value1: String(clock) }) : interpolateCopy(inlineCopy["Resets_at_value1_d613480a"], { value1: String(clock) }));
 }
 
 function resetDateTimeLabel(timestamp: number, language: Language) {
   const value = new Date(timestamp * 1000);
-  if (Number.isNaN(value.getTime())) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetTimeUnknown", {}, language) : language === "zh" ? "重置时间未知" : "Reset time unknown");
+  if (Number.isNaN(value.getTime())) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetTimeUnknown", {}, language) : language === "zh" ? inlineCopy["text_2446e1e4"] : inlineCopy["Reset_time_unknown_bc41e55d"]);
   const year = value.getFullYear();
   const month = value.getMonth() + 1;
   const day = value.getDate();
@@ -65,8 +67,8 @@ function resetDateTimeLabel(timestamp: number, language: Language) {
   const minute = padTimePart(value.getMinutes());
   const second = padTimePart(value.getSeconds());
   return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsAfter", { value1: year, value2: padTimePart(month), value3: padTimePart(day), value4: hour, value5: minute, value6: second }, language) : language === "zh"
-    ? `${year}-${padTimePart(month)}-${padTimePart(day)} ${hour}:${minute}:${second}后重置`
-    : `Resets on ${year}-${padTimePart(month)}-${padTimePart(day)} ${hour}:${minute}:${second}`);
+    ? interpolateCopy(inlineCopy["value1value2value3_value4value5value6_8397de1f"], { value1: String(year), value2: String(padTimePart(month)), value3: String(padTimePart(day)), value4: String(hour), value5: String(minute), value6: String(second) })
+    : interpolateCopy(inlineCopy["Resets_on_value1value2value3_value4value5value6_192f4fe8"], { value1: String(year), value2: String(padTimePart(month)), value3: String(padTimePart(day)), value4: String(hour), value5: String(minute), value6: String(second) }));
 }
 
 export function resetLabel(
@@ -74,29 +76,29 @@ export function resetLabel(
   language: Language,
   windowType?: UsageResetWindow,
 ) {
-  if (!timestamp) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetTimeUnknown", {}, language) : language === "zh" ? "重置时间未知" : "Reset time unknown");
+  if (!timestamp) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetTimeUnknown", {}, language) : language === "zh" ? inlineCopy["text_2446e1e4"] : inlineCopy["Reset_time_unknown_bc41e55d"]);
   if (windowType === "fiveHours") return resetClockLabel(timestamp, language);
   if (windowType === "oneWeek") return resetDateTimeLabel(timestamp, language);
   const distance = Math.max(0, timestamp * 1000 - Date.now());
   const minutes = Math.ceil(distance / 60_000);
-  if (minutes < 60) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsInMinutes", { value1: minutes }, language) : language === "zh" ? `${minutes} 分钟后重置` : `Resets in ${minutes} min`);
+  if (minutes < 60) return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsInMinutes", { value1: minutes }, language) : language === "zh" ? interpolateCopy(inlineCopy["value1_2d75d586"], { value1: String(minutes) }) : interpolateCopy(inlineCopy["Resets_in_value1_min_47864007"], { value1: String(minutes) }));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   if (hours < 24) {
     const remainder = rest ? ` ${uiText("client.settings.minutes", { value1: rest }, language)}` : "";
     return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsInH", { value1: hours, value2: remainder }, language) : language === "zh"
-      ? `${hours} 时${rest ? ` ${rest} 分` : ""}后重置`
-      : `Resets in ${hours} hr${rest ? ` ${rest} min` : ""}`);
+      ? interpolateCopy(inlineCopy["value1_value2_06f9df56"], { value1: String(hours), value2: String(rest ? ` ${rest} 分` : "") })
+      : interpolateCopy(inlineCopy["Resets_in_value1_hrvalue2_4654aae9"], { value1: String(hours), value2: String(rest ? ` ${rest} min` : "") }));
   }
   const days = Math.floor(hours / 24);
   const dayHours = hours % 24;
-  return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsInDH", { value1: days, value2: dayHours }, language) : language === "zh" ? `${days} 天 ${dayHours} 时后重置` : `Resets in ${days} d ${dayHours} hr`);
+  return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsInDH", { value1: days, value2: dayHours }, language) : language === "zh" ? interpolateCopy(inlineCopy["value1_value2_537c020c"], { value1: String(days), value2: String(dayHours) }) : interpolateCopy(inlineCopy["Resets_in_value1_d_value2_cd86d617"], { value1: String(days), value2: String(dayHours) }));
 }
 
 export function formatUpdated(timestamp: string | null | undefined, language: Language) {
-  if (!timestamp) return (language !== "zh" && language !== "en" ? uiText("client.usage.notRefreshedYet", {}, language) : language === "zh" ? "尚未刷新" : "Not refreshed");
+  if (!timestamp) return (language !== "zh" && language !== "en" ? uiText("client.usage.notRefreshedYet", {}, language) : language === "zh" ? inlineCopy["text_712b0b1b"] : inlineCopy["Not_refreshed_1b0b5aca"]);
   const value = new Date(timestamp);
-  if (Number.isNaN(value.getTime())) return (language !== "zh" && language !== "en" ? uiText("client.app.unknownTime", {}, language) : language === "zh" ? "时间未知" : "Unknown time");
+  if (Number.isNaN(value.getTime())) return (language !== "zh" && language !== "en" ? uiText("client.app.unknownTime", {}, language) : language === "zh" ? inlineCopy["text_664939a1"] : inlineCopy["Unknown_time_bdda387b"]);
   return value.toLocaleString(getLocale(language), {
     month: "2-digit",
     day: "2-digit",
@@ -107,9 +109,9 @@ export function formatUpdated(timestamp: string | null | undefined, language: La
 }
 
 export function formatSystemTime(timestamp: string | null | undefined, language: Language) {
-  if (!timestamp) return (language !== "zh" && language !== "en" ? uiText("client.app.unknownTime", {}, language) : language === "zh" ? "时间未知" : "Unknown time");
+  if (!timestamp) return (language !== "zh" && language !== "en" ? uiText("client.app.unknownTime", {}, language) : language === "zh" ? inlineCopy["text_664939a1"] : inlineCopy["Unknown_time_bdda387b"]);
   const value = new Date(timestamp);
-  if (Number.isNaN(value.getTime())) return (language !== "zh" && language !== "en" ? uiText("client.app.unknownTime", {}, language) : language === "zh" ? "时间未知" : "Unknown time");
+  if (Number.isNaN(value.getTime())) return (language !== "zh" && language !== "en" ? uiText("client.app.unknownTime", {}, language) : language === "zh" ? inlineCopy["text_664939a1"] : inlineCopy["Unknown_time_bdda387b"]);
   return new Intl.DateTimeFormat(getLocale(language), {
     year: "numeric",
     month: "2-digit",

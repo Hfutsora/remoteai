@@ -5,19 +5,15 @@ on:
     branches: [master]
     paths:
       - 'packages/i18n/**'
-      - 'shared/i18n/**'
-      - 'apps/**/i18n/**'
-      - 'apps/**/i18n.ts'
-      - 'apps/desktop/src-tauri/src/storage/*language*.rs'
+      - 'shared/**'
+      - 'apps/**'
       - 'package*.json'
       - '.github/workflows/i18n.yml'
   pull_request:
     paths:
       - 'packages/i18n/**'
-      - 'shared/i18n/**'
-      - 'apps/**/i18n/**'
-      - 'apps/**/i18n.ts'
-      - 'apps/desktop/src-tauri/src/storage/*language*.rs'
+      - 'shared/**'
+      - 'apps/**'
       - 'package*.json'
       - '.github/workflows/i18n.yml'
 

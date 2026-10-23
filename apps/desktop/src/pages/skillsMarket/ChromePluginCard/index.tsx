@@ -1,3 +1,4 @@
+import { pluginSearch } from '@remoteai/i18n/copy/desktop/pluginSearch';
 import { displayError } from '../../../i18n/uiText';
 import { useEffect, useState } from "react";
 import { Globe, LoaderCircle, Power, Settings2 } from "lucide-react";
@@ -16,8 +17,7 @@ interface Props {
 }
 
 export function chromePluginMatches(query: string) {
-  return "chrome 浏览器助手 browser assistant extension remote ai 点击 输入 截图 браузерный помощник расширение"
-    .includes(query.trim().toLocaleLowerCase());
+  return pluginSearch.chrome.includes(query.trim().toLocaleLowerCase());
 }
 
 function connectionText(status: ChromePluginStatus | null, busy: boolean) {

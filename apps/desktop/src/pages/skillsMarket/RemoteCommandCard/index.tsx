@@ -1,3 +1,4 @@
+import { pluginSearch } from '@remoteai/i18n/copy/desktop/pluginSearch';
 import { displayError } from '../../../i18n/uiText';
 import { useEffect } from "react";
 import { Popconfirm } from "antd";
@@ -12,10 +13,7 @@ import styles from "./index.module.less";
 interface Props { homeId: string; active: boolean; onBusyChange: (busy: boolean) => void }
 
 export function remoteCommandMatches(query: string) {
-  return ("remote command 远程命令 电脑 主机 诊断 分析 终端 powershell shell windows macos linux remote ai"
-    + " commands diagnostics terminal"
-    + " удалённые команды удаленные команды диагностика терминал компьютер")
-    .includes(query.trim().toLocaleLowerCase());
+  return pluginSearch.remoteCommand.includes(query.trim().toLocaleLowerCase());
 }
 
 function statusText(status: RemoteCommandStatus | null) {

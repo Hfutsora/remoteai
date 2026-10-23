@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RequestSpeedButton } from "../../../../shared/remote-chat/RequestSpeedButton";
 import { ResetCreditsPanel } from "../components/accounts/ResetCreditsPanel";
-import { threadCopy } from "../pages/codex-threads/copy";
+import { threadCopy } from "@remoteai/i18n/copy/desktop/threads";
 import { HomeMigrationError } from "../pages/codex-threads/ThreadModals/HomeMigrationError";
 import { displayText, setGuiLanguage } from "./uiText";
 

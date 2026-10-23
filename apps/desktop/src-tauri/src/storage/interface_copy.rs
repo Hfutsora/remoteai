@@ -1,3 +1,4 @@
+// Generated from packages/i18n/platform/desktop/src-tauri/src/storage/interface_copy.rs. Do not edit.
 //! Localized native notifications, save dialogs, login windows and OAuth callback pages.
 //! Russian and Japanese follow the saved preference. Chinese and English retain their
 //! established native copy; unknown provider messages are preserved.

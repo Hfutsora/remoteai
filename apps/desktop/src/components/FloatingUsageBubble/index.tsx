@@ -1,3 +1,4 @@
+import inlineCopy from '@remoteai/i18n/copy/inline/desktop/components/FloatingUsageBubble/index';
 import { uiText } from "../../i18n/uiText";
 import { translate, type Language } from "../../i18n";
 import {
@@ -210,10 +211,10 @@ export function FloatingUsageBubble() {
   const status = remaining === null
     ? "--"
     : remainingTone(remaining) === "danger"
-      ? ((language !== "zh" && language !== "en" ? uiText("client.usage.lowQuota", {}, language) : language === "zh" ? "额度较低" : "Low quota"))
+      ? ((language !== "zh" && language !== "en" ? uiText("client.usage.lowQuota", {}, language) : language === "zh" ? inlineCopy["text_f9618187"] : inlineCopy["Low_quota_88561be9"]))
       : remainingTone(remaining) === "warning"
-        ? ((language !== "zh" && language !== "en" ? uiText("client.usage.watchQuota", {}, language) : language === "zh" ? "额度注意" : "Quota warning"))
-        : ((language !== "zh" && language !== "en" ? uiText("client.usage.quotaAvailable", {}, language) : language === "zh" ? "额度充足" : "Quota healthy"));
+        ? ((language !== "zh" && language !== "en" ? uiText("client.usage.watchQuota", {}, language) : language === "zh" ? inlineCopy["text_35d6abd0"] : inlineCopy["Quota_warning_78ee451a"]))
+        : ((language !== "zh" && language !== "en" ? uiText("client.usage.quotaAvailable", {}, language) : language === "zh" ? inlineCopy["text_f6e0fb5e"] : inlineCopy["Quota_healthy_be7d3cf1"]));
   const bubbleLabel = bubbleActionLabel(language, refreshing, floatingMode);
   const ringStyle = {
     "--bubble-progress": `${remaining ?? 0}%`,
@@ -371,32 +372,32 @@ export function FloatingUsageBubble() {
           {bubbleStyle === "classic" && <ClassicBubbleVisual
             remaining={remaining}
             weeklyRemaining={weeklyRemaining}
-            weekLabel={(language !== "zh" && language !== "en" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? "周" : "W")}
+            weekLabel={(language !== "zh" && language !== "en" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? inlineCopy["text_5c553ec3"] : inlineCopy["W_fcb5f40d"])}
             resetLabel={<BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay} />}
           />}
           {bubbleStyle === "glass" && <><span className="floating-glass-ring" aria-hidden="true">
             <span>{remaining === null ? "--" : `${remaining}%`}</span>
-            <small>{(language !== "zh" && language !== "en" ? uiText("client.usage.primaryUsageRemaining", {}, language) : language === "zh" ? "主用量剩余" : "Primary left")}</small>
+            <small>{(language !== "zh" && language !== "en" ? uiText("client.usage.primaryUsageRemaining", {}, language) : language === "zh" ? inlineCopy["text_f5148b69"] : inlineCopy["Primary_left_173af980"])}</small>
           </span>
           <span className="floating-glass-brand">Codex</span>
           <span className="floating-glass-details">
             <span>
-              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.timeUntilReset", {}, language) : language === "zh" ? "距离重置" : "Until reset")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.timeUntilReset", {}, language) : language === "zh" ? inlineCopy["text_aeb81803"] : inlineCopy["Until_reset_49a041fd"])}</b>
               <BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay}
                 className="floating-glass-reset" compact />
             </span>
             <span>
-              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.resetsRemaining", {}, language) : language === "zh" ? "剩余重置" : "Resets left")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.resetsRemaining", {}, language) : language === "zh" ? inlineCopy["text_e87a1d3b"] : inlineCopy["Resets_left_e1a17497"])}</b>
               <strong>
-                {resetCreditsRemaining === null ? "--" : `${resetCreditsRemaining}${(language !== "zh" && language !== "en" ? uiText("client.usage.times", {}, language) : language === "zh" ? " 次" : "")}`}
+                {resetCreditsRemaining === null ? "--" : `${resetCreditsRemaining}${(language !== "zh" && language !== "en" ? uiText("client.usage.times", {}, language) : language === "zh" ? inlineCopy["text_f81526ef"] : "")}`}
               </strong>
             </span>
             <span>
-              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.secondaryUsageUsed", {}, language) : language === "zh" ? "次用量已使用" : "Secondary used")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.secondaryUsageUsed", {}, language) : language === "zh" ? inlineCopy["text_75d589da"] : inlineCopy["Secondary_used_d8146230"])}</b>
               <strong>{secondaryUsed === null ? "--" : `${secondaryUsed}%`}</strong>
             </span>
             <span>
-              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.quotaStatus", {}, language) : language === "zh" ? "额度状态" : "Quota status")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.quotaStatus", {}, language) : language === "zh" ? inlineCopy["text_3002bcb1"] : inlineCopy["Quota_status_c1fec4cc"])}</b>
               <strong className={`floating-glass-status ${remaining === null ? "" : remainingTone(remaining)}`}>
                 {status}
               </strong>

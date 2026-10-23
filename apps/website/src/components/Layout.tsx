@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import { useT } from '@remoteai/i18n/react';
 import { Button } from 'antd';
 import { ArrowUpRight, Github, Languages, Menu } from 'lucide-react';
-import { copy } from '../content/copy';
-import { resourcesCopy } from '../content/resources-copy';
-import type { Language } from '../content/types';
+import { copy } from '@remoteai/i18n/website-content/copy';
+import { resourcesCopy } from '@remoteai/i18n/website-content/resources-copy';
+import type { Language } from '@remoteai/i18n/website-content/types';
 import { asset, href, languages, languageTags, LINKS } from '../lib/site';
-import { languageLabels, languageNames, ui } from '../lib/ui-text';
+import { languageLabels, languageNames, ui } from '@remoteai/i18n/website-content/ui-text';
 import { ThemeToggle } from './ThemeToggle';
 
 interface LayoutProps {

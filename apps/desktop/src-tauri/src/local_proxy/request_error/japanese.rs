@@ -1,3 +1,4 @@
+// Generated from packages/i18n/platform/desktop/src-tauri/src/local_proxy/request_error/japanese.rs. Do not edit.
 //! Japanese rendering of safe proxy error enums. Wire identifiers remain unchanged.
 use std::fmt;
 

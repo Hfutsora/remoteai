@@ -47,6 +47,7 @@ const CODEX_SPEED_SELECTOR_OVERLAY: &str = r#"
       },
     };
     window[stateKey] = state;
+    // i18n:speed-selector:start
     const copy = {
       zh: {
         today: "今日", normal: "普通模式", fast: "快速模式", ultrafast: "Ultrafast 模式",
@@ -76,6 +77,7 @@ const CODEX_SPEED_SELECTOR_OVERLAY: &str = r#"
         apiCost: "Стоимость текущего API за сегодня", totalApiCost: "Общая стоимость API за сегодня",
       },
     };
+    // i18n:speed-selector:end
     const text = key => copy[state.language][key];
     const speedModes = {
       default: { name: "normal", next: "priority", bolts: 0 },

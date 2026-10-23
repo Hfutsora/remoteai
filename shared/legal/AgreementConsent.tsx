@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Modal } from 'antd';
-import { AGREEMENT_VERSION, agreementCopy, getUserAgreement } from './agreement';
-import type { AgreementLanguage } from './types';
+import { AGREEMENT_VERSION, agreementCopy, getUserAgreement } from '@remoteai/i18n/legal/agreement';
+import type { AgreementLanguage } from '@remoteai/i18n/legal/types';
 import type { AgreementConsent as Consent } from './useAgreementConsent';
 import './agreement.css';
 

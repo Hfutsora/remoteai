@@ -1,3 +1,4 @@
+// Generated from packages/i18n/platform/desktop/src-tauri/src/storage/interface_copy_japanese.rs. Do not edit.
 //! Japanese text for native windows, notifications and OAuth callback pages.
 use std::borrow::Cow;
 

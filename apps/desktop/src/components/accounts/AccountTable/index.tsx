@@ -57,7 +57,7 @@ import { AccountNoteModal } from "../../modals/AccountNoteModal";
 import { AccountExpandedPanel } from "../AccountExpandedPanel";
 import { AccountAvatar } from "../AccountAvatar";
 import { AccountCardFooter } from "../AccountCardFooter";
-import { accountCardLabels } from "../accountCardLabels";
+import { accountCardLabels } from "@remoteai/i18n/copy/desktop/accountCardLabels";
 import { AccountCredits, AccountCreditsTitle } from "../AccountCredits";
 import { AccountCardAutoSwitchSettings } from "../AccountCardAutoSwitchSettings";
 import { AccountGroupCell, ConcurrentRoutingControl } from "../AccountGroupControls";
@@ -67,14 +67,14 @@ import { UsageMeter, UsageRefreshAge } from "../UsageMeter";
 import { canReceiveConcurrentConversation } from "../concurrentAccountEligibility";
 import { createAccountTokenUsageLookup } from "../accountCardUsage";
 import { useOfficialUsage } from "../../../hooks/useOfficialUsage";
-import { officialUsageLabels } from "../../../../../../shared/officialUsageLabels";
+import { officialUsageLabels } from "@remoteai/i18n/copy/client/officialUsageLabels";
 import { AvailableQuota } from "../../TokenUsageDashboard/OfficialAccountUsage";
 import { getSwitchableAccounts } from "../accountSelectors";
 import { confirmOfficialAuthAccountChange } from "../confirmOfficialAuthAccountChange";
 import styles from "./index.module.less";
 import { isAccountControlTarget } from "./accountAreaInteraction";
 import { AccountOrderModal } from "./AccountOrderModal";
-import { accountOrderLabels } from "./accountOrderLabels";
+import { accountOrderLabels } from "@remoteai/i18n/copy/desktop/accountOrderLabels";
 import { useAccountOrder, type AccountSortOrder } from "./useAccountOrder";
 import {
   AccountNoteEditButton,

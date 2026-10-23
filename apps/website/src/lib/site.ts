@@ -1,5 +1,5 @@
 import { applications, isAppLanguage, languageInfo } from '@remoteai/i18n';
-import type { Language } from '../content/types';
+import type { Language } from '@remoteai/i18n/website-content/types';
 
 export const SITE_URL = __SITE_URL__;
 export const BASE_PATH = new URL(SITE_URL).pathname;

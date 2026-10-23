@@ -1,3 +1,4 @@
+// Generated from packages/i18n/platform/desktop/src-tauri/src/system_tray/localization.rs. Do not edit.
 //! Tray translations change presentation only; menu IDs and account values stay untouched.
 use tauri::{menu::Menu, Runtime};
 

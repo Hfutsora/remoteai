@@ -3,7 +3,7 @@ import { Alert, Button } from "antd";
 import { formatRemoteError } from "../../../../../../shared/localization/errors";
 import { useGuiLanguage } from "../../../i18n/useGuiLanguage";
 import { copyText } from "../../../utils/clipboard";
-import type { ThreadCopy } from "../copy";
+import type { ThreadCopy } from "@remoteai/i18n/copy/desktop/threads";
 
 export function HomeMigrationError({ error, text }: { error: string; text: ThreadCopy }) {
   const language = useGuiLanguage();

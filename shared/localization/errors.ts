@@ -2,7 +2,7 @@ import { createErrorFormatter } from '@remoteai/i18n/errors';
 import { resources } from '@remoteai/i18n/client';
 import { getInterfaceLanguage } from './interfaceLanguage';
 import type { Language } from './language';
-import templateKeys from './errorTemplates.json';
+import templateKeys from '@remoteai/i18n/error-templates';
 
 export const formatRemoteError = createErrorFormatter(resources, templateKeys);
 

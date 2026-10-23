@@ -1,3 +1,4 @@
+// Generated from packages/i18n/platform/desktop/src-tauri/src/local_proxy/error_messages/japanese.rs. Do not edit.
 //! Japanese display text for proxy failures. Sensitive diagnostic details remain in the logs.
 use super::TransportFailure;
 use crate::local_proxy::request_error::{japanese::problem_text, Problem};

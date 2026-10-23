@@ -7,11 +7,7 @@ const SEPARATOR: &str = " · ";
 
 pub(super) fn account_label(email: &str, usage: &UsageSummary, chinese: bool) -> String {
     let email = truncate_email(email);
-    let (primary, secondary) = if chinese {
-        ("主", "次")
-    } else {
-        ("Primary", "Secondary")
-    };
+    let (primary, secondary) = super::copy::usage_labels(chinese);
     format!(
         "{}{SEPARATOR}{primary} {}{SEPARATOR}{secondary} {}",
         escape_menu_text(&email),

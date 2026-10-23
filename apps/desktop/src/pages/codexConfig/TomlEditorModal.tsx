@@ -1,3 +1,5 @@
+import inlineCopy from '@remoteai/i18n/copy/inline/desktop/pages/codexConfig/TomlEditorModal';
+import { interpolate as interpolateCopy } from '@remoteai/i18n';
 import { uiText } from "../../i18n/uiText";
 import { useMemo, useRef } from "react";
 import type { KeyboardEvent, ReactNode, UIEvent } from "react";
@@ -62,8 +64,8 @@ export function TomlEditorModal(props: TomlEditorProps) {
   const statusLabels = zh
     ? { clean: uiText("client.configHelp.synced"), changed: uiText("client.configHelp.savesAutomaticallyWhenYouLeaveTheEditor"), checking: uiText("client.configHelp.validating"),
       saving: uiText("client.projectBrowser.saving"), saved: uiText("client.configHelp.saved"), error: uiText("client.configHelp.notSavedYet") }
-    : { clean: "Up to date", changed: "Saves when you leave the editor", checking: "Checking…",
-      saving: "Saving…", saved: "Saved", error: "Not saved" };
+    : { clean: inlineCopy["Up_to_date_ce29b7f8"], changed: inlineCopy["Saves_when_you_leave_the_ed46601f"], checking: inlineCopy["Checking_ec963ffc"],
+      saving: inlineCopy["Saving_23e39291"], saved: inlineCopy["Saved_b5c120b3"], error: inlineCopy["Not_saved_22b3467c"] };
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Tab" || event.ctrlKey || event.metaKey || event.altKey) return;
@@ -85,7 +87,7 @@ export function TomlEditorModal(props: TomlEditorProps) {
     title={<span className={styles.title}><FileCode2 size={19} />config.toml</span>}>
     <p className={styles.hint}>{zh
       ? uiText("client.configHelp.savesAutomaticallyWhenYouLeaveTheEditorOrCloseThe")
-      : "Changes save when you leave the editor or close this window. Fix any errors before saving."}</p>
+      : inlineCopy["Changes_save_when_you_leave_496798d2"]}</p>
     <div className={`${styles.frame}${editor.issue ? ` ${styles.invalid}` : ""}`}>
       <div className={styles.gutter} aria-hidden="true"><div ref={scroll.gutter}>
         {Array.from({ length: lines }, (_, index) => <div key={index}
@@ -94,7 +96,7 @@ export function TomlEditorModal(props: TomlEditorProps) {
       <div className={styles.codeArea}>
         <pre className={styles.highlight} aria-hidden="true" ref={scroll.highlight}>{tokens}</pre>
         <textarea ref={textarea} className={styles.input} autoFocus
-          aria-label={zh ? uiText("client.configHelp.configurationFileContent") : "Configuration content"}
+          aria-label={zh ? uiText("client.configHelp.configurationFileContent") : inlineCopy["Configuration_content_67157376"]}
           aria-invalid={Boolean(editor.issue)} aria-describedby={editor.issue ? "codex-toml-error" : undefined}
           value={editor.draft} spellCheck={false} autoCapitalize="off" autoComplete="off" autoCorrect="off" wrap="off"
           onChange={(event) => editor.edit(event.target.value)} onKeyDown={handleKeyDown}
@@ -108,11 +110,11 @@ export function TomlEditorModal(props: TomlEditorProps) {
         {statusLabels[editor.status]}
       </span>
       <span className={styles.shortcut}>
-        TOML · {zh ? uiText("client.configHelp.tabToIndentShiftTabToLeave") : "Tab to indent · Shift+Tab to leave"}
+        TOML · {zh ? uiText("client.configHelp.tabToIndentShiftTabToLeave") : inlineCopy["Tab_to_indent_ShiftTab_to_a8929564"]}
       </span>
       <button type="button" className={styles.discard} disabled={editor.saving}
         onMouseDown={(event) => event.preventDefault()} onClick={editor.discard}>
-        {zh ? uiText("client.configHelp.discardChangesAndClose") : "Discard changes and close"}
+        {zh ? uiText("client.configHelp.discardChangesAndClose") : inlineCopy["Discard_changes_and_close_7c48b9ed"]}
       </button>
     </div>
     {editor.issue && <div id="codex-toml-error" className={styles.error} role="alert">
@@ -120,8 +122,8 @@ export function TomlEditorModal(props: TomlEditorProps) {
       <div><strong>{editor.issue.line ? (zh
         ? uiText("client.configHelp.line", { value1: editor.issue.line,
           value2: editor.issue.column ? uiText("client.desktopMisc.column", { value1: editor.issue.column }) : "" })
-        : `Line ${editor.issue.line}${editor.issue.column ? `, column ${editor.issue.column}` : ""}`)
-        : (zh ? uiText("client.configHelp.checkTheConfiguration") : "Check the configuration")}</strong>
+        : interpolateCopy(inlineCopy["Line_value1value2_6a511fe0"], { value1: String(editor.issue.line), value2: String(editor.issue.column ? `, column ${editor.issue.column}` : "") }))
+        : (zh ? uiText("client.configHelp.checkTheConfiguration") : inlineCopy["Check_the_configuration_0366520f"])}</strong>
       <p>{editor.issue.message}</p></div>
     </div>}
   </Modal>;

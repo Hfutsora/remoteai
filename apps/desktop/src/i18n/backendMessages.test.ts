@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { resources } from '@remoteai/i18n/client';
 import { remoteErrorText, formatRemoteError } from '../../../../shared/localization/errors';
 import { setInterfaceLanguage } from '../../../../shared/localization/interfaceLanguage';
-import templateKeys from '../../../../shared/localization/errorTemplates.json';
+import templateKeys from '@remoteai/i18n/error-templates';
 const sourceCopy: Readonly<Record<string, string>> = resources.zh;
 const backendEnglish = resources.en;
 const backendRussian = resources.ru;
