@@ -45,10 +45,11 @@ export function GuiHostPicker({ navigation, active }: { navigation: GuiComputerN
       </button>}
       {devices.map(device => <button key={device.deviceId} type="button" role="menuitemradio"
         aria-checked={currentId === device.deviceId} disabled={!device.online}
+        aria-description={uiText(device.online ? "client.chat.online" : "client.chat.offline")}
         className={projectStyles.option} onClick={() => choose(device)}>
-        <Monitor size={18} /><span className={styles.deviceName}>{device.name}
-          <small className={device.online ? styles.online : undefined}>{device.online ? uiText("client.chat.online") : uiText("client.chat.offline")}</small>
-        </span>{currentId === device.deviceId && <Check size={16} />}
+        <Monitor size={18} className={device.online ? styles.online : undefined} />
+        <span className={styles.deviceName}>{device.name}</span>
+        {currentId === device.deviceId && <Check size={16} />}
       </button>)}
       {!showLocal && !devices.length && <p className={projectStyles.empty}>{uiText("client.workspaceSettings.noMatchingComputers")}</p>}
     </div>
@@ -69,7 +70,9 @@ export function GuiHostPicker({ navigation, active }: { navigation: GuiComputerN
     styles={{ root: { maxWidth: 400 }, body: { padding: 0, borderRadius: 20, overflow: 'hidden' } }}>
     <button ref={trigger} type="button" className={`${projectStyles.name} ${styles.trigger}`}
       aria-label={uiText("client.workspaceSettings.switchComputer", { value1: label })} aria-haspopup="menu" aria-expanded={open && active}>
-      {currentId || !allowLocal ? <Monitor size={16} /> : <Laptop size={16} />}
+      {currentId || !allowLocal
+        ? <Monitor size={16} className={navigation.current?.online ? styles.online : undefined} />
+        : <Laptop size={16} />}
       <span>{label}</span><ChevronDown size={13} />
     </button>
   </Popover>;
