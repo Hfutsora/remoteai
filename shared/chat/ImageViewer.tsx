@@ -25,8 +25,10 @@ export function ImageViewer({ thumbnail, description, load, close, download, con
   const [saving, setSaving] = useState(false);
   const gestures = useImageGestures();
   return <dialog ref={(dialog) => { if (dialog && !dialog.open) dialog.showModal(); }}
-    className="cs-image-viewer" aria-label={description} onCancel={close}>
-    <div className="cs-image-stage" {...gestures.stageProps} onDragStart={event => event.preventDefault()}
+    className="cs-image-viewer" aria-label={description} onCancel={close}
+    onWheel={event => event.stopPropagation()}>
+    <div className="cs-image-stage" ref={gestures.stageRef} {...gestures.stageProps}
+      onDragStart={event => event.preventDefault()}
       onContextMenu={(event) => {
         if (!contextMenu) return;
         event.preventDefault();

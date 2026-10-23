@@ -165,7 +165,7 @@ it("uses the full-screen chat viewer with zoom, rotation, dragging and reset wit
   const stage = dialog()!.querySelector<HTMLDivElement>(".cs-image-stage")!;
   stage.setPointerCapture = vi.fn();
   await act(async () => { stage.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: -100 })); });
-  expect(image.style.transform).toContain("scale(1.2)");
+  await vi.waitFor(() => expect(image.style.transform).toContain("scale(1.2)"));
   await act(async () => {
     stage.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 20, clientY: 30 }));
   });

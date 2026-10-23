@@ -6,9 +6,10 @@ import { ImageAiContext } from '../../../shared/chat/ImageAiContext';
 import '../src/styles.css';
 import '../../web/src/chat/messages.css';
 
+const params = new URLSearchParams(location.search);
 const canvas = document.createElement('canvas');
-canvas.width = 1800;
-canvas.height = 1000;
+canvas.width = params.has('large') ? 7680 : 1800;
+canvas.height = params.has('large') ? 4320 : 1000;
 const context = canvas.getContext('2d')!;
 context.fillStyle = '#143f4b';
 context.fillRect(0, 0, canvas.width, canvas.height);
@@ -18,7 +19,6 @@ for (let x = 0; x < canvas.width; x += 100) context.strokeRect(x, 0, 100, canvas
 context.fillStyle = '#ffcd77';
 context.fillRect(650, 350, 500, 300);
 const source = canvas.toDataURL();
-const params = new URLSearchParams(location.search);
 const mode = params.get('mode');
 const unavailable = async (): Promise<never> => { throw new Error('Unexpected file operation'); };
 const environment: FileEnvironment = {
@@ -30,12 +30,17 @@ const environment: FileEnvironment = {
 function Harness() {
   const preview = mode === 'web' ? <ChatImage source={source} description="拖动测试" />
     : <MessageImage src={source} alt="拖动测试" />;
-  return <main style={{ padding: 32 }}>
+  return <main data-testid="conversation" data-wheel-events="0"
+    style={{ padding: 32, height: '100vh', overflow: 'auto' }}
+    onWheel={event => {
+      event.currentTarget.dataset.wheelEvents = String(Number(event.currentTarget.dataset.wheelEvents) + 1);
+    }}>
     <FileEnvironmentContext.Provider value={mode === 'remote' ? environment : null}>
       <ImageAiContext.Provider value={{ enabled: true, send: async () => true }}>
         {params.has('linked') ? <a href="#image" onClick={event => event.preventDefault()}>{preview}</a> : preview}
       </ImageAiContext.Provider>
     </FileEnvironmentContext.Provider>
+    <div style={{ height: 2000 }} />
   </main>;
 }
 
