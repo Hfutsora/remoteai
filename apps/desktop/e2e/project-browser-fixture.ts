@@ -16,6 +16,14 @@ export const savedFiles: { path: string; text: string }[] = [];
 export let conflict = false;
 export function causeConflict() { conflict = true; }
 
+export function seedLargeDirectory(count: number) {
+  directories.add('node_modules');
+  for (let index = 0; index < count; index += 1) {
+    const name = `node_modules/package-${String(index).padStart(5, '0')}.json`;
+    documents[name] = JSON.stringify({ index });
+  }
+}
+
 function searchFiles(cwd: string, query: string): ProjectFilesResponse {
   const term = query.toLowerCase().replace(/\\/g, '/');
   const entries = [...Object.keys(documents), ...directories, 'archive.zip', 'huge.txt']

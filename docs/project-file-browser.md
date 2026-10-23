@@ -6,7 +6,7 @@
 
 文件树顶部的搜索框支持按名称或相对路径查找项目内的文件和文件夹，不区分大小写，也能查找尚未展开的目录。结果显示相对路径，文件可直接打开或使用右键菜单，点击文件夹会回到文件树并展开到对应位置。清空搜索或按 Esc 恢复原文件树。搜索包括隐藏、依赖和生成目录，最多返回 50 项；达到扫描范围或时间限制时会提示缩小搜索范围。
 
-文本编辑支持查找／替换、折叠、撤销／重做、行号、自动换行和保存。只有可识别语言的代码文件启用语法高亮，普通文本、日志和 Markdown 使用纯文本。支持 UTF-8 文本，保留原有 CRLF 换行；PNG、JPEG、GIF、WebP 和 ICO 可预览。二进制、非 UTF-8 文件及超过 2 MB 的文件显示说明，不执行文件内容。每个目录最多列出 500 项，达到上限时显示提示。
+文本编辑支持查找／替换、折叠、撤销／重做、行号、自动换行和保存。只有可识别语言的代码文件启用语法高亮，普通文本、日志和 Markdown 使用纯文本。支持 UTF-8 文本，保留原有 CRLF 换行；PNG、JPEG、GIF、WebP 和 ICO 可预览。二进制、非 UTF-8 文件及超过 2 MB 的文件显示说明，不执行文件内容。目录按需展开，在后台读取全部可浏览项，不设条目数量上限；文件夹优先，再按名称排序。
 
 文件区顶部支持多个标签，每个标签独立保留草稿，未保存时显示小圆点。点击文件名右侧的叉关闭标签；重新加载或关闭未保存的标签时可选择保存、放弃或取消。切换标签无需先保存，并保留撤销记录。
 
@@ -37,7 +37,7 @@
 
 ## 验证
 
-- Rust：`cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib codex_gui::project_`。
+- Rust：`cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --test codex_switch_lib_tests codex_gui::project_`。
 - 桌面：`npx vitest run src/remoteChat/projectBrowser src/remoteChat/operations.test.ts`。
 - 原生消息桥：`npm run test -w @codex-switch/native -- src/chat/projectBrowserBridge.test.ts`。
 - 界面与原生资源：`npm run test:chat:e2e -w @codex-switch/desktop -- project-browser`。
