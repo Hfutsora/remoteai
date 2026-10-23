@@ -16,7 +16,7 @@ export function CapacityErrorNotice({ retry, onCancelRetry, action }: CapacityRe
       <CircleAlert size={20} aria-hidden="true" />
       <span className={styles.capacityMessage}>{MODEL_CAPACITY_MESSAGE}</span>
     </div>
-    {action}
+    {action && <div className={styles.capacityAction}>{action}</div>}
     {retry && <div className={styles.countdown}>
       <span role="status">{retry.seconds > 0 ? uiText("client.composer.retryingAutomaticallyInSeconds", { value1: retry.seconds }) : uiText("client.composer.waitingToRetry")}</span>
       <button type="button" aria-label={uiText("client.composer.stopAutomaticRetries")} onClick={onCancelRetry}>
