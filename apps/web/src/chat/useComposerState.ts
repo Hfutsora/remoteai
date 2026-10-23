@@ -1,3 +1,4 @@
+import { displayError } from '../i18n/index';
 import { t } from '../i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useChatDraft } from '../../../../shared/remote-chat/client/useChatDraft';
@@ -52,7 +53,7 @@ export function useComposerState(props: ComposerProps) {
       if (!current()) return;
       await addFiles(files);
       if (current()) menu.input.current?.focus();
-    }, addFiles, report: error => setError(t(fileDropError(error))) });
+    }, addFiles, report: error => setError(displayError(fileDropError(error))) });
   const paste = useComposerPaste({ scope: threadId, active,
     busy: sending || draft.picking || attachments.busy || queueEditor.loading || drop.reading,
     readClipboardImages: props.readClipboardImages, insertText: (text, input) => {
@@ -121,8 +122,8 @@ export function useComposerState(props: ComposerProps) {
       validateUploadedFiles(submitted);
       const size = draft.images.reduce((total, image) => total + image.url.length, 0)
         + submitted.reduce((total, item) => total + (item.data?.length ?? 0), 0);
-      if (size > chatAttachmentDataLimit()) throw new Error(t("附件总大小过大，请减少照片或文件后再试。"));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : t("文件无法发送，请重新选择。")); return; }
+      if (size > chatAttachmentDataLimit()) throw new Error(t("client.chat.attachmentsAreTooLargeRemoveSomePhotosOrFilesAnd"));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : t("client.chat.couldNotSendTheFilePleaseChooseItAgain")); return; }
     setError('');
     const text = replyWithQuotes(action === 'continue' ? CONTINUE_MESSAGE : draft.text, submittedQuotes);
     if (await draft.submit({ text, attachments: submitted, goalMode: goalMode.enabled })) {

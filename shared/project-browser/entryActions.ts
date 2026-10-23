@@ -30,6 +30,6 @@ export const parentPath = (path: string) => {
 
 export function entryNameError(name: string) {
   if (!name || name === '.' || name === '..' || /[\\/:*?"<>|\x00-\x1f]/.test(name)
-    || /[. ]$/.test(name) || name.length > 255) return '名称无效，请勿使用路径分隔符或特殊字符。';
+    || /[. ]$/.test(name) || name.length > 255) return "client.projectBrowser.enterAValidNameWithoutPathSeparatorsOrSpecialCharacters";
   return '';
 }

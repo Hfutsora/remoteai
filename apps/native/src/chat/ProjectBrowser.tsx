@@ -1,3 +1,5 @@
+import { messageKeys } from '../../../../shared/project-browser/messageKeys';
+import { displayText, displayError } from '../i18n/index';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +9,7 @@ import { Asset } from 'expo-asset';
 import { readAsStringAsync } from 'expo-file-system';
 import type { ProjectBrowserClient } from '../../../../shared/project-browser/protocol';
 import { handleBrowserRequest, type BrowserHostMessage } from '../../../../shared/project-browser/nativeBridge';
-import { projectBrowserEnglish } from '../../../../shared/i18n/projectBrowser';
+
 import { t, useLanguage } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
@@ -55,9 +57,9 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
     void load().catch(() => { if (!cancelled) setError('文件浏览器未能加载，请重新打开。'); });
     return () => { cancelled = true; };
   }, []);
-  const update = () => emit({ type: 'settings', cwd, connected: connected && active && preferences.ready,
+  const update = () => emit({ type: 'settings', language, cwd, connected: connected && active && preferences.ready,
     autoSaveDelay: preferences.delay, snapshot: readBrowserSession(client, cwd),
-    labels: Object.fromEntries(Object.keys(projectBrowserEnglish).map(text => [text, t(text)])),
+    labels: Object.fromEntries(messageKeys.map(text => [text, displayText(text)])),
     theme: { '--ink': color('#202c29', 'ink'), '--muted': color('#718078', 'muted'),
       '--panel': color('#fff', 'surface'), '--bg': color('#f5f8f6', 'canvas'),
       '--line': color('#dfe5e1', 'border'), '--green': color('#138475', 'accent'),
@@ -70,9 +72,9 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Ionicons name="folder-open-outline" size={21} color={color('#202c29', 'ink')} />
-          <View style={styles.heading}><Text style={styles.title}>{t('文件浏览')}</Text>
+          <View style={styles.heading}><Text style={styles.title}>{t("client.projectBrowser.browseFiles")}</Text>
             <Text style={styles.subtitle} numberOfLines={1}>{cwd.split(/[\\/]/).filter(Boolean).at(-1)}</Text></View>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('关闭文件浏览器')}
+          <Pressable accessibilityRole="button" accessibilityLabel={t("client.projectBrowser.closeFileBrowser")}
             style={styles.close} onPress={close}><Ionicons name="close" size={24} color={color('#202c29', 'ink')} /></Pressable>
         </View>
         {!html && !error && <ActivityIndicator style={styles.fill} color={color('#138475', 'accent')} />}
@@ -106,7 +108,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
               .then(reply => { if (reply) emit(reply); });
           }}
           onError={() => { setReady(false); setError('文件浏览器未能加载，请重新打开。'); }} />}
-        {!!error && <Text accessibilityRole="alert" style={styles.error}>{t(error)}</Text>}
+        {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
       </KeyboardAvoidingView>
     </SafeAreaView></SafeAreaProvider>
   </Modal>;

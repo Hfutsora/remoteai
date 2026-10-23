@@ -5,6 +5,8 @@ import type { BrowserHostMessage, BrowserSettings } from './nativeBridge';
 import type { ProjectBrowserClient } from './protocol';
 import { autoSaveDelay } from './preferences';
 import type { BrowserHost } from './entryActions';
+import { setInterfaceLanguage } from '../localization/interfaceLanguage';
+import { displayText } from '../localization/messages';
 
 declare global {
   interface Window {
@@ -58,11 +60,12 @@ async function close() {
 }
 function render(settings: BrowserSettings) {
   currentSettings = settings;
+  if (settings.language) setInterfaceLanguage(settings.language);
   for (const [name, value] of Object.entries(settings.theme)) {
     if (/^--[\w-]+$/.test(name)) document.documentElement.style.setProperty(name, value);
   }
   root.render(<ProjectBrowser key={settings.cwd} ref={browser} client={client} cwd={settings.cwd} host={host}
-    connected={settings.connected && !closing} t={text => settings.labels[text] ?? text}
+    connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
     initialSnapshot={settings.snapshot} preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
       change: delay => { send({ type: 'preferences', delay }); render({ ...settings, autoSaveDelay: delay }); } }}
     onClose={() => { void close(); }} />);

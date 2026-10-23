@@ -21,7 +21,7 @@ vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Ionicons' }));
 vi.mock('./mappingStyles', () => ({ useMappingStyles: () => ({}) }));
 vi.mock('expo-clipboard', () => ({ setStringAsync: vi.fn() }));
 vi.mock('../styles', () => ({ useStyles: () => ({}) }));
-vi.mock('../../i18n', () => ({ t: (value: string) => value }));
+vi.mock('../../i18n', async () => ({ ...await vi.importActual<typeof import('../../i18n')>('../../i18n'),  }));
 vi.mock('../../components/BottomSheet', () => ({ BottomSheet: 'BottomSheet' }));
 vi.mock('../../components/SheetScrollView', () => ({ SheetScrollView: 'SheetScrollView' }));
 vi.mock('./MappingPreview', () => ({ MappingPreview: 'MappingPreview' }));

@@ -1,6 +1,6 @@
 import type { IceServer } from '../remote-chat/protocol';
-import { getInterfaceLanguage } from '../i18n/interfaceLanguage';
-import { translateText } from '../i18n/translate';
+import { getInterfaceLanguage } from "../localization/interfaceLanguage";
+import { translateMessage } from "../localization/messages";
 import type { DesktopSecurity, DesktopSecurityChange } from './security';
 
 export const DESKTOP_OPERATION = 'remoteDesktop';
@@ -122,7 +122,7 @@ export function validateSettings(value: unknown): DesktopSettings {
     throw new Error('请选择有效的画质。');
   }
   if (input.fps !== 'auto' && (!Number.isInteger(input.fps) || Number(input.fps) < 1 || Number(input.fps) > MAX_FPS)) {
-    throw new Error(translateText(getInterfaceLanguage(), '帧率应为 1–{value1} 的整数。', { value1: MAX_FPS }));
+    throw new Error(translateMessage(getInterfaceLanguage(), "client.runtimeErrors.frameRateMustBeAWholeNumberFrom1To", { value1: MAX_FPS }));
   }
   if (input.displayId !== undefined && (typeof input.displayId !== 'string'
     || !input.displayId.length || input.displayId.length > 128)) {

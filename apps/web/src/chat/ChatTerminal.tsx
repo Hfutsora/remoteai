@@ -1,3 +1,5 @@
+import { displayText } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { lazy, Suspense, useContext, useMemo } from 'react';
 import { WorkspaceDrawerContext, workspaceTabId } from '../../../../shared/chat/workspaceDrawer';
 import { WorkspaceDrawerTab } from '../../../../shared/chat/WorkspaceDrawerTab';
@@ -34,15 +36,15 @@ export function ChatTerminal({ client, cwd, active, connected, deviceName, launc
     if (!panel.open) panel.toggle();
   };
   useToolLaunch(launchId, toggle, connected && !panel.busy);
-  const label = visible ? t('收起远程终端') : t('打开远程终端');
+  const label = visible ? t("client.chat.hideRemoteTerminal") : t("client.chat.openRemoteTerminal");
   const content = (shown: boolean) => panel.tabs.length ? <Suspense
-    fallback={<div className="chat-terminal-loading"><Spin />{t('正在打开终端…')}</div>}>
-    <TerminalPanel panel={panel} api={api} active={shown} fill translate={t} notice={panel.error} />
+    fallback={<div className="chat-terminal-loading"><Spin />{t("client.chat.openingTerminal")}</div>}>
+    <TerminalPanel panel={panel} api={api} active={shown} fill translate={displayText} notice={panel.error} />
   </Suspense> : <div className="chat-terminal-empty">
-    {panel.busy ? <div className="chat-terminal-loading"><Spin />{t('正在打开终端…')}</div>
-      : <>{panel.error && <p role="alert">{t(panel.error)}</p>}
+    {panel.busy ? <div className="chat-terminal-loading"><Spin />{t("client.chat.openingTerminal")}</div>
+      : <>{panel.error && <p role="alert">{displayError(panel.error)}</p>}
         <button type="button" className="chat-button" disabled={!connected} onClick={panel.retry}>
-          {panel.error ? t('重试') : t('新建终端')}</button></>}
+          {panel.error ? t("client.terminal.retry") : t("client.chat.newTerminal")}</button></>}
   </div>;
   return <>
     {!hideTrigger && (desktop ? <Tooltip title={label} styles={{ root: { maxWidth: 400 } }}>
@@ -53,11 +55,11 @@ export function ChatTerminal({ client, cwd, active, connected, deviceName, launc
       onClick={toggle}>
       <SquareTerminal size={22} /></button>)}
     {(panel.open || panel.tabs.length > 0) && (shared ? <WorkspaceDrawerTab active={active && panel.open}
-      tab={{ id, title: t('远程终端'), icon: TERMINAL_ICON }}>{content}</WorkspaceDrawerTab>
+      tab={{ id, title: t("client.chat.remoteTerminal"), icon: TERMINAL_ICON }}>{content}</WorkspaceDrawerTab>
       : <Drawer open={visible} placement="bottom" height="90%"
-      title={t('远程终端')} extra={<span className="chat-terminal-device">{deviceName}</span>}
+      title={t("client.chat.remoteTerminal")} extra={<span className="chat-terminal-device">{deviceName}</span>}
       rootClassName="chat-terminal-drawer" onClose={panel.hide}
-      closable={{ 'aria-label': t('收起终端'), placement: 'end' }}>
+      closable={{ 'aria-label': t("client.chat.hideTerminal"), placement: 'end' }}>
       {content(Boolean(visible))}
     </Drawer>)}
   </>;

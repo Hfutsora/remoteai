@@ -17,11 +17,11 @@ export function UserMessageText({ text, copy = false }: { text: string; copy?: b
   const quote = selected === null ? undefined : message.quotes[selected];
   return <View style={messageStyles.content}>
     {!!message.quotes.length && <View style={messageStyles.quotes}>
-      {message.quotes.map((_, index) => <QuoteChip key={index} label={t("查看消息第 {value1} 条引用", { value1: index + 1 })}
+      {message.quotes.map((_, index) => <QuoteChip key={index} label={t("client.mobile.viewMessageQuote", { value1: index + 1 })}
         onOpen={() => setSelected(index)} />)}
     </View>}
     {!!message.text && <ChatMarkdown text={message.text} user
-      copy={copy ? { text, label: t("复制消息") } : undefined} />}
+      copy={copy ? { text, label: t("client.chat.copyMessage") } : undefined} />}
     {quote !== undefined && active && <QuoteDetails text={quote} onClose={() => setSelected(null)} />}
   </View>;
 }

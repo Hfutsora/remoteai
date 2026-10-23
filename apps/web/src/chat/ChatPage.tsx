@@ -40,7 +40,7 @@ export function ChatPage({ session, devices, active }: Props) {
   const scope = JSON.stringify([session.baseUrl, session.email]);
   const retained = useRetainedChatDevices({ scope, devices, selectedId: device?.deviceId });
   const chats = device ? retained : [...retained, undefined];
-  return <section className="chat-page" hidden={!active} aria-label={t("Codex 聊天")}>
+  return <section className="chat-page" hidden={!active} aria-label={t("client.chat.codexChat")}>
     {chats.map(chatDevice => {
       const selected = chatDevice?.deviceId === device?.deviceId;
       return <div className="chat-device-session" hidden={!selected}

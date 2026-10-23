@@ -1,3 +1,5 @@
+import { remoteErrorText } from '../localization/errors';
+import { defaultText } from '../localization/messages';
 import { useRef, useState, type MouseEvent, type PointerEvent } from 'react';
 import { Download, Image as ImageIcon, LoaderCircle } from 'lucide-react';
 import { useImageViewer } from './useImageViewer';
@@ -13,10 +15,11 @@ interface Props {
   contextMenu?: (event: MouseEvent, url: string) => void;
   feedback?: string;
   translate?: (text: string) => string;
+  formatError?: (error: unknown) => string;
 }
 
 export function ImageViewer({ thumbnail, description, load, close, download, contextMenu, feedback,
-  translate = (text: string) => text }: Props) {
+  translate = defaultText, formatError = remoteErrorText }: Props) {
   const image = useImageViewer(load);
   const [downloadError, setDownloadError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -47,9 +50,9 @@ export function ImageViewer({ thumbnail, description, load, close, download, con
         onError={image.fail} style={{ transform: `translate(${transform.x}px, ${transform.y}px) `
           + `rotate(${transform.rotation}deg) scale(${transform.scale})` }} />
     </div>
-    <button type="button" className="cs-image-close" aria-label={translate('关闭图片')} onClick={close}>×</button>
+    <button type="button" className="cs-image-close" aria-label={translate("client.shared.closeImage")} onClick={close}>×</button>
     {download && <button type="button" className="cs-image-download" disabled={saving || image.loading}
-      aria-label={translate(saving ? '正在保存…' : '下载图片')} aria-busy={saving}
+      aria-label={translate(saving ? "client.projectBrowser.saving" : "client.shared.downloadImage")} aria-busy={saving}
       onClick={async () => {
         setSaving(true);
         setDownloadError('');
@@ -58,25 +61,25 @@ export function ImageViewer({ thumbnail, description, load, close, download, con
         finally { setSaving(false); }
       }}>{saving ? <LoaderCircle size={24} className="cs-image-download-spinner" aria-hidden="true" />
         : <Download size={24} aria-hidden="true" />}
-      <span>{translate(saving ? '正在保存…' : '下载图片')}</span></button>}
+      <span>{translate(saving ? "client.projectBrowser.saving" : "client.shared.downloadImage")}</span></button>}
     <div className="cs-image-toolbar">
-      <button type="button" aria-label={translate('缩小图片')} onClick={() => setTransform((v) => ({ ...v,
+      <button type="button" aria-label={translate("client.shared.zoomOut")} onClick={() => setTransform((v) => ({ ...v,
         scale: clampZoom(v.scale / 1.5) }))}>−</button>
-      <button type="button" aria-label={translate('还原图片')} onClick={() => setTransform(INITIAL_TRANSFORM)}>
+      <button type="button" aria-label={translate("client.shared.resetZoom")} onClick={() => setTransform(INITIAL_TRANSFORM)}>
         {Math.round(transform.scale * 100)}%</button>
-      <button type="button" aria-label={translate('放大图片')} onClick={() => setTransform((v) => ({ ...v,
+      <button type="button" aria-label={translate("client.shared.zoomIn")} onClick={() => setTransform((v) => ({ ...v,
         scale: clampZoom(v.scale * 1.5) }))}>+</button>
-      <button type="button" aria-label={translate('旋转图片')} onClick={() => setTransform((v) => ({ ...v,
+      <button type="button" aria-label={translate("client.shared.rotateImage")} onClick={() => setTransform((v) => ({ ...v,
         rotation: (v.rotation + 90) % 360 }))}>↻</button>
     </div>
     <ImageAiToolbar load={image.loadOriginal} close={close} translate={translate}
       originalAction={!image.url && !image.loading && <button type="button" className="cs-image-original"
         onClick={image.request}><ImageIcon size={20} aria-hidden="true" />
-        <span>{translate(image.error ? '重新加载原图' : '查看原图')}</span></button>} />
+        <span>{translate(image.error ? "client.mobile.reloadOriginalImage" : "client.chat.viewOriginal")}</span></button>} />
     {image.loading && <div className="cs-image-status cs-image-transfer">
-      <PreviewTransferProgress progress={image.progress} label={translate('正在加载原图…')} /></div>}
-    {downloadError && <div className="cs-image-status" role="status">{translate(downloadError)}</div>}
+      <PreviewTransferProgress progress={image.progress} label={translate("client.shared.loadingFullImage")} /></div>}
+    {downloadError && <div className="cs-image-status" role="status">{formatError(downloadError)}</div>}
     {feedback && <div className="cs-image-status" role="status">{feedback}</div>}
-    {image.error && <div className="cs-image-status" role="status">{translate('原图加载失败')}</div>}
+    {image.error && <div className="cs-image-status" role="status">{translate("client.shared.couldNotLoadFullImage")}</div>}
   </dialog>;
 }

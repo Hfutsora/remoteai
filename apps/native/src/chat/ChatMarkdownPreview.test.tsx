@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { setInterfaceLanguage } from '../../../../shared/i18n/interfaceLanguage';
+import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
 import { isMarkdownPath } from '../../../../shared/remote-chat/textPreview';
 import { ChatMarkdownPreview } from './ChatMarkdownPreview';
 

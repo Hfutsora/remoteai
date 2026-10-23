@@ -1,4 +1,4 @@
-import { guiText } from '../../i18n/guiText';
+import { uiText } from "../../i18n/uiText";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { isDesktopApp } from '../../api/backend';
 import { CreateProjectDialog } from './CreateProjectDialog';
@@ -30,7 +30,7 @@ export function ProjectPicker({ value, projects, disabled, onChange, onError,
     if (disabled) return;
     try {
       setSaved(saveProject(project)); onChange(project.path); close();
-    } catch { onError(new Error(guiText('项目未能保存，请重试。'))); }
+    } catch { onError(new Error(uiText("client.conversation.couldNotSaveTheProjectPleaseTryAgain"))); }
   };
   const folderDrop = useProjectFolderDrop({ target: dropTarget ?? bar,
     allowFileAttachments: true,
@@ -39,19 +39,19 @@ export function ProjectPicker({ value, projects, disabled, onChange, onError,
   const drop = dropState ?? folderDrop;
   return <div ref={bar} className={layout.projectBar}>
     {(drop.dragging || drop.reading) && <div className={dropStyles.dropHint} role="status">
-      <span>{drop.reading ? guiText('正在添加附件…') : guiText('松开以添加文件或文件夹')}</span>
+      <span>{drop.reading ? uiText("client.chat.addingAttachments") : uiText("client.composer.dropToAddFilesOrFolders")}</span>
     </div>}
     {!running && <ProjectFolderPicker value={value} disabled={disabled} triggerRef={trigger}
       projects={[...saved, ...projects.map(path => ({ path, name: folderName(path) }))]}
       onChange={onChange} onClear={() => onChange('')} onOpen={() => setSaved(readProjects())}
-      onAdd={() => setCreating(true)} addLabel={guiText('新建项目')} />}
+      onAdd={() => setCreating(true)} addLabel={uiText("client.conversation.newProject")} />}
     <div className={layout.projectBarActions}>
       {!running && gitEnabled && onBusyChange && <WorkspacePicker key={value} cwd={value} disabled={disabled}
-        onChange={onChange} onBusyChange={onBusyChange} localLabel={hostPicker ? guiText('工作树') : undefined} />}
+        onChange={onChange} onBusyChange={onBusyChange} localLabel={hostPicker ? uiText("client.conversation.worktree") : undefined} />}
       {actions}
     </div>
     {!running && !(gitEnabled && onBusyChange) && !hostPicker && <span className={layout.localLabel}>
-      {isDesktopApp ? guiText('本地') : guiText('Remote AI 主机')}</span>}
+      {isDesktopApp ? uiText("client.git.local") : uiText("client.conversation.remoteAiHost")}</span>}
     {hostPicker}
     {creating && <CreateProjectDialog disabled={disabled} onCreate={create} onError={onError}
       onClose={close} />}

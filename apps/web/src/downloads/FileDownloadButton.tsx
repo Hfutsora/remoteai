@@ -9,8 +9,8 @@ import type { DownloadConnection } from './types';
 import { FileDownloadControl } from './FileDownloadControl';
 import { animateDownloadToNavigation, downloadOrigin } from './downloadFeedback';
 
-const DOWNLOAD_STATUS = { queued: '等待下载', preparing: '准备并校验文件', downloading: '下载中',
-  verifying: '正在校验', ready: '文件已就绪', saving: '正在保存', paused: '已暂停', completed: '已完成', failed: '下载失败' };
+const DOWNLOAD_STATUS = { queued: "client.downloads.queued", preparing: "client.downloads.preparingAndCheckingTheFile", downloading: "client.downloads.downloading.e2fc57",
+  verifying: "client.downloads.verifying", ready: "client.downloads.readyToSave", saving: "client.downloads.saving", paused: "client.downloads.paused", completed: "client.chat.completed", failed: "client.downloads.downloadFailed" };
 
 interface Props { path: string; context: FilePreviewContext }
 
@@ -58,16 +58,16 @@ function ManagedDownload({ path, context, connection }: Props & { connection: Do
     progress={task && progress ? { percent: progress.percent, status: DOWNLOAD_STATUS[task.status],
       detail: `${progress.amount}${task.status === 'downloading' && task.bytesPerSecond ? ` · ${progress.speed}` : ''}`,
     } : undefined} message={error || task?.message}
-    note={task ? '下载会在后台继续，可在“下载管理”查看进度。' : undefined} />;
+    note={task ? "client.downloads.downloadsContinueInTheBackgroundTrackProgressInDownloads" : undefined} />;
 }
 
 function DirectDownload({ path, context }: Props) {
   const download = useFileDownload({ ...context, path, target: browserDownloadTarget,
-    prepare: () => prepareBrowserDownload(path), success: t('文件已交给浏览器保存') });
+    prepare: () => prepareBrowserDownload(path), success: t("client.chat.yourBrowserIsSavingTheFile") });
   return <FileDownloadControl action={download.busy ? 'cancel' : 'download'}
     disabled={!download.busy && (!context.ready || !context.threadId)}
     onAction={download.busy ? download.cancel : download.start}
     progress={download.busy ? { percent: download.detail ? download.percent : undefined,
-      status: download.detail ? '下载中' : '准备下载', detail: download.detail } : undefined}
+      status: download.detail ? "client.downloads.downloading.e2fc57" : "client.downloads.preparingDownload.d0274b", detail: download.detail } : undefined}
     message={download.message} />;
 }

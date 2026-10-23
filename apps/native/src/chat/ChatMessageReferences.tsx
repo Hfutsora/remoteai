@@ -1,5 +1,6 @@
+import { displayText } from '../i18n/index';
 import { Text, View } from 'react-native';
-import { t, useLanguage } from '../i18n';
+import { useLanguage } from '../i18n';
 import { createThemedStyles } from '../theme/styles';
 import { messageReferences } from '../../../../shared/chat/messageReferences';
 import type { Item } from './types';
@@ -11,7 +12,7 @@ export function ChatMessageReferences({ item }: { item: Item }) {
   if (!references.length) return null;
   return <View style={styles.list}>
     {references.map(reference => <View key={reference.path} style={styles.reference}>
-      <Text style={styles.name}>{t(reference.label)}：{reference.name}</Text>
+      <Text style={styles.name}>{displayText(reference.label)}：{reference.name}</Text>
     </View>)}
   </View>;
 }

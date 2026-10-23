@@ -1,4 +1,4 @@
-import { guiText } from "../../i18n/guiText";
+import { uiText } from "../../i18n/uiText";
 import type { GuiController } from './controller';
 import type { GuiEvent, GuiState, Thread } from './types';
 import { initialState, savePreferences } from './preferences';
@@ -45,7 +45,7 @@ export class SidebarBridge {
     const threads = Object.fromEntries([...this.known].map(([id, thread]) => {
       const cwd = state.projectOverrides[id] ?? thread.cwd;
       return [id, { cwd, projectName: names.get(cwd) ?? folderName(cwd),
-        title: thread.name || thread.preview || guiText("新聊天"),
+        title: thread.name || thread.preview || uiText("client.chat.newChat"),
         running: thread.status?.type === 'active' || Boolean(state.conversations[id]?.activeTurn)
           || state.pendingRequest?.threadId === id }];
     }));
@@ -104,7 +104,7 @@ export class SidebarBridge {
   markRead(input: Record<string, unknown>) {
     const { threadId, turnId } = input;
     if (typeof threadId !== 'string' || !/^[a-zA-Z0-9_-]{1,200}$/.test(threadId)
-      || typeof turnId !== 'string' || turnId.length > 200) throw new Error(guiText("聊天已更新，请重新打开。"));
+      || typeof turnId !== 'string' || turnId.length > 200) throw new Error(uiText("client.conversation.theChatHasChangedPleaseReopenIt"));
     if (this.binding) this.binding.readState.markRemoteRead(threadId, turnId);
     else {
       const state = initialState();

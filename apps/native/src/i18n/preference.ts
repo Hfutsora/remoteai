@@ -1,7 +1,7 @@
 import { isAppLanguage, type AppLanguage } from '@remoteai/i18n';
 import * as SecureStore from 'expo-secure-store';
-import { setInterfaceLanguage } from '../../../../shared/i18n/interfaceLanguage';
-import { deviceLanguage } from '../../../../shared/i18n/language';
+import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
+import { deviceLanguage } from "../../../../shared/localization/language";
 
 type Language = AppLanguage<'native'>;
 

@@ -1,3 +1,4 @@
+import { displayError } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Keyboard, Text } from 'react-native';
@@ -55,28 +56,28 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
     void load(threadId, file.path, { signal: observer.signal,
       onProgress: value => { if (!observer.signal.aborted) setProgress(value); },
     }).then((value) => { if (!observer.signal.aborted) setResult(value); }, cause => {
-      if (!observer.signal.aborted) setError(t(filePreviewError(cause, "暂时无法预览，可以下载后打开。")));
+      if (!observer.signal.aborted) setError(displayError(filePreviewError(cause, "暂时无法预览，可以下载后打开。")));
     });
     return () => { observer.abort(); };
   }, [threadId, ready, load, file.path, attempt, binary]);
-  return <BottomSheet fullWidthContent visible tall title={t("文件")} subtitle={file.path} onClose={close} dragFromHeaderOnly
+  return <BottomSheet fullWidthContent visible tall title={t("client.chat.files.39932f")} subtitle={file.path} onClose={close} dragFromHeaderOnly
     actions={[{ label: download.label, onPress: download.busy ? download.cancel : download.start,
       tone: 'primary', disabled: !download.busy && !download.completed && (!ready || !threadId) },
-    ...(error ? [{ label: t("重新预览"), onPress: () => setAttempt(attempt + 1), disabled: !ready }] : [])]}>
+    ...(error ? [{ label: t("client.mobile.retryPreview"), onPress: () => setAttempt(attempt + 1), disabled: !ready }] : [])]}>
     <SheetScrollView style={{ flexShrink: 1 }}
       contentContainerStyle={{ paddingBottom: result && (html || markdown) ? 0 : 20 }}>
-      {!ready && !result && <Text style={styles.subtitle}>{t("请连接电脑后查看文件。")}</Text>}
-      {binary && <Text style={styles.subtitle}>{t("下载后即可用相应的应用打开。")}</Text>}
-      {ready && !binary && !result && !error && <PreviewTransferProgress progress={progress} label={t("正在读取文件…")} />}
+      {!ready && !result && <Text style={styles.subtitle}>{t("client.mobile.connectToYourComputerToViewTheFile")}</Text>}
+      {binary && <Text style={styles.subtitle}>{t("client.mobile.downloadTheFileToOpenItInACompatibleApp")}</Text>}
+      {ready && !binary && !result && !error && <PreviewTransferProgress progress={progress} label={t("client.chat.loadingFile")} />}
       {download.busy && !!download.detail && <Text style={[styles.subtitle, { maxWidth: 400 }]}>
         {download.detail}</Text>}
       {!!download.message && <Text accessibilityLiveRegion="polite" style={[styles.subtitle,
-        { maxWidth: 400 }]}>{t(download.message)}</Text>}
+        { maxWidth: 400 }]}>{displayError(download.message)}</Text>}
       {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {result && !html && !markdown && <>
-        <Text style={styles.subtitle}>{t("当前文件内容")}{file.line ? t(" · 引用第 {value1} 行", { value1: file.line }) : ''}</Text>
-        <ChatCodeBlock text={result.text} label={t("完整文本")} language={fileLanguage(file.path)}
-          lineNumbers copyLabel={t("复制文件内容")} />
+        <Text style={styles.subtitle}>{t("client.mobile.currentFileContent")}{file.line ? t("client.mobile.referencedLine", { value1: file.line }) : ''}</Text>
+        <ChatCodeBlock text={result.text} label={t("client.mobile.fullText")} language={fileLanguage(file.path)}
+          lineNumbers copyLabel={t("client.chat.copyFileContents")} />
       </>}
     </SheetScrollView>
     {result && html && <ChatHtmlPreview text={result.text} />}

@@ -87,7 +87,7 @@ export function MarkdownParagraph({ nodes, heading, context = {} }: {
     const first = part[0];
     const copy = index === parts.length - 1 ? context.copy : undefined;
     if (first.token.type === 'image') return <View key={index}><ChatImage
-      source={String(first.token.attrGet('src') ?? '')} description={first.token.content || t("图片")} />
+      source={String(first.token.attrGet('src') ?? '')} description={first.token.content || t("client.chat.image")} />
       {copy && <SelectableChatText copy={copy} />}</View>;
     if (hasMarkdownImage(first)) return <MarkdownParagraph key={index}
       nodes={first.children} heading={heading} context={{ ...context, copy }} />;

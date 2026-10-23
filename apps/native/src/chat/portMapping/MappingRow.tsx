@@ -1,3 +1,4 @@
+import { displayText, displayError } from '../../i18n/index';
 import { useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,39 +30,39 @@ export function MappingRow({ entry, service, connected, open, edit }: {
   return <View style={styles.card}>
     <View style={styles.accessSection}>
       <View style={styles.row}>
-        <Text style={styles.addressLabel}>{t('访问地址')}</Text>
-        <Switch accessibilityLabel={t(running || busy ? '停止映射' : '启动映射')} value={running || busy}
+        <Text style={styles.addressLabel}>{t("client.portMappingEditing.accessAddress")}</Text>
+        <Switch accessibilityLabel={t(running || busy ? "client.portForwarding.stopMapping" : "client.portForwarding.startMapping")} value={running || busy}
           disabled={entry.status === 'stopping' || (!connected && !running && !busy)}
           trackColor={{ false: '#ccd5dc', true: '#008b73' }} thumbColor="#fff"
           onValueChange={() => { void (running || busy ? service.stop(entry.id) : service.start(entry.id)); }} />
-        <Pressable accessibilityRole="button" accessibilityLabel={t('更多操作')} accessibilityState={{ expanded: menu }}
+        <Pressable accessibilityRole="button" accessibilityLabel={t("client.portMappingEditing.moreActions")} accessibilityState={{ expanded: menu }}
           style={styles.iconButton} onPress={() => setMenu(!menu)}>
           <Ionicons name="ellipsis-vertical" size={20} color="#718078" /></Pressable>
       </View>
       {menu && <View style={styles.menu}>
         <Pressable accessibilityRole="button" style={styles.button} disabled={busy}
-          onPress={() => { setMenu(false); edit(); }}><Text style={styles.buttonText}>{t('编辑映射')}</Text></Pressable>
+          onPress={() => { setMenu(false); edit(); }}><Text style={styles.buttonText}>{t("client.portMappingEditing.editMapping")}</Text></Pressable>
         <Pressable accessibilityRole="button" style={styles.button} disabled={entry.status === 'stopping'}
-          onPress={() => { void service.remove(entry.id); }}><Text style={styles.error}>{t('删除映射')}</Text></Pressable>
+          onPress={() => { void service.remove(entry.id); }}><Text style={styles.error}>{t("client.portForwarding.removeMapping")}</Text></Pressable>
       </View>}
       <View style={styles.row}>
         <View style={styles.addressBox}>
           <Pressable accessibilityRole="button" accessibilityLabel={`127.0.0.1:${entry.localPort}`}
             disabled={!canOpen} onPress={open} style={[styles.fill, !running && styles.disabled]}>
             <Text style={styles.addressText}>127.0.0.1:{entry.localPort}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('复制本地地址')}
+          <Pressable accessibilityRole="button" accessibilityLabel={t("client.portForwarding.copyLocalAddress")}
             style={styles.iconButton} onPress={() => { void copy(); }}>
             <Ionicons name="copy-outline" size={19} color="#62768a" /></Pressable>
         </View>
-        {entry.protocol !== 'udp' && <Pressable accessibilityRole="button" accessibilityLabel={t('打开')} disabled={!running}
+        {entry.protocol !== 'udp' && <Pressable accessibilityRole="button" accessibilityLabel={t("client.portForwarding.open")} disabled={!running}
           style={[styles.open, !running && styles.disabled]} onPress={open}>
-          <Ionicons name="open-outline" size={19} color="#008b73" /><Text style={styles.openText}>{t('打开')}</Text>
+          <Ionicons name="open-outline" size={19} color="#008b73" /><Text style={styles.openText}>{t("client.portForwarding.open")}</Text>
         </Pressable>}
       </View>
     </View>
     <View style={styles.metadata}>{details.map(([label, value]) => <View key={label} style={styles.detail}>
-      <Text style={styles.muted}>{t(String(label))}</Text><Text style={styles.value}>{value}</Text></View>)}</View>
-    {!!entry.error && <Text accessibilityRole="alert" style={styles.error}>{t(entry.error)}</Text>}
-    {!!notice && <Text style={styles.muted}>{t(notice)}</Text>}
+      <Text style={styles.muted}>{displayText(String(label))}</Text><Text style={styles.value}>{value}</Text></View>)}</View>
+    {!!entry.error && <Text accessibilityRole="alert" style={styles.error}>{displayError(entry.error)}</Text>}
+    {!!notice && <Text style={styles.muted}>{displayError(notice)}</Text>}
   </View>;
 }

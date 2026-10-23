@@ -12,10 +12,10 @@ export function ConversationPerformance({ read, threadId, active }: {
   const speed = `${formatConversationTps(metrics)} TPS`;
   const firstToken = `${formatConversationTtft(metrics)} TTFT`;
   return <>
-    <Text accessibilityLabel={`${t('对话输出速度')} ${speed}`}
+    <Text accessibilityLabel={`${t("client.mobile.conversationOutputSpeed")} ${speed}`}
       accessibilityHint={t(CONVERSATION_TPS_DESCRIPTION)}>{speed}</Text>
     {' · '}
-    <Text accessibilityLabel={`${t('首 token 等待时间')} ${firstToken}`}
+    <Text accessibilityLabel={`${t("client.mobile.timeToFirstToken")} ${firstToken}`}
       accessibilityHint={t(CONVERSATION_TTFT_DESCRIPTION)}>{firstToken}</Text>
   </>;
 }

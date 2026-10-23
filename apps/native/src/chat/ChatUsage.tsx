@@ -1,3 +1,5 @@
+import { displayText } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
@@ -21,12 +23,12 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
   const color = useThemeColor();
   const language = useLanguage();
   const { usage, error } = useChatUsage(read, active && ready);
-  const trailing = usageTrailing(usage, t);
-  const notice = ready ? (error ? t(error) : t("正在读取今日用量…")) : t("连接后查看今日用量");
+  const trailing = usageTrailing(usage, displayText);
+  const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   return <View style={styles.container}>
     <View style={styles.context}>
       <Text style={[styles.row, styles.contextText]}>{contextUsageLabel(tokenUsage, language)}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("设置当前对话的上下文容量")}
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.setContextCapacityForThisChat")}
         accessibilityState={{ disabled: !onContextSettings }} disabled={!onContextSettings}
         style={({ pressed }) => [styles.settings, pressed && styles.pressed, !onContextSettings && styles.disabled]}
         onPress={onContextSettings}>
@@ -34,15 +36,15 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
       </Pressable>
     </View>
     {usage ? <Text style={styles.row} accessibilityLabel={[
-      t("今日 Token 用量：{value1}", { value1: usage.totalTokens.toLocaleString('en-US') }),
-      t("今日预估费用：{value1}", { value1: formatCost(usage.estimatedCostUsd) }), trailing?.description,
+      t("client.mobile.todaySTokenUsage", { value1: usage.totalTokens.toLocaleString('en-US') }),
+      t("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }), trailing?.description,
     ].filter(Boolean).join('，')}>
-      {t("今日")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
-      {t(" · 预估 ")}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
+      {t("client.chat.today")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
+      {t("client.mobile.estimated")}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
       {trailing && <Text>{' · '}{trailing.label}
         <Text style={styles[trailing.tone]}>{trailing.text}</Text></Text>}
     </Text> : <Text style={styles.row}>{notice}</Text>}
-    <Text style={styles.row}>{t("当前对话")}{' '}
+    <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
       <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
       {' · '}<ConversationPerformance read={readConversationMetrics} threadId={threadId} active={active && ready} />
     </Text>

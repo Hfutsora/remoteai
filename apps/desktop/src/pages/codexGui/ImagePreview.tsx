@@ -1,3 +1,4 @@
+import { displayText } from '../../i18n/uiText';
 import { ImageViewer } from "../../../../../shared/chat/ImageViewer";
 import { useImageMenu } from "./useImageMenu";
 import styles from "./ImagePreview.module.less";
@@ -13,6 +14,5 @@ interface Props {
 
 export function ImagePreview(props: Props) {
   const menu = useImageMenu(props.prepare);
-  return <span className={styles.preview}><ImageViewer {...props} {...menu} translate={guiText} /></span>;
+  return <span className={styles.preview}><ImageViewer {...props} {...menu} translate={displayText} /></span>;
 }
-import { guiText } from "../../i18n/guiText";

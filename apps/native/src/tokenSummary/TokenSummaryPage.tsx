@@ -32,10 +32,10 @@ export function TokenSummaryPage({ read, ready, foreground, deviceName, onBack }
   };
   return <View style={s.page}>
     <View style={s.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("返回聊天")} style={s.button} onPress={onBack}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.backToChat")} style={s.button} onPress={onBack}>
         <Feather name="arrow-left" size={24} color={color("#17211b", 'ink')} />
-      </Pressable><Text accessibilityRole="header" style={[s.title, s.fill]}>{t("Token 汇总")}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("刷新 Token 汇总")} style={s.button}
+      </Pressable><Text accessibilityRole="header" style={[s.title, s.fill]}>{t("client.chat.tokenSummary")}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.refreshTokenSummary")} style={s.button}
         disabled={!ready || loading} onPress={summary.refresh}>
         {loading ? <ActivityIndicator color={color("#0b8065", 'accent')} /> : <Feather name="refresh-cw" size={20} color={color("#0b8065", 'accent')} />}
       </Pressable>
@@ -43,20 +43,20 @@ export function TokenSummaryPage({ read, ready, foreground, deviceName, onBack }
     <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={loading} onRefresh={summary.refresh} enabled={ready}
         tintColor={color("#0b8065", 'accent')} colors={['#0b8065']} />}>
-      <View style={{ gap: 8 }}><Text style={s.hint}>{deviceName || t("尚未选择电脑")}{' '}{t("· 仅统计代理模式的 Token 消耗")}</Text>
-        <View style={s.row}><Text style={s.hint}>{t("最近")}</Text>
-          <TextInput accessibilityLabel={t("统计周数，1 至 52 周")} style={s.input} value={draftWeeks}
+      <View style={{ gap: 8 }}><Text style={s.hint}>{deviceName || t("client.chatReliability.noComputerSelected")}{' '}{t("client.chat.tokenUsageThroughTheProxyOnly")}</Text>
+        <View style={s.row}><Text style={s.hint}>{t("client.chat.recent")}</Text>
+          <TextInput accessibilityLabel={t("client.chat.numberOfWeeks1To52")} style={s.input} value={draftWeeks}
             keyboardType="number-pad" maxLength={2} onChangeText={setDraftWeeks}
             onEndEditing={applyWeeks} onSubmitEditing={applyWeeks} returnKeyType="done" />
-          <Text style={[s.hint, s.fill]}>{t("周")}</Text>
+          <Text style={[s.hint, s.fill]}>{t("client.chat.weeks")}</Text>
           <Pressable accessibilityRole="button" style={s.button} onPress={applyWeeks}>
-            <Text style={s.action}>{t("应用")}</Text></Pressable>
+            <Text style={s.action}>{t("client.chat.apply")}</Text></Pressable>
         </View>
-        {data && <Text style={s.hint}>{t("更新于")}{' '}{new Date(data.endTs * 1000).toLocaleTimeString()}</Text>}
+        {data && <Text style={s.hint}>{t("client.accounts.updated")}{' '}{new Date(data.endTs * 1000).toLocaleTimeString()}</Text>}
       </View>
-      {!ready && <Text style={s.error}>{t("连接电脑后即可查看 Token 汇总。")}</Text>}
+      {!ready && <Text style={s.error}>{t("client.chat.connectToYourComputerToViewTokenUsage")}</Text>}
       {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
-      {loading && !data && <Text style={s.hint}>{t("正在加载汇总…")}</Text>}
+      {loading && !data && <Text style={s.hint}>{t("client.mobile.loadingSummary")}</Text>}
       {data && <>
         <UsageTotals data={data} />
         <QuotaPanel data={data} />
@@ -64,9 +64,9 @@ export function TokenSummaryPage({ read, ready, foreground, deviceName, onBack }
         <ConsumptionPanels data={data} />
         <UsageHeatmap data={data} />
         <UsageTrend data={data} />
-        <RankingPanel title={t("Provider 消耗排行")} ranking={data.rankings.providers} count={data.entryCount} />
-        <RankingPanel title={t("模型消耗排行")} ranking={data.rankings.models} count={data.entryCount} />
-        <RankingPanel title={t("账户消耗排行")} ranking={data.rankings.accounts} count={data.entryCount} />
+        <RankingPanel title={t("client.chat.providerUsageRanking")} ranking={data.rankings.providers} count={data.entryCount} />
+        <RankingPanel title={t("client.chat.modelUsageRanking")} ranking={data.rankings.models} count={data.entryCount} />
+        <RankingPanel title={t("client.chat.accountUsageRanking")} ranking={data.rankings.accounts} count={data.entryCount} />
       </>}
     </ScrollView>
   </View>;

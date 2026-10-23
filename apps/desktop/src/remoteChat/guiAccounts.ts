@@ -4,7 +4,7 @@ import { object } from '../../../../shared/remote-chat/protocol';
 import type { GuiAccountSelection, GuiAccountsSnapshot } from '../../../../shared/remote-chat/guiAccounts';
 import { guiAccountBalances } from './guiAccountBalances';
 import { switchGuiAccount } from '../pages/codexGui/session';
-import { guiText } from '../i18n/guiText';
+import { uiText } from "../i18n/uiText";
 
 function remainingPercent(value: number | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
@@ -13,14 +13,14 @@ function remainingPercent(value: number | undefined) {
 
 // Remote clients render these fields verbatim, so the host formats them in its interface language.
 function accountPlan(account: Account) {
-  return account.plan?.trim() || account.usage?.plan?.trim() || guiText('套餐未知');
+  return account.plan?.trim() || account.usage?.plan?.trim() || uiText("client.conversation.unknownPlan");
 }
 
 function accountDetail(account: Account) {
   const plan = accountPlan(account);
   const primary = remainingPercent(account.usage?.primary?.remainingPercent);
   const secondary = remainingPercent(account.usage?.secondary?.remainingPercent);
-  return guiText('{plan} · 主剩余 {primary} · 次剩余 {secondary}', { plan, primary, secondary });
+  return uiText("client.remoteHostData.remainingPrimarySecondary", { plan, primary, secondary });
 }
 
 export async function readGuiAccounts(): Promise<GuiAccountsSnapshot> {

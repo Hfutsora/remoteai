@@ -1,8 +1,8 @@
 export type ThemeMode = 'light' | 'dark';
 
 export const THEME_OPTIONS = [
-  { value: 'light', label: '明亮' },
-  { value: 'dark', label: '暗黑' },
+  { value: 'light', label: "client.settings.light" },
+  { value: 'dark', label: "client.settings.dark" },
 ] as const;
 
 export function isThemeMode(value: unknown): value is ThemeMode {

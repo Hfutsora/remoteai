@@ -1,3 +1,4 @@
+import { displayText, displayError } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { useState } from 'react';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
@@ -41,33 +42,33 @@ export function ChatSettings({ models, selection, saving, ready, error, updateSe
     if (value !== selection[field] || error) await updateSettings({ [field]: value });
     setField((current) => current === field ? null : current);
   };
-  return <AdaptiveSheet open title={t("聊天设置")} width={400} onClose={onClose}>
+  return <AdaptiveSheet open title={t("client.chat.chatSettings.1e06eb")} width={400} onClose={onClose}>
     <div className="chat-settings" aria-hidden={field !== null || contextOpen}>
       <ChatProfileMenu {...connection} variant="settings" ready={ready} />
       {visibleSettingsFields(selection).map((entry) => <button key={entry.field} type="button"
         className="chat-setting-entry"
-        aria-label={t("设置{value1}", { value1: t(entry.label) })} onClick={() => setField(entry.field)} tabIndex={field ? -1 : 0}>
-        <strong>{t(entry.label)}</strong><span>{entry.field === 'model'
-          ? settingValue(entry.field, models, selection) : t(settingValue(entry.field, models, selection))}</span>
+        aria-label={t("client.chat.set", { value1: displayText(entry.label) })} onClick={() => setField(entry.field)} tabIndex={field ? -1 : 0}>
+        <strong>{displayText(entry.label)}</strong><span>{entry.field === 'model'
+          ? settingValue(entry.field, models, selection) : displayText(settingValue(entry.field, models, selection))}</span>
         <span aria-hidden="true">›</span>
       </button>)}
-      {!!notice && <p role={error ? 'alert' : 'status'} className={error ? 'chat-error' : 'chat-muted'}>{t(notice)}</p>}
+      {!!notice && <p role={error ? 'alert' : 'status'} className={error ? 'chat-error' : 'chat-muted'}>{displayError(notice)}</p>}
       {!!error && <button type="button" className="chat-button" onClick={() => { void updateSettings(selection); }}>
-        {t("重新保存")}</button>}
+        {t("client.chat.saveAgain")}</button>}
       <ChatUsage read={readUsage} active={!field && !contextOpen} ready={ready} tokenUsage={tokenUsage}
         readConversationMetrics={readConversationMetrics} threadId={threadId}
         onContextSettings={threadId ? () => setContextOpen(true) : undefined} />
     </div>
-    {field && <AdaptiveSheet open title={t(SETTINGS_FIELDS.find((entry) => entry.field === field)!.title)} width={400}
+    {field && <AdaptiveSheet open title={displayText(SETTINGS_FIELDS.find((entry) => entry.field === field)!.title)} width={400}
       titleAction={field === 'model' ? <ModelRefreshButton ready={ready} refreshModels={refreshModels} /> : undefined}
       onBack={() => setField(null)} onClose={() => setField(null)}>
       <div className="chat-settings chat-setting-options" role="radiogroup">
         {settingOptions(field, models, selection).map((option) => <button key={option.value}
-          type="button" role="radio" aria-label={field === 'model' ? option.label : t(option.label)} aria-checked={selection[field] === option.value}
+          type="button" role="radio" aria-label={field === 'model' ? option.label : displayText(option.label)} aria-checked={selection[field] === option.value}
           className="chat-setting-option" onClick={() => { void choose(option.value); }}>
-          <span className="chat-row"><strong className="chat-grow">{field === 'model' ? option.label : t(option.label)}</strong>
+          <span className="chat-row"><strong className="chat-grow">{field === 'model' ? option.label : displayText(option.label)}</strong>
             {selection[field] === option.value && <span aria-hidden="true">✓</span>}</span>
-          {option.description && <small>{t(option.description)}</small>}
+          {option.description && <small>{displayText(option.description)}</small>}
         </button>)}
       </div>
     </AdaptiveSheet>}

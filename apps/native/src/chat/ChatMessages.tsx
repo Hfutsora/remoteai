@@ -109,25 +109,25 @@ export function ChatMessages({ thread, loading, loadingMore, hasMore, loadOlder,
     ListHeaderComponent={<View style={(hasMore || loadingMore) && [styles.historyStatus, styles.messageHeader]}>
       {(hasMore || loadingMore) && <Pressable accessibilityRole="button" onPress={more} disabled={loadingMore}
         accessibilityState={{ disabled: Boolean(loadingMore) }}>
-        <Text style={styles.subtitle}>{loadingMore ? t("加载中…") : t("加载更早的消息")}</Text>
+        <Text style={styles.subtitle}>{loadingMore ? t("client.mobile.loading") : t("client.chat.loadEarlierMessages")}</Text>
       </Pressable>}
     </View>}
     ListEmptyComponent={showInitialLoading || processing ? null : <View style={styles.empty}>
       <Ionicons name="terminal-outline" size={28} color={color(palette.green, 'accent')} />
-      <Text style={styles.title}>{t("想一起完成什么？")}</Text>
-      <Text style={[styles.subtitle, styles.centerText]}>{t("直接提问，或选择一个项目开始任务。")}</Text>
+      <Text style={styles.title}>{t("client.chat.whatShallWeWorkOn")}</Text>
+      <Text style={[styles.subtitle, styles.centerText]}>{t("client.chat.askAQuestionOrChooseAProjectToGetStarted")}</Text>
     </View>}
     ListFooterComponent={<View style={[styles.messageFooter, { paddingBottom: historyBottomSpace }]}
       onLayout={onFooterLayout}>{runningSummary ? null : processing}</View>} />
     {showScrollToBottom && !showInitialLoading && entries.length > 0 && <Pressable
-      accessibilityRole="button" accessibilityLabel={t("回到底部")} onPress={scrollToBottom}
+      accessibilityRole="button" accessibilityLabel={t("client.chat.scrollToBottom")} onPress={scrollToBottom}
       style={({ pressed }) => [styles.scrollToBottom, pressed && styles.scrollToBottomPressed]}>
       <Ionicons name="arrow-down" size={18} color={color(palette.ink, 'ink')} />
-      <Text style={styles.scrollToBottomText}>{t("回到底部")}</Text>
+      <Text style={styles.scrollToBottomText}>{t("client.chat.scrollToBottom")}</Text>
     </Pressable>}
     {showInitialLoading && <View style={styles.messageLoadingOverlay}>
-      <ActivityIndicator size="small" accessibilityLabel={t("正在加载聊天记录")} />
-      <Text style={[styles.subtitle, styles.messageLoadingText]}>{t("正在加载聊天记录…")}</Text>
+      <ActivityIndicator size="small" accessibilityLabel={t("client.mobile.loadingChatHistory")} />
+      <Text style={[styles.subtitle, styles.messageLoadingText]}>{t("client.chat.loadingChatHistory")}</Text>
     </View>}
     </View>
     {selectedEntry && <ChatWorkDrawer entry={selectedEntry} onClose={close}

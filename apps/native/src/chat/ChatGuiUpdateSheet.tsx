@@ -1,3 +1,4 @@
+import { displayText, displayError } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { t, useLanguage } from '../i18n';
 import { ScrollView, Text, View } from 'react-native';
@@ -13,31 +14,31 @@ export function ChatGuiUpdateSheet({ deviceName, onClose, onBack, ...options }: 
   const styles = useStyles();
   useLanguage();
   const update = useGuiUpdate(options);
-  return <BottomSheet visible title={update.confirmation ? t("安装 Codex GUI 更新") : t("更新 Codex GUI")}
-    subtitle={deviceName || t("当前电脑")} onClose={onClose} onBack={update.confirmation ? update.cancel : onBack}
+  return <BottomSheet visible title={update.confirmation ? t("client.app.installCodexGuiUpdate") : t("client.app.updateCodexGui")}
+    subtitle={deviceName || t("client.app.currentComputer")} onClose={onClose} onBack={update.confirmation ? update.cancel : onBack}
     dragFromHeaderOnly maxWidth={SHEET_READABLE_WIDTH} actions={update.confirmation ? [
-      { label: t("暂不安装"), onPress: update.cancel },
-      { label: t("确认安装"), tone: 'primary', disabled: !update.canConfirm, onPress: update.confirm },
+      { label: t("client.settings.notNow"), onPress: update.cancel },
+      { label: t("client.app.confirmInstallation"), tone: 'primary', disabled: !update.canConfirm, onPress: update.confirm },
     ] : [
-      { label: t(update.checkLabel), disabled: !update.canCheck, onPress: update.check },
-      { label: t("安装更新"), tone: 'primary', disabled: !update.canInstall, onPress: update.requestInstall },
+      { label: displayText(update.checkLabel), disabled: !update.canCheck, onPress: update.check },
+      { label: t("client.settings.installUpdate"), tone: 'primary', disabled: !update.canInstall, onPress: update.requestInstall },
     ]}>
     <ScrollView><View style={localStyles.body}>
       {update.confirmation ? <>
         <Text style={styles.title}>v{update.confirmation}</Text>
-        <Text style={styles.subtitle}>{t("将在这台电脑上更新 Codex GUI，完成后自动重新连接。")}</Text>
+        <Text style={styles.subtitle}>{t("client.app.codexGuiWillUpdateOnThisComputerAndReconnectAutomatically")}</Text>
       </> : <>
-        <Text style={styles.subtitle}>{t("当前版本")}</Text>
-        <Text selectable style={styles.title}>{update.version ? `v${update.version}` : t("暂未读取到版本")}</Text>
+        <Text style={styles.subtitle}>{t("client.settings.version")}</Text>
+        <Text selectable style={styles.title}>{update.version ? `v${update.version}` : t("client.settings.versionUnavailable")}</Text>
         {update.available && update.release && <>
-          <Text style={styles.subtitle}>{t("可用版本")}</Text>
+          <Text style={styles.subtitle}>{t("client.settings.availableVersion")}</Text>
           <Text selectable style={styles.title}>v{update.release.version}</Text>
         </>}
       </>}
-      <Text accessibilityLiveRegion="polite" style={styles.subtitle}>{t(update.message)}</Text>
+      <Text accessibilityLiveRegion="polite" style={styles.subtitle}>{displayError(update.message)}</Text>
       {update.progress !== null && <Text accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: update.progress }} style={styles.title}>{update.progress}%</Text>}
-      {!!update.error && <Text accessibilityRole="alert" style={styles.error}>{t(update.error)}</Text>}
+      {!!update.error && <Text accessibilityRole="alert" style={styles.error}>{displayError(update.error)}</Text>}
     </View></ScrollView>
   </BottomSheet>;
 }

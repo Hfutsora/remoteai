@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { setInterfaceLanguage } from '../../../../shared/i18n/interfaceLanguage';
-import { translateText } from '../../../../shared/i18n/translate';
+import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
+import { translateMessage } from "../../../../shared/localization/messages";
 
 const bridge = vi.hoisted(() => ({ configure: vi.fn(), detach: vi.fn(), dismiss: vi.fn(),
   setLabels: vi.fn() }));
@@ -8,8 +8,8 @@ vi.mock('react-native', () => ({ NativeModules: { ChatTextSelection: bridge } })
 beforeEach(() => { vi.clearAllMocks(); setInterfaceLanguage('zh'); });
 afterEach(() => setInterfaceLanguage('zh'));
 
-const expected = (language: 'zh' | 'en' | 'ru') => ({ copy: translateText(language, '复制'),
-  selectAll: translateText(language, '全选'), quote: translateText(language, '引用') });
+const expected = (language: 'zh' | 'en' | 'ru') => ({ copy: translateMessage(language, "client.projectBrowser.copied"),
+  selectAll: translateMessage(language, "client.projectBrowser.selectAll"), quote: translateMessage(language, "client.chat.quote") });
 
 it('sends the selection toolbar titles in the interface language and after each change', async () => {
   const { syncSelectionLabels } = await import('./nativeTextSelection');

@@ -1,3 +1,4 @@
+import { defaultText } from '../localization/messages';
 import type { Thread } from './client/types';
 import { prioritizeRunningThreads } from '../chat/threadOrder';
 
@@ -17,12 +18,12 @@ export interface SidebarSnapshot {
 }
 export const emptySidebar = (): SidebarSnapshot => ({ revision: -1, threads: {}, readState: {} });
 
-export function threadPresentation(thread: Thread, sidebar: SidebarSnapshot, translate = (text: string) => text) {
+export function threadPresentation(thread: Thread, sidebar: SidebarSnapshot, translate = defaultText) {
   const entry = sidebar.threads[thread.id];
   const cwd = entry?.cwd ?? thread.cwd;
   return {
-    cwd, title: entry?.title || thread.name || thread.preview || translate('新聊天'),
-    projectName: entry?.projectName || cwd?.split(/[\\/]/).filter(Boolean).at(-1) || translate('最近'),
+    cwd, title: entry?.title || thread.name || thread.preview || translate("client.chat.newChat"),
+    projectName: entry?.projectName || cwd?.split(/[\\/]/).filter(Boolean).at(-1) || translate("client.chat.recent"),
     running: entry?.running ?? (thread.status?.type === 'active'
       || thread.turns?.some((turn) => turn.status === 'inProgress') === true),
     unread: sidebar.readState[thread.id]?.unread ?? false,

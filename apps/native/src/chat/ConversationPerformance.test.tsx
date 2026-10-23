@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ChatUsage } from './ChatUsage';
 import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 
-vi.mock('../i18n', () => ({ t: (value: string) => value, useLanguage: () => 'zh' }));
+vi.mock('../i18n', async () => ({ ...await vi.importActual<typeof import('../i18n')>('../i18n'), useLanguage: () => 'zh' }));
 vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>('react'),
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));

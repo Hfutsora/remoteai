@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import * as storage from 'expo-secure-store';
 import { getLanguage } from './index';
-import { setInterfaceLanguage } from '../../../../shared/i18n/interfaceLanguage';
+import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
 import { LANGUAGE_KEY, loadLanguage, setLanguage } from './preference';
 
 vi.mock('expo-secure-store', () => ({ getItemAsync: vi.fn(), setItemAsync: vi.fn() }));

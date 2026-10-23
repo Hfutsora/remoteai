@@ -9,7 +9,7 @@ import { useChatImagePreview } from './ChatImagePreview';
 export const ChatImageContext = createContext<ImagePreviewOptions | null>(null);
 const PREVIEW_ASPECT_RATIO = 4 / 3;
 
-export function ChatImage({ source, description = t("图片") }: { source?: string; description?: string }) {
+export function ChatImage({ source, description = t("client.chat.image") }: { source?: string; description?: string }) {
   const imageStyles = useImageStyles();
   const styles = useStyles();
   useLanguage();
@@ -21,14 +21,14 @@ export function ChatImage({ source, description = t("图片") }: { source?: stri
   return <View style={imageStyles.container}>
     {image.failed && <View style={imageStyles.notice}>
       <Text style={styles.subtitle}>
-        {context?.ready ? t("{value1}：图片加载失败", { value1: description }) : t("这张图片尚未缓存，连接电脑后查看。")}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("重新加载：{value1}", { value1: description })} onPress={image.retry}>
-        <Text style={styles.buttonText}>{t("重试")}</Text>
+        {context?.ready ? t("client.mobile.couldNotLoadImage", { value1: description }) : t("client.errors.connectToYourComputerToViewThisImage")}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.reload", { value1: description })} onPress={image.retry}>
+        <Text style={styles.buttonText}>{t("client.terminal.retry")}</Text>
       </Pressable>
     </View>}
-    {!image.failed && !previewReady && <Text style={styles.status}>{t("正在加载图片…")}</Text>}
+    {!image.failed && !previewReady && <Text style={styles.status}>{t("client.chat.loadingImage")}</Text>}
     {previewReady && <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button"
-      accessibilityLabel={t("放大查看：{value1}", { value1: description })}
+      accessibilityLabel={t("client.chat.enlarge", { value1: description })}
       onPress={() => { if (image.url) openPreview({ key: image.key, thumbnail: image.url,
         description, load: image.original, save: image.save }); }}>
       <Image key={image.key} source={{ uri: image.url }} accessibilityLabel={description}

@@ -41,7 +41,7 @@ export function DetailsWorkspace({ selected, active, children, enabled = true, c
   const visible = drawer.tabs.visible
     && Boolean(tool || (enabled && ((showingChanges && entry) || (showingPreview && preview))));
   const hasTabs = Boolean(entry || preview || drawer.tabs.entries.length);
-  const label = tool?.title ?? t(showingChanges ? "文件更改详情" : "预览详情");
+  const label = tool?.title ?? t(showingChanges ? "client.chat.fileChangeDetails" : "client.desktopGuiExtras.previewDetails");
   const resize = useDrawerResize(host);
   const docked = visible && !expanded && resize.available - resize.width >= MIN_CHAT_WIDTH;
   const width = expanded ? resize.available : resize.width;
@@ -70,30 +70,30 @@ export function DetailsWorkspace({ selected, active, children, enabled = true, c
           }
         }}>
         {!expanded && <div className={styles.resizeHandle} role="separator" tabIndex={0}
-          aria-label={t("调整详情抽屉宽度")} aria-orientation="vertical" aria-controls={panelId}
+          aria-label={t("client.chat.resizeDetailsPanel")} aria-orientation="vertical" aria-controls={panelId}
           aria-valuemin={resize.minimum} aria-valuemax={resize.maximum} aria-valuenow={width} {...resize.handle} />}
         <header className={styles.header}>
-          <div ref={tabBar} className={styles.tabs} role="tablist" aria-label={t("侧栏内容")}>
+          <div ref={tabBar} className={styles.tabs} role="tablist" aria-label={t("client.desktopGuiExtras.sidebarContent")}>
             {enabled && <button className={styles.tab} role="tab" aria-selected={showingChanges}
-              onClick={panel.showChanges}><FileDiff size={16} />{t("文件更改")}</button>}
+              onClick={panel.showChanges}><FileDiff size={16} />{t("client.chat.fileChanges.049e14")}</button>}
             {preview && <button className={styles.tab} role="tab" aria-selected={showingPreview}
-              onClick={panel.showPreview}><FileSearch size={16} />{t("预览")}</button>}
+              onClick={panel.showPreview}><FileSearch size={16} />{t("client.chat.preview")}</button>}
             {drawer.tabs.entries.map(tab => <button key={tab.id} className={styles.tab} role="tab"
               aria-selected={drawer.tabs.selected === tab.id} onClick={() => drawer.tabs.open(tab.id)}>
               {tab.icon}<span>{tab.title}</span></button>)}
           </div>
           <div className={styles.controls}>
-            <button aria-label={t(expanded ? "还原抽屉宽度" : "展开详情抽屉")}
+            <button aria-label={t(expanded ? "client.chat.restorePanelWidth" : "client.chat.expandDetailsPanel")}
               onClick={() => panel.setExpanded(!expanded)}>
               {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
-            <button aria-label={t("最小化详情抽屉")} onClick={() => { panel.context.close(); drawer.minimize(); }}>
+            <button aria-label={t("client.chat.minimizeDetailsPanel")} onClick={() => { panel.context.close(); drawer.minimize(); }}>
               <Minus size={16} /></button>
-            <button ref={closeButton} aria-label={t("关闭详情抽屉")} onClick={panel.context.close}><X size={17} /></button>
+            <button ref={closeButton} aria-label={t("client.chat.closeDetailsPanel")} onClick={panel.context.close}><X size={17} /></button>
           </div>
         </header>
         {entry && <div hidden={!showingChanges} key={`${entry.id}:${entry.filePath ?? ""}:${viewId}`}
           className={styles.content}>
-          {!entry.files.length && <p className={styles.empty}>{t("暂无文件更改")}</p>}
+          {!entry.files.length && <p className={styles.empty}>{t("client.chat.noFileChangesYet")}</p>}
           <DiffDocument files={entry.files} filePath={entry.filePath}
             title={entry.title} status={entry.status}
             initialOpen continuous />
@@ -112,7 +112,7 @@ export function DetailsWorkspace({ selected, active, children, enabled = true, c
       {hasTabs && drawer.minimized && active &&
         <button className={styles.restore} onClick={drawer.restore}>
           <PanelRightOpen size={16} />{tool ? tool.title
-            : t(showingChanges ? "恢复文件更改" : "恢复预览")}</button>}
+            : t(showingChanges ? "client.chat.restoreFileChanges" : "client.desktopGuiExtras.restorePreview")}</button>}
     </div>
     </WorkspaceDrawerContext.Provider>
   </DetailsContext.Provider>;

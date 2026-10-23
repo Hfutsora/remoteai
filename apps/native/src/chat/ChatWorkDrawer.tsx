@@ -12,8 +12,8 @@ export function ChatWorkDrawer({ entry, onOpen, onClose }: {
   const workStyles = useWorkStyles();
   useLanguage();
   const running = entry.turn.status === 'inProgress';
-  return <BottomSheet fullWidthContent visible tall title={running ? t("正在处理") : t("处理过程")}
-    subtitle={t("{value1} 项活动", { value1: entry.items.length })} onClose={onClose} dragFromHeaderOnly>
+  return <BottomSheet fullWidthContent visible tall title={running ? t("client.chat.working") : t("client.chat.activity")}
+    subtitle={t("client.chat.actions", { value1: entry.items.length })} onClose={onClose} dragFromHeaderOnly>
     <SheetFlatList data={entry.items} keyExtractor={(item) => item.id} style={workStyles.list}
       contentContainerStyle={workStyles.content} keyboardShouldPersistTaps="handled"
       ItemSeparatorComponent={() => <View style={workStyles.separator} />}

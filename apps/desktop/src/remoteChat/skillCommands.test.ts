@@ -78,7 +78,7 @@ it.each(['new', 'existing', 'running'])('delivers structured skill references to
 });
 
 it('resumes and checks the PC thread before compacting, and waits for completion before sending again', async () => {
-  expect(compactUnavailableReason(controller.snapshot())).toContain('开始对话');
+  expect(compactUnavailableReason(controller.snapshot())).toBe('client.shared.startAConversationToCompactContext');
   await controller.select(remote);
   vi.mocked(guiApi.request).mockClear();
   expect(await controller.compact()).toBe(true);

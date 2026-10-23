@@ -3,13 +3,13 @@ import { changedFiles, parseDiff } from './diff';
 import { visibleUserContent } from './conversationContext';
 
 const LABELS: Record<string, string> = {
-  userMessage: '消息内容', agentMessage: '回复内容', commandExecution: '执行命令', fileChange: '文件修改',
-  reasoning: '思考过程', webSearch: '搜索网页', mcpToolCall: '使用工具', dynamicToolCall: '使用工具',
-  functionCallOutput: '工具输出', collabAgentToolCall: '协作任务', collabToolCall: '协作任务', plan: '执行计划',
-  imageView: '查看图片', imageGeneration: '生成图片', sleep: '等待', contextCompaction: '整理对话',
-  enteredReviewMode: '开始代码审查', exitedReviewMode: '代码审查结果', hookPrompt: '任务补充',
+  userMessage: "client.shared.message", agentMessage: "client.shared.reply", commandExecution: "client.chat.runCommand", fileChange: "client.shared.fileChanges",
+  reasoning: "client.shared.reasoning", webSearch: "client.shared.searchTheWeb", mcpToolCall: "client.shared.useTool", dynamicToolCall: "client.shared.useTool",
+  functionCallOutput: "client.shared.toolOutput", collabAgentToolCall: "client.chat.collaboration", collabToolCall: "client.chat.collaboration", plan: "client.shared.plan",
+  imageView: "client.shared.viewImage", imageGeneration: "client.shared.generateImage", sleep: "client.shared.wait", contextCompaction: "client.shared.compactConversation",
+  enteredReviewMode: "client.shared.startCodeReview", exitedReviewMode: "client.shared.codeReviewResults", hookPrompt: "client.shared.taskDetails",
 };
-export const messageLabel = (item: Item) => LABELS[item.type] ?? '任务活动';
+export const messageLabel = (item: Item) => LABELS[item.type] ?? "client.shared.taskActivity";
 
 export function messageContent(item: Item) {
   if (item.type === 'userMessage') {

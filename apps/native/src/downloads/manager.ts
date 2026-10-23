@@ -16,7 +16,7 @@ let unlistenBulk: (() => void) | undefined;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach(listener => listener());
 const requireNative = () => {
-  if (!native) throw new Error(t("请安装支持下载管理的新版 Android 应用。"));
+  if (!native) throw new Error(t("client.mobile.installTheLatestAndroidAppToManageDownloads"));
   return native;
 };
 
@@ -27,7 +27,7 @@ function observeBulk(value?: DownloadConnection) {
   unlistenBulk = transport?.onInvalidated(() => {
     if (!value) return;
     void native?.invalidateBulk?.(value.owner, value.deviceId)
-      .catch(() => { error = t("下载暂时中断，请稍后继续。"); emit(); });
+      .catch(() => { error = t("client.mobile.downloadInterruptedResumeItLater"); emit(); });
   });
 }
 
@@ -49,13 +49,13 @@ export const downloadManager = {
         const client = current?.owner === request.source.owner && current.deviceId === request.source.deviceId
           ? current.client : undefined;
         void forwardDownloadRequest({ request, client, native: bridge })
-          .catch(() => { error = t("下载暂时中断，请稍后继续。"); emit(); });
+          .catch(() => { error = t("client.mobile.downloadInterruptedResumeItLater"); emit(); });
       });
       try { tasks = JSON.parse(await bridge.list()) as DownloadTask[]; error = ''; emit(); }
       catch (cause) { changed.remove(); requests.remove(); throw cause; }
     }).catch(cause => {
       initialized = undefined;
-      error = cause instanceof Error ? cause.message : t("暂时无法读取下载记录。"); emit();
+      error = cause instanceof Error ? cause.message : t("client.mobile.couldNotLoadDownloadHistory"); emit();
     });
     return initialized;
   },
@@ -76,7 +76,7 @@ export const downloadManager = {
         return native?.connection(value.owner, value.deviceId, value.ready ? value.windowSize : 0);
       }
     })
-      .catch(() => { error = t("暂时无法连接下载管理。"); emit(); });
+      .catch(() => { error = t("client.mobile.couldNotConnectToDownloads"); emit(); });
   },
   unbind(files: DownloadConnection['files']) {
     if (connection?.files !== files) return;
@@ -90,11 +90,11 @@ export const downloadManager = {
   async enqueue(source: DownloadSource) {
     await this.initialize();
     if (!connection?.ready || connection.owner !== source.owner || connection.deviceId !== source.deviceId) {
-      throw new Error(t("请先连接这台电脑，再开始下载。"));
+      throw new Error(t("client.mobile.connectToThisComputerBeforeDownloading"));
     }
     if (!source.preview && Platform.OS === 'android' && Number(Platform.Version) < 29) {
       const permission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
-      if (permission !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t("允许保存文件后，即可开始下载。"));
+      if (permission !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t("client.mobile.allowFileStorageToStartDownloading"));
     }
     return requireNative().enqueue(JSON.stringify(source));
   },
@@ -107,7 +107,7 @@ export const downloadManager = {
   async exportImage(id: string) {
     if (Platform.OS === 'android' && Number(Platform.Version) < 29) {
       const permission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
-      if (permission !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t("请允许保存照片后重试"));
+      if (permission !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t("client.mobile.allowPhotoStorageAndTryAgain"));
     }
     await requireNative().exportImage(id);
   },

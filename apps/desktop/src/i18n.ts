@@ -1,7 +1,7 @@
 import { resources as translations } from '@remoteai/i18n/desktop';
 import { applications, createI18n, isAppLanguage, languageOptions, localeForLanguage } from '@remoteai/i18n';
-import { DEFAULT_LANGUAGE } from '../../../shared/i18n/language';
-export { DEFAULT_LANGUAGE, systemLanguage as defaultLanguage } from '../../../shared/i18n/language';
+import { DEFAULT_LANGUAGE } from "../../../shared/localization/language";
+export { DEFAULT_LANGUAGE, systemLanguage as defaultLanguage } from "../../../shared/localization/language";
 
 export const LANGUAGE_STORAGE_KEY = "codex-switch:language";
 

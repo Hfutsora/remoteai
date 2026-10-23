@@ -11,10 +11,10 @@ import { ChatRetryButton } from './ChatRetryButton';
 
 export type TurnPanel = 'plan' | 'changes' | 'error' | 'result';
 export function turnErrorNotice(turn: Turn) {
-  if (turn.status === 'failed' || turn.error) return t("本次回复遇到问题，已中断。");
-  if (turn.status === 'completed') return t("本次回复曾出现连接中断，现已恢复。");
-  if (turn.status === 'interrupted') return t("本次回复曾出现连接中断。");
-  return t("连接暂时中断，Codex 正在重试…");
+  if (turn.status === 'failed' || turn.error) return t("client.chat.thisReplyStoppedBecauseOfAProblem");
+  if (turn.status === 'completed') return t("client.chat.theConnectionWasInterruptedAndHasRecovered");
+  if (turn.status === 'interrupted') return t("client.chat.theConnectionWasInterruptedDuringThisReply");
+  return t("client.chat.connectionInterruptedCodexIsRetrying");
 }
 
 export function ChatTurnSummary({ turn, onOpen, hideStopped = false }: {
@@ -27,18 +27,18 @@ export function ChatTurnSummary({ turn, onOpen, hideStopped = false }: {
     && item.status === 'completed' && !item.failure).map(generatedImageSource).filter(Boolean))];
   const running = turn.status === 'inProgress';
   return <section className="chat-turn-summary">
-    {generated.map(source => <ChatImage key={source} source={source} description={t("生成的图片")} />)}
-    {!!turn.plan?.length && <button type="button" className="chat-plan-summary" aria-label={t("查看任务计划")}
-      onClick={() => onOpen('plan')}><strong>{t("任务计划")}</strong>
+    {generated.map(source => <ChatImage key={source} source={source} description={t("client.chat.generatedImage")} />)}
+    {!!turn.plan?.length && <button type="button" className="chat-plan-summary" aria-label={t("client.chat.viewTaskPlan")}
+      onClick={() => onOpen('plan')}><strong>{t("client.chat.taskPlan")}</strong>
       <span>{turn.plan.filter(step => step.status === 'completed').length}/{turn.plan.length}</span>
       <ChevronRight size={15} /></button>}
     {!!files.length && <ChatTurnFiles files={files} running={running} onOpen={() => onOpen('changes')}
       onResult={reviewAvailable ? () => onOpen('result') : undefined} />}
-    {turn.status === 'interrupted' && !hideStopped && <p className="chat-muted">{t("已停止生成")}</p>}
+    {turn.status === 'interrupted' && !hideStopped && <p className="chat-muted">{t("client.chat.generationStopped")}</p>}
     {(turn.error || turn.retryError || turn.status === 'failed') && <div className="chat-turn-error">
       <span>{turnErrorNotice(turn)} </span><span className="chat-error-actions">
         <button type="button" className="chat-error-notice" onClick={() => onOpen('error')}>
-          <u>{t("查看报错详情")}</u></button><ChatRetryButton turnId={turn.id} />
+          <u>{t("client.chat.viewErrorDetails")}</u></button><ChatRetryButton turnId={turn.id} />
       </span></div>}
   </section>;
 }

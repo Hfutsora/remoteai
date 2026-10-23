@@ -3,7 +3,7 @@ import { registerRootComponent } from 'expo';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { setInterfaceLanguage } from '../../../shared/i18n/interfaceLanguage';
+import { setInterfaceLanguage } from "../../../shared/localization/interfaceLanguage";
 import { createProjectBrowserClient } from '../../../shared/project-browser/protocol';
 import { browserRequest, browserRoot } from '../../desktop/e2e/project-browser-fixture';
 import { ProjectBrowser } from '../src/chat/ProjectBrowser';

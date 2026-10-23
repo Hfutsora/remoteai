@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LANGUAGE_STORAGE_KEY, type Language } from '../i18n';
-import { guiText } from '../i18n/guiText';
+import { uiText } from "../i18n/uiText";
 import { useLanguage } from './useLanguage';
 
 vi.mock('../api/backend', () => ({
@@ -18,7 +18,7 @@ let chooseLanguage: (language: Language) => void;
 function LanguageView() {
   const { language, setLanguage, t } = useLanguage();
   chooseLanguage = setLanguage;
-  return <div data-language={language}>{t('autoReset.cancel')} / {guiText('取消')}</div>;
+  return <div data-language={language}>{t('autoReset.cancel')} / {uiText("client.accounts.cancel")}</div>;
 }
 
 beforeEach(() => {

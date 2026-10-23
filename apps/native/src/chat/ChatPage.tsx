@@ -1,3 +1,5 @@
+import { displayText } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { ImageAiContext } from '../../../../shared/chat/ImageAiContext';
 import { imageAiSender } from '../../../../shared/remote-chat/client/imageAiSender';
 import { prepareImageEdit } from './prepareImageEdit';
@@ -73,9 +75,9 @@ export function ChatPage(props: Props) {
   };
   return <View style={[styles.page, !active && styles.hidden]}>
     {notification && devices.length > 0 && !device && <Text style={styles.error}>
-      {t("通知对应的电脑暂不可用，请选择其他电脑。")}</Text>}
+      {t("client.mobile.theComputerForThisNotificationIsUnavailableChooseAnother")}</Text>}
     {!!backgroundError && <Text accessibilityRole="alert" style={styles.error}>{backgroundError}</Text>}
-    {!!notificationError && <Pressable accessibilityRole="button" accessibilityLabel={t("打开通知设置")}
+    {!!notificationError && <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.openNotificationSettings")}
       onPress={() => { void Linking.openSettings(); }}><Text style={styles.error}>{notificationError}</Text></Pressable>}
     {chats.map(chatDevice => {
       const selected = chatDevice?.deviceId === device?.deviceId;
@@ -170,13 +172,13 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
         expanded={drawer} onPress={openDrawer} />
       <View style={styles.headerContent}>
         <Text numberOfLines={1} style={styles.headerTitle}>
-          {state.selected ? threadPresentation(state.selected, state.sidebar, t).title : t("新聊天")}</Text>
+          {state.selected ? threadPresentation(state.selected, state.sidebar, displayText).title : t("client.chat.newChat")}</Text>
         <ChatConnectionInfo state={state} controller={controller} device={device} active={active && foreground} />
       </View>
       {state.selected && state.selectedArchived && <Pressable accessibilityRole="button"
         style={styles.compactButton} disabled={!ready || running}
         onPress={() => { void controller.archive().then(openDrawer); }}>
-        <Text style={styles.buttonText}>{t("恢复")}</Text></Pressable>}
+        <Text style={styles.buttonText}>{t("client.chat.restore")}</Text></Pressable>}
       <View style={styles.headerTools}>
         <ChatTools client={controller.guiTools} downloads={controller.downloads}
           active={active && foreground} connected={ready}
@@ -186,9 +188,9 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
       </View>
     </View>
     <ChatTaskStatus state={state} />
-    {!!error && <Text accessibilityRole="alert" style={styles.error}>{t(error)}</Text>}
+    {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
     {state.desktopOnly && <Text style={[styles.subtitle, { maxWidth: 400, paddingHorizontal: 16 }]}>
-      {t("桌面已就绪。打开远程桌面，登录电脑后即可继续聊天。")}</Text>}
+      {t("client.remoteDesktop.theDesktopIsReadyOpenRemoteDesktopAndSignIn")}</Text>}
     <ChatImageContext.Provider value={{ threadId: state.selected?.id ?? null, ready, offline: true,
       load: controller.imagePreview, save: controller.managedPreviews ? controller.savePreviewImage : undefined }}>
       <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived

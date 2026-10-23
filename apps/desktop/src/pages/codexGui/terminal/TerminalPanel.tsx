@@ -1,4 +1,4 @@
-import { guiText } from "../../../i18n/guiText";
+import { displayText } from "../../../i18n/uiText";
 import { useCallback, useRef, useState } from "react";
 import { Plus, SquareTerminal, X } from "lucide-react";
 import { Tooltip } from "antd";
@@ -11,7 +11,7 @@ import { TerminalKeys } from './TerminalKeys';
 import { TerminalLinkMenu, type TerminalLinkTarget } from './TerminalLinkMenu';
 
 
-export default function TerminalPanel({ panel, active, api, fill = false, translate = guiText, notice }: {
+export default function TerminalPanel({ panel, active, api, fill = false, translate = displayText, notice }: {
   panel: TerminalPanelState; active: boolean; api: TerminalApi; fill?: boolean;
   translate?: (source: string) => string;
   notice?: string;
@@ -20,28 +20,28 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
   const resize = useTerminalResize(host);
   const visible = panel.open && active;
   return <section ref={host} className={`${styles.panel} ${fill ? styles.fill : ''}`}
-    hidden={!visible} aria-label={translate("终端")} style={fill ? undefined : { height: resize.height }}>
-    {!fill && <div className={styles.resize} role="separator" tabIndex={0} aria-label={translate("调整终端高度")}
+    hidden={!visible} aria-label={translate("client.projectBrowser.terminal")} style={fill ? undefined : { height: resize.height }}>
+    {!fill && <div className={styles.resize} role="separator" tabIndex={0} aria-label={translate("client.chat.resizeTerminalHeight")}
       aria-orientation="horizontal" aria-valuemin={resize.minimum} aria-valuemax={resize.maximum}
       aria-valuenow={resize.height} {...resize.handle} />}
     <div className={styles.toolbar}>
-      <div className={styles.tabs} role="tablist" aria-label={translate("终端标签页")}>
+      <div className={styles.tabs} role="tablist" aria-label={translate("client.chat.terminalTabs")}>
         {panel.tabs.map((tab, index) => <div key={tab.id} className={styles.tab} data-selected={panel.selected === tab.id}>
-          <Tooltip title={tab.cwd || translate("终端")} styles={{ root: { maxWidth: 400 } }}>
+          <Tooltip title={tab.cwd || translate("client.projectBrowser.terminal")} styles={{ root: { maxWidth: 400 } }}>
             <button role="tab" id={`terminal-tab-${tab.id}`} aria-selected={panel.selected === tab.id}
               aria-controls={`terminal-pane-${tab.id}`} onClick={() => panel.select(tab.id)}>
-              <SquareTerminal size={15} /><span>{tab.cwd || `${translate("终端")} ${index + 1}`}</span></button>
+              <SquareTerminal size={15} /><span>{tab.cwd || `${translate("client.projectBrowser.terminal")} ${index + 1}`}</span></button>
           </Tooltip>
-          <button aria-label={`${translate("关闭终端")} ${index + 1}`} onClick={() => panel.remove(tab.id)}>
+          <button aria-label={`${translate("client.chat.closeTerminal")} ${index + 1}`} onClick={() => panel.remove(tab.id)}>
             <X size={14} /></button>
         </div>)}
       </div>
-      <Tooltip title={translate("新建终端")} styles={{ root: { maxWidth: 400 } }}>
-        <button className={styles.iconButton} aria-label={translate("新建终端")} onClick={panel.add}
+      <Tooltip title={translate("client.chat.newTerminal")} styles={{ root: { maxWidth: 400 } }}>
+        <button className={styles.iconButton} aria-label={translate("client.chat.newTerminal")} onClick={panel.add}
           disabled={panel.tabs.length >= MAX_TERMINAL_TABS}><Plus size={18} /></button>
       </Tooltip>
       {!fill && <button className={`${styles.iconButton} ${styles.close}`}
-        aria-label={translate("收起终端")} onClick={panel.hide}><X size={17} /></button>}
+        aria-label={translate("client.chat.hideTerminal")} onClick={panel.hide}><X size={17} /></button>}
     </div>
     {notice && <div className={styles.status} role="alert">{translate(notice)}</div>}
     {panel.tabs.map((tab) => <TerminalPane key={tab.id} tab={tab} api={api} translate={translate} shortcuts={fill}
@@ -59,7 +59,7 @@ function TerminalPane({ tab, visible, api, translate, shortcuts }: {
     session: tab.session, onLink: setLink });
   return <div className={styles.pane} hidden={!visible} role="tabpanel" id={`terminal-pane-${tab.id}`}
     aria-labelledby={`terminal-tab-${tab.id}`}>
-    <div ref={host} className={styles.screen} aria-label={info?.shell ?? translate("终端")} />
+    <div ref={host} className={styles.screen} aria-label={info?.shell ?? translate("client.projectBrowser.terminal")} />
     {status && <div className={styles.status} role="status">{translate(status)}</div>}
     {shortcuts && <TerminalKeys input={input} />}
     {link && visible && <TerminalLinkMenu key={`${link.url}:${link.x}:${link.y}`} target={link} id={info?.id}

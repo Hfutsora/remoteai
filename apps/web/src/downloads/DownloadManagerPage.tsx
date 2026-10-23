@@ -1,3 +1,4 @@
+import { displayText, displayError } from '../i18n/index';
 import { useState } from 'react';
 import { ArrowLeft, Download, Folder, Monitor } from 'lucide-react';
 import { t, useLanguage } from '../i18n';
@@ -16,29 +17,29 @@ export function DownloadManagerPage({ owner, onBack }: { owner: string; onBack: 
     connection={connection} scope={view} back={() => setView('tasks')} />;
   return <section className="downloads-page">
     <header className="downloads-header"><button type="button" className="download-icon-button"
-      aria-label={t('返回设置')} onClick={onBack}><ArrowLeft size={22} /></button><h2>{t('下载管理')}</h2></header>
+      aria-label={t("client.downloads.backToSettings")} onClick={onBack}><ArrowLeft size={22} /></button><h2>{t("client.downloads.downloads")}</h2></header>
     <div className="download-source-heading">
-      <span>{t('添加下载')}</span>
+      <span>{t("client.mobile.addDownload")}</span>
       <div className="download-connection" role="status">
         <span aria-hidden className={`download-connection-dot${connection?.ready ? '' : ' is-offline'}`} />
-        <span className="download-connection-name">{connection?.deviceName || t('尚未连接电脑')}</span>
-        {connection && <span>{t(downloadConnectionLabel(connection.mode))}</span>}
+        <span className="download-connection-name">{connection?.deviceName || t("client.mobile.noComputerConnected")}</span>
+        {connection && <span>{displayText(downloadConnectionLabel(connection.mode))}</span>}
       </div>
     </div>
     <div className="download-sources">
       <button type="button" className="download-card" disabled={!connection?.ready || !(connection.threadId || connection.cwd)}
-        onClick={() => setView('project')}><Folder size={24} /><strong>{t('当前项目')}</strong></button>
+        onClick={() => setView('project')}><Folder size={24} /><strong>{t("client.downloads.currentProject")}</strong></button>
       <button type="button" className="download-card" disabled={!connection?.ready}
-        onClick={() => setView('computer')}><Monitor size={24} /><strong>{t('此电脑')}</strong></button>
+        onClick={() => setView('computer')}><Monitor size={24} /><strong>{t("client.downloads.thisComputer")}</strong></button>
     </div>
-    {error && <p role="alert" className="download-notice">{t(error)}</p>}
-    <h3>{t('下载任务')} <small>{tasks.length}</small></h3>
+    {error && <p role="alert" className="download-notice">{displayError(error)}</p>}
+    <h3>{t("client.downloads.downloads.ea215a")} <small>{tasks.length}</small></h3>
     <div className="download-tasks">{tasks.map(task => <DownloadCard key={task.id} task={task} busy={busy === task.id}
       connected={!!connection?.ready && connection.deviceId === task.source.deviceId}
       action={() => { void run(task); }} open={() => { void run(task, 'open'); }}
       share={() => { void run(task, 'share'); }}
       remove={() => { void run(task, 'remove'); }} />)}</div>
-    {!tasks.length && <div className="download-empty"><Download size={38} /><h3>{t('还没有下载任务')}</h3>
-      <p>{t('从上方浏览文件，或在聊天的文件预览中点击下载。')}</p></div>}
+    {!tasks.length && <div className="download-empty"><Download size={38} /><h3>{t("client.downloads.noDownloadsYet")}</h3>
+      <p>{t("client.downloads.browseFilesAboveOrDownloadFromAFilePreviewIn")}</p></div>}
   </section>;
 }

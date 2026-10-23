@@ -1,3 +1,4 @@
+import { displayError, displayText } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Settings } from 'lucide-react';
@@ -25,20 +26,20 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   const { usage, error } = useChatUsage(read, active && ready && visible);
-  const trailing = usageTrailing(usage, t);
-  const notice = ready ? (error ? t(error) : t("正在读取今日用量…")) : t("连接后查看今日用量");
+  const trailing = usageTrailing(usage, displayText);
+  const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   if (inline) return <InlineUsage usage={usage} notice={notice} contextControl={contextControl} />;
-  return <div className="chat-usage" role="group" aria-label={t("今日用量")}>
+  return <div className="chat-usage" role="group" aria-label={t("client.chat.todaySUsage")}>
     <span className="chat-usage-context chat-row"><span className="chat-grow">{contextUsageLabel(tokenUsage)}</span>
-      {onContextSettings && <button type="button" className="chat-back" aria-label={t("对话上下文设置")}
+      {onContextSettings && <button type="button" className="chat-back" aria-label={t("client.chat.conversationContext")}
         disabled={!ready || !active} onClick={onContextSettings}><Settings size={18} /></button>}</span>
     {usage ? <>
-      <span>{t("今日")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
-      <span>{t("· 预估")} <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
-      {trailing && <span aria-label={trailing.description}>· {t(trailing.label)}
+      <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
+      <span>{t("client.chat.estimated")} <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
+      {trailing && <span aria-label={trailing.description}>· {displayText(trailing.label)}
         <strong className={`chat-usage-${trailing.tone}`}>{trailing.text}</strong></span>}
     </> : <span>{notice}</span>}
-    <span className="chat-usage-thread">{t("当前对话")}{' '}
+    <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
       <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
       {readConversationMetrics && <> · <ConversationPerformance read={readConversationMetrics} threadId={threadId ?? null}
         active={active && ready && visible} /></>}
@@ -51,15 +52,15 @@ const USAGE_TOOLTIP_STYLES = { root: { maxWidth: 400 }, body: { fontSize: 12, ov
 function InlineUsage({ usage, notice, contextControl }: {
   usage: ReturnType<typeof useChatUsage>['usage']; notice: string; contextControl?: ReactNode;
 }) {
-  const trailing = usageTrailing(usage, t);
-  return <div className="chat-composer-usage" role="group" aria-label={t('今日用量')}>
+  const trailing = usageTrailing(usage, displayText);
+  return <div className="chat-composer-usage" role="group" aria-label={t("client.chat.todaySUsage")}>
     {contextControl}
-    <span>{t('今日')}</span>
+    <span>{t("client.chat.today")}</span>
     <Tooltip title={usage ? `${usage.totalTokens.toLocaleString()} Token` : notice} styles={USAGE_TOOLTIP_STYLES}>
       <strong className="chat-usage-tokens" tabIndex={0}>{usage ? formatTokens(usage.totalTokens) : '—'}</strong>
     </Tooltip>
     <span>·</span>
-    <Tooltip title={usage ? t('预估费用') : notice} styles={USAGE_TOOLTIP_STYLES}>
+    <Tooltip title={usage ? t("client.chat.estimatedCost") : notice} styles={USAGE_TOOLTIP_STYLES}>
       <strong className="chat-usage-cost" tabIndex={0}>{usage ? formatCost(usage.estimatedCostUsd) : '—'}</strong>
     </Tooltip>
     {trailing && <><span>·</span><Tooltip title={trailing.description} styles={USAGE_TOOLTIP_STYLES}>

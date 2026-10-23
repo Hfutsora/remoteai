@@ -1,3 +1,4 @@
+import { remoteErrorText } from '../localization/errors';
 import { MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ProjectBrowserClient } from './protocol';
@@ -17,11 +18,11 @@ export type BrowserTranslate = (source: string) => string;
 function DirectoryNotice({ state, retry, t }: {
   state?: DirectoryState; retry: () => void; t: BrowserTranslate;
 }) {
-  if (state?.loading) return <p className="pf-notice" role="status">{t('正在加载…')}</p>;
-  if (state?.error) return <div className="pf-notice" role="alert">{t(state.error)}
-    <button type="button" onClick={retry}>{t('重试')}</button></div>;
-  if (state?.data?.truncated) return <p className="pf-notice">{t('文件较多，仅显示前 500 项。')}</p>;
-  if (state?.data && !state.data.entries.length) return <p className="pf-notice">{t('文件夹为空')}</p>;
+  if (state?.loading) return <p className="pf-notice" role="status">{t("client.projectBrowser.loading")}</p>;
+  if (state?.error) return <div className="pf-notice" role="alert">{remoteErrorText(state.error)}
+    <button type="button" onClick={retry}>{t("client.terminal.retry")}</button></div>;
+  if (state?.data?.truncated) return <p className="pf-notice">{t("client.downloads.onlyTheFirst500EntriesAreShown")}</p>;
+  if (state?.data && !state.data.entries.length) return <p className="pf-notice">{t("client.projectBrowser.thisFolderIsEmpty")}</p>;
   return null;
 }
 
@@ -50,16 +51,16 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
   const rows = search.active ? search.entries.map(entry => ({ entry, depth: 0 })) : tree.rows;
   const root = { path: cwd, name: cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd, directory: true };
   const rootGesture = useTreeGesture(position => actions.show({ entry: root, ...position }));
-  return <nav className="pf-tree" aria-label={t('项目文件')}>
+  return <nav className="pf-tree" aria-label={t("client.projectBrowser.projectFiles")}>
     <div className="pf-tree-heading"><span {...rootGesture}>{root.name}</span>
-      <button type="button" aria-label={t('项目文件夹操作')} disabled={!connected || actions.busy}
+      <button type="button" aria-label={t("client.projectBrowser.projectFolderActions")} disabled={!connected || actions.busy}
         onClick={event => { const rect = event.currentTarget.getBoundingClientRect();
           actions.show({ entry: root, x: rect.left, y: rect.bottom }); }}><MoreHorizontal size={16} /></button>
-      <button type="button" aria-label={t('刷新文件树')} disabled={!connected}
+      <button type="button" aria-label={t("client.projectBrowser.refreshFileTree")} disabled={!connected}
         onClick={() => { tree.refresh(); search.refresh(); }}><RefreshCw size={16} /></button></div>
     <ProjectTreeSearch query={search.query} disabled={!connected} t={t}
       change={value => { actions.close(); search.change(value); }} />
-    <div ref={list} role="tree" aria-label={t('项目文件')} className="pf-tree-list" aria-busy={search.loading}>
+    <div ref={list} role="tree" aria-label={t("client.projectBrowser.projectFiles")} className="pf-tree-list" aria-busy={search.loading}>
       {rows.map(({ entry, depth }) => {
         const expanded = !search.active && tree.expanded.has(entry.path);
         return <div key={entry.path} role="none"
@@ -82,8 +83,8 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
       {search.active ? connected && <ProjectTreeSearchNotice search={search} t={t} />
         : <DirectoryNotice state={tree.directories['']} retry={() => void tree.load('')} t={t} />}
     </div>
-    {actions.message && <p role="status" className="pf-notice">{t(actions.message)}</p>}
-    {actions.error && !actions.prompt && <p role="alert" className="pf-notice">{t(actions.error)}</p>}
+    {actions.message && <p role="status" className="pf-notice">{remoteErrorText(actions.message)}</p>}
+    {actions.error && !actions.prompt && <p role="alert" className="pf-notice">{remoteErrorText(actions.error)}</p>}
     {actions.menu && <TreeMenu menu={actions.menu} cwd={cwd} host={host}
       canPaste={!!actions.clipboard} close={actions.close} t={t}
       command={command => actions.command(actions.menu!.entry, command)} />}

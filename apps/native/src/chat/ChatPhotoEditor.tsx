@@ -1,3 +1,4 @@
+import { displayText } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { useThemeMode } from '../theme/store';
 import { t, useLanguage, getLocale } from '../i18n';
@@ -16,7 +17,7 @@ export function ChatPhotoEditor({ photo, save, close }: Props) {
   const themeMode = useThemeMode();
   const initialTheme = useRef(themeMode);
   const webview = useRef<WebView>(null);
-  const source = useMemo(() => ({ html: imageEditorHtml(photo.dataUrl, t, getLocale(), {
+  const source = useMemo(() => ({ html: imageEditorHtml(photo.dataUrl, displayText, getLocale(), {
     themeMode: initialTheme.current,
   }) }), [photo.dataUrl, language]);
   const themeScript = `document.documentElement.dataset.theme = ${JSON.stringify(themeMode)}; true;`;
@@ -30,7 +31,7 @@ export function ChatPhotoEditor({ photo, save, close }: Props) {
       if (!dataUrl) return;
       save(dataUrl);
       close();
-    } catch { setError(t("图片未保存，请减少标注或照片后重试。")); }
+    } catch { setError(t("client.mobile.imageNotSavedUseFewerAnnotationsOrPhotosAndTry")); }
   };
   return <Modal visible animationType="slide" onRequestClose={close}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
@@ -42,11 +43,11 @@ export function ChatPhotoEditor({ photo, save, close }: Props) {
         setSupportMultipleWindows={false} javaScriptCanOpenWindowsAutomatically={false}
         onShouldStartLoadWithRequest={({ url }) => url === 'about:blank'}
         onMessage={({ nativeEvent }) => receive(nativeEvent.data)}
-        onError={() => setError(t("图片无法编辑，请关闭后重试。"))} />
+        onError={() => setError(t("client.mobile.couldNotEditTheImageCloseItAndTryAgain"))} />
       {!!error && <View style={styles.notice}>
         <Text accessibilityRole="alert" style={styles.error}>{error}</Text>
         <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
-          <Text style={styles.error}>{t("关闭编辑")}</Text>
+          <Text style={styles.error}>{t("client.mobile.closeEditor")}</Text>
         </Pressable>
       </View>}
     </SafeAreaView></SafeAreaProvider>

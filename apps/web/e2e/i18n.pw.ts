@@ -1,8 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { navigate } from './chat-helpers';
-import { messages } from '../src/i18n/messages';
-import { setLanguage, t } from '../src/i18n';
-import { translateText } from '../../../shared/i18n/translate';
+import type { MessageKey } from '@remoteai/i18n';
+import { clientMessages, testText } from '../../../scripts/i18n-fixture.mjs';
 
 const LANGUAGE_KEY = 'codex-switch.web.language.v1';
 
@@ -88,37 +87,46 @@ test('language switching works when preference storage is unavailable', async ({
   await expect(page.getByRole('button', { name: 'Language English' })).toBeVisible();
 });
 
-test('translations keep placeholders intact and leave unknown content unchanged', () => {
+test('translations keep placeholders intact and leave unknown content unchanged', async ({ page }) => {
   const placeholders = (text: string) => [...text.matchAll(/\{\w+\}/g)].map(match => match[0]).sort();
-  for (const [source, translated] of Object.entries(messages)) {
+  const chinese = clientMessages('zh');
+  for (const [source, translated] of Object.entries(clientMessages('en')) as [string, string][]) {
     expect(translated.trim(), source).not.toBe('');
-    expect(placeholders(translated), source).toEqual(placeholders(source));
+    expect(placeholders(translated), source).toEqual(placeholders(chinese[source]));
   }
-  setLanguage('en');
-  expect(t('“{value1}”再次登录桌面端后仍会重新出现在这里。', { value1: '我的电脑 {value1}' }))
-    .toContain('我的电脑 {value1}');
-  expect(t('A user-supplied title')).toBe('A user-supplied title');
-  expect(t('toString')).toBe('toString');
-  setLanguage('zh');
-  expect(t('语言')).toBe('语言');
+  await page.goto('./');
+  const rendered = await page.evaluate(async () => {
+    const module = '/web/src/i18n/index.ts';
+    const { displayText, setLanguage, t }: typeof import('../src/i18n') = await import(module);
+    setLanguage('en');
+    const message = t('client.app.willReappearWhenItSignsInToTheDesktopApp', { value1: '我的电脑 {value1}' });
+    const title = displayText('A user-supplied title');
+    const property = displayText('toString');
+    setLanguage('zh');
+    return { message, title, property, language: t('client.settings.language') };
+  });
+  expect(rendered.message).toContain('我的电脑 {value1}');
+  expect(rendered.title).toBe('A user-supplied title');
+  expect(rendered.property).toBe('toString');
+  expect(rendered.language).toBe('语言');
 });
 
 test('Russian settings persist and fit narrow and desktop layouts', async ({ page, request }, info) => {
-  const ru = (source: string) => translateText('ru', source);
+  const ru = (key: MessageKey) => testText(key, {}, 'ru');
   await request.post('http://127.0.0.1:1491/test/reset');
   await signIn(page);
   await navigate(page, '设置');
   await page.getByRole('button', { name: '语言 简体中文' }).click();
   await page.getByRole('radio', { name: 'Русский' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru-RU');
-  const languageName = `${ru('语言')} Русский`;
+  const languageName = `${ru("client.settings.language")} Русский`;
   await expect(page.getByRole('button', { name: languageName })).toBeVisible();
-  await expect(page.getByRole('button', { name: ru('修改密码'), exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: ru("client.settings.changePassword"), exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByText('欢迎回来', { exact: true })).toBeHidden();
   await page.screenshot({ path: info.outputPath('settings-russian.png') });
   await page.reload();
-  await navigate(page, ru('设置'));
+  await navigate(page, ru("client.app.settings"));
   await expect(page.getByRole('button', { name: languageName })).toBeVisible();
   await page.getByRole('button', { name: languageName }).click();
   await expect(page.getByRole('radio', { name: 'Русский' })).toHaveAttribute('aria-checked', 'true');

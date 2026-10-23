@@ -1,3 +1,4 @@
+import { defaultText } from '../localization/messages';
 export interface UsageSummary {
   totalTokens: number;
   estimatedCostUsd: number;
@@ -42,20 +43,20 @@ export function formatCost(value: number) {
   return `${value.toLocaleString('en-US', { maximumFractionDigits: value > 0 && value < 0.01 ? 4 : 2 })}USD`;
 }
 
-export function usageTrailing(usage: UsageSummary | null, translate = (text: string) => text, cost = formatCost) {
+export function usageTrailing(usage: UsageSummary | null, translate = defaultText, cost = formatCost) {
   const remaining = usage?.primaryRemainingPercent;
   if (typeof remaining === 'number' && Number.isFinite(remaining)) {
-    const label = usage?.primaryRemainingAggregated ? '并发账户剩余额度合计' : '当前账户剩余额度';
+    const label = usage?.primaryRemainingAggregated ? "client.shared.combinedAccountQuotaRemaining" : "client.shared.currentAccountQuotaRemaining";
     return {
       text: `${Math.round(remaining)}%`,
-      label: translate(usage?.primaryRemainingAggregated ? '合计剩余' : '剩余'),
+      label: translate(usage?.primaryRemainingAggregated ? "client.shared.totalRemaining" : "client.accounts.remaining"),
       description: `${translate(label)}：${remaining.toLocaleString('en-US', { maximumFractionDigits: 2 })}%`,
       tone: remaining <= LOW_QUOTA_PERCENT ? 'low' : remaining <= WARNING_QUOTA_PERCENT ? 'cost' : 'quota',
     } as const;
   }
   const estimate = usage?.providerEstimatedCost;
   if (!estimate) return null;
-  const label = estimate.aggregated ? '聚合 API 今日预估费用' : '当前 API 今日预估费用';
+  const label = estimate.aggregated ? "client.shared.estimatedCombinedApiCostToday" : "client.shared.estimatedApiCostToday";
   return { text: `API ${cost(estimate.amountUsd)}`, label: '',
     description: `${translate(label)}：${cost(estimate.amountUsd)}`, tone: 'cost' } as const;
 }

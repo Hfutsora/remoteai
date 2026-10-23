@@ -1,2 +1,0 @@
-/** @deprecated Import from @remoteai/i18n instead. */
-export * from '@remoteai/i18n/legacy/resources/ru/messages4';

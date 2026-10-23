@@ -1,3 +1,4 @@
+import { displayError } from '../i18n/index';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +19,7 @@ export function DownloadCard({ task, connected, busy, action, share, remove }: {
   const paused = task.status === 'paused';
   const failed = task.status === 'failed';
   const disabled = busy || (!connected && !active && !complete && !task.readyToSave);
-  const label = active ? t("暂停") : complete ? t("打开文件") : task.readyToSave ? t("再次保存") : t("继续下载");
+  const label = active ? t("client.downloads.pause") : complete ? t("client.mobile.openFile") : task.readyToSave ? t("client.downloads.saveAgain") : t("client.downloads.resumeDownload");
   const icon = active ? 'pause-outline' : complete ? 'open-outline' : 'play-outline';
   const percent = downloadPercent(task);
   const indeterminate = task.status === 'preparing' && task.preparation?.phase !== 'compressing';
@@ -40,7 +41,7 @@ export function DownloadCard({ task, connected, busy, action, share, remove }: {
         <Text style={styles.caption}>{complete ? formatBytes(task.size) : progressCaption}</Text>
       </View>
       {!complete && <>
-        <View accessibilityRole="progressbar" accessibilityLabel={t("{value1}下载进度", { value1: task.name })}
+        <View accessibilityRole="progressbar" accessibilityLabel={t("client.mobile.downloadProgress", { value1: task.name })}
           accessibilityValue={{ min: 0, max: 100, now: percent }} style={styles.track}>
           <View style={[styles.progress, paused && styles.pausedProgress, failed && styles.failedProgress,
             { width: `${percent}%` }]} />
@@ -48,19 +49,19 @@ export function DownloadCard({ task, connected, busy, action, share, remove }: {
         <Text style={styles.caption}>{downloadDetail(task)}</Text>
       </>}
     </View>
-    {!!task.message && <Text style={failed ? styles.error : styles.text}>{t(task.message)}</Text>}
-    {!connected && !complete && !task.readyToSave && <Text style={styles.text}>{t("连接这台电脑后即可继续。")}</Text>}
+    {!!task.message && <Text style={failed ? styles.error : styles.text}>{displayError(task.message)}</Text>}
+    {!connected && !complete && !task.readyToSave && <Text style={styles.text}>{t("client.mobile.connectToThisComputerToContinue")}</Text>}
     <View style={[styles.toolbar, styles.cardActions]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("删除")} disabled={busy} onPress={remove}
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.projectBrowser.deleted")} disabled={busy} onPress={remove}
         style={({ pressed }) => [styles.deleteButton, busy && styles.disabled, pressed && styles.pressed]}>
         <Ionicons name="trash-outline" size={16} color={color(colors.muted, 'muted')} />
-        <Text style={styles.deleteText}>{t("删除")}</Text>
+        <Text style={styles.deleteText}>{t("client.projectBrowser.deleted")}</Text>
       </Pressable>
-      {complete && <Pressable accessibilityRole="button" accessibilityLabel={t("分享")}
+      {complete && <Pressable accessibilityRole="button" accessibilityLabel={t("client.downloads.share")}
         accessibilityState={{ disabled: busy }} disabled={busy} onPress={share}
         style={({ pressed }) => [styles.shareButton, busy && styles.disabled, pressed && styles.pressed]}>
         <Ionicons name="share-social-outline" size={16} color={color(colors.green, 'accent')} />
-        <Text style={styles.buttonText}>{t("分享")}</Text>
+        <Text style={styles.buttonText}>{t("client.downloads.share")}</Text>
       </Pressable>}
       <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }}
         disabled={disabled} onPress={action}

@@ -24,9 +24,9 @@ export function useDownloadTasks(owner: string, options: {
       if (operation === 'open') await downloadManager.open(task.id, options.openDownload);
       else if (operation === 'share') await downloadManager.share(task.id);
       else if (operation === 'remove') {
-        const confirmed = await (options.confirmRemove?.() ?? Dialog.confirm({ title: t('删除下载？'),
-          content: t('将删除此网页保存的文件和下载记录。已保存到设备的文件和电脑上的原文件会保留。'),
-          confirmText: t('删除'), cancelText: t('保留'), bodyStyle: { maxWidth: 400 } }));
+        const confirmed = await (options.confirmRemove?.() ?? Dialog.confirm({ title: t("client.downloads.deleteDownload"),
+          content: t("client.downloads.removeThisWebsiteSCopyAndDownloadRecordFilesSaved"),
+          confirmText: t("client.projectBrowser.deleted"), cancelText: t("client.downloads.keep"), bodyStyle: { maxWidth: 400 } }));
         if (confirmed) await downloadManager.remove(task.id);
       } else if (['completed', 'ready'].includes(task.status)) await downloadManager.save(task.id);
       else if (['queued', 'preparing', 'downloading', 'verifying'].includes(task.status)) await downloadManager.pause(task.id);

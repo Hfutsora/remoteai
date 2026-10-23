@@ -1,3 +1,4 @@
+import { displayText } from '../i18n/index';
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { WorkspaceDrawerContext, workspaceTabId } from '../../../../shared/chat/workspaceDrawer';
 import { Popover } from 'antd';
@@ -47,19 +48,19 @@ function ProjectTools({ client, openFiles, desktopActions, ...props }: Props & {
       content={<div className="chat-tools-menu">
         <button type="button" disabled={!props.connected}
           onClick={() => { setMenu(false); setDesktop(true); }}>
-          <Monitor size={20} />{t('远程桌面')}</button>
+          <Monitor size={20} />{t("client.remoteDesktop.remoteDesktop")}</button>
         <button type="button" disabled={!props.connected}
           onClick={() => { setMenu(false); setLaunchId(value => value + 1); }}>
-          <SquareTerminal size={20} />{t('终端')}</button>
+          <SquareTerminal size={20} />{t("client.projectBrowser.terminal")}</button>
         <button type="button" onClick={() => {
           setMenu(false); setGit(true); workspace?.tabs.open(workspaceTabId.git(props.cwd));
         }}>
-          <GitBranch size={20} />{t('Git')}</button>
+          <GitBranch size={20} />{displayText('Git')}</button>
         <button type="button" disabled={!props.connected || !props.cwd}
           onClick={() => { setMenu(false); openFiles(); }}>
-          <FolderSearch size={20} />{t('文件浏览')}</button>
+          <FolderSearch size={20} />{t("client.projectBrowser.browseFiles")}</button>
       </div>}>
-      <button type="button" className="chat-terminal-toggle" aria-label={t('打开工具')}
+      <button type="button" className="chat-terminal-toggle" aria-label={t("client.git.openTools")}
         aria-expanded={menu && props.active}>
         <Wrench size={22} /></button>
     </Popover>}

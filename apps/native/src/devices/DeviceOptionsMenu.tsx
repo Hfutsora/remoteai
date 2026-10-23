@@ -26,12 +26,12 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
   return <Modal transparent visible animationType="fade" onRequestClose={onClose}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
     <View style={styles.overlay}>
-      <Pressable accessibilityLabel={t("关闭菜单")} accessibilityRole="button"
+      <Pressable accessibilityLabel={t("client.git.closeMenu")} accessibilityRole="button"
         style={StyleSheet.absoluteFill} onPress={onClose} />
       <View style={styles.menu} accessibilityViewIsModal>
         <View style={styles.menuHeader}>
           <Text style={styles.menuTitle}>{device.name}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={t("关闭菜单")} onPress={onClose} style={styles.close}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("client.git.closeMenu")} onPress={onClose} style={styles.close}>
             <Ionicons name="close" size={22} color={color(deviceColors.muted, 'muted')} />
           </Pressable>
         </View>
@@ -39,23 +39,23 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
           onPress={() => { onClose(); onSelectAuthAccount(device.deviceId); }}
           style={({ pressed }) => [styles.option, pressed && styles.pressed, authDisabled && styles.disabled]}>
           <Ionicons name="open-outline" size={21} color={color(deviceColors.green, 'accent')} />
-          <Text style={styles.optionLabel}>{t("代理登录态账号")}</Text>
+          <Text style={styles.optionLabel}>{t("client.app.proxySignInAccount")}</Text>
           {switchingAuthDeviceId === device.deviceId && <ActivityIndicator color={color(deviceColors.green, 'accent')} />}
         </Pressable>
         {device.platform.toLowerCase() === 'windows' && <Pressable accessibilityRole="button"
           onPress={() => { onClose(); props.onRevokeService(device); }} style={styles.option}>
           <Ionicons name="lock-closed-outline" size={21} color={color(deviceColors.danger, 'danger')} />
-          <Text style={[styles.optionLabel, styles.danger]}>{t("撤销无人值守授权")}</Text>
+          <Text style={[styles.optionLabel, styles.danger]}>{t("client.mobile.revokeUnattendedAccess")}</Text>
         </Pressable>}
         <Pressable accessibilityRole="button"
           accessibilityState={{ disabled: deleteDisabled }} disabled={deleteDisabled}
           onPress={() => { onClose(); onDelete(device); }}
           style={({ pressed }) => [styles.option, pressed && styles.pressed, deleteDisabled && styles.disabled]}>
           <Ionicons name="trash-outline" size={21} color={color(deviceColors.danger, 'danger')} />
-          <Text style={[styles.optionLabel, styles.danger]}>{device.online ? t("在线不可删除") : t("删除设备")}</Text>
+          <Text style={[styles.optionLabel, styles.danger]}>{device.online ? t("client.app.cannotRemoveWhileOnline") : t("client.app.removeDevice")}</Text>
           {deletingDeviceId === device.deviceId && <ActivityIndicator color={color(deviceColors.danger, 'danger')} />}
         </Pressable>
-        {!device.online && <Text style={styles.hintText}>{t("设备上线后可更换代理登录态账号。")}</Text>}
+        {!device.online && <Text style={styles.hintText}>{t("client.mobile.connectTheDeviceToChangeItsProxySignInAccount")}</Text>}
       </View>
     </View>
   </Modal>;

@@ -14,7 +14,7 @@ export function ThemeSheet({ onClose }: { onClose: () => void }) {
     if (await setThemeMode(next)) onClose();
     else setError(true);
   };
-  return <BottomSheet visible title={t('外观')} onClose={onClose} maxWidth={400}>
+  return <BottomSheet visible title={t("client.workspaceSettings.appearance")} onClose={onClose} maxWidth={400}>
     <View style={styles.sheetBody} accessibilityRole="radiogroup">
       {THEME_OPTIONS.map(option => <Pressable key={option.value} accessibilityRole="radio"
         accessibilityLabel={t(option.label)} accessibilityState={{ checked: mode === option.value }}
@@ -24,7 +24,7 @@ export function ThemeSheet({ onClose }: { onClose: () => void }) {
         {mode === option.value && <Text style={styles.detailLabel}>✓</Text>}
       </Pressable>)}
       {error && <Text accessibilityRole="alert" style={styles.error}>
-        {t('外观已切换，但未能保存。下次打开应用后请重新选择。')}
+        {t("client.settings.appearanceChangedButCouldNotBeSavedPleaseChooseAgain")}
       </Text>}
     </View>
   </BottomSheet>;

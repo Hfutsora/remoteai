@@ -32,7 +32,7 @@ function MarkdownPage<Node>({ nodes, render }: {
   return <>{nodes.slice(0, limit).map(render)}
     {nodes.length > limit && <Pressable accessibilityRole="button" style={styles.button}
       onPress={() => setLimit((value) => value + PAGE_BLOCKS)}>
-      <Text style={styles.buttonText}>{t("显示更多内容")}</Text>
+      <Text style={styles.buttonText}>{t("client.chat.showMore")}</Text>
     </Pressable>}
   </>;
 }
@@ -61,7 +61,7 @@ function List({ node, context }: { node: MarkdownNode; context: MarkdownContext 
         ? <ListMarker label={ordered ? `${start + index}.` : '•'} context={context}
           reserve={ordered ? `${'0'.repeat(markerDigits)}.` : undefined} />
         : <View accessibilityRole="checkbox" accessibilityState={{ checked: child.task, disabled: true }}
-          accessibilityLabel={child.task ? t("已完成") : t("未完成")}
+          accessibilityLabel={child.task ? t("client.chat.completed") : t("client.downloads.incomplete")}
           style={[markdownStyles.checkbox, child.task && markdownStyles.checked]}>
           {child.task && <Text style={markdownStyles.checkmark}>✓</Text>}
         </View>}
@@ -78,7 +78,7 @@ function Code({ node, copy }: { node: MarkdownNode; copy?: CopyAction }) {
   const files = useMemo(() => ['diff', 'patch'].includes(language) ? parseDiff(node.token.content) : [],
     [language, node.token.content]);
   if (files.length) return <ChatDiff files={files} copy={copy} />;
-  return <ChatCodeBlock text={node.token.content} label={language || t("代码")} language={language} replyCopy={copy} />;
+  return <ChatCodeBlock text={node.token.content} label={language || t("client.chat.code")} language={language} replyCopy={copy} />;
 }
 
 function TableRow({ node, context }: { node: MarkdownNode; context: MarkdownContext }) {

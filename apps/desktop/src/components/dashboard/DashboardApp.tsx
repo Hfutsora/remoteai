@@ -4,19 +4,7 @@ import { Button, ConfigProvider, Dropdown, Modal, theme as antdTheme } from "ant
 import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
 import ruRU from "antd/locale/ru_RU";
-import {
-  CalendarClock,
-  Check,
-  CircleHelp,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Play,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { CalendarClock, Check, CircleHelp, PanelLeftClose, PanelLeftOpen, Play, Plus, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   chooseAndExportDiagnosticLogs,
@@ -126,7 +114,7 @@ import codexConfigStyles from "../../pages/codexConfig/pageStyles.module.less";
 import { SystemPromptPage } from "../../pages/SystemPromptPage";
 import { NetworkProxySettingsModal } from "../../pages/settings/NetworkProxySettings";
 import type { Translate } from "../../i18n";
-import { guiText } from "../../i18n/guiText";
+import { uiText } from "../../i18n/uiText";
 import { AccountDisplayTabs } from "./AccountDisplayTabs";
 import { AccountManagementToolbar } from "./AccountManagementToolbar";
 import { AccountToolbox } from "./AccountToolbox";
@@ -1370,7 +1358,7 @@ export function DashboardApp() {
                   {page === "skills" && <div id="skills-market-tabs" className="skills-market-tabs-slot" />}
                   {page === "settings" && <SettingsGroupsNav t={t} />}
                   {page === "codexConfig" && <p className={codexConfigStyles.subtitle}>
-                    {guiText("管理 Codex 的 config.toml 配置项", {}, language)}
+                    {uiText("client.desktopMisc.manageCodexConfigTomlSettings", {}, language)}
                   </p>}
                 </div>
               </div>

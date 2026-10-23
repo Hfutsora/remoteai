@@ -6,7 +6,7 @@ import { DownloadManagerPage } from '../src/downloads/DownloadManagerPage';
 import { downloadManager, downloadOwner } from '../src/downloads/manager';
 import type { AuthSession } from '../src/types';
 import type { DownloadClient } from '../../../shared/remote-chat/downloads';
-import { setInterfaceLanguage } from '../../../shared/i18n/interfaceLanguage';
+import { setInterfaceLanguage } from "../../../shared/localization/interfaceLanguage";
 
 setInterfaceLanguage('zh');
 const session: AuthSession = { baseUrl: 'https://download.test', email: 'fixture@download.test',

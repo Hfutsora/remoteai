@@ -1,4 +1,4 @@
-import { guiText } from "../../../i18n/guiText";
+import { uiText } from "../../../i18n/uiText";
 import { useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -16,7 +16,7 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
   const host = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal>();
   const [info, setInfo] = useState<TerminalInfo>();
-  const [status, setStatus] = useState(guiText("正在打开终端…"));
+  const [status, setStatus] = useState(uiText("client.chat.openingTerminal"));
   const linkHandler = useRef(onLink);
   linkHandler.current = onLink;
   useEffect(() => {
@@ -40,12 +40,12 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
         if (event.type === 'reset') terminal.reset();
         if (event.type === 'connection') {
           terminal.options.disableStdin = !event.connected;
-          setStatus(event.connected ? '' : guiText("连接中断，恢复后可继续使用。"));
+          setStatus(event.connected ? '' : uiText("client.terminal.connectionLostYouCanContinueWhenItReconnects"));
         }
         if (event.type === "error") setStatus(event.message);
         if (event.type === "exit") {
           terminal.options.disableStdin = true;
-          setStatus(guiText("终端已结束，可以新建一个终端。"));
+          setStatus(uiText("client.chat.thisTerminalHasEndedYouCanOpenANewOne"));
         }
       } });
     const input = terminal.onData(connection.input);
@@ -75,12 +75,12 @@ function handleClipboard(event: KeyboardEvent, terminal: Terminal, report: (mess
   if (event.type !== "keydown" || !(event.ctrlKey || event.metaKey)) return true;
   if (event.key.toLowerCase() === "c" && terminal.hasSelection()) {
     event.preventDefault();
-    void navigator.clipboard.writeText(terminal.getSelection()).catch(() => report(guiText("复制失败，请重试。")));
+    void navigator.clipboard.writeText(terminal.getSelection()).catch(() => report(uiText("client.chat.couldNotCopyTryAgain")));
     return false;
   }
   if (event.key.toLowerCase() === "v" && event.shiftKey) {
     event.preventDefault();
-    void navigator.clipboard.readText().then((text) => terminal.paste(text)).catch(() => report(guiText("无法粘贴，请重试。")));
+    void navigator.clipboard.readText().then((text) => terminal.paste(text)).catch(() => report(uiText("client.chat.couldNotPasteTryAgain")));
     return false;
   }
   return true;

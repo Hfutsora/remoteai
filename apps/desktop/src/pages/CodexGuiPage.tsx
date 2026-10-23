@@ -1,8 +1,9 @@
+import { displayText } from '../i18n/uiText';
 import { ImageAiContext } from '../../../../shared/chat/ImageAiContext';
 import { prepareImageEdit } from '../../../web/src/chat/prepareImageEdit';
-import { guiText } from "../i18n/guiText";
+import { uiText } from "../i18n/uiText";
 import { useGuiLanguage } from '../i18n/useGuiLanguage';
-import { translateBackendMessage } from '../../../../shared/i18n/backend/translateBackendMessage';
+import { formatRemoteError } from "../../../../shared/localization/errors";
 import { DiffTextContext } from "../../../../shared/chat/diffText";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useVisibleGuiState } from './codexGui/useVisibleGuiState';
@@ -62,7 +63,7 @@ export function CodexGuiPage(props: CodexGuiPageProps) {
   const [visited, setVisited] = useState(active);
   useEffect(() => { if (active) setVisited(true); }, [active]);
   if (!visited) return null;
-  if (!hasLocalBackend) return <div className={styles.install}><h2>Codex GUI</h2><p>{guiText("请打开 Remote AI 提供的网页地址，开始对话。")}</p></div>;
+  if (!hasLocalBackend) return <div className={styles.install}><h2>Codex GUI</h2><p>{uiText("client.composer.openTheWebAddressProvidedByRemoteAiToStart")}</p></div>;
   return <Workspace {...props} {...(props.focusMode ?? focusMode)} />;
 }
 
@@ -70,7 +71,7 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
   focused, onToggleFocus }: CodexGuiPageProps & GuiFocusMode) {
   const language = useGuiLanguage();
   const diffText = useCallback((source: string, values?: Record<string, string | number>) =>
-    guiText(source, values, language), [language]);
+    displayText(source, values, language), [language]);
   const skinStyle = useDreamSkin(active);
   const [controller] = useState(getGuiController);
   const [view, setView] = useState<GuiView>("conversation");
@@ -122,7 +123,7 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
     <div className={styles.workspace}>
       <header className={styles.header} data-tauri-drag-region={isDesktopApp || undefined}>
         <Button type="text" icon={collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          aria-label={collapsed ? guiText("展开对话列表") : guiText("收起对话列表")} onClick={() => setCollapsed(!collapsed)} />
+          aria-label={collapsed ? uiText("client.composer.expandConversationList") : uiText("client.composer.collapseConversationList")} onClick={() => setCollapsed(!collapsed)} />
         {collapsed && <FocusModeButton focused={focused} onToggleFocus={onToggleFocus} />}
         <div className={styles.heading} data-tauri-drag-region={isDesktopApp || undefined}>
           <strong data-tauri-drag-region={isDesktopApp || undefined}>
@@ -132,32 +133,32 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
         <div className={styles.headerActions} data-tauri-drag-region={isDesktopApp || undefined}>
           {isDesktopApp && <AssistanceButton />}
           {isDesktopApp && <MobileConnectionStatus />}
-          {installer.version && <Button type="text" icon={<RefreshCw size={16} />} aria-label={guiText("重新连接 Codex")}
+          {installer.version && <Button type="text" icon={<RefreshCw size={16} />} aria-label={uiText("client.composer.reconnectCodex")}
             disabled={Boolean(running)} loading={state.connection === "connecting"}
             onClick={() => void controller.connect()} />}
           <Popover trigger="click" placement="bottomRight"
             content={<Installer installer={installer} compact running={Boolean(running)} />}
             styles={{ root: { maxWidth: 400 } }}>
             <Button type="text" icon={<CliUpdateIcon version={installer.version} release={installer.release} />}
-              aria-label={guiText("Codex CLI 更新")} />
+              aria-label={uiText("client.composer.codexCliUpdates")} />
           </Popover>
-          {isDesktopApp && view === "conversation" && <Tooltip title={terminal.open ? guiText("收起终端") : guiText("打开终端")}
+          {isDesktopApp && view === "conversation" && <Tooltip title={terminal.open ? uiText("client.chat.hideTerminal") : uiText("client.composer.openTerminal")}
             styles={{ root: { maxWidth: 400 } }}>
-            <Button type="text" icon={<PanelBottom size={16} />} aria-label={terminal.open ? guiText("收起终端") : guiText("打开终端")}
+            <Button type="text" icon={<PanelBottom size={16} />} aria-label={terminal.open ? uiText("client.chat.hideTerminal") : uiText("client.composer.openTerminal")}
               aria-expanded={terminal.open} onClick={terminal.toggle} />
           </Tooltip>}
           {view === "conversation" && <ConversationChangesButton value={current} />}
         </div>
         {focused && windowControls && <div className={styles.focusWindowControls}>{windowControls}</div>}
       </header>
-      {state.error && <Alert className={styles.error} message={translateBackendMessage(language, state.error)}
+      {state.error && <Alert className={styles.error} message={formatRemoteError(language, state.error)}
         type="error" closable onClose={controller.clearError} />}
       <GuiSetupAlerts computerUseSetup={state.computerUseSetup} unattendedSetup={state.unattendedSetup} />
       {navigationApproval && <button className={styles.pendingBanner} onClick={() => {
         openTaskConversation(navigationApproval.params.threadId!);
-      }}>{guiText("有对话需要你的确认，点击查看")}</button>}
+      }}>{uiText("client.composer.aConversationNeedsYourApprovalClickToReview")}</button>}
       {view !== "conversation" && <div className={paneStyles.feature}>
-        <Suspense fallback={<div className={paneStyles.loading} role="status">{guiText("正在加载…")}</div>}>
+        <Suspense fallback={<div className={paneStyles.loading} role="status">{uiText("client.projectBrowser.loading")}</div>}>
           {view === "scheduled-tasks" && <ScheduledTasksPage active={active} cwd={project}
             onOpenThread={openTaskConversation} />}
           {view === "plugins" && <GuiPluginsPage {...plugins} active={active} />}

@@ -65,11 +65,11 @@ export const editorHighlighting = syntaxHighlighting(HighlightStyle.define([
 
 export function editorPhrases(t: BrowserTranslate): Extension {
   const labels: Record<string, string> = {
-    Find: '查找', Replace: '替换', next: '下一个', previous: '上一个', all: '全部',
-    'match case': '区分大小写', regexp: '正则表达式', 'by word': '全字匹配',
-    replace: '替换', 'replace all': '全部替换', close: '关闭',
-    'Fold line': '折叠此行', 'Unfold line': '展开此行', 'Go to line': '跳转到行', go: '跳转',
-    'current match': '当前匹配', 'replaced $ matches': '已替换 $ 处',
+    Find: "client.projectBrowser.find", Replace: "client.projectBrowser.replace", next: "client.projectBrowser.next", previous: "client.projectBrowser.previous", all: "client.configHelp.all",
+    'match case': "client.projectBrowser.matchCase", regexp: "client.projectBrowser.regularExpression", 'by word': "client.projectBrowser.wholeWords",
+    replace: "client.projectBrowser.replace", 'replace all': "client.projectBrowser.replaceAll", close: "client.projectBrowser.close",
+    'Fold line': "client.projectBrowser.foldLine", 'Unfold line': "client.projectBrowser.unfoldLine", 'Go to line': "client.projectBrowser.goToLine", go: "client.projectBrowser.go",
+    'current match': "client.projectBrowser.currentMatch", 'replaced $ matches': "client.projectBrowser.replacedMatches",
   };
   return EditorState.phrases.of(Object.fromEntries(Object.entries(labels).map(([key, value]) => [key, t(value)])));
 }

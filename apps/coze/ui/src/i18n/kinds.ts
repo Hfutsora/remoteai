@@ -1,4 +1,4 @@
-import type { Language } from "../../../../../shared/i18n/language";
+import type { Language } from "../../../../../shared/localization/language";
 import type { Kind } from "../types";
 
 /**

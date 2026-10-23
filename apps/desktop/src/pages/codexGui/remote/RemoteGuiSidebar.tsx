@@ -1,4 +1,4 @@
-import { guiText } from "../../../i18n/guiText";
+import { uiText } from "../../../i18n/uiText";
 import type { ReactNode } from 'react';
 import { Button, Segmented } from 'antd';
 import { ChevronRight, Folder, RefreshCw, Search, SquarePen } from 'lucide-react';
@@ -35,20 +35,20 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
       <h2 className={styles.sidebarTitle} data-tauri-drag-region>Codex GUI</h2>
       <div className={styles.sidebarActions}>
         <FocusModeButton {...focusMode} />
-        <Button type="text" size="small" icon={<RefreshCw size={15} />} aria-label={guiText("刷新对话")}
+        <Button type="text" size="small" icon={<RefreshCw size={15} />} aria-label={uiText("client.workspaceActions.refreshConversations")}
           loading={Boolean(state.listRefreshing)} disabled={!state.ready}
           onClick={() => void controller.list()} />
-        <Button type="text" size="small" icon={<Search size={15} />} aria-label={guiText("搜索对话")}
+        <Button type="text" size="small" icon={<Search size={15} />} aria-label={uiText("client.workspaceActions.searchConversations")}
           disabled={!state.ready} onClick={actions.openSearch} />
       </div>
     </div>
-    <nav className={navigationStyle.navigation} aria-label={guiText("Codex GUI 导航")}>
+    <nav className={navigationStyle.navigation} aria-label={uiText("client.workspaceSettings.codexGuiNavigation")}>
       <button type="button" disabled={state.sending} onClick={() => actions.newChat()}>
-        <SquarePen size={18} strokeWidth={1.6} /><span>{guiText("新对话")}</span>
+        <SquarePen size={18} strokeWidth={1.6} /><span>{uiText("client.workspaceSettings.newConversation")}</span>
       </button>
     </nav>
     <Segmented className={styles.threadFilter} block size="small" value={state.archived ? 'archived' : 'recent'}
-      options={[{ label: guiText("最近"), value: 'recent' }, { label: guiText("已归档"), value: 'archived' }]}
+      options={[{ label: uiText("client.chat.recent"), value: 'recent' }, { label: uiText("client.mobile.archived"), value: 'archived' }]}
       disabled={!state.ready || state.loading}
       onChange={value => { void controller.list({ archived: value === 'archived' }); }} />
     <div className={styles.threadList} aria-busy={state.loading} {...pagination}>
@@ -62,7 +62,7 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
             </span><span className={groupsStyle.label}>{group.label}</span>
           </button>
           {group.cwd && <button type="button" className={groupsStyle.add}
-            aria-label={guiText("在 {value1} 中新建对话", { value1: group.label })} disabled={state.sending}
+            aria-label={uiText("client.chat.startAChatIn", { value1: group.label })} disabled={state.sending}
             onClick={() => actions.newChat(group)}><SquarePen size={14} strokeWidth={1.6} /></button>}
         </div>
         <div className={groupsStyle.content} hidden={group.collapsed}>
@@ -84,10 +84,10 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
           })}
           {group.canToggle && <button type="button" className={groupsStyle.more}
             aria-expanded={group.expanded} onClick={() => toggle(group.cwd)}>
-            {group.expanded ? guiText("收起") : guiText("展开显示")}</button>}
+            {group.expanded ? uiText("client.chat.collapse") : uiText("client.chat.showMore.83ad87")}</button>}
         </div>
       </section>)}
-      {!state.threads.length && <p className={styles.listEmpty}>{state.ready ? guiText("还没有对话") : guiText("连接电脑后查看对话")}</p>}
+      {!state.threads.length && <p className={styles.listEmpty}>{state.ready ? uiText("client.workspaceActions.noConversationsYet") : uiText("client.workspaceActions.connectToAComputerToViewConversations")}</p>}
       {state.cursor && <ThreadPagination loading={state.loading} />}
     </div>
     {accountPicker}

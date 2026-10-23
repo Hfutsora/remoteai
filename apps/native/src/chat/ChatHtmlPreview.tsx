@@ -7,7 +7,7 @@ import { SheetScrollView } from '../components/SheetScrollView';
 import { ChatCodeBlock } from './ChatCodeBlock';
 
 const PREVIEW_HEIGHT_RATIO = 0.55;
-const PREVIEW_MODES = [{ value: 'preview', get label() { return t("预览"); } }, { value: 'source', get label() { return t("源码"); } }] as const;
+const PREVIEW_MODES = [{ value: 'preview', get label() { return t("client.chat.preview"); } }, { value: 'source', get label() { return t("client.downloads.source"); } }] as const;
 
 export function isHtmlPath(path: string) {
   return /\.html?$/i.test(path);
@@ -29,12 +29,12 @@ export function ChatHtmlPreview({ text }: { text: string }) {
       </Pressable>)}
     </View>
     {mode === 'source' && <SheetScrollView style={styles.content}>
-      <ChatCodeBlock text={text} label={t("完整文本")} language="html" lineNumbers copyLabel={t("复制文件内容")} />
+      <ChatCodeBlock text={text} label={t("client.mobile.fullText")} language="html" lineNumbers copyLabel={t("client.chat.copyFileContents")} />
     </SheetScrollView>}
     {mode === 'preview' && failed && <View style={styles.notice}>
-      <Text accessibilityRole="alert" style={styles.message}>{t("页面暂时无法显示，请重试或查看源码。")}</Text>
+      <Text accessibilityRole="alert" style={styles.message}>{t("client.mobile.pageUnavailableTryAgainOrViewTheSource")}</Text>
       <Pressable accessibilityRole="button" onPress={() => setFailed(false)} style={styles.tab}>
-        <Text style={styles.tabText}>{t("重新预览")}</Text>
+        <Text style={styles.tabText}>{t("client.mobile.retryPreview")}</Text>
       </Pressable>
     </View>}
     {mode === 'preview' && !failed && <WebView source={source} style={styles.content} incognito

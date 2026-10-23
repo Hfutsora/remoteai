@@ -1,3 +1,4 @@
+import { displayText } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
@@ -31,7 +32,7 @@ export function ChatThreadList({ state, newChat, select, controller, bottomInset
   const ready = state.ready;
   return (
     <SectionList style={styles.fill} sections={groups.map(group =>
-      ({ ...group, label: group.cwd ? group.label : t('最近') }))} keyExtractor={(thread) => thread.id}
+      ({ ...group, label: group.cwd ? group.label : t("client.chat.recent") }))} keyExtractor={(thread) => thread.id}
       contentContainerStyle={[listStyles.content, { paddingBottom: bottomInset + LIST_BOTTOM_SPACING }]}
       stickySectionHeadersEnabled={false} keyboardShouldPersistTaps="handled"
       refreshing={Boolean(state.listRefreshing)} onRefresh={() => { void controller.list(); }}
@@ -39,26 +40,26 @@ export function ChatThreadList({ state, newChat, select, controller, bottomInset
       onScroll={pagination.onScroll} scrollEventThrottle={16}
       renderSectionHeader={({ section }) => <View style={styles.row}>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: !section.collapsed }}
-          accessibilityLabel={`${section.collapsed ? t("展开项目") : t("折叠项目")}：${section.label}`}
+          accessibilityLabel={`${section.collapsed ? t("client.chat.expandProject") : t("client.chat.collapseProject")}：${section.label}`}
           style={[listStyles.projectToggle, styles.fill]} onPress={() => toggleCollapse(section.cwd)}>
           <Feather name={section.collapsed ? 'chevron-right' : 'chevron-down'} size={14} color={color(palette.muted, 'muted')} />
           <Text numberOfLines={1} style={[listStyles.project, styles.fill]}>{section.label}</Text>
         </Pressable>
-        {!!section.cwd && <Pressable accessibilityRole="button" accessibilityLabel={t("在 {value1} 中新建对话", { value1: section.label })}
+        {!!section.cwd && <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.startAChatIn", { value1: section.label })}
           disabled={state.sending} style={[listStyles.add, state.sending && styles.disabled]}
           onPress={() => newChat(section)}><Text style={listStyles.plus}>＋</Text></Pressable>}
       </View>}
       renderSectionFooter={({ section }) => section.canToggle ? <Pressable accessibilityRole="button"
-        accessibilityLabel={`${section.expanded ? t("收起") : t("展开显示")}：${section.label}`}
+        accessibilityLabel={`${section.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}：${section.label}`}
         accessibilityState={{ expanded: section.expanded }} style={listStyles.more} onPress={() => toggle(section.cwd)}>
-        <Text style={styles.subtitle}>{section.expanded ? t("收起") : t("展开显示")}</Text>
+        <Text style={styles.subtitle}>{section.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}</Text>
       </Pressable> : null}
       renderItem={({ item }) => {
-        const view = threadPresentation(item, state.sidebar, t);
+        const view = threadPresentation(item, state.sidebar, displayText);
         return <Pressable accessibilityRole="button" accessibilityLabel={view.title}
-          accessibilityHint={t("长按管理对话")} delayLongPress={THREAD_LONG_PRESS_MS}
+          accessibilityHint={t("client.mobile.longPressToManageConversation")} delayLongPress={THREAD_LONG_PRESS_MS}
           onLongPress={() => openActions(item)}
-          accessibilityActions={[{ name: 'longpress', label: t("对话操作") }]}
+          accessibilityActions={[{ name: 'longpress', label: t("client.threadActions.chatActions") }]}
           onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'longpress') openActions(item); }}
           accessibilityState={{ selected: state.selected?.id === item.id }}
           disabled={(!ready && !state.cachedThreadIds?.includes(item.id)) || state.sending}
@@ -66,21 +67,21 @@ export function ChatThreadList({ state, newChat, select, controller, bottomInset
           onPress={() => select(item)}>
           <Text numberOfLines={1} style={listStyles.title}>{view.title}</Text>
           <View style={listStyles.status}>
-            {ready && view.running ? <ActivityIndicator size="small" color={color(palette.muted, 'muted')} accessibilityLabel={t("正在回复")} />
-              : view.unread && <View accessible accessibilityLabel={t("未读回复")} style={listStyles.dot} />}
+            {ready && view.running ? <ActivityIndicator size="small" color={color(palette.muted, 'muted')} accessibilityLabel={t("client.chat.replying")} />
+              : view.unread && <View accessible accessibilityLabel={t("client.chat.unreadReply")} style={listStyles.dot} />}
           </View>
         </Pressable>;
       }}
       ListEmptyComponent={<View style={styles.empty}><Text style={styles.subtitle}>
-        {ready ? t("暂时没有聊天") : t("连接电脑后查看聊天")}</Text></View>}
+        {ready ? t("client.chat.noChatsYet") : t("client.chat.connectToYourComputerToViewChats")}</Text></View>}
       ListFooterComponent={state.cursor ? <View style={listStyles.pagination}>
         {pagination.loadingMore && <View style={styles.row}>
           <ActivityIndicator size="small" color={color(palette.muted, 'muted')} />
-          <Text accessibilityRole="text" accessibilityLiveRegion="polite" style={styles.subtitle}>{t("正在加载…")}</Text>
+          <Text accessibilityRole="text" accessibilityLiveRegion="polite" style={styles.subtitle}>{t("client.projectBrowser.loading")}</Text>
         </View>}
         {pagination.failed && <Pressable accessibilityRole="button" style={styles.button}
           disabled={state.loading || !ready} onPress={pagination.retry}>
-          <Text style={styles.buttonText}>{t("加载失败，点击重试")}</Text>
+          <Text style={styles.buttonText}>{t("client.chat.couldNotLoadSelectToRetry")}</Text>
         </Pressable>}
       </View> : null} />
   );

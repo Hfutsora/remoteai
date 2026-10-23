@@ -16,7 +16,7 @@ export function GitActionDialog({ title, close, busy, children, confirm, label, 
       <ScrollView keyboardShouldPersistTaps="handled" style={styles.content}>{children}</ScrollView>
       <View style={styles.buttons}>
         <Pressable accessibilityRole="button" disabled={busy} onPress={close} style={styles.button}>
-          <Text style={styles.label}>{t('取消')}</Text></Pressable>
+          <Text style={styles.label}>{t("client.accounts.cancel")}</Text></Pressable>
         {confirm && <Pressable accessibilityRole="button" accessibilityLabel={label}
           accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy}
           onPress={confirm} style={[styles.button, (disabled || busy) && styles.disabled]}>

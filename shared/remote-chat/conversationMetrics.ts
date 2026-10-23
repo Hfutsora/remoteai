@@ -22,7 +22,7 @@ export function formatConversationTps(metrics?: ConversationMetrics | null): str
 }
 
 export const CONVERSATION_TPS_DESCRIPTION =
-  '当前对话的平均输出速度：已完成请求的输出 token 数 ÷ 输出耗时，不含首次响应前的等待和中断请求。';
+  "client.mobile.averageOutputSpeedForThisConversationOutputTokensDividedBy";
 
 /** Average wait for the first observed output token, in seconds without a unit suffix. */
 export function formatConversationTtft(metrics?: ConversationMetrics | null): string {
@@ -34,4 +34,4 @@ export function formatConversationTtft(metrics?: ConversationMetrics | null): st
 }
 
 export const CONVERSATION_TTFT_DESCRIPTION =
-  '当前对话的平均首 token 等待时间：从请求发出到收到首段文字、思考或工具参数。仅统计已收到输出的流式请求。';
+  "client.mobile.averageTimeFromSendingARequestToReceivingTheFirst";

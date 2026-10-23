@@ -1,4 +1,4 @@
-import { guiLocale, guiText } from "../../i18n/guiText";
+import { guiLocale, uiText } from "../../i18n/uiText";
 import { useState } from "react";
 import { Button } from "antd";
 import { Pencil } from "lucide-react";
@@ -19,9 +19,9 @@ import styles from "./styles.module.less";
 const MILLISECONDS_PER_SECOND = 1000;
 function referenceLabel(path?: string) {
   if (path?.startsWith("coze://")) return "Coze";
-  if (path?.startsWith(CONVERSATION_PREFIX)) return guiText("引用对话");
-  if (path?.startsWith("plugin://")) return guiText("插件");
-  return guiText("附件");
+  if (path?.startsWith(CONVERSATION_PREFIX)) return uiText("client.workspaceActions.referenceAConversation");
+  if (path?.startsWith("plugin://")) return uiText("client.chat.plugins");
+  return uiText("client.mobile.attachments");
 }
 const sentAtOptions: Intl.DateTimeFormatOptions = {
   year: "numeric", month: "2-digit", day: "2-digit",
@@ -45,7 +45,7 @@ export function UserMessage({ item, startedAt, onEdit, onDelete, editDisabled = 
   return <article className={`${styles.userMessage} ${editing ? userStyles.editingMessage : ""}`}>
     {!editing && images.length > 0 && <div className={userStyles.attachments}>
       {images.map((part, index) =>
-        <MessageImage key={index} src={part.url || part.path} alt={guiText("图片附件 {value1}", { value1: index + 1 })} />)}
+        <MessageImage key={index} src={part.url || part.path} alt={uiText("client.conversation.imageAttachment", { value1: index + 1 })} />)}
     </div>}
     {showBubble && <div className={`${styles.userBubble} ${userStyles.bubble}`}>
       {mentions.map((part, index) =>
@@ -68,7 +68,7 @@ export function UserMessage({ item, startedAt, onEdit, onDelete, editDisabled = 
         {new Intl.DateTimeFormat(guiLocale(), sentAtOptions).format(sentAt)}
       </time>}
       <CopyButton text={text} />
-      {onEdit && !editing && <Button type="text" size="small" aria-label={guiText("编辑消息")} disabled={editDisabled}
+      {onEdit && !editing && <Button type="text" size="small" aria-label={uiText("client.workspaceActions.editMessage")} disabled={editDisabled}
         icon={<Pencil size={14} />} onClick={() => setEditing(true)} />}
     </div>}
   </article>;

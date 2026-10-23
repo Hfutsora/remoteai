@@ -1,4 +1,5 @@
-import { guiText } from "../../i18n/guiText";
+import { displayText } from '../../i18n/uiText';
+import { uiText } from "../../i18n/uiText";
 import { useEffect, useState } from "react";
 import { Tooltip } from "antd";
 import { useUsageStatus } from "./useUsageStatus";
@@ -38,9 +39,9 @@ export function UsageStatus({ active, threadId, tokenUsage }: {
   const formatCost = (value: number) => formatEstimatedCost(value, display);
   const [hint, setHint] = useState<UsageHint | null>(null);
   const [settingsThread, setSettingsThread] = useState<string | null>(null);
-  const trailing = usageTrailing(usage, guiText, formatCost);
+  const trailing = usageTrailing(usage, displayText, formatCost);
   const tokens = usage ? formatTokens(usage.totalTokens, TOKEN_FRACTION_DIGITS) : "—";
-  const pendingDescription = error || guiText("正在读取今日用量…");
+  const pendingDescription = error || uiText("client.chat.loadingTodaySUsage");
   useEffect(() => {
     if (!active || (hint === "remaining" && !trailing)) setHint(null);
   }, [active, hint, trailing]);
@@ -55,18 +56,18 @@ export function UsageStatus({ active, threadId, tokenUsage }: {
   return <div className={styles.status} onKeyDown={(event) => {
     if (event.key === "Escape" && hint) { event.stopPropagation(); setHint(null); }
   }}>
-    <span className={styles.usage} role="group" aria-label={guiText("今日用量")}>
+    <span className={styles.usage} role="group" aria-label={uiText("client.chat.todaySUsage")}>
       <ContextUsageButton threadId={threadId} usage={tokenUsage} open={active && hint === "context"}
         onSettings={threadId ? () => { setHint(null); setSettingsThread(threadId); } : undefined}
         onOpenChange={(open) => changeHint("context", open)} />
-      <span>{guiText("今日")}</span>
+      <span>{uiText("client.chat.today")}</span>
       <UsageValue className={styles.tokens} text={tokens}
         open={active && hint === "tokens"} onOpenChange={(open) => changeHint("tokens", open)}
-        description={usage ? guiText("今日 Token 用量：{value1}", { value1: tokens }) : pendingDescription} />
+        description={usage ? uiText("client.mobile.todaySTokenUsage", { value1: tokens }) : pendingDescription} />
       <span>·</span>
       <UsageValue className={styles.cost} text={usage ? formatCost(usage.estimatedCostUsd) : "—"}
         open={active && hint === "cost"} onOpenChange={(open) => changeHint("cost", open)}
-        description={usage ? guiText("今日预估费用：{value1}", { value1: formatCost(usage.estimatedCostUsd) }) : pendingDescription} />
+        description={usage ? uiText("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }) : pendingDescription} />
       {trailing && <><span>·</span>
         <UsageValue className={styles[trailing.tone]} text={trailing.text} description={trailing.description}
           open={active && hint === "remaining"} onOpenChange={(open) => changeHint("remaining", open)} />

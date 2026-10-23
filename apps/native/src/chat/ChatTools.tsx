@@ -46,7 +46,7 @@ function ProjectTools({ client, ...props }: Props & { openMappings: () => void; 
   const [desktop, setDesktop] = useState(false);
   useEffect(() => { if (!props.active) setMenu(false); }, [props.active]);
   return <>
-    <Pressable ref={anchor} collapsable={false} accessibilityRole="button" accessibilityLabel={t("打开工具")}
+    <Pressable ref={anchor} collapsable={false} accessibilityRole="button" accessibilityLabel={t("client.git.openTools")}
       accessibilityState={{ expanded: menu && props.active }}
       style={styles.back} onPress={() => { Keyboard.dismiss(); setMenu(value => !value); }}>
       <Ionicons name="construct-outline" size={24} color={color(palette.ink, 'ink')} /></Pressable>
@@ -54,20 +54,20 @@ function ProjectTools({ client, ...props }: Props & { openMappings: () => void; 
       <Pressable accessibilityRole="button" style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed]}
         onPress={() => { setMenu(false); props.openMappings(); }}>
         <Ionicons name="swap-horizontal-outline" size={20} color={color(palette.ink, 'ink')} />
-        <Text style={menuStyles.label}>{t('端口映射')}</Text>
+        <Text style={menuStyles.label}>{t("client.portForwarding.portMapping")}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" disabled={!props.connected}
         accessibilityState={{ disabled: !props.connected }}
         style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed, !props.connected && styles.disabled]}
         onPress={() => { setMenu(false); setDesktop(true); }}>
         <Ionicons name="desktop-outline" size={20} color={color(palette.ink, 'ink')} />
-        <Text style={menuStyles.label}>{t("远程桌面")}</Text>
+        <Text style={menuStyles.label}>{t("client.remoteDesktop.remoteDesktop")}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" disabled={!props.connected}
         accessibilityState={{ disabled: !props.connected }}
         style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed, !props.connected && styles.disabled]}
         onPress={() => { setMenu(false); setLaunchId(value => value + 1); }}>
-        <Ionicons name="terminal-outline" size={20} color={color(palette.ink, 'ink')} /><Text style={menuStyles.label}>{t("终端")}</Text>
+        <Ionicons name="terminal-outline" size={20} color={color(palette.ink, 'ink')} /><Text style={menuStyles.label}>{t("client.projectBrowser.terminal")}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed]}
         onPress={() => { setMenu(false); setGit(true); }}>
@@ -79,7 +79,7 @@ function ProjectTools({ client, ...props }: Props & { openMappings: () => void; 
           (!props.connected || !props.cwd) && styles.disabled]}
         onPress={() => { setMenu(false); props.openFiles(); }}>
         <Ionicons name="folder-open-outline" size={20} color={color(palette.ink, 'ink')} />
-        <Text style={menuStyles.label}>{t('文件浏览')}</Text>
+        <Text style={menuStyles.label}>{t("client.projectBrowser.browseFiles")}</Text>
       </Pressable>
     </ChatToolsPopover>}
     <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger />

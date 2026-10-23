@@ -1,4 +1,4 @@
-import { guiText } from "../i18n/guiText";
+import { uiText } from "../i18n/uiText";
 import type { Language } from "../i18n";
 import { formatCompactTokenCount } from "../utils/tokenContext";
 
@@ -23,11 +23,11 @@ export function DailyTokenUsageTooltip({ totals, language }: {
   language: Language;
 }) {
   const labels = (language === "ru" ? {
-      title: guiText("今日 Token 用量", {}, language),
-      input: guiText("输入", {}, language),
-      output: guiText("输出", {}, language),
-      reasoning: guiText("推理", {}, language),
-      cached: guiText("缓存", {}, language),
+      title: uiText("client.usage.todaySTokenUsage", {}, language),
+      input: uiText("client.chat.input", {}, language),
+      output: uiText("client.chat.output", {}, language),
+      reasoning: uiText("client.chat.reasoning", {}, language),
+      cached: uiText("client.chat.cached", {}, language),
     } : language === "zh"
     ? {
       title: "今日 Token 用量",

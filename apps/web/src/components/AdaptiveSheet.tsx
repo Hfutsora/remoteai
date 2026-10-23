@@ -43,7 +43,7 @@ export function AdaptiveSheet({
   const generatedId = useId();
   const screens = Grid.useBreakpoint();
   const back = onBack && <button type="button" className="sheet-close" onClick={onBack}
-    aria-label={t("返回上一层")}>‹</button>;
+    aria-label={t("client.app.goBackOneLevel")}>‹</button>;
   const titleClassName = truncateTitle ? 'sheet-title-truncated' : undefined;
   const desktopTitle = <strong className={titleClassName}>{title}</strong>;
   const mobileTitle = <h2 className={titleClassName}>{title}</h2>;
@@ -61,13 +61,13 @@ export function AdaptiveSheet({
     return <Drawer open={open} title={titleContent} placement="right" width={`min(${width}px, 100vw)`}
       afterOpenChange={afterOpenChange}
       className={className}
-      onClose={onClose} destroyOnHidden closable={{ 'aria-label': t("关闭"), placement: 'end' }}>
+      onClose={onClose} destroyOnHidden closable={{ 'aria-label': t("client.projectBrowser.close"), placement: 'end' }}>
       {children}
     </Drawer>;
   }
   if (screens.md) {
     return <Modal open={open} onCancel={onClose} footer={null} width={width} centered destroyOnClose className={className}
-      closable={{ 'aria-label': t("关闭") }}
+      closable={{ 'aria-label': t("client.projectBrowser.close") }}
       styles={{ header: truncateTitle || titleAction ? { paddingRight: 32 } : undefined }}
       title={titleContent}>
       {children}
@@ -79,7 +79,7 @@ export function AdaptiveSheet({
     <div className="sheet-header">{back}{titleIcon}<div style={{ flex: 1, minWidth: 0 }}>
       {titleAction ? <div className="sheet-title-row">{mobileTitle}{titleAction}</div> : mobileTitle}
       {subtitle ? <p>{subtitle}</p> : null}</div>
-      <button type="button" className="sheet-close" onClick={onClose} aria-label={t("关闭")}>×</button></div>
+      <button type="button" className="sheet-close" onClick={onClose} aria-label={t("client.projectBrowser.close")}>×</button></div>
     <div className="adaptive-sheet-content">{children}</div>
     <SafeArea position="bottom" />
   </Popup>;

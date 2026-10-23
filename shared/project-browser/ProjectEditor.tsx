@@ -37,7 +37,7 @@ export function ProjectEditor(props: Props) {
       state: EditorState.create({ doc: props.text, extensions: [
         editorExtensions(props.t), editorTheme, editorHighlighting, editorPhrases(props.t), search({ top: true }),
         EditorState.lineSeparator.of(props.text.includes('\r\n') ? '\r\n' : '\n'),
-        EditorView.contentAttributes.of({ 'aria-label': props.t('文件内容'), spellcheck: 'false',
+        EditorView.contentAttributes.of({ 'aria-label': props.t("client.workspaceActions.fileContent"), spellcheck: 'false',
           autocorrect: 'off', autocapitalize: 'off' }),
         editable.of(EditorState.readOnly.of(props.readOnly)), wrapping.of([]), language.of(syntax ? [] : textFolding),
         keymap.of([indentWithTab, { key: 'Mod-s', run: () => { latest.current.save(); return true; } }]),
@@ -83,20 +83,20 @@ export function ProjectEditor(props: Props) {
   }, [wrap]);
   const command = (run: (editor: EditorView) => boolean) => { if (view.current) run(view.current); };
   return <div className="pf-editor">
-    <div className="pf-editor-tools" role="toolbar" aria-label={props.t('编辑工具')}>
+    <div className="pf-editor-tools" role="toolbar" aria-label={props.t("client.projectBrowser.editorTools")}>
       <button type="button" onClick={() => command(openSearchPanel)}>
-        <Search size={16} /><span>{props.t('查找')}</span></button>
-      <button type="button" aria-label={props.t('撤销')} disabled={props.readOnly} onClick={() => command(undo)}>
+        <Search size={16} /><span>{props.t("client.projectBrowser.find")}</span></button>
+      <button type="button" aria-label={props.t("client.projectBrowser.undo")} disabled={props.readOnly} onClick={() => command(undo)}>
         <Undo2 size={16} /></button>
-      <button type="button" aria-label={props.t('重做')} disabled={props.readOnly} onClick={() => command(redo)}>
+      <button type="button" aria-label={props.t("client.projectBrowser.redo")} disabled={props.readOnly} onClick={() => command(redo)}>
         <Redo2 size={16} /></button>
-      <button type="button" aria-label={props.t('全部折叠')} onClick={() => command(foldAll)}>
+      <button type="button" aria-label={props.t("client.projectBrowser.foldAll")} onClick={() => command(foldAll)}>
         <ChevronsDownUp size={16} /></button>
-      <button type="button" aria-label={props.t('全部展开')} onClick={() => command(unfoldAll)}>
+      <button type="button" aria-label={props.t("client.projectBrowser.unfoldAll")} onClick={() => command(unfoldAll)}>
         <ChevronsUpDown size={16} /></button>
-      <button type="button" aria-label={props.t('自动换行')} aria-pressed={wrap} onClick={() => setWrap(!wrap)}>
+      <button type="button" aria-label={props.t("client.projectBrowser.wrapLines")} aria-pressed={wrap} onClick={() => setWrap(!wrap)}>
         <WrapText size={16} /></button>
-      {languageError && <span role="status">{props.t('语法高亮暂不可用')}</span>}
+      {languageError && <span role="status">{props.t("client.projectBrowser.syntaxHighlightingIsUnavailable")}</span>}
     </div>
     <div ref={host} className="pf-editor-host" />
     {selectionMenu.menu && view.current && props.quoteSelection && <EditorSelectionMenu

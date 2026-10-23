@@ -1,3 +1,4 @@
+import { displayText } from '../../i18n/index';
 import { Checkbox } from 'antd';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import fileIcon from '../../../../../shared/remote-chat/assets/git-icons/file-v2.png';
@@ -17,14 +18,14 @@ export function GitChanges({ panel, connected }: { panel: RemoteGit; connected: 
   const all = selectionState(files, panel.selected);
   return <>
     <div className="git-selection"><Checkbox disabled={panel.busy || !files.some(file => !file.conflict)}
-      checked={all === true} indeterminate={all === 'mixed'} onChange={panel.selectAll}>{t('全选')}</Checkbox>
-      <span>{t('已选 {count} 个文件', { count })}</span>
-      <div className="git-view-toggle" aria-label={t('文件显示方式')}>
+      checked={all === true} indeterminate={all === 'mixed'} onChange={panel.selectAll}>{t("client.projectBrowser.selectAll")}</Checkbox>
+      <span>{t("client.git.filesSelected", { count })}</span>
+      <div className="git-view-toggle" aria-label={t("client.git.fileView")}>
         {(['tree', 'flat'] as const).map(mode => <button key={mode} type="button" aria-pressed={list.mode === mode}
-          onClick={() => list.setMode(mode)}>{t(mode === 'tree' ? '文件夹' : '平铺')}</button>)}
+          onClick={() => list.setMode(mode)}>{t(mode === 'tree' ? "client.git.folders" : "client.git.flat")}</button>)}
       </div></div>
     <div className="git-files">
-      {panel.changes && !files.length && <p className="git-notice">{t('工作区没有未提交的改动。')}</p>}
+      {panel.changes && !files.length && <p className="git-notice">{t("client.git.thereAreNoUncommittedChanges")}</p>}
       {list.rows.map(row => <GitRow key={row.id} row={row} panel={panel} connected={connected}
         onToggle={() => list.toggleFolder(row.id)} flat={list.mode === 'flat'} />)}
     </div>
@@ -42,13 +43,13 @@ function GitRow({ row, panel, connected, onToggle, flat }: {
   return <GitFileMenu row={row} panel={panel} connected={connected}>
     <div className={`git-file git-file-${row.kind}`} data-area={row.area.id}
     style={{ color: colors.color, background: !area && checked === true ? colors.background : undefined }}>
-    <Checkbox aria-label={t('选择 {path}', { path: row.path })} checked={checked === true}
+    <Checkbox aria-label={t("client.git.select", { path: row.path })} checked={checked === true}
       indeterminate={checked === 'mixed'} disabled={panel.busy || !row.files.some(file => !file.conflict)}
       onChange={() => panel.selectFiles(row.files)} />
     {area ? <strong><i className="git-area-dot" style={{ background: colors.color }} />
-      {t(row.name)} <small style={{ background: colors.background }}>{row.files.length}</small></strong>
-      : <button type="button" aria-label={folder ? t('展开或收起 {path}', { path: row.path })
-        : t('查看 {path}', { path: row.path })} aria-expanded={folder ? !row.collapsed : undefined}
+      {displayText(row.name)} <small style={{ background: colors.background }}>{row.files.length}</small></strong>
+      : <button type="button" aria-label={folder ? t("client.git.expandOrCollapse", { path: row.path })
+        : t("client.git.view", { path: row.path })} aria-expanded={folder ? !row.collapsed : undefined}
         disabled={panel.busy || (!folder && !connected)} title={row.path}
         style={{ marginLeft: Math.min(row.depth, 4) * 14 }}
         onClick={() => folder ? onToggle() : panel.setDetail({ kind: 'diff', path: row.path, title: row.path })}>

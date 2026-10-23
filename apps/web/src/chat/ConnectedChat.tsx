@@ -1,3 +1,5 @@
+import { displayText } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { ImageAiContext } from '../../../../shared/chat/ImageAiContext';
 import { imageAiSender } from '../../../../shared/remote-chat/client/imageAiSender';
 import { prepareImageEdit } from './prepareImageEdit';
@@ -123,7 +125,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       projectPicker={!composerHeader && <ChatProjectSwitch state={state} controller={controller}
         active={active && foreground} />}
       queue={queueProps(state, controller)} readClipboardImages={readClipboardImages} nativeFileDrop={nativeFileDrop}
-      connection={{ client: controller.guiAccounts, deviceName: device?.name ?? t("选择电脑"),
+      connection={{ client: controller.guiAccounts, deviceName: device?.name ?? t("client.settings.chooseAComputer"),
         chooseDevice: () => setPickingDevice(true) }}
       goals={controller.goals} goal={state.selected ? state.goals?.[state.selected.id] : null} goalBusy={!!state.goalBusy}
       contextSettings={controller.contextSettings} cwd={cwd} catalog={catalog}
@@ -156,19 +158,19 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     <div className="chat-conversation">
     <header className="chat-header" data-tauri-drag-region={draggableHeader || undefined}>
       {desktop ? <button type="button" className="chat-back"
-        aria-label={listOpen ? t('收起聊天列表') : t('打开聊天列表')}
+        aria-label={listOpen ? t("client.chat.collapseChatList") : t("client.chat.openChatList")}
         aria-expanded={listOpen} onClick={() => setSidebar(!sidebar)}>
         <ListToggleIcon size={21} />
       </button> : <ChatListButton client={controller.guiAccounts} active={active && foreground} ready={ready}
         expanded={listOpen} onClick={() => setDrawer(!drawer)} />}
       <div className="chat-grow" data-tauri-drag-region={draggableHeader || undefined}>
         <h2 data-tauri-drag-region={draggableHeader || undefined}>
-          {state.selected ? threadPresentation(state.selected, state.sidebar, t).title : t("新聊天")}</h2>
+          {state.selected ? threadPresentation(state.selected, state.sidebar, displayText).title : t("client.chat.newChat")}</h2>
         {headerConnectionActions}</div>
       {state.selected && state.selectedArchived && <button type="button" className="chat-button"
         disabled={!ready || running}
         onClick={() => { void controller.archive().then(() => setDrawer(true)); }}>
-        {t("恢复")}</button>}
+        {t("client.chat.restore")}</button>}
       {headerActions}
       {showDesktopDiffs && <ConversationChangesButton
         value={state.selected?.turns ? { turns: state.selected.turns } : undefined} />}
@@ -176,9 +178,9 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     </header>
     <div className="chat-scroll chat-notices"><div className="chat-notice-content">
       <ChatTaskStatus state={state} />
-      {!!error && <p role="alert" className="chat-error">{t(error)}</p>}
+      {!!error && <p role="alert" className="chat-error">{displayError(error)}</p>}
       {state.desktopOnly && <p className="chat-muted">
-        {t('桌面已就绪。打开远程桌面，登录电脑后即可继续聊天。')}</p>}
+        {t("client.remoteDesktop.theDesktopIsReadyOpenRemoteDesktopAndSignIn")}</p>}
     </div></div>
       <TaskReviewProvider controller={controller} state={state} active={active && foreground}>
       <ChatRetryProvider controller={controller} state={state}>
@@ -197,7 +199,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}
         openSearch={() => setSearching(true)} accountPicker={accountPicker} profile={!accountPicker && <ChatProfileMenu client={controller.guiAccounts}
-          deviceName={device?.name ?? t("选择电脑")} email={email} ready={ready}
+          deviceName={device?.name ?? t("client.settings.chooseAComputer")} email={email} ready={ready}
           guiTools={controller.guiTools} active={active && foreground && !searching}
           running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
           chooseDevice={() => { setDrawer(false); setPickingDevice(true); }}

@@ -1,6 +1,6 @@
 import React, { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { setInterfaceLanguage } from '../../../../shared/i18n/interfaceLanguage';
+import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
 import { DownloadCard } from './DownloadCard';
 import type { DownloadTask } from './types';
 

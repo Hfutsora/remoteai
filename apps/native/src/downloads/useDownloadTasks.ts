@@ -31,9 +31,9 @@ export function useDownloadTasks(session: AuthSession) {
       }
       else await downloadManager.resume(task.id);
     } catch {
-      setError(operation === 'delete' ? t("删除未完成，请稍后重试。")
-        : operation === 'share' ? t("无法分享，请确认文件仍在手机上后重试。")
-        : t("操作未完成，请检查电脑连接、手机空间或是否有可打开此文件的应用。"));
+      setError(operation === 'delete' ? t("client.threadActions.couldNotDeleteTheChatTryAgainLater")
+        : operation === 'share' ? t("client.downloads.couldNotShareTheFileCheckThatItIsStill")
+        : t("client.mobile.couldNotFinishCheckTheComputerConnectionPhoneStorageAnd"));
     } finally {
       pending.current = false;
       setBusy('');

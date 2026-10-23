@@ -14,7 +14,7 @@ export function ChatRetryButton({ turnId }: { turnId: string }) {
     disabled={action.disabled} hitSlop={{ top: 8, bottom: 8 }} onPress={() => { void action.retry(); }}
     style={[styles.button, action.disabled && styles.disabled]}>
     <Ionicons name="refresh-outline" size={14} color={color("#c96c3d", 'warning')} />
-    <Text style={styles.label}>{action.pending ? t('正在重试…') : t('重试')}</Text>
+    <Text style={styles.label}>{action.pending ? t("client.chat.retrying") : t("client.terminal.retry")}</Text>
   </Pressable>;
 }
 

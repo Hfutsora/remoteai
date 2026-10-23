@@ -1,3 +1,4 @@
+import { displayText } from '../../i18n/index';
 import { lazy, Suspense, useCallback, useContext, useMemo, useRef } from 'react';
 import { FolderSearch } from 'lucide-react';
 import { WorkspaceDrawerTab } from '../../../../../shared/chat/WorkspaceDrawerTab';
@@ -42,10 +43,10 @@ export function ProjectBrowserDrawer({ client, cwd, connected, active, onClose,
     },
   }), [suppliedHost, client, reference, quoteSelection, hide]);
   return <WorkspaceDrawerTab active={active}
-    tab={{ id: workspaceTabId.files(cwd), title: t('文件浏览'), icon: FILES_ICON, save }}
+    tab={{ id: workspaceTabId.files(cwd), title: t("client.projectBrowser.browseFiles"), icon: FILES_ICON, save }}
     className="project-browser-drawer" style={theme}>
-    {() => <Suspense fallback={<p className="project-browser-loading" role="status">{t('正在加载…')}</p>}>
-      <Browser ref={browser} client={client} cwd={cwd} connected={connected} t={t}
+    {() => <Suspense fallback={<p className="project-browser-loading" role="status">{t("client.projectBrowser.loading")}</p>}>
+      <Browser ref={browser} client={client} cwd={cwd} connected={connected} t={displayText}
         onClose={onClose} host={actionsHost} />
     </Suspense>}
   </WorkspaceDrawerTab>;

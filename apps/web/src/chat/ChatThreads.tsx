@@ -30,15 +30,15 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
   const actions = useThreadActions(state, controller);
   return <>
     <div className="chat-padded chat-thread-controls">
-      {desktop ? <SidebarSearchInput value={query} onChange={setQuery} label={t('搜索聊天')}
-        clearLabel={t('清空搜索')} onSubmit={search.reload} />
-        : <button type="button" className="chat-search-trigger" aria-label={t("搜索聊天")} onClick={openSearch}>
-          <Search size={18} />{t("搜索聊天")}</button>}
+      {desktop ? <SidebarSearchInput value={query} onChange={setQuery} label={t("client.chat.searchChats")}
+        clearLabel={t("client.projectBrowser.clearSearch")} onSubmit={search.reload} />
+        : <button type="button" className="chat-search-trigger" aria-label={t("client.chat.searchChats")} onClick={openSearch}>
+          <Search size={18} />{t("client.chat.searchChats")}</button>}
       <div className="chat-row">
         <button className="chat-button chat-grow" type="button" disabled={!ready || state.loading}
           onClick={() => { void controller.list({ archived: !state.archived }); }}>
-          {state.archived ? t("已归档 ▾") : t("最近聊天 ▾")}</button>
-        <button className="chat-back" type="button" aria-label={t("刷新聊天")} disabled={!ready || state.listRefreshing}
+          {state.archived ? t("client.chat.archived") : t("client.chat.recentChats")}</button>
+        <button className="chat-back" type="button" aria-label={t("client.chat.refreshChats")} disabled={!ready || state.listRefreshing}
           onClick={() => { if (searching) search.reload(); else void controller.list(); }}>
           <RefreshCw size={17} className={state.listRefreshing || search.loading ? 'chat-spinner' : undefined} /></button>
       </div>
@@ -47,37 +47,37 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
       aria-busy={searching ? search.loading : state.loading}>
       {searching ? <ChatSearchResults state={state} search={search} query={query}
         select={thread => { void controller.select(thread); onClose(); }} /> : <>
-      {groups.map(group => ({ ...group, label: group.cwd ? group.label : t('最近') })).map((group) =>
+      {groups.map(group => ({ ...group, label: group.cwd ? group.label : t("client.chat.recent") })).map((group) =>
         <section className="chat-project-group" aria-label={group.label} key={group.cwd}>
           <div className="chat-project-heading">
             <h3 className="chat-grow"><button type="button" className="chat-project-toggle"
-              aria-expanded={!group.collapsed} aria-label={`${group.collapsed ? t("展开项目") : t("折叠项目")}：${group.label}`}
+              aria-expanded={!group.collapsed} aria-label={`${group.collapsed ? t("client.chat.expandProject") : t("client.chat.collapseProject")}：${group.label}`}
               onClick={() => toggleCollapse(group.cwd)}>
               {group.collapsed ? <ChevronRight size={14} aria-hidden="true" />
                 : <ChevronDown size={14} aria-hidden="true" />}
               <span className="chat-ellipsis">{group.label}</span>
             </button></h3>
-            {group.cwd && <button type="button" className="chat-back" aria-label={t("在 {value1} 中新建对话", { value1: group.label })}
+            {group.cwd && <button type="button" className="chat-back" aria-label={t("client.chat.startAChatIn", { value1: group.label })}
               disabled={state.sending} onClick={() => newChat(group)}><Plus size={18} aria-hidden="true" /></button>}
           </div>
           {group.data.map(thread => <ChatThreadRow key={thread.id} thread={thread} state={state}
             select={() => { void controller.select(thread); onClose(); }} actions={actions} />)}
           {group.canToggle && <button type="button" className="chat-group-more" aria-expanded={group.expanded}
-            aria-label={`${group.expanded ? t("收起") : t("展开显示")}：${group.label}`} onClick={() => toggle(group.cwd)}>
-            {group.expanded ? t("收起") : t("展开显示")}</button>}
+            aria-label={`${group.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}：${group.label}`} onClick={() => toggle(group.cwd)}>
+            {group.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}</button>}
         </section>)}
       {!state.threads.length && <p className="chat-empty chat-muted">
-        {ready ? t("暂时没有聊天") : t("连接电脑后查看聊天")}</p>}
+        {ready ? t("client.chat.noChatsYet") : t("client.chat.connectToYourComputerToViewChats")}</p>}
       <div className="chat-thread-pagination">
         {pagination.loadingMore && <span role="status" className="chat-muted chat-row">
-          <LoaderCircle size={16} className="chat-spinner" aria-hidden="true" />{t("正在加载…")}</span>}
+          <LoaderCircle size={16} className="chat-spinner" aria-hidden="true" />{t("client.projectBrowser.loading")}</span>}
         {state.cursor && pagination.failed && <button type="button" className="chat-button"
-          disabled={!ready || state.loading} onClick={pagination.retry}>{t("加载失败，点击重试")}</button>}
+          disabled={!ready || state.loading} onClick={pagination.retry}>{t("client.chat.couldNotLoadSelectToRetry")}</button>}
       </div>
       </>}
     </div>
     <div className="chat-drawer-footer"><button className="chat-new-button" type="button"
-      disabled={state.sending} onClick={() => newChat()}><Plus size={20} />{t("新聊天")}</button>{profile}</div>
+      disabled={state.sending} onClick={() => newChat()}><Plus size={20} />{t("client.chat.newChat")}</button>{profile}</div>
     {accountPicker}
     <ChatThreadActions actions={actions} />
   </>;

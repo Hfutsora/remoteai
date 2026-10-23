@@ -1,5 +1,5 @@
 import { getLocale } from "../i18n";
-import { guiText } from "../i18n/guiText";
+import { uiText } from "../i18n/uiText";
 import { useEffect, useMemo, useState } from "react";
 import { Tooltip } from "antd";
 import {
@@ -217,9 +217,9 @@ export function TokenUsageHeatmap({
       </div>
       <div className="token-heatmap-chart">
         <div className="token-heatmap-weekdays" aria-hidden="true">
-          <span>{(language === "ru" ? guiText("一", {}, language) : language === "zh" ? "一" : "M")}</span>
-          <span>{(language === "ru" ? guiText("三", {}, language) : language === "zh" ? "三" : "W")}</span>
-          <span>{(language === "ru" ? guiText("五", {}, language) : language === "zh" ? "五" : "F")}</span>
+          <span>{(language === "ru" ? uiText("client.mobile.mon", {}, language) : language === "zh" ? "一" : "M")}</span>
+          <span>{(language === "ru" ? uiText("client.mobile.wed", {}, language) : language === "zh" ? "三" : "W")}</span>
+          <span>{(language === "ru" ? uiText("client.mobile.fri", {}, language) : language === "zh" ? "五" : "F")}</span>
         </div>
         <div className="token-heatmap-content">
           <div className="token-heatmap-scroll">

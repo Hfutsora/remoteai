@@ -1,3 +1,4 @@
+import { remoteErrorText } from '../localization/errors';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 import type { ProjectBrowserClient } from './protocol';
 import { ProjectTree, type BrowserTranslate } from './ProjectTree';
@@ -63,22 +64,22 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
         actions.close({ groupId: file.activeGroupId, path: file.activePath });
       }
     }}>
-    {!connected && <p className="pf-connection" role="status">{t('连接已断开，重新连接后即可继续。')}</p>}
+    {!connected && <p className="pf-connection" role="status">{t("client.projectBrowser.disconnectedReconnectToContinue")}</p>}
     <div className="pf-browser-layout">
       <ProjectTree client={client} cwd={cwd} connected={connected} selected={file.activePath} choose={choose} t={t}
         host={actionsHost} documents={file.store} />
       <div className="pf-splitter" role="separator" tabIndex={0} aria-orientation="vertical"
-        aria-label={t('调整文件树宽度')} aria-valuemin={split.minimum} aria-valuemax={split.maximum}
+        aria-label={t("client.projectBrowser.resizeFileTree")} aria-valuemin={split.minimum} aria-valuemax={split.maximum}
         aria-valuenow={split.width} {...split.handle} />
-      <section className="pf-file" aria-label={t('文件预览')}>
+      <section className="pf-file" aria-label={t("client.projectBrowser.filePreview")}>
         {settingsOpen && <div className="pf-settings"><AutoSaveSettings preferences={preferences} t={t} /></div>}
         <ProjectEditorWorkspace narrow={split.narrow} options={{ store: file.store, connected, t, actions,
           quoteSelection: actionsHost.quoteSelection,
           back: () => setShowFile(false), settings: () => setSettingsOpen(!settingsOpen), settingsOpen }} />
       </section>
     </div>
-    {actions.feedback && <p className="pf-feedback" role="status">{t(actions.feedback)}</p>}
-    {actions.error && !actions.rename && <p className="pf-feedback" role="alert">{t(actions.error)}</p>}
+    {actions.feedback && <p className="pf-feedback" role="status">{remoteErrorText(actions.feedback)}</p>}
+    {actions.error && !actions.rename && <p className="pf-feedback" role="alert">{remoteErrorText(actions.error)}</p>}
     {pendingPath && <PendingChanges saving={pendingTab?.saving ?? false} connected={connected}
       error={pendingTab?.error ?? ''} path={pendingPath} t={t} cancel={actions.cancelPending}
       discard={actions.discard} save={() => { void actions.savePending(); }} />}

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { connect, fixtureUrl, login, navigate, state } from './chat-helpers';
-import { translateText } from '../../../shared/i18n/translate';
+import type { MessageKey } from '@remoteai/i18n';
+import { testText } from '../../../scripts/i18n-fixture.mjs';
 
 test('switches language while keeping the chat connection, draft and user content', async ({ page, request }, info) => {
   await request.post(`${fixtureUrl}/test/reset`);
@@ -47,15 +48,15 @@ test('switches language while keeping the chat connection, draft and user conten
   await navigate(page, 'Settings');
   await page.getByRole('button', { name: 'Language English' }).click();
   await page.getByRole('radio', { name: 'Русский' }).click();
-  const ru = (source: string) => translateText('ru', source);
-  await navigate(page, ru('聊天'));
-  await expect(page.getByRole('textbox', { name: ru('聊天消息') })).toHaveValue(draft);
-  await expect(page.getByRole('button', { name: ru('发送消息'), exact: true })).toBeEnabled();
+  const ru = (key: MessageKey) => testText(key, {}, 'ru');
+  await navigate(page, ru("client.app.chat"));
+  await expect(page.getByRole('textbox', { name: ru("client.chat.chatMessage") })).toHaveValue(draft);
+  await expect(page.getByRole('button', { name: ru("client.shared.sendMessage"), exact: true })).toBeEnabled();
   expect((await state(request)).mobileConnections).toBe(connections);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('chat-russian-draft.png') });
-  await navigate(page, ru('设置'));
-  await page.getByRole('button', { name: `${ru('语言')} Русский` }).click();
+  await navigate(page, ru("client.app.settings"));
+  await page.getByRole('button', { name: `${ru("client.settings.language")} Русский` }).click();
   await page.getByRole('radio', { name: '简体中文' }).click();
   await navigate(page, '聊天');
   await expect(page.getByRole('textbox', { name: '聊天消息' })).toHaveValue(draft);

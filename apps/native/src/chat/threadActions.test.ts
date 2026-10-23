@@ -103,16 +103,16 @@ it('rejects empty names, active replies, approvals, queued messages and offline 
   await expect(controller.threadActions.run(thread, 'rename', '  ')).rejects.toThrow('对话名称');
   expect(request).not.toHaveBeenCalled();
   const ready = { ...initialChatState(), ready: true };
-  expect(threadActionReason(initialChatState(), thread, 'delete')).toContain('连接电脑');
-  expect(threadActionReason(ready, { ...thread, status: { type: 'active' } }, 'archive')).toContain('回复结束');
+  expect(threadActionReason(initialChatState(), thread, 'delete')).toBe('client.threadActions.connectToYourComputerToManageChats');
+  expect(threadActionReason(ready, { ...thread, status: { type: 'active' } }, 'archive')).toBe('client.threadActions.waitForTheReplyToFinishBeforeContinuing');
   expect(threadActionReason({ ...ready, threads: [{ ...thread, status: { type: 'active' } }] },
-    thread, 'delete')).toContain('回复结束');
+    thread, 'delete')).toBe('client.threadActions.waitForTheReplyToFinishBeforeContinuing');
   expect(threadActionReason({ ...ready, approvals: [{ method: 'approval', params: { threadId: 'one' } }] },
-    thread, 'delete')).toContain('回复结束');
+    thread, 'delete')).toBe('client.threadActions.waitForTheReplyToFinishBeforeContinuing');
   const queued = { ...ready, queue: { revision: 1, threads: { one: [
     { id: 'queued', text: 'next', imageCount: 0, attachmentCount: 0, busy: false },
   ] } } };
-  expect(threadActionReason(queued, thread, 'delete')).toContain('待发送消息');
+  expect(threadActionReason(queued, thread, 'delete')).toBe('client.threadActions.sendOrRemoveQueuedMessagesFirst');
   expect(threadActionReason(queued, thread, 'rename')).toBe('');
 });
 
@@ -124,7 +124,7 @@ it('serializes repeated mutations and supports restoring archived chats', async 
   const actions = new ThreadActions({ snapshot: () => state, update: patch => { state = { ...state, ...patch }; },
     request, complete, refresh: vi.fn().mockResolvedValue(undefined) });
   const pending = actions.run(thread, 'unarchive');
-  await expect(actions.run(thread, 'delete')).rejects.toThrow('当前操作');
+  await expect(actions.run(thread, 'delete')).rejects.toThrow('client.threadActions.waitForTheCurrentActionToFinish');
   expect(request).toHaveBeenCalledTimes(1);
   finish(); await pending;
   expect(complete).toHaveBeenCalledWith({ operation: 'unarchive', threadId: 'one' });

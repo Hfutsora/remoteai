@@ -1,7 +1,7 @@
 import { isAppLanguage, localeForLanguage, type AppLanguage } from '@remoteai/i18n';
 import { useSyncExternalStore } from 'react';
-import { setInterfaceLanguage } from '../../../../shared/i18n/interfaceLanguage';
-import { DEFAULT_LANGUAGE, deviceLanguage } from '../../../../shared/i18n/language';
+import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
+import { DEFAULT_LANGUAGE, deviceLanguage } from "../../../../shared/localization/language";
 
 export type Language = AppLanguage<'web'>;
 export const LANGUAGE_KEY = 'codex-switch.web.language.v1';

@@ -1,6 +1,6 @@
 import { Tooltip } from 'antd';
 import { loadConversationMetrics } from '../../api/conversationMetrics';
-import { guiText } from '../../i18n/guiText';
+import { uiText } from "../../i18n/uiText";
 import { useConversationMetrics } from '../../../../../shared/remote-chat/client/useConversationMetrics';
 import { CONVERSATION_TPS_DESCRIPTION, CONVERSATION_TTFT_DESCRIPTION, formatConversationTps, formatConversationTtft }
   from '../../../../../shared/remote-chat/conversationMetrics';
@@ -15,12 +15,12 @@ export function ConversationTokenStatus({ threadId, tokens, active }: {
   const firstToken = `${formatConversationTtft(metrics)} TTFT`;
   if (!threadId) return null;
   return <span className={styles.status}>
-    <Tooltip title={guiText(CONVERSATION_TPS_DESCRIPTION)} styles={{ root: { maxWidth: 400 } }}>
-      <span aria-label={`${guiText('对话输出速度')} ${speed}`}>{speed}</span>
+    <Tooltip title={uiText(CONVERSATION_TPS_DESCRIPTION)} styles={{ root: { maxWidth: 400 } }}>
+      <span aria-label={`${uiText("client.mobile.conversationOutputSpeed")} ${speed}`}>{speed}</span>
     </Tooltip>
     <span aria-hidden="true"> · </span>
-    <Tooltip title={guiText(CONVERSATION_TTFT_DESCRIPTION)} styles={{ root: { maxWidth: 400 } }}>
-      <span aria-label={`${guiText('首 token 等待时间')} ${firstToken}`}>{firstToken}</span>
+    <Tooltip title={uiText(CONVERSATION_TTFT_DESCRIPTION)} styles={{ root: { maxWidth: 400 } }}>
+      <span aria-label={`${uiText("client.mobile.timeToFirstToken")} ${firstToken}`}>{firstToken}</span>
     </Tooltip>
     {tokens > 0 && <>
       <span aria-hidden="true"> · </span>
