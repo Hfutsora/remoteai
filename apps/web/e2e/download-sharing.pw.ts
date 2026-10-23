@@ -97,3 +97,52 @@ test('missing cached data is never shared', async ({ page }) => {
   await expect(card(page)).toContainText('下载失败');
   expect(await page.evaluate(() => window.sharedDownloads)).toEqual([]);
 });
+
+async function downloadPreview(page: Page) {
+  await page.getByRole('button', { name: '预览文件', exact: true }).click();
+  const sheet = page.locator('.chat-download-sheet');
+  await expect(sheet.getByRole('button', { name: '分享文件', exact: true })).toHaveCount(0);
+  await sheet.getByRole('button', { name: '下载', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: '保存到设备', exact: true })).toBeEnabled();
+  return sheet;
+}
+
+test('the file sheet shares cached bytes offline with sharing on the left', async ({ page }, info) => {
+  const sheet = await downloadPreview(page);
+  await sheet.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.getByRole('button', { name: '断开电脑', exact: true }).click();
+  await page.getByRole('button', { name: '预览文件', exact: true }).click();
+  const share = sheet.getByRole('button', { name: '分享文件', exact: true });
+  const save = sheet.getByRole('button', { name: '保存到设备', exact: true });
+  await expect(share).toBeEnabled();
+  await share.click({ trial: true });
+  const shareBounds = (await share.boundingBox())!;
+  const saveBounds = (await save.boundingBox())!;
+  expect(shareBounds.x + shareBounds.width).toBeLessThan(saveBounds.x);
+  expect(shareBounds.y).toBe(saveBounds.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: info.outputPath('file-sheet-sharing.png') });
+  await share.click();
+  await expect.poll(() => page.evaluate(() => window.sharedDownloads)).toEqual([
+    { name: 'sample.bin', type: 'text/plain', content: 'Share offline file', active: true },
+  ]);
+  expect(await page.evaluate(() => window.downloadFixture.opens)).toBe(1);
+});
+
+test('file sheet sharing handles cancellation, errors and unsupported browsers', async ({ page }) => {
+  const sheet = await downloadPreview(page);
+  const share = sheet.getByRole('button', { name: '分享文件', exact: true });
+  await page.evaluate(() => { window.shareResult = 'cancel'; });
+  await share.click();
+  await expect(share).toBeEnabled();
+  await expect(sheet.locator('.file-download-message')).toHaveCount(0);
+  await page.evaluate(() => { window.shareResult = 'error'; });
+  await share.click();
+  await expect(sheet.locator('.file-download-message')).toContainText('分享未完成');
+  await expect(sheet.getByRole('button', { name: '保存到设备', exact: true })).toBeEnabled();
+  await page.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false }));
+  await sheet.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.getByRole('button', { name: '预览文件', exact: true }).click();
+  await expect(share).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: '保存到设备', exact: true })).toBeEnabled();
+});

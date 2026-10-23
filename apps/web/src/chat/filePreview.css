@@ -18,7 +18,7 @@
 }
 .chat-download-file-transfer { min-width: 0; padding-top: 18px; border-top: 1px solid var(--app-border, #edf1ef); }
 .chat-download-file-transfer .file-download-control { max-width: none; }
-.chat-download-file-transfer .file-download-action:not(.is-secondary) { width: 100%; }
+.chat-download-file-transfer .file-download-action { flex: 1; }
 .chat-file-preview-note { max-width: 400px; margin: 0; color: var(--muted, #718079); font-size: 13px; line-height: 1.6; }
 @media (max-width: 767px) {
   .chat-download-sheet .sheet-header h2 { font-size: 16px; letter-spacing: 0; }

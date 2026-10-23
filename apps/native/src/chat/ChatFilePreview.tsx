@@ -61,8 +61,12 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
     return () => { observer.abort(); };
   }, [threadId, ready, load, file.path, attempt, binary]);
   return <BottomSheet fullWidthContent visible tall title={t("client.chat.files.39932f")} subtitle={file.path} onClose={close} dragFromHeaderOnly
-    actions={[{ label: download.label, onPress: download.busy ? download.cancel : download.start,
-      tone: 'primary', disabled: !download.busy && !download.completed && (!ready || !threadId) },
+    actions={[
+      ...(download.share ? [{ label: t("client.downloads.shareFile"), onPress: download.share,
+        loading: download.sharing, disabled: download.busy }] : []),
+      { label: download.label, onPress: download.busy ? download.cancel : download.start,
+        tone: 'primary',
+        disabled: download.sharing || (!download.busy && !download.completed && (!ready || !threadId)) },
     ...(error ? [{ label: t("client.mobile.retryPreview"), onPress: () => setAttempt(attempt + 1), disabled: !ready }] : [])]}>
     <SheetScrollView style={{ flexShrink: 1 }}
       contentContainerStyle={{ paddingBottom: result && (html || markdown) ? 0 : 20 }}>
