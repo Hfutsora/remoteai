@@ -3,7 +3,7 @@ import { Compartment, EditorState, Transaction } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { indentWithTab, undo, redo } from '@codemirror/commands';
 import { foldAll, unfoldAll } from '@codemirror/language';
-import { openSearchPanel, search } from '@codemirror/search';
+import { closeSearchPanel, openSearchPanel, search, searchPanelOpen } from '@codemirror/search';
 import { ChevronsDownUp, ChevronsUpDown, Redo2, Search, Undo2, WrapText } from 'lucide-react';
 import { editorHighlighting, editorLanguage, editorPhrases, editorTheme, textFolding } from './editorSetup';
 import { editorExtensions } from './editorExtensions';
@@ -11,6 +11,7 @@ import type { BrowserTranslate } from './ProjectTree';
 import type { BrowserHost } from './entryActions';
 import { useEditorSelectionMenu } from './useEditorSelectionMenu';
 import { EditorSelectionMenu } from './EditorSelectionMenu';
+import { EditorSearchPanel } from './editorSearchPanel';
 
 interface Props {
   text: string; path: string; readOnly: boolean; t: BrowserTranslate;
@@ -27,6 +28,7 @@ export function ProjectEditor(props: Props) {
   latest.current = props;
   const [wrap, setWrap] = useState(false);
   const [languageError, setLanguageError] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const selectionMenu = useEditorSelectionMenu({ view, path: props.path, enabled: !!props.quoteSelection });
   useLayoutEffect(() => {
     if (!host.current) return;
@@ -35,33 +37,29 @@ export function ProjectEditor(props: Props) {
     const editor = new EditorView({
       parent: host.current,
       state: EditorState.create({ doc: props.text, extensions: [
-        editorExtensions(props.t), editorTheme, editorHighlighting, editorPhrases(props.t), search({ top: true }),
+        editorExtensions(props.t), editorTheme, editorHighlighting, editorPhrases(props.t),
+        search({ top: true, createPanel: editor => new EditorSearchPanel(editor, latest.current.t) }),
         EditorState.lineSeparator.of(props.text.includes('\r\n') ? '\r\n' : '\n'),
         EditorView.contentAttributes.of({ 'aria-label': props.t("client.workspaceActions.fileContent"), spellcheck: 'false',
           autocorrect: 'off', autocapitalize: 'off' }),
         editable.of(EditorState.readOnly.of(props.readOnly)), wrapping.of([]), language.of(syntax ? [] : textFolding),
         keymap.of([indentWithTab, { key: 'Mod-s', run: () => { latest.current.save(); return true; } }]),
         EditorView.updateListener.of(update => {
+          if (searchPanelOpen(update.startState) !== searchPanelOpen(update.state)) {
+            setSearchOpen(searchPanelOpen(update.state));
+          }
           if (update.docChanged || update.selectionSet) selectionMenu.changed(update.docChanged);
           if (update.docChanged && !synchronizing.current) latest.current.onChange(update.state.sliceDoc());
         }),
       ] }),
     });
     view.current = editor;
-    // Mobile keyboards and pasted queries do not always emit keyup; update search on input too.
-    const searchInput = (event: Event) => {
-      const input = event.target;
-      if (input instanceof HTMLInputElement && input.closest('.cm-search')) {
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    };
-    editor.dom.addEventListener('input', searchInput);
     let disposed = false;
     if (syntax) void syntax.load().then(support => {
       if (!disposed) editor.dispatch({ effects: language.reconfigure(support) });
     }).catch(() => { if (!disposed) setLanguageError(true); });
     return () => {
-      disposed = true; editor.dom.removeEventListener('input', searchInput); editor.destroy(); view.current = undefined;
+      disposed = true; editor.destroy(); view.current = undefined;
     };
     // A document version remounts this editor; keystrokes must not recreate it or reset history.
   }, []);
@@ -84,7 +82,9 @@ export function ProjectEditor(props: Props) {
   const command = (run: (editor: EditorView) => boolean) => { if (view.current) run(view.current); };
   return <div className="pf-editor">
     <div className="pf-editor-tools" role="toolbar" aria-label={props.t("client.projectBrowser.editorTools")}>
-      <button type="button" onClick={() => command(openSearchPanel)}>
+      <button type="button" aria-expanded={searchOpen} aria-pressed={searchOpen}
+        onClick={() => command(editor => searchPanelOpen(editor.state)
+          ? closeSearchPanel(editor) : openSearchPanel(editor))}>
         <Search size={16} /><span>{props.t("client.projectBrowser.find")}</span></button>
       <button type="button" aria-label={props.t("client.projectBrowser.undo")} disabled={props.readOnly} onClick={() => command(undo)}>
         <Undo2 size={16} /></button>
