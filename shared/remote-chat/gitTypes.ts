@@ -5,7 +5,14 @@ export interface GitChange {
 }
 export interface GitChanges {
   root: string; branch: string | null; head: string | null; files: GitChange[];
+  integration?: GitIntegration | null;
 }
+export interface GitIntegration { kind: 'merge' | 'rebase' | 'cherryPick' | 'revert'; version: string }
+export interface GitConflict {
+  path: string; version: string; base: string | null; ours: string | null; theirs: string | null;
+  result: string | null; markerSize: number;
+}
+export interface GitResolution { cwd: string; path: string; version: string; content: string | null }
 export interface GitDiff { text: string; truncated: boolean }
 export interface GitCommitFile { path: string; originalPath: string | null; status: string }
 export interface GitCommit {
@@ -45,6 +52,9 @@ export interface GitRevisionRequest {
 }
 export interface GitRevisionPrompt extends Omit<GitRevisionRequest, 'cwd' | 'mode'> { subject: string }
 export interface GitClient {
+  conflict: (cwd: string, path: string) => Promise<GitConflict>;
+  resolveConflict: (request: GitResolution) => Promise<void>;
+  continueIntegration: (cwd: string, version: string) => Promise<void>;
   settings: (autoMessage?: boolean) => Promise<GitSettings>;
   generateMessage: (request: GitMessageRequest) => Promise<{ message: string }>;
   revision: (request: GitRevisionRequest) => Promise<void>;

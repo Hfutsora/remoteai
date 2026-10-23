@@ -9,6 +9,7 @@ import type { RemoteGit } from '../../../../../shared/remote-chat/useRemoteGit';
 import { gitAreaColors } from './gitTheme';
 import { GitFileMenu } from './GitFileMenu';
 import { GitCommitForm } from './GitCommitForm';
+import { GitConflicts } from './GitConflicts';
 import { t } from '../../i18n';
 
 export function GitChanges({ panel, connected }: { panel: RemoteGit; connected: boolean }) {
@@ -17,6 +18,7 @@ export function GitChanges({ panel, connected }: { panel: RemoteGit; connected: 
   const count = Object.keys(panel.selected).length;
   const all = selectionState(files, panel.selected);
   return <>
+    <GitConflicts panel={panel} connected={connected} />
     <div className="git-selection"><Checkbox disabled={panel.busy || !files.some(file => !file.conflict)}
       checked={all === true} indeterminate={all === 'mixed'} onChange={panel.selectAll}>{t("client.projectBrowser.selectAll")}</Checkbox>
       <span>{t("client.git.filesSelected", { count })}</span>
@@ -29,7 +31,7 @@ export function GitChanges({ panel, connected }: { panel: RemoteGit; connected: 
       {list.rows.map(row => <GitRow key={row.id} row={row} panel={panel} connected={connected}
         onToggle={() => list.toggleFolder(row.id)} flat={list.mode === 'flat'} />)}
     </div>
-    <GitCommitForm panel={panel} />
+    {!panel.changes?.integration && <GitCommitForm panel={panel} />}
   </>;
 }
 
@@ -52,7 +54,11 @@ function GitRow({ row, panel, connected, onToggle, flat }: {
         : t("client.git.view", { path: row.path })} aria-expanded={folder ? !row.collapsed : undefined}
         disabled={panel.busy || (!folder && !connected)} title={row.path}
         style={{ marginLeft: Math.min(row.depth, 4) * 14 }}
-        onClick={() => folder ? onToggle() : panel.setDetail({ kind: 'diff', path: row.path, title: row.path })}>
+        onClick={() => {
+          if (folder) onToggle();
+          else if (row.file?.conflict) void panel.openConflict(row.path);
+          else panel.setDetail({ kind: 'diff', path: row.path, title: row.path });
+        }}>
         {!flat && <span className="git-tree-chevron">{folder && (row.collapsed
           ? <ChevronRight size={12} /> : <ChevronDown size={12} />)}</span>}
         <img src={folder ? folderIcon : fileIcon} className="git-tree-icon" alt="" aria-hidden="true" />
@@ -62,5 +68,8 @@ function GitRow({ row, panel, connected, onToggle, flat }: {
         <span className="git-status" style={{ background: folder ? undefined : colors.background }}>
           {folder ? row.files.length : row.file?.status.trim()}</span>
       </button>}
+    {row.file?.conflict && <button type="button" className="git-conflict-entry"
+      disabled={panel.busy || !connected} onClick={() => void panel.openConflict(row.path)}>
+      {t('client.gitConflict.resolve')}</button>}
     </div></GitFileMenu>;
 }

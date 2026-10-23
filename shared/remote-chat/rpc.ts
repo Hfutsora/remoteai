@@ -17,7 +17,8 @@ function requestTimeout(body: unknown) {
   const operation = (body as { operation?: unknown } | null)?.operation;
   if (operation === 'guiGitGenerateMessage') return GIT_MESSAGE_TIMEOUT_MS;
   if (operation === 'guiGitAction' || operation === 'guiGitWorkspace'
-    || operation === 'guiGitRevision') return GIT_ACTION_TIMEOUT_MS;
+    || operation === 'guiGitRevision' || operation === 'guiGitContinueIntegration'
+    || operation === 'guiGitResolveConflict') return GIT_ACTION_TIMEOUT_MS;
   if (operation === 'models' || operation === 'modelsRefresh'
     || operation === 'composerSet' || operation === 'guiAccountSelect') {
     return MODEL_CATALOG_TIMEOUT_MS;

@@ -77,8 +77,16 @@ pub(super) enum GitError {
     TooManyFiles,
     #[error("文件或分支已变化，请刷新并重新选择文件。")]
     Changed,
-    #[error("请先在电脑上解决冲突或完成正在进行的合并。")]
+    #[error("client.gitConflict.resolveFirst")]
     Conflict,
+    #[error("client.gitConflict.unsupported")]
+    ConflictUnsupported,
+    #[error("client.gitConflict.changed")]
+    ConflictChanged,
+    #[error("client.gitConflict.markersRemain")]
+    ConflictMarkers,
+    #[error("client.gitConflict.continueFailed")]
+    ContinueFailed,
     #[error("Git 正在执行其他操作，请稍后重试。")]
     Locked,
     #[error("提交未完成，请在电脑上检查 Git 用户信息、提交检查和签名设置。")]
@@ -93,7 +101,7 @@ pub(super) enum GitError {
     Remote,
     #[error("远程操作未完成，请检查电脑的网络和 Git 登录状态。")]
     Network,
-    #[error("更新未完成，请在电脑上检查冲突或正在进行的合并、变基。")]
+    #[error("client.gitConflict.integrationStopped")]
     Integrate,
     #[error("推送未完成，请先拉取远程改动，或检查推送权限与提交检查。")]
     Push,

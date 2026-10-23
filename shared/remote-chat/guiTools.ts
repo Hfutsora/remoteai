@@ -9,7 +9,8 @@ import type { GitRequest, GitStatus } from './gitWorkspace';
 import { PROJECT_LIST_OPERATION, PROJECT_SELECT_OPERATION, type ProjectSelection } from './projects';
 import type { ChatProject } from './client/types';
 import type { GitActionRequest, GitChanges, GitCommitFile, GitCommitRequest, GitDiff, GitHistory,
-  GitFileActionRequest, GitRepository, GitRevisionRequest, GitMessageRequest, GitSettings } from './gitTypes';
+  GitFileActionRequest, GitRepository, GitRevisionRequest, GitMessageRequest, GitSettings,
+  GitConflict, GitResolution } from './gitTypes';
 
 export interface CliRelease { version: string; size: number; ready?: boolean }
 export interface CliProgress { downloaded: number; total: number; phase: 'downloading' | 'installing' }
@@ -29,6 +30,7 @@ export const GUI_TOOL_OPERATIONS = new Set([
   'guiGitRepository', 'guiGitAction', 'guiGitFileAction', 'guiGitWorkspace', 'guiGitRevision',
   'guiGitGenerateMessage',
   'guiGitSettings',
+  'guiGitConflict', 'guiGitResolveConflict', 'guiGitContinueIntegration',
   'guiTaskReview', 'guiTaskRestore',
 ]);
 
@@ -52,6 +54,10 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
     reconnect: () => request<void>({ operation: 'guiReconnect' }),
     workspace: (input: GitRequest) => request<GitStatus>({ operation: 'guiGitWorkspace', request: input }),
     git: {
+      conflict: (cwd: string, path: string) => request<GitConflict>({ operation: 'guiGitConflict', cwd, path }),
+      resolveConflict: (input: GitResolution) => request<void>({ ...input, operation: 'guiGitResolveConflict' }),
+      continueIntegration: (cwd: string, version: string) =>
+        request<void>({ operation: 'guiGitContinueIntegration', cwd, version }),
       settings: (autoMessage?: boolean) => request<GitSettings>({ operation: 'guiGitSettings', autoMessage }),
       generateMessage: (input: GitMessageRequest) =>
         request<{ message: string }>({ ...input, operation: 'guiGitGenerateMessage' }),

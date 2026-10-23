@@ -13,10 +13,14 @@ mod commit;
 mod commit_files;
 #[cfg(test)]
 mod commit_files_tests;
+#[cfg(test)]
+mod conflict_tests;
+mod conflicts;
 mod file_actions;
 #[cfg(test)]
 mod file_actions_tests;
 mod history;
+mod integration;
 mod message;
 mod message_context;
 #[cfg(test)]
@@ -93,6 +97,19 @@ pub(crate) enum Request {
         action: file_actions::Action,
         files: Vec<SelectedFile>,
     },
+    Conflict {
+        cwd: String,
+        path: String,
+    },
+    ResolveConflict {
+        cwd: String,
+        #[serde(flatten)]
+        request: conflicts::Resolution,
+    },
+    ContinueIntegration {
+        cwd: String,
+        version: String,
+    },
 }
 
 #[derive(Deserialize)]
@@ -114,6 +131,7 @@ pub(crate) enum Response {
     History(history::History),
     CommitFiles(Vec<commit_files::CommitFile>),
     Commit { hash: String },
+    Conflict(conflicts::Conflict),
 }
 
 fn execute(request: Request) -> Result<Response> {
@@ -129,6 +147,9 @@ fn execute(request: Request) -> Result<Response> {
         | Request::History { cwd, .. }
         | Request::CommitFiles { cwd, .. }
         | Request::Commit { cwd, .. }
+        | Request::Conflict { cwd, .. }
+        | Request::ResolveConflict { cwd, .. }
+        | Request::ContinueIntegration { cwd, .. }
         | Request::FileAction { cwd, .. } => cwd,
     };
     let root = repository(&directory(cwd)?)?;
@@ -137,6 +158,13 @@ fn execute(request: Request) -> Result<Response> {
             Err(GitError::Operation)
         }
         Request::Repository { .. } => branches::read(&root).map(Response::Repository),
+        Request::Conflict { path, .. } => conflicts::read(&root, &path).map(Response::Conflict),
+        Request::ResolveConflict { request, .. } => {
+            conflicts::resolve(&root, request).map(Response::Done)
+        }
+        Request::ContinueIntegration { version, .. } => {
+            integration::resume(&root, &version).map(Response::Done)
+        }
         Request::Action { request, .. } => actions::execute(&root, &request).map(Response::Done),
         Request::Revision { request, .. } => revision::execute(&root, &request).map(Response::Done),
         Request::Changes { .. } => changes::read(&root).map(Response::Changes),
@@ -196,7 +224,10 @@ pub(crate) async fn codex_gui_git_tool(
         Request::Action { cwd, request } if request.changes_worktree() => {
             Some(super::workspace_change(&app, cwd.clone()).await?)
         }
-        Request::FileAction { cwd, .. } | Request::Revision { cwd, .. } => {
+        Request::FileAction { cwd, .. }
+        | Request::Revision { cwd, .. }
+        | Request::ResolveConflict { cwd, .. }
+        | Request::ContinueIntegration { cwd, .. } => {
             Some(super::workspace_change(&app, cwd.clone()).await?)
         }
         _ => None,

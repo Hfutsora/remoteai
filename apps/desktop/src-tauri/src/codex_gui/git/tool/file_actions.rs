@@ -40,7 +40,7 @@ fn selected_paths(
     Ok(paths.into_iter().collect())
 }
 
-fn validate_file(root: &Path, path: &str) -> Result<()> {
+pub(super) fn validate_file(root: &Path, path: &str) -> Result<()> {
     validate_path(path)?;
     let target = root.join(path);
     let mut parent = target.parent();

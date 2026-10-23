@@ -46,8 +46,6 @@ function GitContent(props: Props & { panel: RemoteGit; shared: boolean }) {
       {!props.cwd && <p className="git-notice">{t("client.git.chooseAProjectFirst")}</p>}
       {!props.connected && <p className="git-notice">{t("client.git.connectToYourComputerToUseGit")}</p>}
       {panel.error && <p role="alert" className="git-error">{displayError(panel.error)}</p>}
-      {panel.changes?.files.some(file => file.conflict) && <p className="git-error">
-        {t("client.git.resolveConflictsOrFinishTheMergeOnYourComputerFirst")}</p>}
       {panel.notice && <p role="status" className="git-notice">{panel.notice.startsWith('已提交 ')
         ? t("client.git.committed", { hash: panel.notice.slice(4) }) : displayError(panel.notice)}</p>}
       {panel.busy && !panel.loading && <div className="git-loading"><Spin size="small" />{t("client.threadActions.working")}</div>}

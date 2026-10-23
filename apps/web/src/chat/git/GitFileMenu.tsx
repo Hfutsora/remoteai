@@ -6,11 +6,15 @@ import type { GitFileRow } from '../../../../../shared/remote-chat/useGitFileLis
 import type { RemoteGit } from '../../../../../shared/remote-chat/useRemoteGit';
 
 import { deletableGitFiles, gitFileMenuLabels } from '../../../../../shared/remote-chat/gitMenu';
+import { t } from '../../i18n';
 
 export function GitFileMenu({ row, panel, connected, children }: {
   row: GitFileRow; panel: RemoteGit; connected: boolean; children: ReactElement;
 }) {
   if (row.kind === 'area') return children;
+  if (row.file?.conflict) return <GitContextMenu disabled={panel.busy || !connected}
+    menu={{ items: [{ key: 'resolve', label: t('client.gitConflict.resolve') }],
+      onClick: () => { void panel.openConflict(row.path); } }}>{children}</GitContextMenu>;
   const labels = gitFileMenuLabels(row.kind === 'folder');
   const deletable = deletableGitFiles(row.files);
   const disabled = panel.busy || !connected || panel.changes?.files.some(item => item.conflict);
