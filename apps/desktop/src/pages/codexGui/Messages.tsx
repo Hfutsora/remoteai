@@ -31,8 +31,9 @@ export function Messages({ value, selected, active = true, footer, pendingReques
   onFork?: (threadId: string, turnId: string) => Promise<boolean>; forkDisabled?: boolean;
 } & CapacityRetryControl) {
   const last = lastUserMessage(value);
-  const { viewport, content, away, onScroll, jumpToLatest, pauseFollowing } = useFollowScroll(selected, active);
-  const history = useMessageWindow({ turns: value?.turns, selected, active, viewport, pauseFollowing, away });
+  const { viewport, content, movement, away, onScroll, jumpToLatest, pauseFollowing }
+    = useFollowScroll(selected, active);
+  const history = useMessageWindow({ turns: value?.turns, selected, active, viewport, movement, pauseFollowing, away });
   const entries = useMemo(() => groupVisibleTurns(history.entries), [history.entries]);
   const quote = useQuoteSelection({ root: content, selected, enabled: active && Boolean(onQuote) });
   const sending = pendingRequest && pendingRequest.threadId === selected && !value?.activeTurn;
@@ -49,9 +50,10 @@ export function Messages({ value, selected, active = true, footer, pendingReques
     }} />}
     <div ref={viewport} className={styles.messageViewport} aria-label={uiText("client.conversation.conversationMessages")}
       onWheel={history.onWheel} onScroll={() => {
-        if (history.onScroll()) return;
+        const offsetChange = history.onScroll();
+        if (offsetChange === 0) return;
         if (history.hasNewer) pauseFollowing();
-        else onScroll();
+        else onScroll(offsetChange);
       }}>
       <div ref={content} className={styles.messageScrollBody}>
         <div className={styles.messageContent}>

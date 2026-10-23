@@ -1,11 +1,18 @@
 const SCROLL_BOTTOM_VISIBLE_RATIO = 0.2;
 const HISTORY_PREFETCH_VIEWPORT_RATIO = 0.5;
 const MIN_HISTORY_PREFETCH_DISTANCE = 100;
+const FOLLOW_SCROLL_DISTANCE = 100;
 
 interface ScrollPosition {
   contentHeight: number;
   viewportHeight: number;
   offset: number;
+}
+
+/** Only a reader's downward movement may resume following; restored anchors must stay paused. */
+export function shouldFollowScroll({ contentHeight, viewportHeight, offset, movement }:
+  ScrollPosition & { movement: number }): boolean {
+  return movement > 0 && contentHeight - viewportHeight - offset < FOLLOW_SCROLL_DISTANCE;
 }
 
 /** Show the shortcut only when more than one fifth of a viewport remains below the visible content. */
