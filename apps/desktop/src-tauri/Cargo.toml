@@ -1,6 +1,6 @@
 [package]
 name = "csw"
-version = "2.0.19"
+version = "2.0.20"
 description = "Local multi-account manager for Codex auth.json"
 authors = ["Remote AI"]
 license = "Apache-2.0"
