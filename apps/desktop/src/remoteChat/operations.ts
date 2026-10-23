@@ -1,4 +1,4 @@
-import { fileDownloadByteLimit, getChatPolicy, imagePreviewByteLimit, textPreviewByteLimit, videoByteLimit }
+import { fileDownloadByteLimit, imagePreviewByteLimit, textPreviewByteLimit, videoByteLimit }
   from '../../../../shared/remote-chat/policy';
 import { remoteAttachments } from '../../../../shared/remote-chat/composerAttachments';
 import { guiApi } from '../pages/codexGui/api';
@@ -41,6 +41,7 @@ import { DESKTOP_OPERATION } from '../../../../shared/remote-desktop/protocol';
 import { RemoteThreadTitles } from './threadTitles';
 import { applyProjectOverride, effectiveProjectThread } from './projects';
 import { PROJECT_LIST_OPERATION } from '../../../../shared/remote-chat/projects';
+import { readRemoteThreadList, completeRemoteThreadListWrite, receiveRemoteThreadListEvent } from './threadList';
 
 const OPERATIONS = new Set([
   'projectFileRead', 'projectFileWrite', 'projectEntryAction',
@@ -268,7 +269,6 @@ export class ChatOperations {
       body.transferMode = mode === 'direct' ? 'direct' : 'relay';
       if (body.attachments !== undefined) body.attachments = remoteAttachments(body.attachments, mode);
     }
-    if (body.operation === 'list') body.limit = getChatPolicy().threadPageSize;
     if (body.operation === 'textPreview') body.maxBytes = textPreviewByteLimit(mode);
     if (body.operation === 'previewOpen') {
       body.maxBytes = body.preview === 'text' ? textPreviewByteLimit(mode) : imagePreviewByteLimit(mode);
@@ -281,7 +281,9 @@ export class ChatOperations {
       body.maxBytes = videoByteLimit(mode);
     }
     applyProjectOverride(body);
-    const result = await guiApi.request(body as unknown as Request);
+    const result = body.operation === 'list' ? await readRemoteThreadList(body)
+      : await guiApi.request(body as unknown as Request);
+    completeRemoteThreadListWrite(body, result);
     // File documents must stay byte-faithful; conversation image rewriting would corrupt embedded data URLs.
     if (['projectFileRead', 'projectFileWrite', 'projectEntryAction'].includes(String(body.operation))) return result;
     this.titles.completed(body, result);
@@ -310,6 +312,7 @@ export class ChatOperations {
   }
 
   prepareEvent(event: GuiEvent) {
+    receiveRemoteThreadListEvent(event);
     this.liveHistory.receive(event);
     if (event.params.thread) {
       event = { ...event, params: { ...event.params, thread: effectiveProjectThread(event.params.thread) } };

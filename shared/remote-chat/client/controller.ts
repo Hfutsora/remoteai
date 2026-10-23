@@ -16,6 +16,7 @@ import { HistoryCache } from './historyCache';
 import { ImageCache } from './imageCache';
 import { ThreadActions, threadMutationPatch, type ThreadMutation } from './threadActions';
 import { ThreadListRequests } from './threadListRequests';
+import { ThreadListCache } from './threadListCache';
 import { mergeThreadList } from './threadListSnapshot';
 import { forkConversation } from './forkConversation';
 import { RemoteMessageEditor } from './messageEdit';
@@ -87,7 +88,14 @@ export class ChatController {
       ? this.connection.mappingStreams.open(resource, url, options)
       : Promise.reject(new Error(MAPPING_UPDATE_REQUIRED)));
   private readonly listRequests = new ThreadListRequests(async () => {
-    if (this.active && this.transportConnected) await this.list({ background: true });
+    if (this.active && this.transportConnected) await this.list({ background: true, force: true });
+  });
+  private readonly threadList = new ThreadListCache(async (query, force) => {
+    const result = await this.request<ListResponse<Thread> & { sidebar?: SidebarSnapshot }>({
+      operation: 'list', ...query, ...(force ? { force: true } : {}),
+    });
+    this.applySidebar(result.sidebar);
+    return result;
   });
   private manualList?: Promise<void>;
   private readGeneration = 0;
@@ -175,7 +183,11 @@ export class ChatController {
     for (const listener of this.listeners) listener();
   }
   private update(patch: Partial<ChatState>) {
+    const previous = this.state;
     this.state = syncChatProcessing({ ...this.state, ...patch }, this.state);
+    if (previous.search === this.state.search && previous.archived === this.state.archived) {
+      this.threadList.observe(previous.threads, this.state.threads, this.state.archived);
+    }
     this.emit();
   }
   private request<T>(body: Request) { return this.connection.request<T>('request', body); }
@@ -196,6 +208,7 @@ export class ChatController {
     this.historyReader.reset();
     this.queueConnection.reset();
     if (mode === 'offline') {
+      this.threadList.invalidate();
       this.skillGeneration += 1;
       this.composer.reset();
       this.update({ sidebar: { ...this.state.sidebar, revision: -1 } });
@@ -224,25 +237,37 @@ export class ChatController {
     }
     if (event?.method === HISTORY_CHANGED) {
       if (event.params.threadId === this.state.selected?.id) this.scheduleHistory();
+      if (event.params.thread) {
+        this.threadList.receive({ ...event, method: event.params.reason ?? 'thread/started' });
+        const cached = this.threadList.peek(this.state);
+        if (cached) this.update({ threads: cached.data });
+        return;
+      }
       if (event.params.reason?.startsWith('thread/')
-        || !this.state.threads.some((thread) => thread.id === event.params.threadId)) this.listRequests.changed();
+        || !this.state.threads.some((thread) => thread.id === event.params.threadId)) {
+        this.threadList.invalidate();
+        this.listRequests.changed();
+      }
       return;
     }
     if (event?.method === COMPOSER_EVENT) { this.composer.receive(event.params as unknown as ComposerSnapshot); return; }
     if (event?.method === SIDEBAR_EVENT) { this.applySidebar(event.params as unknown as SidebarSnapshot); return; }
     if (event?.method === QUEUE_EVENT) { this.applyQueue(event.params as unknown as QueueSnapshot); return; }
+    const missingSummary = this.threadList.receive(event);
+    const cached = this.threadList.peek(this.state);
     this.state = applyChatEvent(this.state, event);
+    if (cached) this.state = { ...this.state, threads: cached.data };
     this.emit();
     this.markViewed();
     if (event?.method === 'turn/completed' && event.params.threadId === this.state.selected?.id) {
       this.scheduleHistory();
     }
-    if (['thread/started', 'thread/name/updated', 'thread/archived', 'thread/unarchived', 'thread/deleted',
-      'turn/started', 'turn/completed'].includes(event.method)) this.listRequests.changed();
+    if (missingSummary) this.listRequests.changed();
     if (['thread/name/updated', 'thread/archived', 'thread/unarchived', 'thread/deleted'].includes(event.method)) {
       if (event.params.threadId === this.state.selected?.id) this.scheduleHistory();
     }
     if (event?.method === 'connection/closed' || event?.method === 'codex/disconnected') {
+      this.threadList.invalidate();
       this.skillGeneration += 1;
       this.synchronization += 1;
       this.listRequests.reset();
@@ -279,6 +304,8 @@ export class ChatController {
 
   private async listOffline() {
     if (!this.offline) return;
+    const memory = this.threadList.peek(this.state);
+    if (memory) { this.update({ threads: memory.data, cursor: memory.nextCursor }); return; }
     const generation = this.listRequests.generation;
     try {
       const cached = await this.offline.list();
@@ -308,6 +335,7 @@ export class ChatController {
   };
 
   stop() {
+    this.threadList.invalidate();
     this.previewDownloads?.dispose();
     void this.flushCache();
     this.active = false;
@@ -447,19 +475,26 @@ export class ChatController {
 
   /** Search without replacing the sidebar list or its pagination. */
   searchThreads = (options: { search: string; archived: boolean; cursor?: string }) =>
-    this.request<ListResponse<Thread>>({ operation: 'list', ...options });
+    this.threadList.read(options);
 
-  list(options: { search?: string; archived?: boolean; more?: boolean; background?: boolean } = {}) {
+  list(options: { search?: string; archived?: boolean; more?: boolean; background?: boolean; force?: boolean } = {}) {
     const search = options.search ?? this.state.search;
     const archived = options.archived ?? this.state.archived;
     const cursor = options.more ? this.state.cursor ?? undefined : undefined;
-    const manual = !options.background && !options.more;
+    const manual = !options.background && !options.more && options.search === undefined && options.archived === undefined;
+    const changedScope = search !== this.state.search || archived !== this.state.archived;
+    if (changedScope) {
+      const cached = this.threadList.peek({ search, archived });
+      this.update({ search, archived, threads: cached?.data ?? [], cursor: cached?.nextCursor ?? null });
+    }
     const key = JSON.stringify([search, archived, cursor, Boolean(options.more)]);
     const scope = JSON.stringify([search, archived]);
     const promise = this.listRequests.run({ key, scope, more: options.more, fresh: manual },
       async (generation, revision) => {
-        this.update({ search, archived, loading: true });
-        await this.loadList({ search, archived, cursor, more: options.more }, generation, revision);
+        const cached = !options.more && !manual && !options.force ? this.threadList.get({ search, archived }) : undefined;
+        this.update({ search, archived, loading: !cached });
+        await this.loadList({ search, archived, cursor, more: options.more, force: manual || options.force },
+          generation, revision);
       });
     if (manual && this.manualList !== promise) {
       this.manualList = promise;
@@ -473,7 +508,7 @@ export class ChatController {
     return promise;
   }
 
-  private async loadList(options: { search: string; archived: boolean; cursor?: string; more?: boolean },
+  private async loadList(options: { search: string; archived: boolean; cursor?: string; more?: boolean; force?: boolean },
     generation: number, revision: number) {
     const { search, archived, cursor, more } = options;
     const before = this.state.threads;
@@ -483,11 +518,8 @@ export class ChatController {
       return;
     }
     try {
-      const result = await this.request<ListResponse<Thread> & { sidebar?: SidebarSnapshot }>({
-        operation: 'list', search, archived, cursor,
-      });
+      const result = await this.threadList.read({ search, archived, cursor }, options.force);
       if (!this.listRequests.accepts(generation, revision)) return;
-      this.applySidebar(result.sidebar);
       const { threads, summaries } = mergeThreadList({ before, current: this.state.threads,
         incoming: result.data, more });
       void this.offline?.updateSummaries?.(summaries, archived).catch(this.cacheFailure);
@@ -651,12 +683,13 @@ export class ChatController {
         const result = await this.request<{ thread: Thread }>({ operation: 'start', model: selection.model || undefined,
           access: input.access, cwd: this.state.draftProject?.cwd });
         thread = result.thread;
+        this.threadList.upsert(thread, false);
         this.listRequests.reset();
-        const threads = this.state.archived ? [] : this.state.threads;
+        const cached = this.threadList.peek({ archived: false, search: '' });
+        const threads = cached?.data ?? (this.state.archived || this.state.search ? [] : this.state.threads);
         this.update({ selected: thread, draftProject: null, selectedArchived: false,
           threads: [thread, ...threads.filter((entry) => entry.id !== result.thread.id)],
-          archived: false, search: '', cursor: null, loading: false, listRefreshing: false });
-        this.listRequests.changed();
+          archived: false, search: '', cursor: cached?.nextCursor ?? null, loading: false, listRefreshing: false });
         await this.composer.created(thread.id, selection);
       }
       this.ensureCurrent(generation);
@@ -833,6 +866,9 @@ export class ChatController {
 
   private completeThreadMutation(body: ThreadMutation) {
     const { threadId, operation } = body;
+    if (operation !== 'threadPin') this.threadList.receive({ method: operation === 'rename' ? 'thread/name/updated'
+      : operation === 'delete' ? 'thread/deleted' : operation === 'archive' ? 'thread/archived' : 'thread/unarchived',
+    params: { threadId, ...(operation === 'rename' ? { threadName: body.name } : {}) } });
     this.listRequests.reset();
     if (operation !== 'rename' && this.state.selected?.id === threadId) {
       this.readGeneration += 1; this.refreshThreadId = null; this.loadedThreadId = null;
@@ -860,7 +896,13 @@ export class ChatController {
     const selection = this.selectionGeneration;
     const selectedId = this.state.selected?.id;
     return forkConversation({ snapshot: this.snapshot, update: patch => this.update(patch),
-      request: () => this.connection.request('request', { operation: 'forkLatest', threadId: thread.id }),
+      request: async () => {
+        const result = await this.connection.request<{ thread: Thread }>('request', {
+          operation: 'forkLatest', threadId: thread.id,
+        });
+        if (generation === this.synchronization) this.threadList.upsert(result.thread, false);
+        return result;
+      },
       isCurrent: () => generation === this.synchronization && this.state.ready,
       canOpen: () => selection === this.selectionGeneration && selectedId === this.state.selected?.id
         && !this.state.sending,

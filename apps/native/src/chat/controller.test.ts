@@ -118,7 +118,7 @@ describe('mobile chat actions', () => {
     mocks.request.mockResolvedValueOnce({ data: [thread], nextCursor: 'sidebar-next' });
     await controller.list();
     const sidebar = controller.snapshot();
-    const result = { data: [{ ...thread, id: 'match' }], nextCursor: 'search-next' };
+    const result = { data: [{ ...thread, id: 'match', turns: undefined }], nextCursor: 'search-next' };
     mocks.request.mockResolvedValueOnce(result);
     expect(await controller.searchThreads({ search: 'match', archived: true, cursor: 'search-page' })).toEqual(result);
     expect(mocks.request).toHaveBeenLastCalledWith('request', {

@@ -1,6 +1,8 @@
 import { guiApi } from "./api";
 import { CapacityRetry } from "./capacityRetry";
 import { ConversationCache } from "./conversationCache";
+import { GuiThreadList } from "./threadList";
+import type { ThreadListQuery } from "../../../../../shared/remote-chat/client/threadListCache";
 import { ConversationHistory } from "./conversationHistory";
 import { sendCapacityRetry } from "./sendCapacityRetry";
 import { forkGuiConversation } from "./forkConversation";
@@ -22,7 +24,7 @@ import { initialState, savePreferences } from "./preferences";
 import { ThreadModelSettings } from "./threadModelSettings";
 import { GuiModelCatalog } from "./modelCatalog";
 import { GuiThreadTitles } from "./threadTitles";
-import type { ApprovalReply, GuiEvent, GuiState, ListResponse, Model, Settings, Thread, Turn } from "./types";
+import type { ApprovalReply, GuiEvent, GuiState, Model, Settings, Thread, Turn } from "./types";
 import type { Item, SkillReference } from "./types";
 
 const STREAM_FRAME_MS = 32;
@@ -37,7 +39,10 @@ export class GuiController {
   private listeners = new Set<() => void>();
   private messageListeners = new Set<() => void>();
   private readonly conversationCache: ConversationCache;
-  private listGeneration = 0;
+  private readonly lists = new GuiThreadList({ getSnapshot: () => this.state,
+    patch: patch => this.patch(patch), observe: threads => this.readState.observeThreads(threads),
+    report: error => this.report(error) });
+  private readonly threadList = this.lists.cache;
   private selectionGeneration = 0;
   private deletedThreads = new Set<string>();
   private unlisten?: () => void;
@@ -61,6 +66,9 @@ export class GuiController {
     currentName: (id) => this.state.conversations[id]?.thread.name
       ?? this.state.threads.find((thread) => thread.id === id)?.name });
   getSnapshot = () => this.state;
+  readThreadList = (query: ThreadListQuery, options: { pageSize: number; force?: boolean }) =>
+    this.lists.readRemote(query, options);
+  receiveThreadListEvent = (event: GuiEvent) => this.lists.receiveRemote(event);
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
   /** Text deltas cannot introduce acknowledged user messages. */
   subscribeMessageUpdates = (listener: () => void) => {
@@ -78,6 +86,9 @@ export class GuiController {
     if (this.disposed) return;
     const previous = this.state;
     this.state = { ...this.state, ...patch };
+    if (previous.search === this.state.search && previous.archived === this.state.archived) {
+      this.threadList.observe(previous.threads, this.state.threads, this.state.archived);
+    }
     if (!streaming) this.state.conversations = this.conversationCache.trim(this.state, this.capacityRetry.retainedThreads());
     if (previous.queued !== this.state.queued) this.queueJournal.remember(this.state.queued);
     this.capacityRetry.sync(previous, this.state);
@@ -95,7 +106,7 @@ export class GuiController {
   readonly capacityRetry = new CapacityRetry({ getSnapshot: this.getSnapshot, patch: this.patch,
     send: (threadId, canSend) => sendCapacityRetry({ getSnapshot: this.getSnapshot, patch: this.patch,
       selection: (id) => this.modelSettings.ready(id), catalogGuard: () => this.modelCatalog.guard(),
-      acceptTurn: (id, turn) => this.acceptTurn(id, turn), report: this.report, refresh: () => this.refresh(),
+      acceptTurn: (id, turn) => this.acceptTurn(id, turn), report: this.report, refresh: () => this.refresh(false, false),
       flushQueue: () => Object.keys(this.state.queued).forEach(id => void this.queue.flush(id)),
     }, threadId, canSend) });
   setWorkspaceBusy = (workspaceBusy: boolean) => {
@@ -103,7 +114,7 @@ export class GuiController {
     if (!workspaceBusy) Object.keys(this.state.queued).forEach((id) => void this.queue.flush(id));
   };
   readonly messageEditor = new GuiMessageEditor({ getSnapshot: this.getSnapshot, patch: this.patch, report: this.report,
-    acceptTurn: (threadId, turn) => this.acceptTurn(threadId, turn), refresh: () => this.refresh(),
+    acceptTurn: (threadId, turn) => this.acceptTurn(threadId, turn), refresh: () => this.refresh(false, false),
     flushQueue: () => Object.keys(this.state.queued).forEach((id) => void this.queue.flush(id)) });
   readonly goals = new GuiGoals({ getSnapshot: this.getSnapshot, patch: this.patch, report: this.report });
   readonly projectActions = new GuiProjects({ getSnapshot: this.getSnapshot, patch: this.patch, report: this.report });
@@ -138,10 +149,15 @@ export class GuiController {
   };
   private receive = (event: GuiEvent) => {
     const threadId = event.params.threadId ?? event.params.thread?.id;
+    const known = threadId ? this.state.conversations[threadId]?.thread : undefined;
+    if (known && !this.threadList.has(known.id)) this.threadList.upsert(known);
+    const missingSummary = this.threadList.receive(event);
+    if (["connection/closed", "connection/restored"].includes(event.method)) this.threadList.invalidate();
+    if (missingSummary) void this.refresh(false, false);
     this.history.receive(event);
     if (event.method === "thread/deleted" && threadId) {
       this.forgetThread(threadId);
-      void this.refresh();
+      void this.refresh(false, false);
       return;
     }
     if (threadId && this.deletedThreads.has(threadId)) return;
@@ -160,6 +176,8 @@ export class GuiController {
 
   private receiveSettled(event: GuiEvent) {
     this.patch(reduceEvent(this.state, event));
+    const listed = this.threadList.peek(this.state);
+    if (listed) this.patch({ threads: listed.data });
     this.capacityRetry.receive(event);
     this.readState.receive(event);
     if (["turn/diff/updated", "turn/plan/updated"].includes(event.method) && event.params.threadId) {
@@ -168,7 +186,6 @@ export class GuiController {
       if (value && turnId) rememberTurnDetails(value, turnId);
     }
     if (event.method === "turn/completed" && event.params.threadId) void this.queue.flush(event.params.threadId);
-    if (event.method === "turn/completed" || event.method === "thread/name/updated") void this.refresh();
   }
 
   connect = (options?: { reuseExisting: boolean }) => {
@@ -201,7 +218,7 @@ export class GuiController {
       this.patch({ connection: "ready", approvals, error: "" });
       this.modelCatalog.activate();
       const results = await Promise.allSettled([
-        this.refresh(), this.modelCatalog.restore().catch(() => {
+        this.refresh(false, false), this.modelCatalog.restore().catch(() => {
           // A missing local catalog waits for an explicit retry or source change.
         }), this.modelSettings.refresh(),
       ]);
@@ -223,31 +240,8 @@ export class GuiController {
     await this.modelSettings.reconcileCatalog(previous);
   };
 
-  refresh = async (more = false) => {
-    if (more && (!this.state.cursor || this.state.loading)) return;
-    const generation = ++this.listGeneration;
-    this.patch({ loading: true });
-    try {
-      const response = await guiApi.request<ListResponse<Thread>>({ operation: "list", archived: this.state.archived,
-        search: this.state.search || undefined, cursor: more ? this.state.cursor ?? undefined : undefined });
-      if (generation !== this.listGeneration) return;
-      this.readState.observeThreads(response.data);
-      const threads = more ? [...this.state.threads, ...response.data] : response.data;
-      const live = this.state.archived || this.state.search ? [] : Object.values(this.state.conversations)
-        .filter((value) => value.activeTurn).map((value) => value.thread);
-      const listedIds = new Set(threads.map((thread) => thread.id));
-      const grouped = [...new Map([...threads, ...live.filter((thread) => !listedIds.has(thread.id))]
-        .map((thread) => [thread.id, thread])).values()]
-        .map((thread) => ({ ...thread, turns: undefined, cwd: this.state.projectOverrides[thread.id] ?? thread.cwd,
-          // The list can lag behind the first user-message notification.
-          preview: thread.preview || this.state.conversations[thread.id]?.thread.preview || "" }));
-      this.patch({ threads: grouped,
-        cursor: response.nextCursor });
-    } catch (error) { if (generation === this.listGeneration) this.report(error); }
-    finally { if (generation === this.listGeneration) this.patch({ loading: false }); }
-  };
-
-  filter = (search: string, archived: boolean) => { this.patch({ search, archived }); void this.refresh(); };
+  refresh = (more = false, force = !more) => this.lists.refresh(more, force);
+  filter = (search: string, archived: boolean) => this.lists.filter(search, archived);
   settings = (settings: Partial<Settings>) => {
     const modelChanged = settings.model !== undefined || settings.effort !== undefined;
     // Publish combined permission/model changes only after the model choice has been resolved.
@@ -283,7 +277,7 @@ export class GuiController {
     }
     this.patch({ selected: null, error: "", archived: false });
     void this.modelSettings.select(null);
-    if (this.state.connection === "ready") void this.refresh();
+    if (this.state.connection === "ready") void this.refresh(false, false);
   };
 
   select = async (id: string) => {
@@ -300,7 +294,7 @@ export class GuiController {
 
   forkConversation = (threadId: string, turnId?: string): Promise<boolean> => forkGuiConversation({
     getSnapshot: this.getSnapshot, patch: this.patch, report: this.report, modelSettings: this.modelSettings,
-    selectionGeneration: () => this.selectionGeneration, select: this.select, refresh: this.refresh,
+    selectionGeneration: () => this.selectionGeneration, select: this.select, refresh: () => this.refresh(false, false),
   }, threadId, turnId);
 
   /** Load the phone's conversation without changing the conversation selected on the PC. */
@@ -312,6 +306,7 @@ export class GuiController {
   private acceptSentThread(thread: Thread, context: {
     selected: string | null; startedAtMs: number; projectOverride?: string; settings: Settings;
   }) {
+    this.threadList.upsert(thread, false);
     const { selected, startedAtMs, projectOverride } = context;
     if (!selected) {
       const { model, effort } = context.settings;
@@ -363,7 +358,7 @@ export class GuiController {
       // Completion can arrive before the request promise resolves. Never resurrect a completed turn.
       this.acceptTurn(thread.id, turn);
       void this.titles.generate(thread, text);
-      void this.refresh();
+      void this.refresh(false, false);
       return true;
     } catch (error) { this.report(error); return false; }
     finally {
@@ -444,6 +439,9 @@ export class GuiController {
     try {
       await guiApi.request(operation === "rename"
         ? { operation, threadId: id, name: name ?? "" } : { operation, threadId: id });
+      this.threadList.receive({ method: operation === "rename" ? "thread/name/updated"
+        : operation === "archive" ? "thread/archived" : "thread/unarchived",
+      params: { threadId: id, threadName: name } });
       if (operation === "rename" && this.state.conversations[id]) {
         const value = this.state.conversations[id];
         this.patch({ conversations: { ...this.state.conversations,
@@ -451,7 +449,7 @@ export class GuiController {
       }
       if (operation === "archive" && this.state.selected === id) this.newConversation();
       if (operation === "unarchive") { this.patch({ archived: false }); await this.select(id); }
-      await this.refresh();
+      await this.refresh(false, false);
     } catch (error) { this.report(error); }
   };
 
@@ -468,17 +466,18 @@ export class GuiController {
     try {
       const report = await deleteGuiThread(id);
       for (const deleted of report.deletedThreadIds ?? [id]) this.forgetThread(deleted);
-      await this.refresh();
+      await this.refresh(false, false);
       return true;
     } catch (error) { this.report(error); return false; }
     finally { this.patch({ deleting: undefined }); }
   };
 
   private forgetThread(id: string) {
+    this.threadList.remove(id);
     if (this.state.selected === id) ++this.selectionGeneration;
     this.flushStream();
     this.deletedThreads.add(id);
-    ++this.listGeneration;
+    this.lists.reset();
     const conversations = { ...this.state.conversations };
     const queued = { ...this.state.queued };
     const projectOverrides = { ...this.state.projectOverrides };
@@ -502,12 +501,14 @@ export class GuiController {
 
   activate = () => { this.disposed = false; this.modelCatalog.activate(); };
   suspend = () => {
+    this.threadList.invalidate();
     this.modelCatalog.suspend();
     this.unlisten?.(); this.unlisten = undefined;
     this.flushStream();
     this.patch({ ...reduceEvent(this.state, { method: "connection/closed", params: {} }), error: "" });
   };
   dispose = () => {
+    this.threadList.invalidate();
     this.modelCatalog.suspend();
     this.capacityRetry.cancelAll();
     this.disposed = true; this.unlisten?.(); this.unlisten = undefined;

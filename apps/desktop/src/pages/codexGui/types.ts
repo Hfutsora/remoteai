@@ -233,7 +233,7 @@ export type Request =
       skills: SkillReference[]; attachments?: AttachmentReference[]; transferMode?: 'direct' | 'relay' }
   | { operation: "skills"; cwd?: string }
   | { operation: "models"; cursor?: string; cacheOnly?: boolean }
-  | { operation: "list"; cursor?: string; archived: boolean; search?: string; limit?: number }
+  | { operation: "list"; cursor?: string; archived: boolean; search?: string; limit?: number; force?: boolean }
   | { operation: "start"; cwd?: string; model?: string; access: AccessMode }
   | { operation: "fork"; threadId: string; turnId: string; access: AccessMode; cwd?: string }
   | { operation: "resume"; threadId: string; access: AccessMode; cwd?: string }

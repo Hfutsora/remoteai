@@ -8,6 +8,7 @@ import type { OfflineHistoryStore } from '../../../../shared/remote-chat/client/
 
 const thread: Thread = { id: 'one', name: 'Original', preview: '', cwd: '/project', updatedAt: 1, turns: [] };
 const other: Thread = { ...thread, id: 'two', name: 'Other' };
+const summary = { ...thread, turns: undefined };
 const controllers: ChatController[] = [];
 afterEach(() => { controllers.forEach(controller => controller.stop()); controllers.length = 0; });
 
@@ -65,7 +66,7 @@ it.each(['archive', 'delete'] as const)('clears the selected conversation after 
   expect(controller.snapshot().threads.map(item => item.id)).toEqual(['two']);
   expect(controller.snapshot().threadActionBusy).toBeUndefined();
   if (action === 'delete') expect(offline.remove).toHaveBeenCalledWith('one');
-  else expect(offline.updateSummaries).toHaveBeenCalledWith([thread], true);
+  else expect(offline.updateSummaries).toHaveBeenCalledWith([summary], true);
 });
 
 it('keeps another selected conversation open when deleting from the list', async () => {
@@ -91,10 +92,10 @@ it('preserves the conversation on failure, releases the lock and allows retry', 
   const { controller, request } = await setup();
   request.mockRejectedValueOnce(new Error('删除未完成'));
   await expect(controller.threadActions.run(thread, 'delete')).rejects.toThrow('删除未完成');
-  expect(controller.snapshot().threads[0]).toEqual(thread);
+  expect(controller.snapshot().threads[0]).toEqual(summary);
   expect(controller.snapshot().threadActionBusy).toBeUndefined();
   await controller.threadActions.run(thread, 'delete');
-  expect(controller.snapshot().threads).toEqual([other]);
+  expect(controller.snapshot().threads).toEqual([{ ...other, turns: undefined }]);
 });
 
 it('rejects empty names, active replies, approvals, queued messages and offline mutations', async () => {

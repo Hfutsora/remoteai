@@ -4,6 +4,7 @@ import { ChatOperations } from './operations';
 import { guiApi } from '../pages/codexGui/api';
 import { getGuiController } from '../pages/codexGui/session';
 import { GuiThreadTitles } from '../pages/codexGui/threadTitles';
+import { GuiController } from '../pages/codexGui/controller';
 import { fetchCloudTitleSettings } from '../api/cloudTitleSettings';
 import type { GuiEvent, Thread } from '../pages/codexGui/types';
 import { applyChatEvent } from '../../../../shared/remote-chat/client/events';
@@ -23,8 +24,10 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(fetchCloudTitleSettings).mockResolvedValue({ model: 'configured-title-model', effort: 'medium' });
   const titles = new GuiThreadTitles({ active: () => true, currentName: () => undefined, receive });
-  vi.mocked(getGuiController).mockReturnValue({ titles,
-    getSnapshot: () => ({ projectOverrides: {} }) } as ReturnType<typeof getGuiController>);
+  const controller = Object.assign(new GuiController(), { titles });
+  vi.spyOn(controller, 'receiveThreadListEvent').mockImplementation(() => {});
+  vi.spyOn(controller, 'readThreadList').mockResolvedValue({ data: [], nextCursor: null });
+  vi.mocked(getGuiController).mockReturnValue(controller);
   vi.mocked(guiApi.connect).mockResolvedValue([]);
   vi.mocked(guiApi.request).mockImplementation(async (request) => {
     if (request.operation === 'start' || request.operation === 'resume') return { thread: structuredClone(thread) };
