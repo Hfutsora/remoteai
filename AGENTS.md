@@ -27,6 +27,23 @@
 - Whenever a user request involves writing prompts or copy, proactively refine and improve the wording so it is concise, friendly, and accurate instead of simply repeating the user's original wording.
 - Keep temporary messages, including hover tooltips, popovers, and confirmation prompts shown after a click, visually compact. Limit the text area to a maximum width of `400px`, which is roughly one line of 25 full-width Chinese characters at the standard body-text size. Wrap longer copy onto additional lines instead of widening the message.
 
+## Internationalization: Single Package
+
+- 后续国际化统一使用独立语言包 `packages/i18n`（`@remoteai/i18n`），作为翻译资源和语言元数据的唯一维护源。
+  此要求覆盖各应用、共享模块、Rust/原生平台资源、浏览器扩展及构建脚本；冻结代码和第三方源码仍遵守原有维护边界。
+- 所有新增或修改的可翻译用户文案都必须放入语言包，包括默认语言、回退文案、状态和错误提示、无障碍标签、权限说明、用户协议及结构化内容。
+  不得在业务代码中新增独立翻译表、内联多语言对象、按语言分支返回的文案或硬编码的可翻译界面文本。
+- 业务代码通过 `@remoteai/i18n` 的公开入口和现有应用适配层获取文案。新文案优先使用语义化键，完整句子通过参数插值表达，避免拼接翻译片段。
+  语言选择、偏好持久化、订阅和平台接入逻辑可保留在应用中，翻译资源不得因此重新分散。
+- Rust、系统权限、扩展清单和嵌入脚本等必须保留在平台目录的语言文件或文案区段，只能作为生成产物存在。
+  在 `packages/i18n/platform/` 维护源文件，并通过 `packages/i18n/platform.json` 登记生成关系；禁止直接维护或手动修改生成副本。
+- 新增或修改文案时同步维护对应模块已发布语言的键和参数，沿用语言包声明的语言启用范围及回退策略。
+  不得因资源集中而擅自扩大语言发布范围；具体资源组织和例外策略以 `packages/i18n/README.md` 为准。
+- 只翻译展示文案，保留协议值、状态标识、数据库值和用户内容的原始语义。
+  现有服务错误文本通过语言包的错误格式化接口在展示边界解码，不得通过翻译后的文案判断业务状态。
+- 资源或语言元数据变更后运行 `npm run generate:i18n`，提交前确保 `npm run check:i18n` 通过。
+  同时检查受影响入口的语言切换、回退和离线资源，禁止通过放宽检查、添加无依据的豁免或复制翻译来绕过语言包归属约束。
+
 ## Desktop Local, Remote, and Web Parity
 
 - 后续涉及 PC 端的改动，默认在同一任务中同步修改 `apps/desktop` 的本地模式、远程模式和 `apps/web` 的 PC 页面，确保对应功能、界面效果、交互及文案一致，无需用户另行提醒；用户明确限定范围时，以用户要求为准。
