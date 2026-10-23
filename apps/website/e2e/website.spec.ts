@@ -42,22 +42,33 @@ test('navigation, feature filters, language switch and FAQ work', async ({ page 
     .first()
     .click();
   await expect(page.locator('h1')).toContainText('电脑上的工作');
+  await page.locator('.language-switch summary').click();
+  await expect(page.locator('.language-options')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.language-options')).toBeHidden();
+  await page.locator('.language-switch summary').click();
+  await page.locator('h1').click();
+  await expect(page.locator('.language-options')).toBeHidden();
+  await page.locator('.language-switch summary').click();
   await page.getByRole('link', { name: 'EN', exact: true }).click();
   await expect(page).toHaveURL(/\/en\/features\/remote-workspace\/$/);
   await expect(page.locator('h1')).toContainText('Same computer');
   await page.getByText('Can tasks run after my computer shuts down?', { exact: true }).click();
   await expect(page.locator('details[open]')).toContainText('No. Tasks depend on the host computer.');
+  await page.locator('.language-switch summary').click();
   await page.getByRole('link', { name: 'RU', exact: true }).click();
   await expect(page).toHaveURL(/\/ru\/features\/remote-workspace\/$/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-  await expect(page.getByRole('link', { name: 'EN', exact: true })).toHaveAttribute(
+  await expect(page.locator('.language-options a[hreflang="en"]')).toHaveAttribute(
     'href',
     `${basePath}en/features/remote-workspace/`,
   );
+  await page.locator('.language-switch summary').click();
   await page.getByRole('link', { name: '日本語', exact: true }).click();
   await expect(page).toHaveURL(/\/ja\/features\/remote-workspace\/$/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
   await expect(page.locator('h1')).toContainText('いつものコンピューターを');
+  await page.locator('.language-switch summary').click();
   await page.getByRole('link', { name: '中文', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${basePath}features/remote-workspace/$`));
   await expect(page.locator('h1')).toContainText('电脑上的工作');

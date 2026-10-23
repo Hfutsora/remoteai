@@ -13,7 +13,8 @@ test('desktop offers Japanese, applies it immediately and restores the saved sel
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(applications[0].url);
   await page.getByRole('button', { name: 'Settings', exact: true }).first().click();
-  await page.locator('.ant-segmented-item', { hasText: '日本語' }).click();
+  await page.locator('.interface-language-select').click();
+  await page.getByRole('option', { name: '日本語', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja-JP');
   expect(await page.evaluate(key => localStorage.getItem(key), applications[0].key)).toBe('ja');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -21,8 +22,9 @@ test('desktop offers Japanese, applies it immediately and restores the saved sel
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja-JP');
   await page.getByRole('button', { name: '設定', exact: true }).first().click();
-  await expect(page.getByRole('radio', { name: '日本語', exact: true })).toBeChecked();
-  await page.locator('.ant-segmented-item', { hasText: 'English' }).click();
+  await expect(page.locator('.interface-language-select')).toContainText('日本語');
+  await page.locator('.interface-language-select').click();
+  await page.getByRole('option', { name: 'English', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
 });
 

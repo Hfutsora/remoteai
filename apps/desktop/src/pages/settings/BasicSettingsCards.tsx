@@ -11,7 +11,8 @@ import {
   Power,
   TableProperties,
 } from "lucide-react";
-import { LANGUAGE_OPTIONS, type Language } from "../../i18n";
+import { LANGUAGE_OPTIONS } from "../../i18n";
+import { LanguageSelect } from "../../../../../shared/localization/LanguageSelect";
 import type { BubbleResetDisplay } from "../../types";
 import { AutoUpdateSettingsCard } from "./AutoUpdateSettingsCard";
 import { GlobalFontSettingsCard } from "./GlobalFontSettingsCard";
@@ -37,11 +38,12 @@ function LanguageCard({ settings }: { settings: SettingsPageProps }) {
         </div>
         <div className="settings-field">
           <label htmlFor="language-selector">{t("settings.language.label")}</label>
-          <Segmented
+          <LanguageSelect
             id="language-selector"
+            label={t("settings.language.label")}
             value={language}
-            options={[...LANGUAGE_OPTIONS]}
-            onChange={(value) => onLanguageChange(value as Language)}
+            options={LANGUAGE_OPTIONS}
+            onChange={onLanguageChange}
           />
         </div>
       </div>

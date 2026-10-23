@@ -51,7 +51,7 @@ it("pastes Explorer files without a paste event, shows removable pills and sends
   vi.mocked(invoke).mockResolvedValue([attachment, second]);
   await act(async () => keydown());
   expect(host.textContent).toContain(attachment.name);
-  const remove = host.querySelector<HTMLButtonElement>("button")!;
+  const remove = host.querySelector<HTMLButtonElement>(`button[aria-label="移除附件：${attachment.name}"]`)!;
   expect(remove.getAttribute("aria-label")).toBe("移除附件：" + attachment.name);
   expect(remove.parentElement?.querySelector("svg")).not.toBeNull();
   await act(async () => remove.click());

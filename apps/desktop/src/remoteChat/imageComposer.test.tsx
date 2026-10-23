@@ -75,7 +75,7 @@ it('drops mixed browser files as photo thumbnails and transferable document atta
   await act(async () => container.querySelector('textarea')!.dispatchEvent(event));
   expect(event.defaultPrevented).toBe(true);
   expect(container.querySelector('img')?.src).toBe(url);
-  expect(container.querySelector('.chat-capsule')?.textContent).toBe('notes.txt');
+  expect(container.querySelector('.chat-composer-capsules')?.textContent).toBe('notes.txt');
   await act(async () => button('发送消息')!.click());
   expect(props.send).toHaveBeenCalledWith({ text: '', images: [url], ...props.selection,
     attachments: [{ kind: 'file', name: 'notes.txt', path: '', data: 'bm90ZXM=' }] });

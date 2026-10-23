@@ -23,7 +23,6 @@ button.settings-row:hover, .settings-profile:hover { background: var(--app-surfa
 .settings-row-icon.orange { color: var(--app-warning, #ed9405); background: var(--app-accentSoft, #fff6e6); }
 .settings-row-icon.gray { color: var(--app-ink, #343b45); background: var(--app-canvas, #f1f3f6); }
 .settings-row-label { min-width: 0; flex: 1; color: var(--app-ink, #202637); font-size: 15px; overflow-wrap: anywhere; }
-.settings-language-options .settings-row { justify-content: space-between; }
 .settings-row-value { flex: 0 1 auto; max-width: 55%; min-width: 0; overflow: hidden; color: var(--app-muted, #848d9f); font-size: 13px;
   text-overflow: ellipsis; text-align: right; white-space: nowrap; }
 .settings-row > svg { flex-shrink: 0; color: var(--app-muted, #848d9f); }

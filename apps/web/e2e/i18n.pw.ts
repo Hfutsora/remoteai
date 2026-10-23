@@ -16,9 +16,9 @@ async function signIn(page: Page) {
 
 async function chooseEnglish(page: Page) {
   await navigate(page, '设置');
-  await page.getByRole('button', { name: '语言 简体中文' }).click();
-  await expect(page.getByRole('radio', { name: '简体中文' })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('radio', { name: 'English' }).click();
+  await page.locator('.interface-language-select').click();
+  await expect(page.getByRole('option', { name: '简体中文', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('option', { name: 'English', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
 }
 
@@ -27,7 +27,7 @@ test('Chinese default, immediate English switch, persistence and switching back'
   await signIn(page);
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await chooseEnglish(page);
-  await expect(page.getByRole('button', { name: 'Language English' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Auto-refresh usage 30 minutes' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Change password', exact: true })).toBeVisible();
   await expect(page.getByText('欢迎回来', { exact: true })).toBeHidden();
@@ -35,7 +35,7 @@ test('Chinese default, immediate English switch, persistence and switching back'
   await page.screenshot({ path: info.outputPath('settings-english.png') });
   await page.reload();
   await navigate(page, 'Settings');
-  await expect(page.getByRole('button', { name: 'Language English' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /About Remote AI/ }).click();
   await expect(page.getByText('Web browser', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to settings' }).click();
@@ -53,10 +53,10 @@ test('Chinese default, immediate English switch, persistence and switching back'
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page.getByText('Sign out of this account?', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Stay signed in' }).click();
-  await page.getByRole('button', { name: 'Language English' }).click();
-  await page.getByRole('radio', { name: '简体中文' }).click();
+  await page.locator('.interface-language-select').click();
+  await page.getByRole('option', { name: '简体中文', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-  await expect(page.getByRole('button', { name: '语言 简体中文' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: '语言', exact: true })).toBeVisible();
   expect(await page.evaluate(key => localStorage.getItem(key), LANGUAGE_KEY)).toBe('zh');
 });
 
@@ -84,7 +84,7 @@ test('language switching works when preference storage is unavailable', async ({
     };
   }, LANGUAGE_KEY);
   await chooseEnglish(page);
-  await expect(page.getByRole('button', { name: 'Language English' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toBeVisible();
 });
 
 test('translations keep placeholders intact and leave unknown content unchanged', async ({ page }) => {
@@ -116,21 +116,21 @@ test('Russian settings persist and fit narrow and desktop layouts', async ({ pag
   await request.post('http://127.0.0.1:1491/test/reset');
   await signIn(page);
   await navigate(page, '设置');
-  await page.getByRole('button', { name: '语言 简体中文' }).click();
-  await page.getByRole('radio', { name: 'Русский' }).click();
+  await page.locator('.interface-language-select').click();
+  await page.getByRole('option', { name: 'Русский', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru-RU');
-  const languageName = `${ru("client.settings.language")} Русский`;
-  await expect(page.getByRole('button', { name: languageName })).toBeVisible();
+  const languageName = ru("client.settings.language");
+  await expect(page.getByRole('combobox', { name: languageName, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: ru("client.settings.changePassword"), exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByText('欢迎回来', { exact: true })).toBeHidden();
   await page.screenshot({ path: info.outputPath('settings-russian.png') });
   await page.reload();
   await navigate(page, ru("client.app.settings"));
-  await expect(page.getByRole('button', { name: languageName })).toBeVisible();
-  await page.getByRole('button', { name: languageName }).click();
-  await expect(page.getByRole('radio', { name: 'Русский' })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('radio', { name: '简体中文' }).click();
+  await expect(page.getByRole('combobox', { name: languageName, exact: true })).toBeVisible();
+  await page.locator('.interface-language-select').click();
+  await expect(page.getByRole('option', { name: 'Русский', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('option', { name: '简体中文', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
 });
 
@@ -139,20 +139,20 @@ test('Japanese settings persist and fit narrow and desktop layouts', async ({ pa
   await request.post('http://127.0.0.1:1491/test/reset');
   await signIn(page);
   await navigate(page, '设置');
-  await page.getByRole('button', { name: '语言 简体中文' }).click();
-  await page.getByRole('radio', { name: '日本語' }).click();
+  await page.locator('.interface-language-select').click();
+  await page.getByRole('option', { name: '日本語', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja-JP');
-  const languageName = `${ja("client.settings.language")} 日本語`;
-  await expect(page.getByRole('button', { name: languageName })).toBeVisible();
+  const languageName = ja("client.settings.language");
+  await expect(page.getByRole('combobox', { name: languageName, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: ja("client.settings.changePassword"), exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByText('欢迎回来', { exact: true })).toBeHidden();
   await page.screenshot({ path: info.outputPath('settings-japanese.png') });
   await page.reload();
   await navigate(page, ja("client.app.settings"));
-  await expect(page.getByRole('button', { name: languageName })).toBeVisible();
-  await page.getByRole('button', { name: languageName }).click();
-  await expect(page.getByRole('radio', { name: '日本語' })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('radio', { name: '简体中文' }).click();
+  await expect(page.getByRole('combobox', { name: languageName, exact: true })).toBeVisible();
+  await page.locator('.interface-language-select').click();
+  await expect(page.getByRole('option', { name: '日本語', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('option', { name: '简体中文', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
 });

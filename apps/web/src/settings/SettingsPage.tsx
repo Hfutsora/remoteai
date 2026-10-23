@@ -3,7 +3,7 @@ import { t, useLanguage } from '../i18n';
 import { useState } from 'react';
 import { Button, Dialog, Switch } from 'antd-mobile';
 import { ChevronRight, Grid2X2, IdCard, Info, LockKeyhole, LogOut,
-  Download, Languages, Monitor, RefreshCw, ShieldCheck, Type, UserRound } from 'lucide-react';
+  Download, Monitor, RefreshCw, ShieldCheck, Type, UserRound } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../hooks';
 import { signOut } from '../store';
 import type { useTotpVault } from '../useTotpVault';
@@ -15,11 +15,10 @@ import { loadRefreshMinutes } from './refreshInterval';
 import { RefreshIntervalSheet } from './RefreshIntervalSheet';
 import { PasswordSheet } from './PasswordSheet';
 import { AboutPage } from './AboutPage';
-import { LanguageSheet } from './LanguageSheet';
+import { LanguageSettingsRow } from './LanguageSettingsRow';
 import { ThemeSheet } from './ThemeSheet';
 import { useThemeMode } from '../theme/preference';
 import { Contrast } from 'lucide-react';
-import { getLanguage, languageLabel } from '../i18n';
 import { profileRole } from '../i18n/profile';
 import './styles.css';
 import { DownloadManagerPage } from '../downloads/DownloadManagerPage';
@@ -30,7 +29,7 @@ import { GlobalFontSettings } from '../../../../shared/appearance/GlobalFontSett
 import { useGlobalFontSize } from '../../../../shared/appearance/fontSize';
 
 type Panel = 'profile' | 'identity' | 'refresh' | 'totp' | 'password' | 'about'
-  | 'language' | 'downloads' | 'desktop' | 'theme' | 'files' | 'font' | null;
+  | 'downloads' | 'desktop' | 'theme' | 'files' | 'font' | null;
 
 export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof useTotpVault> }) {
   useLanguage();
@@ -69,8 +68,7 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
             onClick={() => setPanel('font')} />
           <SettingsRow label={t("client.downloads.downloads")} icon={Download} onClick={() => setPanel('downloads')} />
           <SettingsRow label={t("client.projectBrowser.autoSaveFiles")} icon={RefreshCw} onClick={() => setPanel('files')} />
-          <SettingsRow label={t("client.settings.language")} value={languageLabel(getLanguage())} icon={Languages}
-            onClick={() => setPanel('language')} />
+          <LanguageSettingsRow />
           <SettingsRow label={t("client.settings.autoRefreshUsage")} value={t("client.settings.minutes", { value1: minutes })} icon={RefreshCw}
             onClick={() => setPanel('refresh')} />
           <SettingsRow label={t("client.app.2faKeys")} value={totpManager.cloudSyncEnabled ? t("client.settings.on") : t("client.settings.off")} icon={ShieldCheck}
@@ -108,7 +106,6 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
     </AdaptiveSheet>
     {panel === 'refresh' && <RefreshIntervalSheet minutes={minutes} onSaved={setMinutes} onClose={close} />}
     {panel === 'password' && <PasswordSheet onClose={close} />}
-    {panel === 'language' && <LanguageSheet onClose={close} />}
     {panel === 'theme' && <ThemeSheet onClose={close} />}
     {panel === 'desktop' && <DesktopVersionSheet onClose={close} />}
   </>;

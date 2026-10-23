@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
 import { useT } from '@remoteai/i18n/react';
 import { Button } from 'antd';
-import { ArrowUpRight, Github, Languages, Menu } from 'lucide-react';
+import { ArrowUpRight, Github, Menu } from 'lucide-react';
 import { copy } from '@remoteai/i18n/website-content/copy';
 import { resourcesCopy } from '@remoteai/i18n/website-content/resources-copy';
 import type { Language } from '@remoteai/i18n/website-content/types';
-import { asset, href, languages, languageTags, LINKS } from '../lib/site';
-import { languageLabels, languageNames, ui } from '@remoteai/i18n/website-content/ui-text';
+import { asset, href, LINKS } from '../lib/site';
+import { ui } from '@remoteai/i18n/website-content/ui-text';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageMenu } from './LanguageMenu';
 
 interface LayoutProps {
   language: Language;
@@ -35,7 +36,6 @@ function Navigation({ language, path }: Omit<LayoutProps, 'children'>) {
 
 function Header({ language, path }: Omit<LayoutProps, 'children'>) {
   const t = copy(language);
-  const target = path === '404/' ? '' : path;
   return (
     <header className="site-header">
       <div className="shell header-inner">
@@ -50,23 +50,7 @@ function Header({ language, path }: Omit<LayoutProps, 'children'>) {
         </nav>
         <div className="header-actions">
           <ThemeToggle language={language} />
-          <div className="language-switch" role="group" aria-label={ui(language, 'languageSwitch')}>
-            <Languages size={17} aria-hidden="true" />
-            {languages
-              .filter((other) => other !== language)
-              .map((other) => (
-                <a
-                  key={other}
-                  className="language-link"
-                  href={href(other, target)}
-                  lang={languageTags[other]}
-                  hrefLang={languageTags[other]}
-                  title={languageNames[other] === languageLabels[other] ? undefined : languageNames[other]}
-                >
-                  {languageLabels[other]}
-                </a>
-              ))}
-          </div>
+          <LanguageMenu language={language} path={path} />
           <Button className="header-download" type="primary" href={href(language, 'download/')}>
             {t.nav.download}
             <ArrowUpRight size={15} aria-hidden="true" />

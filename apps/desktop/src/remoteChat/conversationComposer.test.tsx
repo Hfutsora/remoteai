@@ -208,7 +208,7 @@ it.each([false, true])('references the new project before sending (desktop=%s)',
   expect(host.querySelector('.chat-file-menu')?.textContent).not.toContain('unique-a.ts');
   await key('Enter');
   expect(props.send).not.toHaveBeenCalled();
-  expect(host.querySelector('.chat-capsule')?.textContent).toContain('unique-b.ts');
+  expect(host.querySelector('.chat-composer-capsules')?.textContent).toBe('unique-b.ts');
   await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="发送消息"]')!.click());
   expect(props.send).toHaveBeenCalledWith(expect.objectContaining({ attachments: [
     { kind: 'file', name: 'unique-b.ts', path: '/remote/other/unique-b.ts' },

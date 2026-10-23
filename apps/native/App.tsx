@@ -3,7 +3,7 @@ import { createThemedStyles } from './src/theme/styles';
 import { loadTheme, useThemeMode, useThemeColor } from './src/theme/preference';
 import { t, useLanguage } from './src/i18n';
 import { loadLanguage } from './src/i18n/preference';
-import { LoginLanguagePicker } from './src/settings/LanguageSheet';
+import { LoginLanguagePicker } from './src/settings/LanguagePicker';
 import './src/chat/backgroundConnection';
 import { mergeRemoteModelState, type RemoteModelTarget } from '../../shared/remote-chat/modelTarget';
 import { StatusBar } from 'expo-status-bar';

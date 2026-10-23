@@ -1,6 +1,6 @@
 import { useThemeColor } from '../theme/store';
-import { t, useLanguage, languageLabel } from '../i18n';
-import { LanguageSheet } from './LanguageSheet';
+import { t, useLanguage } from '../i18n';
+import { LanguageSettingsRow } from './LanguagePicker';
 import { ThemeSheet } from './ThemeSheet';
 import { useThemeMode } from '../theme/preference';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,7 +31,7 @@ interface SettingsPageProps {
 }
 
 type SettingsPanel = 'profile' | 'identity' | 'refresh' | 'totp' | 'password' | 'logout'
-  | 'desktop' | 'language' | 'theme' | 'files' | null;
+  | 'desktop' | 'theme' | 'files' | null;
 
 function identityLabel(profile?: UserProfile | null) {
   if (!profile) return t("client.mobile.loading");
@@ -44,7 +44,7 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
   onOpenAbout, onOpenAdmin, onOpenDownloads, onLogout, totpManager }: SettingsPageProps) {
   const styles = useStyles();
   const color = useThemeColor();
-  const language = useLanguage();
+  useLanguage();
   const mode = useThemeMode();
   const [panel, setPanel] = useState<SettingsPanel>(null);
   const activeProfile = profile ?? session.profile;
@@ -57,8 +57,7 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
       <View style={styles.group}>
         <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon="contrast-outline"
           color={color(settingsColors.blue, 'info')} background="#e7f3ff" divider onPress={() => setPanel('theme')} />
-        <SettingsRow label={t("client.settings.language")} value={languageLabel(language)} icon="language-outline"
-          color={color(settingsColors.blue, 'info')} background="#e7f3ff" divider onPress={() => setPanel('language')} />
+        <LanguageSettingsRow />
         <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.viewUserDetails", { value1: username })}
           onPress={() => setPanel('profile')} style={({ pressed }) => [styles.profile, pressed && styles.pressed]}>
           <View style={styles.avatar}><View style={styles.avatarCenter}>
@@ -125,7 +124,6 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
     <BottomSheet visible={panel === 'totp'} title={t("client.app.2faKeys")} onClose={close}>
       <View style={styles.sheetBody}><TotpSyncSettings manager={totpManager} /></View>
     </BottomSheet>
-    {panel === 'language' && <LanguageSheet onClose={close} />}
     {panel === 'theme' && <ThemeSheet onClose={close} />}
     {panel === 'files' && <FileAutoSaveSheet onClose={close} />}
     {panel === 'password' && <PasswordSheet session={session} onClose={close} />}
