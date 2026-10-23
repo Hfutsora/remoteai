@@ -20,6 +20,8 @@ import { ChatGptLaunchPathCard } from "./ChatGptLaunchPathCard";
 import { HelpAssistantSettingsCard } from "./HelpAssistantSettingsCard";
 import type { SettingsPageProps } from "./types";
 import { ClassicBubbleVisual } from "../../components/FloatingUsageBubble/ClassicBubbleVisual";
+import { ThemeModeTabs } from "../../../../../shared/theme/ThemeModeTabs";
+import { uiText } from "../../i18n/uiText";
 
 interface BasicSettingsCardsProps {
   bubbleStyleModalOpen: boolean;
@@ -52,7 +54,7 @@ function LanguageCard({ settings }: { settings: SettingsPageProps }) {
 }
 
 function ThemeCard({ settings }: { settings: SettingsPageProps }) {
-  const { onThemeColorChange, t, themeColor, themeColorLoading } = settings;
+  const { onThemeColorChange, onThemeModeChange, t, themeColor, themeColorLoading, themeMode } = settings;
   return (
     <section className="settings-card">
       <div className="settings-icon"><Palette size={23} /></div>
@@ -60,18 +62,21 @@ function ThemeCard({ settings }: { settings: SettingsPageProps }) {
         <div className="settings-card-copy">
           <h3>{t("settings.theme.title")}</h3><p>{t("settings.theme.description")}</p>
         </div>
-        <div className="settings-field">
-          <label htmlFor="theme-color-picker">{t("settings.theme.label")}</label>
-          <span id="theme-color-picker" className="theme-color-picker">
-            <ColorPicker
-              value={themeColor}
-              disabled={themeColorLoading}
-              showText
-              disabledAlpha
-              format="hex"
-              onChangeComplete={(color) => onThemeColorChange(color.toHexString())}
-            />
-          </span>
+        <div className="settings-field settings-theme-controls">
+          <ThemeModeTabs mode={themeMode} onChange={onThemeModeChange} t={uiText} />
+          <div className="settings-field">
+            <label htmlFor="theme-color-picker">{t("settings.theme.label")}</label>
+            <span id="theme-color-picker" className="theme-color-picker">
+              <ColorPicker
+                value={themeColor}
+                disabled={themeColorLoading}
+                showText
+                disabledAlpha
+                format="hex"
+                onChangeComplete={(color) => onThemeColorChange(color.toHexString())}
+              />
+            </span>
+          </div>
         </div>
       </div>
     </section>

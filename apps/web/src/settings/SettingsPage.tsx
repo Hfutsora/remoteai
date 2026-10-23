@@ -17,8 +17,7 @@ import { PasswordSheet } from './PasswordSheet';
 import { AboutPage } from './AboutPage';
 import { LanguageSettingsRow } from './LanguageSettingsRow';
 import { ThemeSheet } from './ThemeSheet';
-import { useThemeMode } from '../theme/preference';
-import { Contrast } from 'lucide-react';
+import { ThemeSettingsRow } from './ThemeSettingsRow';
 import { profileRole } from '../i18n/profile';
 import './styles.css';
 import { DownloadManagerPage } from '../downloads/DownloadManagerPage';
@@ -33,7 +32,6 @@ type Panel = 'profile' | 'identity' | 'refresh' | 'totp' | 'password' | 'about'
 
 export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof useTotpVault> }) {
   useLanguage();
-  const mode = useThemeMode();
   const fontSize = useGlobalFontSize();
   const filePreferences = useBrowserPreferences();
   const dispatch = useAppDispatch();
@@ -62,8 +60,7 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
       </section>
       <div className="settings-preferences">
         <section className="settings-group">
-          <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon={Contrast}
-            onClick={() => setPanel('theme')} />
+          <ThemeSettingsRow onOpen={() => setPanel('theme')} />
           <SettingsRow label={t('client.appearance.globalFontSize')} value={`${fontSize}px`} icon={Type}
             onClick={() => setPanel('font')} />
           <SettingsRow label={t("client.downloads.downloads")} icon={Download} onClick={() => setPanel('downloads')} />

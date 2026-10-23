@@ -26,6 +26,8 @@ button.settings-row:hover, .settings-profile:hover { background: var(--app-surfa
 .settings-row-value { flex: 0 1 auto; max-width: 55%; min-width: 0; overflow: hidden; color: var(--app-muted, #848d9f); font-size: 13px;
   text-overflow: ellipsis; text-align: right; white-space: nowrap; }
 .settings-row > svg { flex-shrink: 0; color: var(--app-muted, #848d9f); }
+.settings-theme-row { flex-wrap: wrap; }
+.settings-theme-error { flex-basis: 100%; max-width: 400px; margin: 0; color: var(--app-danger, #c63f43); }
 .settings-logout.adm-button { max-width: 400px; margin: 36px auto 0; min-height: 48px;
   border-color: var(--app-border, #ffcbd6); background: var(--app-canvas, #fff5f7); font-size: 16px; }
 .settings-profile-details { line-height: 1.8; }

@@ -11,8 +11,8 @@ test('switches appearance across pages and restores it after reloading', async (
   await page.getByRole('button', { name: '同意并登录' }).click();
   await navigate(page, '设置');
   await expect(page.getByText('欢迎回来', { exact: true })).not.toBeVisible();
-  await page.getByRole('button', { name: /外观/ }).click();
-  await page.getByRole('radio', { name: '暗黑', exact: true }).click();
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /外观/ }).click();
+  await page.getByText('暗黑', { exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('.settings-group').first()).toHaveCSS('background-color', 'rgb(27, 32, 30)');
   await page.screenshot({ path: testInfo.outputPath('dark-settings.png'), fullPage: true });
@@ -31,10 +31,10 @@ test('switches appearance across pages and restores it after reloading', async (
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await navigate(page, '设置');
-  await page.getByRole('button', { name: /外观/ }).click();
-  await expect(page.getByRole('radio', { name: '暗黑', exact: true })).toHaveAttribute('aria-checked', 'true');
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /外观/ }).click();
+  await expect(page.getByRole('radio', { name: '暗黑', exact: true })).toBeChecked();
   await page.screenshot({ path: testInfo.outputPath('dark-picker.png') });
-  await page.getByRole('radio', { name: '明亮', exact: true }).click();
+  await page.getByText('明亮', { exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expect(page.locator('.settings-group').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await page.reload();

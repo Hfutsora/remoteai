@@ -1448,6 +1448,7 @@ export function DashboardApp() {
               onAccountAutoRefreshSecondsChange={accountAutoRefresh.updateSeconds}
               themeColor={themeColor.color} themeColorLoading={themeColor.loading}
               onThemeColorChange={changeThemeColor}
+              themeMode={themeMode.mode} onThemeModeChange={themeMode.setMode}
               cloudBaseUrl={cloud.state.baseUrl ?? ""}
               cloudBaseUrlLoading={cloud.loading}
               cloudAuthenticated={cloud.state.authenticated}
