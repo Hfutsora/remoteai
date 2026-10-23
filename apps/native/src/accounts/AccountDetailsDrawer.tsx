@@ -79,7 +79,8 @@ function DetailMessage({ panel, note, onClose }: { panel: DetailsPanel; note: st
   const styles = useStyles();
   useLanguage();
   const visible = panel === 'note' || panel === 'primary' || panel === 'secondary';
-  const title = panel === 'note' ? t("client.accounts.accountNotes") : t("client.mobile.usageWindow", { value1: panel === 'primary' ? '主' : '次' });
+  const title = panel === 'note' ? t("client.accounts.accountNotes") : t(panel === 'primary'
+    ? "client.accounts.primaryUsageWindow" : "client.accounts.secondaryUsageWindow");
   return <BottomSheet visible={visible} title={title} onClose={onClose} onBack={onClose}
     fullWidthContent dragFromHeaderOnly>
     <SheetScrollView contentContainerStyle={styles.messageContent}>

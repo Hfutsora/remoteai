@@ -132,7 +132,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
         visible={panelVisible} wheel={wheel}
         horizontal={!!session.capabilities.horizontalScroll} />}
       {session.status && !security && <div className={`rd-status${session.stream ? '' : ' rd-status-empty'}`} role="status">
-        <span>{displayText(session.status)}</span>
+        <span>{displayError(session.status)}</span>
         <button disabled={!connected || session.saving} onClick={statusAction.run}>
           {displayText(statusAction.label)}</button></div>}
       {windowControls.error && <div className="rd-clipboard-notice" role="alert">{displayError(windowControls.error)}</div>}

@@ -71,8 +71,7 @@ export function TokenPricingPage({ api, canManage }: Props) {
       </Typography.Paragraph>
       <Typography.Text type="secondary">{zh
         ? inlineCopy["272000_Token_ef06f97d"]
-        : "Personal settings take precedence. Long-context pricing applies above the input threshold, including cache. "
-          + "Leave the threshold blank for 272,000 tokens."}
+        : inlineCopy.descriptionEn}
       </Typography.Text>
       <Typography.Paragraph type="secondary">{zh
         ? inlineCopy["text_a9e7449e"]

@@ -75,7 +75,7 @@ export function SecuritySettings(props: SecuritySettingsProps & { clipboardActio
             onPress={item.run} style={s.choice}><Text style={s.text}>{displayText(item.label)}</Text></Pressable>)}
       </View>}
       {!!clipboardActions.status && <Text style={s.description} accessibilityRole="alert">
-        {displayText(clipboardActions.status)}</Text>}
+        {displayError(clipboardActions.status)}</Text>}
       {!control && <Text style={s.description}>{t("client.remoteDesktop.viewOnly")}</Text>}
     </ScrollView>
     {(error || saving || props.saved) && <View style={s.feedback}>

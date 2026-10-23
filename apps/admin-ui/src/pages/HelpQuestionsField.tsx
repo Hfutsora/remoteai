@@ -15,8 +15,7 @@ export function HelpQuestionsField(props: {
     <Typography.Paragraph>{zh ? inlineCopy["text_7289b763"] : inlineCopy["Suggested_questions_823a7e3a"]}</Typography.Paragraph>
     <Typography.Paragraph type="secondary">{zh
       ? inlineCopy["12_200_6f68f756"]
-      : "Clicking a question sends it immediately. Add up to 12 questions, with up to 200 characters per language. "
-        + "Fill in at least one language. Remove all questions to hide suggestions."}</Typography.Paragraph>
+      : inlineCopy.descriptionEn}</Typography.Paragraph>
     <Space direction="vertical" style={{ width: "100%" }}>
       {value.map((question, index) => <div key={index} style={{ display: "flex", gap: 8, alignItems: "start" }}>
         <Space direction="vertical" style={{ flex: 1, minWidth: 0 }}>

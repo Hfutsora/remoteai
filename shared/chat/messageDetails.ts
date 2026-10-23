@@ -1,8 +1,9 @@
+import type { MessageKey } from '@remoteai/i18n';
 import type { Item, Turn } from '../remote-chat/client/types';
 import { changedFiles, parseDiff } from './diff';
 import { visibleUserContent } from './conversationContext';
 
-const LABELS: Record<string, string> = {
+const LABELS: Record<string, MessageKey> = {
   userMessage: "client.shared.message", agentMessage: "client.shared.reply", commandExecution: "client.chat.runCommand", fileChange: "client.shared.fileChanges",
   reasoning: "client.shared.reasoning", webSearch: "client.shared.searchTheWeb", mcpToolCall: "client.shared.useTool", dynamicToolCall: "client.shared.useTool",
   functionCallOutput: "client.shared.toolOutput", collabAgentToolCall: "client.chat.collaboration", collabToolCall: "client.chat.collaboration", plan: "client.shared.plan",
@@ -20,7 +21,7 @@ export function messageContent(item: Item) {
     .map((entry) => typeof entry === 'string' ? entry : entry.text ?? '').filter(Boolean).join('\n');
 }
 
-export interface DetailSection { title: string; text: string }
+export interface DetailSection { title: MessageKey; text: string }
 function format(value: unknown): string {
   if (value == null) return '';
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -29,27 +30,27 @@ function format(value: unknown): string {
 /** Keep independent tool fields visible; output must not hide errors, arguments or reasoning. */
 export function messageSections(item: Item): DetailSection[] {
   const sections: DetailSection[] = [];
-  const add = (title: string, value: unknown) => {
+  const add = (title: MessageKey, value: unknown) => {
     const text = format(value);
     if (text && !sections.some((section) => section.text === text)) sections.push({ title, text });
   };
-  add('命令', item.command);
-  add('工作目录', item.cwd);
-  add('摘要', item.summary?.join('\n'));
-  add('内容', messageContent(item));
-  add('输出', item.aggregatedOutput);
-  add('参数', item.arguments);
-  add('输出', item.output);
-  add('结果', item.result);
-  add('内容', item.contentItems);
-  add('进度', item.progress?.join('\n'));
-  add('搜索', item.action ?? item.query);
-  add('搜索结果', item.results);
-  add('任务', item.prompt);
-  add('任务状态', item.agentsStates ?? item.agentStatus);
-  add('评审', item.review);
-  add('错误', item.error ?? item.failure?.message);
-  if (item.exitCode != null) add('退出码', String(item.exitCode));
+  add("client.chat.command", item.command);
+  add("client.shared.workingDirectory", item.cwd);
+  add("client.shared.summary", item.summary?.join('\n'));
+  add("client.chat.content", messageContent(item));
+  add("client.chat.output", item.aggregatedOutput);
+  add("client.shared.arguments", item.arguments);
+  add("client.chat.output", item.output);
+  add("client.chat.result", item.result);
+  add("client.chat.content", item.contentItems);
+  add("client.shared.progress", item.progress?.join('\n'));
+  add("client.chat.search", item.action ?? item.query);
+  add("client.shared.searchResults", item.results);
+  add("client.shared.task", item.prompt);
+  add("client.shared.taskStatus", item.agentsStates ?? item.agentStatus);
+  add("client.shared.review", item.review);
+  add("client.shared.error", item.error ?? item.failure?.message);
+  if (item.exitCode != null) add("client.shared.exitCode", String(item.exitCode));
   return sections;
 }
 

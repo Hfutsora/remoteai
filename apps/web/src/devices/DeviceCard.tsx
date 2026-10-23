@@ -84,7 +84,7 @@ export function DeviceCard(props: DeviceCardProps) {
       disabled: !device.online || Boolean(switchingAuthDeviceId),
       onClick: () => props.onSelectAuthAccount(device.deviceId) },
     ...(device.platform.toLowerCase() === 'windows' ? [{ key: 'revoke-service', icon: <KeyRound size={18} />,
-      label: '撤销无人值守授权', danger: true, onClick: () => props.onRevokeService(device) }] : []),
+      label: t("client.mobile.revokeUnattendedAccess"), danger: true, onClick: () => props.onRevokeService(device) }] : []),
     { key: 'delete', icon: <Trash2 size={18} />, label: device.online ? t("client.app.cannotRemoveWhileOnline") : t("client.app.removeDevice"),
       danger: true, disabled: device.online || Boolean(deletingDeviceId), onClick: () => props.onDelete(device) },
   ];

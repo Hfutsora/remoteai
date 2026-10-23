@@ -17,8 +17,7 @@ export function OfficialModelRefreshSettings({ api, canManage, zh }: OfficialMod
     </Typography.Paragraph>}
     <Typography.Paragraph type="secondary">{zh
       ? inlineCopy["text_2f14ae77"]
-      : "Turning this off keeps the current list. You can still refresh manually. "
-        + "Failed or empty updates keep existing models."}
+      : inlineCopy.descriptionEn}
     </Typography.Paragraph>
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Space wrap><Typography.Text>{zh ? inlineCopy["text_49f5f2ea"] : inlineCopy["Update_automatically_9e946306"]}</Typography.Text>

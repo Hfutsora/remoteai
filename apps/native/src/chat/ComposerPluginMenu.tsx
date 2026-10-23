@@ -52,7 +52,7 @@ export function ComposerPluginMenu({ catalog, query, load, chooseSkill, choosePl
     <FlatList data={entries} keyExtractor={(entry) => entry.key} keyboardShouldPersistTaps="always"
       style={pluginStyles.list} nestedScrollEnabled
       renderItem={({ item, index }) => <Pressable accessibilityRole="menuitem"
-        accessibilityLabel={t("client.chat.use.e0049a", { value1: item.skill ? '技能' : '插件', value2: item.label })}
+        accessibilityLabel={t(item.skill ? "client.chat.useSkill" : "client.chat.usePlugin", { value1: item.label })}
         onPress={() => { if (item.skill) chooseSkill(item.skill); else if (item.plugin) choosePlugin(item.plugin); }}
         style={({ pressed }) => [pluginStyles.option, (pressed || index === 0) && pluginStyles.highlight]}>
         <Feather name={entryIcon(item.name)} size={22} color={/image/i.test(item.name) ? resolveThemeColor('#41b8dc', 'info') : resolveThemeColor('#161616', 'ink')} />

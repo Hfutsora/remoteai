@@ -1,4 +1,4 @@
-import { displayText } from '../../i18n/index';
+import { displayError } from '../../i18n/index';
 import { useRef } from 'react';
 import { t } from '../../i18n';
 import type { useDesktopClipboard } from './useDesktopClipboard';
@@ -21,7 +21,7 @@ export function DesktopClipboardPanel({ clipboard }: { clipboard: ReturnType<typ
     <small>{t(clipboard.nativeFiles ? "client.remoteDesktop.upTo64MbAnd32FilesAtATime"
       : "client.remoteDesktop.upTo64MbAnd32FilesAtATime.ad31e9")}</small>
     {clipboard.nativeFileProgress && <small>{t("client.remoteDesktop.afterCopyingFilesStayConnectedUntilPastingFinishes")}</small>}
-    {clipboard.status && <p role="status">{displayText(clipboard.status)}
+    {clipboard.status && <p role="status">{displayError(clipboard.status)}
       {clipboard.progress !== undefined && ` ${clipboard.progress}%`}</p>}
     {received?.format === 'text' && <textarea readOnly value={received.text} aria-label={t("client.remoteDesktop.remoteClipboardText")} />}
     {received?.format === 'image' && <img alt={t("client.remoteDesktop.remoteClipboardImage")} src={`data:image/png;base64,${received.data}`} />}

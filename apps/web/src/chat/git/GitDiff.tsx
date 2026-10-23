@@ -23,7 +23,7 @@ function GitDiffPreview({ value, detail }: { value: GitDiffValue; detail: DiffDe
     const empty: DiffFile = { path: detail.path, kind: 'update', raw: value.text, lines: [], added: 0, removed: 0 };
     return { id, files: parsed.length ? parsed : [empty],
       title: detail.commit ? `Git · ${detail.commit.hash.slice(0, 8)}` : 'Git',
-      status: value.truncated ? '差异较大，仅显示部分内容。' : undefined };
+      status: value.truncated ? "client.git.thisDiffIsLargeOnlyPartOfItIsShown" : undefined };
   }, [id, detail.path, detail.commit?.hash, value]);
   const open = panel?.open;
   const update = panel?.update;

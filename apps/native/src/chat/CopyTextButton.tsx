@@ -31,8 +31,8 @@ function useTextCopy(text: string) {
     if (!mounted.current) return;
     setStatus(value);
     AccessibilityInfo.announceForAccessibility(displayText(value));
-    if (value === '复制失败，请重试') Toast.fail(displayText(value));
-    else if (value !== '已复制') Toast.success(value);
+    if (value === "client.app.couldNotCopyPleaseTryAgain") Toast.fail(displayText(value));
+    else if (value !== "client.chat.copied") Toast.success(displayText(value));
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setStatus(''), 2000);
   };
@@ -76,7 +76,7 @@ export function CopyTextButton({ text, label = t("client.projectBrowser.copied")
       style={[variant === 'inline' ? copyStyles.button : copyStyles.actionButton,
         variant === 'icon' && copyStyles.iconButton]} hitSlop={8}
       disabled={copy.saving} onPress={() => void copy.copy()}>
-      <Feather name={copy.status === '已复制' ? 'check' : 'copy'} size={15} color={color(palette.muted, 'muted')} />
+      <Feather name={copy.status === "client.chat.copied" ? 'check' : 'copy'} size={15} color={color(palette.muted, 'muted')} />
       {labeled && <Text style={copyStyles.label}>{copy.status ? displayText(copy.status) : label}</Text>}
     </Pressable>
     {copy.request && <BottomSheet visible title={t("client.mobile.saveFullContent")} onClose={copy.close} dismissible={!copy.saving}

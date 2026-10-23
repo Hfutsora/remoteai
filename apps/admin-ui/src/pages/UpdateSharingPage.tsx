@@ -16,8 +16,7 @@ export function UpdateSharingPage({ api, canManage }: UpdateSharingSettingsProps
       <Typography.Title level={2}>{t('nav.updateSharing')}</Typography.Title>
       <Typography.Paragraph type="secondary">{zh
         ? inlineCopy["text_61ce84e8"]
-        : 'Let online computers share public installers to speed up downloads for computers and phones. '
-          + 'These settings apply to all users.'}</Typography.Paragraph>
+        : inlineCopy.descriptionEn}</Typography.Paragraph>
     </div>
     <UpdateDownloadStatistics api={api} />
     <Card title={zh ? inlineCopy["text_ed23a6c4"] : inlineCopy["Installer_sharing_3b199b16"]} loading={settings.loading}>

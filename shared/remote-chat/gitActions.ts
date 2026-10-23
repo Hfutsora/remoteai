@@ -1,3 +1,4 @@
+import canonicalCopy from '@remoteai/i18n/copy/client/gitNotices';
 import type { GitAction, GitRepository } from './gitTypes';
 
 export function gitSyncCounts(repository: GitRepository | null): Partial<Record<GitAction, number>> {
@@ -11,6 +12,4 @@ export const GIT_ACTIONS: { action: Exclude<GitAction, 'switch'>; label: string;
   { action: 'update', label: "client.git.updateProject", hint: "client.git.fetchRemoteUpdatesThenAutomaticallyMergeAndCommitIfThere" },
   { action: 'push', label: "client.git.push", hint: "client.git.pushCommitsFromTheCurrentBranchToItsTrackedBranch" },
 ];
-export const GIT_ACTION_NOTICE: Record<GitAction, string> = {
-  switch: '已切换分支', fetch: '已获取远程记录', pull: '拉取完成', update: '项目已更新', push: '推送完成',
-};
+export const GIT_ACTION_NOTICE: Record<GitAction, string> = canonicalCopy;

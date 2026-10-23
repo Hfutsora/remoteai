@@ -1,4 +1,4 @@
-import { displayError, displayText } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { Button } from 'antd-mobile';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import { useGuiUpdate, type GuiUpdateOptions } from '../../../../shared/remote-chat/useGuiUpdate';
@@ -28,7 +28,7 @@ export function ChatGuiUpdateSheet({ deviceName, onClose, onBack, ...options }: 
           <Button onClick={update.cancel}>{t("client.settings.notNow")}</Button>
           <Button color="primary" disabled={!update.canConfirm} onClick={update.confirm}>{t("client.app.confirmInstallation")}</Button>
         </> : <>
-          <Button disabled={!update.canCheck} onClick={update.check}>{displayText(update.checkLabel)}</Button>
+          <Button disabled={!update.canCheck} onClick={update.check}>{displayError(update.checkLabel)}</Button>
           <Button color="primary" disabled={!update.canInstall} onClick={update.requestInstall}>{t("client.settings.installUpdate")}</Button>
         </>}
       </div>

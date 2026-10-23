@@ -1,4 +1,4 @@
-import { t, useLanguage } from '../i18n';
+import { displayError, t, useLanguage } from '../i18n';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { BottomSheet } from '../components/BottomSheet';
@@ -63,13 +63,13 @@ export function DesktopVersionContent({ update, onClose }: {
           {(!status || !update.connected || !update.device.online) && update.device.appVersion
             && <Text style={styles.hint}>{t("client.settings.versionFromTheLastConnection")}</Text>}
           {status?.latestVersion && <Text style={styles.detailLabel}>{t("client.mobile.availableVersionV")}{status.latestVersion}</Text>}
-          <Text accessibilityLiveRegion="polite" style={styles.hint}>{update.message}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.hint}>{displayError(update.message)}</Text>
           {status?.phase === 'downloading' && status.progress !== null
             && <Text style={styles.detailValue}>{status.progress}%</Text>}
           {status?.notes && <Text selectable style={styles.hint}>{status.notes}</Text>}
         </>}
       </>}
-      {!!update.error && <Text accessibilityRole="alert" style={styles.error}>{update.error}</Text>}
+      {!!update.error && <Text accessibilityRole="alert" style={styles.error}>{displayError(update.error)}</Text>}
     </View></ScrollView>
   </BottomSheet>;
 }

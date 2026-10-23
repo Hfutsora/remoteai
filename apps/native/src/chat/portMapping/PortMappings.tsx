@@ -1,4 +1,4 @@
-import { displayText } from '../../i18n/index';
+import { displayError } from '../../i18n/index';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,7 +66,7 @@ export function PortMappings(props: {
         {!editing && <MappingForm service={service} disabled={entries.length >= MAX_PORT_MAPPINGS}
           connected={props.connected} />}
         <Text style={styles.footer}>{t("client.portForwarding.tcpAndUdpAccessibleOnlyOnThisDevice")}</Text>
-        {!!syncStatus && <Text style={styles.sync} accessibilityLiveRegion="polite">{displayText(syncStatus)}</Text>}
+        {!!syncStatus && <Text style={styles.sync} accessibilityLiveRegion="polite">{displayError(syncStatus)}</Text>}
         {Platform.OS === 'ios' && <Text style={styles.muted}>
           {t("client.portForwarding.switchingAppsMayInterruptTheMappingPreviewHereForA")}</Text>}
       </SheetScrollView>}

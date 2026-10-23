@@ -488,7 +488,7 @@ function DashboardPage({ session, onBack }: AdminAreaProps & { onBack: () => voi
             <Text style={styles.metricLabel}>{displayText(metric.label)}</Text>
             <Text style={styles.metricValue}>{metric.value}</Text>
             <Text style={styles.metricNote}>{metric.note}</Text>
-            {metric.label === '日活跃用户' && <DailyActivePlatforms counts={data?.dailyActivePlatforms} />}
+            {metric.label === "client.runtimeErrors.dailyActiveUsers" && <DailyActivePlatforms counts={data?.dailyActivePlatforms} />}
           </View>;
         })}
       </View>

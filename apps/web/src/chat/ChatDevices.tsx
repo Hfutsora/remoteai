@@ -14,11 +14,11 @@ export function ChatDevices({ devices, choose, chooseLocal, onClose, refresh }: 
   const [query, setQuery] = useState('');
   const keyword = desktop ? query.trim().toLocaleLowerCase() : '';
   const matches = devices.filter(device => device.name.toLocaleLowerCase().includes(keyword));
-  const showLocal = chooseLocal && t("client.composer.thisComputer").includes(keyword);
+  const showLocal = chooseLocal && t("client.composer.thisComputer").toLocaleLowerCase().includes(keyword);
   return <AdaptiveSheet open title={t("client.settings.chooseAComputer")} width={400} onClose={onClose}>
     <div className="chat-settings">
       {showLocal && <button type="button" className="chat-setting-entry" onClick={chooseLocal}>
-        <strong>本机</strong></button>}
+        <strong>{t("client.composer.thisComputer")}</strong></button>}
       {matches.map((device) => <button type="button" key={device.deviceId} className="chat-setting-entry"
         disabled={!device.online} onClick={() => choose(device.deviceId)}>
         <strong>{device.name}</strong><span>{device.online ? t("client.chat.online") : t("client.chat.offline")}</span>

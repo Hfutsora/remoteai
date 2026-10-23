@@ -1,4 +1,4 @@
-import { displayText } from '../../../i18n/uiText';
+import { displayError, displayText } from '../../../i18n/uiText';
 import { useEffect, useId, useState } from 'react';
 import { Alert, Button, ConfigProvider, Modal } from 'antd';
 import { ArrowLeft, Cable, Check, Cloud, CloudUpload, LockKeyhole, Plus, X } from 'lucide-react';
@@ -84,7 +84,7 @@ function MappingFooter({ syncStatus }: { syncStatus: string }) {
     {syncStatus && <span className={styles.sync} role="status" data-synced={synced}>
       {synced ? <span className={styles.cloudIcon} aria-hidden="true"><Cloud size={20} /><Check size={11} /></span>
         : <CloudUpload size={19} aria-hidden="true" />}
-      {displayText(synced ? "client.portMappingEditing.configurationSynced" : syncStatus)}
+      {displayError(syncStatus)}
     </span>}
     <span className={styles.privacy}><LockKeyhole size={18} aria-hidden="true" />{t("client.portMappingEditing.accessibleOnlyOnThisDevice")}</span>
   </div>;

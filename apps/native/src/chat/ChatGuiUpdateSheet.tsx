@@ -1,4 +1,4 @@
-import { displayText, displayError } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { t, useLanguage } from '../i18n';
 import { ScrollView, Text, View } from 'react-native';
@@ -20,7 +20,7 @@ export function ChatGuiUpdateSheet({ deviceName, onClose, onBack, ...options }: 
       { label: t("client.settings.notNow"), onPress: update.cancel },
       { label: t("client.app.confirmInstallation"), tone: 'primary', disabled: !update.canConfirm, onPress: update.confirm },
     ] : [
-      { label: displayText(update.checkLabel), disabled: !update.canCheck, onPress: update.check },
+      { label: displayError(update.checkLabel), disabled: !update.canCheck, onPress: update.check },
       { label: t("client.settings.installUpdate"), tone: 'primary', disabled: !update.canInstall, onPress: update.requestInstall },
     ]}>
     <ScrollView><View style={localStyles.body}>

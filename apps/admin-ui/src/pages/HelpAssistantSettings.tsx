@@ -28,8 +28,7 @@ export function HelpAssistantSettings({ api, canManage, catalog, zh }: OfficialM
     extra={<Button disabled={busy} onClick={settings.reload}>{zh ? inlineCopy["text_7bdd5ce1"] : inlineCopy["Reload_bdc090ec"]}</Button>}>
     <Typography.Paragraph type="secondary">{zh
       ? inlineCopy["Codex_57a711d3"]
-      : "Set the assistant’s model, reasoning effort and instructions. It uses the account selected in Codex "
-        + "and reports unsupported models without switching."}
+      : inlineCopy.descriptionEn}
     </Typography.Paragraph>
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <div><Typography.Paragraph>{zh ? inlineCopy["text_3a3ab887"] : inlineCopy["Assistant_model_7c8dbb91"]}</Typography.Paragraph>

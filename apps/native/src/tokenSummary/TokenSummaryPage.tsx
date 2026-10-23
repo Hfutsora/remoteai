@@ -1,5 +1,5 @@
 import { useThemeColor } from '../theme/store';
-import { t, useLanguage } from '../i18n';
+import { displayError, t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
@@ -55,7 +55,7 @@ export function TokenSummaryPage({ read, ready, foreground, deviceName, onBack }
         {data && <Text style={s.hint}>{t("client.accounts.updated")}{' '}{new Date(data.endTs * 1000).toLocaleTimeString()}</Text>}
       </View>
       {!ready && <Text style={s.error}>{t("client.chat.connectToYourComputerToViewTokenUsage")}</Text>}
-      {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
+      {!!error && <Text accessibilityRole="alert" style={s.error}>{displayError(error)}</Text>}
       {loading && !data && <Text style={s.hint}>{t("client.mobile.loadingSummary")}</Text>}
       {data && <>
         <UsageTotals data={data} />
