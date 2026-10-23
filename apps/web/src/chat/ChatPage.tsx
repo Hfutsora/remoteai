@@ -22,11 +22,11 @@ import { RemoteGuiProject } from '../../../desktop/src/pages/codexGui/remote/Rem
 import './desktopTools.css';
 
 interface Props extends DesktopScreenLaunch {
-  session: AuthSession; devices: RemoteDevice[]; active: boolean;
+  session: AuthSession; devices: RemoteDevice[]; active: boolean; openAccounts?: () => void;
   tokenSummary: boolean; closeTokenSummary: () => void;
 }
 
-export function ChatPage({ session, devices, active, screenRequest, screenRequestHandled,
+export function ChatPage({ session, devices, active, screenRequest, screenRequestHandled, openAccounts,
   tokenSummary, closeTokenSummary }: Props) {
   useLanguage();
   const dispatch = useAppDispatch();
@@ -58,6 +58,7 @@ export function ChatPage({ session, devices, active, screenRequest, screenReques
         key={JSON.stringify([scope, chatDevice?.deviceId])}>
         <WebChat session={session} device={chatDevice} devices={devices} selected={selected}
           tokenSummary={tokenSummary && selected} closeTokenSummary={closeTokenSummary}
+          openAccounts={openAccounts}
           screenRequest={screenRequest?.deviceId === chatDevice?.deviceId ? screenRequest : undefined}
           screenRequestHandled={screenRequestHandled}
           active={active && selected} chooseDevice={chooseDevice} deviceRefresh={deviceRefresh} />

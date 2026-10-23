@@ -1,6 +1,7 @@
 import { t, useLanguage } from '../i18n';
 import { memo, useMemo, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Text, View, type TextStyle } from 'react-native';
+import { Pressable, Text, View, type TextStyle } from 'react-native';
+import { SwipeSafeScrollView } from '../navigation/SwipeGestureBoundary';
 import { parseDiff } from '../../../../shared/chat/diff';
 import { ChatCodeBlock } from './ChatCodeBlock';
 import { ChatDiff } from './ChatDiff';
@@ -106,12 +107,12 @@ function Block({ node, context = {} }: { node: MarkdownNode; context?: MarkdownC
       context={{ ...context, compact: context.compact || token.hidden }} />;
   }
   if (LIST_TYPES.has(token.type)) return <List node={node} context={context} />;
-  if (token.type === 'table_open') return <ScrollView horizontal nestedScrollEnabled style={markdownStyles.table}>
+  if (token.type === 'table_open') return <SwipeSafeScrollView horizontal nestedScrollEnabled style={markdownStyles.table}>
     <View><MarkdownPage nodes={children}
       render={(child, index) => <Block key={index} node={child}
         context={childContext(context, index, children.length)} />} />
     </View>
-  </ScrollView>;
+  </SwipeSafeScrollView>;
   if (token.type === 'tr_open') return <TableRow node={node} context={context} />;
   if (token.type === 'hr') return <><View style={markdownStyles.rule} />
     {context.copy && <SelectableChatText copy={context.copy} />}</>;

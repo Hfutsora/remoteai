@@ -26,6 +26,10 @@
 :root[data-theme] { --adm-color-primary: #0b9b7c; }
 html, body, #root { width: 100%; min-height: 100%; margin: 0; }
 body { min-width: 320px; background: var(--canvas); -webkit-font-smoothing: antialiased; }
+@media (max-width: 860px) {
+  /* Horizontal swipes belong to app navigation rather than browser history. */
+  html:has(.app-shell) { overscroll-behavior-x: none; }
+}
 button, input { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 h1, h2, h3, p { margin: 0; }

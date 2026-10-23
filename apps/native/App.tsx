@@ -15,6 +15,7 @@ import {
   Alert,
   AppState,
   BackHandler,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -82,6 +83,7 @@ import { DiscoveryBackButton, DiscoveryPage } from './src/discovery/DiscoveryPag
 import { isDiscoveryPage, primaryNavigationPage } from '../../shared/navigation/discovery';
 import { usePageStyles as useTotpPageStyles } from './src/totp/pageStyles';
 import { ChatPage } from './src/chat/ChatPage';
+import { usePrimaryPageSwipe } from './src/navigation/usePrimaryPageSwipe';
 import { palette as chatPalette } from './src/chat/styles';
 import { useChatNotificationNavigation } from './src/chat/useChatNotificationNavigation';
 import { SettingsPage } from './src/settings/SettingsPage';
@@ -713,6 +715,8 @@ function AppContent() {
   }, []);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activePage, setActivePage] = useState<AppPage>(DEFAULT_APP_PAGE);
+  const pageSwipeHandlers = usePrimaryPageSwipe(activePage, setActivePage);
+  const openAccounts = useCallback(() => { Keyboard.dismiss(); setActivePage('accounts'); }, []);
   const openChat = useCallback(() => setActivePage('chat'), []);
   const chatNotification = useChatNotificationNavigation(session, openChat);
   const [initializing, setInitializing] = useState(true);
@@ -1297,7 +1301,9 @@ function AppContent() {
     activePage === 'chat' && styles.chatCanvas,
     (activePage === 'settings' || activePage === 'about' || activePage === 'downloads') && styles.settingsCanvas]}>
     <ThemeStatusBar />
+    <View style={styles.flex} {...pageSwipeHandlers}>
     <ChatPage session={session} devices={devices} active={activePage === 'chat' || activePage === 'token-summary'}
+      openAccounts={openAccounts}
       screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
       devicesLoaded={devicesLoaded}
       tokenSummary={activePage === 'token-summary'} closeTokenSummary={() => setActivePage('discover')}
@@ -1344,6 +1350,7 @@ function AppContent() {
                 onOpenAdmin={() => setActivePage('admin')}
                 onLogout={handleLogout}
                 totpManager={totpManager} />}
+    </View>
     {showBottomNavigation && <BottomNavigation activePage={activePage} onChange={setActivePage} />}
   </SafeAreaView>;
 }

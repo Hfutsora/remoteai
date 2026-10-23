@@ -31,6 +31,8 @@ import { downloadOwner } from './downloads/manager';
 import { loadRefreshMinutes, REFRESH_INTERVAL_EVENT } from "./settings/refreshInterval";
 import { useTotpVault } from "./useTotpVault";
 import { ChatPage } from "./chat/ChatPage";
+import { usePrimaryPageSwipe } from './navigation/usePrimaryPageSwipe';
+import type { PrimaryPage } from '../../../shared/navigation/pageSwipe';
 import { usePanelVisibility } from "./useDesktopLayout";
 import { AgreementConsent } from '../../../shared/legal/AgreementConsent';
 import { useAgreementConsent } from '../../../shared/legal/useAgreementConsent';
@@ -277,6 +279,9 @@ function AppShell() {
   const lastRefreshRef = useRef(Date.now());
   const totpManager = useTotpVault(session);
   const activeNavigationPage = primaryNavigationPage(page);
+  const changePrimaryPage = useCallback((next: PrimaryPage) => { dispatch(pageChanged(next)); }, [dispatch]);
+  usePrimaryPageSwipe(page, changePrimaryPage);
+  const openAccounts = useCallback(() => changePrimaryPage('accounts'), [changePrimaryPage]);
 
   useEffect(() => {
     if (!error) return;
@@ -407,6 +412,7 @@ function AppShell() {
         {isDiscoveryPage(page) && page !== 'downloads' && page !== 'token-summary'
           && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
         {session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
+          openAccounts={openAccounts}
           screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
           active={page === "chat"} tokenSummary={page === 'token-summary'}
           closeTokenSummary={() => dispatch(pageChanged('discover'))} />}

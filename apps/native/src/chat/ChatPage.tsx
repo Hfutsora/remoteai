@@ -44,6 +44,7 @@ import { useChatDevice } from './useChatDevice';
 import type { DesktopScreenLaunch } from '../../../../shared/remote-desktop/screenControl';
 import { useOfflineDevices } from './offline/devices';
 import { useChatDrawerSwipe } from './useChatDrawerSwipe';
+import { SwipeGestureContext } from '../navigation/SwipeGestureBoundary';
 import { useChatBackground } from './useChatBackground';
 import { useChatCompletionNotifications, useOpenChatNotification } from './useChatNotifications';
 import { notificationId, type ChatNotificationTarget } from './notificationTarget';
@@ -57,6 +58,7 @@ interface Props extends DesktopScreenLaunch {
   notification: ChatNotificationTarget | null; notificationError: string;
   notificationHandled: (id: string) => void;
   tokenSummary: boolean; closeTokenSummary: () => void;
+  openAccounts?: () => void;
 }
 
 export function ChatPage(props: Props) {
@@ -93,7 +95,7 @@ export function ChatPage(props: Props) {
 }
 
 function ConnectedChat({ session, device, devices, selected, active: pageActive, chooseDevice, notification,
-  notificationHandled, tokenSummary, closeTokenSummary,
+  notificationHandled, tokenSummary, closeTokenSummary, openAccounts,
   screenRequest, screenRequestHandled }: Props & {
   device?: RemoteDevice; selected: boolean; chooseDevice: (id: string) => void;
 }) {
@@ -122,7 +124,8 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
   const runningTurn = ready ? currentRunningTurn(state.selected?.turns) : undefined;
   const running = Boolean(runningTurn);
   const openDrawer = useCallback(() => { Keyboard.dismiss(); setDrawer(true); drawerRef.current?.openDrawer(); }, []);
-  const drawerSwipeHandlers = useChatDrawerSwipe(active && !drawer && !pickingDevice, openDrawer);
+  const drawerSwipe = useChatDrawerSwipe(active && !drawer && !pickingDevice && !searching,
+    openDrawer, openAccounts);
   const closeDrawer = (action?: () => void) => { afterClose.current = action; drawerRef.current?.closeDrawer(); };
   const closed = useCallback(() => {
     setDrawer(false);
@@ -166,8 +169,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
       select={(thread) => closeDrawer(() => { void controller.select(thread); })} />}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       // The drawer resets local Y to zero; iOS keyboard coordinates still include the top safe area.
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-      {...drawerSwipeHandlers}>
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}>
     <ChatOverlay>
     <View style={styles.header}>
       <ChatListButton client={controller.guiAccounts} active={active && foreground} ready={ready}
@@ -195,6 +197,8 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
     {state.desktopOnly && <Text style={[styles.subtitle, { maxWidth: 400, paddingHorizontal: 16 }]}>
       {t("client.remoteDesktop.theDesktopIsReadyOpenRemoteDesktopAndSignIn")}</Text>}
+    <SwipeGestureContext.Provider value={drawerSwipe.cancel}>
+    <View style={styles.fill} {...drawerSwipe.panHandlers}>
     <ChatImageContext.Provider value={{ threadId: state.selected?.id ?? null, ready, offline: true,
       load: controller.imagePreview, save: controller.managedPreviews ? controller.savePreviewImage : undefined }}>
       <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived
@@ -214,6 +218,8 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
       </ChatFileProvider>
       </ChatImagePreviewProvider></ImageAiContext.Provider>
     </ChatImageContext.Provider>
+    </View>
+    </SwipeGestureContext.Provider>
     {ready && state.approvals.some((event) => event.params.threadId === state.selected?.id) &&
       <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={styles.padded} keyboardShouldPersistTaps="handled">
         {state.approvals.filter((event) => event.params.threadId === state.selected?.id).map((event) =>

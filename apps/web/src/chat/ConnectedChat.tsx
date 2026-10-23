@@ -63,6 +63,7 @@ export interface ConnectedChatProps {
   desktopDiffs?: boolean;
   readClipboardImages?: () => Promise<File[]>;
   nativeFileDrop?: NativeFileDrop;
+  openAccounts?: () => void;
 }
 
 export interface ChatSidebarActions {
@@ -75,7 +76,7 @@ export interface ChatSidebarActions {
 export function ConnectedChat({ chat, device, devices, active, scope, email, chooseDevice,
   chooseLocal, accountPicker, headerActions, headerConnectionActions, headerEnd, renderSidebar, composerHeader,
   conversationFooter, renderUserMessage, draggableHeader, scrollableComposer,
-  readClipboardImages, nativeFileDrop, desktopDiffs, deviceRefresh, cliVersion }: ConnectedChatProps) {
+  readClipboardImages, nativeFileDrop, desktopDiffs, deviceRefresh, cliVersion, openAccounts }: ConnectedChatProps) {
   useLanguage();
   const { state, controller, foreground } = chat;
   const [drawer, setDrawer] = useState(false);
@@ -88,7 +89,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
   const [pickingDevice, setPickingDevice] = useState(false);
   const [searching, setSearching] = useState(false);
   useChatDrawerSwipe({ enabled: active && !desktop && !pickingDevice && !searching,
-    open: drawer, onOpenChange: setDrawer });
+    open: drawer, onOpenChange: setDrawer, onNext: openAccounts });
   const ready = state.ready;
   const installer = useRemoteCliInstaller(controller.guiTools,
     cliVersion === undefined && desktop && active && foreground && ready);

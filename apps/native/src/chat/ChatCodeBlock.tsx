@@ -7,6 +7,7 @@ import { palette, useStyles } from './styles';
 import { HighlightedCode } from './ChatCodeHighlight';
 import { SelectableChatText } from './SelectableChatText';
 import { useCodePagination } from './useCodePagination';
+import { SwipeSafeScrollView } from '../navigation/SwipeGestureBoundary';
 
 interface Props {
   text: string; label?: string; language?: string; lineNumbers?: boolean; copyLabel?: string; replyCopy?: CopyAction;
@@ -35,7 +36,7 @@ export function ChatCodeBlock({ text, label = t("client.chat.code"), language = 
         <Text style={[codeStyles.label, wrap && codeStyles.selected]}>{t("client.projectBrowser.wrapLines")}</Text></Pressable>
     </View>
     <ScrollView nestedScrollEnabled style={codeStyles.viewport} {...pagination}>
-      {wrap ? content : <ScrollView horizontal nestedScrollEnabled>{content}</ScrollView>}
+      {wrap ? content : <SwipeSafeScrollView horizontal nestedScrollEnabled>{content}</SwipeSafeScrollView>}
     </ScrollView>
   </View>;
 }

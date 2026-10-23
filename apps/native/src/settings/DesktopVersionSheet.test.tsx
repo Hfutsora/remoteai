@@ -11,6 +11,7 @@ vi.mock('react', async (original) => ({ ...await original<typeof React>(),
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));
 vi.mock('react-native', () => ({ Pressable: 'Pressable', ScrollView: 'ScrollView', Text: 'Text', View: 'View',
+  Platform: { OS: 'android' },
   StyleSheet: { create: <T,>(value: T) => value } }));
 vi.mock('../components/BottomSheet', () => ({ BottomSheet: 'BottomSheet' }));
 vi.mock('../api/client', () => ({ fetchUserProfile: vi.fn() }));

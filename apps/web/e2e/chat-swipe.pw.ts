@@ -15,12 +15,82 @@ async function swipe(page: Page, points: Point[], cancel = false) {
 
 const drawer = (page: Page) => page.locator('.chat-drawer .ant-drawer-content');
 const right = [{ x: 90, y: 300 }, { x: 115, y: 302 }, { x: 170, y: 306 }, { x: 240, y: 310 }];
+const left = [{ x: 280, y: 300 }, { x: 250, y: 302 }, { x: 190, y: 306 }, { x: 100, y: 310 }];
+const activeTab = (page: Page) => page.locator('.mobile-tabbar .adm-tab-bar-item-active');
 
 test.beforeEach(async ({ page, request }) => {
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page);
   await connect(page);
   await expect(page.getByRole('status').filter({ hasText: 'P2P' })).toBeVisible({ timeout: 16_000 });
+});
+
+test('swipes through adjacent main pages in both directions and retains the chat draft',
+  async ({ page, isMobile }, info) => {
+    test.skip(!isMobile, 'Main page swipes belong to the mobile layout.');
+    await page.getByRole('textbox', { name: '聊天消息' }).fill('保留切页草稿');
+    for (const label of ['账号', '发现', '设置', '设置']) {
+      await swipe(page, left);
+      await expect(activeTab(page)).toHaveText(label);
+      await expect(drawer(page)).toHaveCount(0);
+    }
+    await screenshot(page, info, 'swipe-to-settings');
+    for (const label of ['发现', '账号', '聊天']) {
+      await swipe(page, right);
+      await expect(activeTab(page)).toHaveText(label);
+    }
+    await expect(page.getByRole('textbox', { name: '聊天消息' })).toHaveValue('保留切页草稿');
+    await swipe(page, right);
+    await expect(drawer(page)).toBeVisible();
+    await swipe(page, left);
+    await expect(drawer(page)).toHaveCount(0);
+    await expect(activeTab(page)).toHaveText('聊天');
+  });
+
+test('keeps short, cancelled, vertical-first and input gestures on the current page',
+  async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'Touch navigation belongs to the mobile layout.');
+    await swipe(page, left.slice(0, 2));
+    await expect(activeTab(page)).toHaveText('聊天');
+    await swipe(page, left, true);
+    await expect(activeTab(page)).toHaveText('聊天');
+    await page.locator('.mobile-tabbar').getByText('账号', { exact: true }).click();
+    await swipe(page, [{ x: 280, y: 300 }, { x: 280, y: 340 }, { x: 100, y: 360 }]);
+    await expect(activeTab(page)).toHaveText('账号');
+    await page.locator('.mobile-tabbar').getByText('聊天', { exact: true }).click();
+    const input = page.getByRole('textbox', { name: '聊天消息' });
+    await input.fill('正在编辑的草稿');
+    const bounds = (await input.boundingBox())!;
+    const y = bounds.y + bounds.height / 2;
+    await swipe(page, [{ x: 250, y }, { x: 220, y }, { x: 150, y }]);
+    await expect(activeTab(page)).toHaveText('聊天');
+    await expect(input).toHaveValue('正在编辑的草稿');
+  });
+
+test('swiping discovery rows changes tabs without opening them and leaves subpages alone',
+  async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'Touch navigation belongs to the mobile layout.');
+    await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
+    const row = page.locator('.discovery-list').getByRole('button', { name: '设备', exact: true });
+    const bounds = (await row.boundingBox())!;
+    const y = bounds.y + bounds.height / 2;
+    await swipe(page, [{ x: 280, y }, { x: 250, y }, { x: 190, y }, { x: 100, y }]);
+    await expect(activeTab(page)).toHaveText('设置');
+    await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
+    await row.click();
+    await expect(row).toHaveCount(0);
+    await swipe(page, left);
+    await swipe(page, right);
+    await expect(activeTab(page)).toHaveText('发现');
+    await expect(row).toHaveCount(0);
+  });
+
+test('desktop touch drags do not replace sidebar navigation', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'The desktop layout keeps its sidebar interaction.');
+  const menu = page.locator('.desktop-sidebar nav');
+  await menu.getByRole('button', { name: '账号', exact: true }).click();
+  await swipe(page, [{ x: 800, y: 300 }, { x: 760, y: 300 }, { x: 660, y: 300 }]);
+  await expect(menu.getByRole('button', { name: '账号', exact: true })).toHaveAttribute('aria-current', 'page');
 });
 
 test('swipes right across the conversation to open and left across a row or mask to close',
@@ -44,10 +114,10 @@ test('swipes right across the conversation to open and left across a row or mask
     await expect(drawer(page)).toHaveCount(0);
   });
 
-test('ignores short, opposite, vertical-first, cancelled, selected-text and multitouch gestures',
+test('ignores short, vertical-first, cancelled, selected-text and multitouch gestures',
   async ({ page, isMobile }) => {
     test.skip(!isMobile, 'Touch gestures are exercised by the mobile browser project.');
-    for (const path of [right.slice(0, 2), [...right].reverse(),
+    for (const path of [right.slice(0, 2),
       [{ x: 90, y: 300 }, { x: 92, y: 330 }, { x: 240, y: 340 }]]) {
       await swipe(page, path);
       await expect(page).toHaveURL(/\/web\//);
@@ -129,7 +199,7 @@ test('keeps desktop chat beside independently collapsible menus and remembers th
     await page.getByRole('button', { name: '收起主菜单' }).click();
     await expect(page.locator('.desktop-sidebar nav')).toBeVisible();
     await expect(page.locator('.desktop-sidebar .brand-mark')).toBeVisible();
-    await expect(page.locator('.desktop-sidebar nav').getByRole('button')).toHaveCount(5);
+    await expect(page.locator('.desktop-sidebar nav').getByRole('button')).toHaveCount(4);
     await expect(page.locator('.desktop-sidebar nav').getByRole('button', { name: '聊天', exact: true }))
       .toHaveAttribute('aria-current', 'page');
     await expect(page.locator('.desktop-sidebar').getByRole('button', { name: '展开主菜单' })).toBeVisible();
