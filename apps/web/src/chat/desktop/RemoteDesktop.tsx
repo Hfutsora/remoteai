@@ -33,6 +33,7 @@ import { DesktopInputSurface } from './DesktopInputSurface';
 import { DesktopKeyboard } from './DesktopKeyboard';
 import { useDesktopOrientation } from './useDesktopOrientation';
 import { DesktopErrorBoundary } from './DesktopErrorBoundary';
+import { DesktopTakeover } from './DesktopTakeover';
 import './desktop.css';
 
 const createPeer = (configuration: RTCConfiguration) => new RTCPeerConnection(configuration);
@@ -131,7 +132,8 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
       {session.stream && !hardware && <DesktopMouse pointer={session.pointer} viewport={viewport} panel={panel}
         visible={panelVisible} wheel={wheel}
         horizontal={!!session.capabilities.horizontalScroll} />}
-      {session.status && !security && <div className={`rd-status${session.stream ? '' : ' rd-status-empty'}`} role="status">
+      {session.status && !security && !session.takeover.pending
+        && <div className={`rd-status${session.stream ? '' : ' rd-status-empty'}`} role="status">
         <span>{displayError(session.status)}</span>
         <button disabled={!connected || session.saving} onClick={statusAction.run}>
           {displayText(statusAction.label)}</button></div>}
@@ -144,6 +146,7 @@ function DesktopViewer({ client, active, connected = true, close, localClipboard
       {clipboard.open && <DesktopClipboardPanel clipboard={clipboard} />}
       {security && <SecuritySettings {...desktopSecuritySettings(session, () => setSecurity(false))} />}
       <DesktopClipboardNotice clipboard={clipboard} />
+      {shown && session.takeover.pending && <DesktopTakeover {...session.takeover} disabled={!connected} />}
       {viewOnly && session.stream && <div className="rd-clipboard-notice" role="status">{t("client.remoteDesktop.viewOnly")}</div>}
       {!viewOnly && hardware && session.stream && !session.capabilities.keyboard && !clipboard.status
         && <div className="rd-clipboard-notice" role="status">

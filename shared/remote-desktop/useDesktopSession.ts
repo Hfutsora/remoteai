@@ -7,6 +7,7 @@ import { changeDesktopDisplay } from './displayActions';
 import { waitingForDesktopPermission } from './permissionWait';
 import { sessionClipboard } from './sessionClipboard';
 import { useDesktopSecurity } from './useDesktopSecurity';
+import { useDesktopTakeover } from './useDesktopTakeover';
 import { DEFAULT_SETTINGS, validateSettings, type DesktopCapabilities, type DesktopClient, type DesktopDisplay,
   type DesktopResolution, type DesktopSettings, type DesktopStats }
   from './protocol';
@@ -19,6 +20,7 @@ interface Options {
 }
 export function useDesktopSession({ client, active, connected = true, createPeer }: Options) {
   const available = useRef(connected); available.current = connected;
+  const takeover = useDesktopTakeover(client, active);
   const receiver = useRef<DesktopDisplaySession>();
   const privacyRestore = useRef({ failed: false });
   const security = useDesktopSecurity(receiver, active);
@@ -59,9 +61,16 @@ export function useDesktopSession({ client, active, connected = true, createPeer
     security.receive();
     if (!active) return;
     if (!available.current) { recovery.current?.failed(DESKTOP_OFFLINE_STATUS); return; }
-    const session = new DesktopDisplaySession({ client, createPeer, directRetry, stream: setStream, status: setStatus,
+    const session = new DesktopDisplaySession({ client: takeover.client,
+      createPeer, directRetry, stream: setStream, status: setStatus,
       connected: () => recovery.current?.connected(),
-      failed: message => { pointer.release(); recovery.current?.failed(message); },
+      failed: message => {
+        pointer.release();
+        if (takeover.failed(message)) {
+          recovery.current?.stop(); setStatus('client.remoteDesktop.connectionInUse'); return;
+        }
+        recovery.current?.failed(message);
+      },
       stats: setStats, audio: setHasAudio, capabilities: setCapabilities, displays: value => {
         if (value.security) security.receive(value.security);
         setPrivacyScreen(value.privacyScreen === true);
@@ -107,15 +116,19 @@ export function useDesktopSession({ client, active, connected = true, createPeer
       allowed: capabilities.resolution === true && capabilities.control !== false,
       message: '正在切换分辨率，请稍候。', run: current => current.resolution(size) }) };
   const clipboard = sessionClipboard(() => receiver.current, capabilities, security.clipboardSync);
+  const retry = () => {
+    if (!active || !available.current) return;
+    recovery.current?.stop();
+    recovery.current = new DesktopRecovery(() => setAttempt(value => value + 1), setStatus, client.permissionStatus);
+    setAttempt(value => value + 1);
+  };
   return { stream, status, stats, settings, displays, update, saving, pointer, muted, mute, hasAudio, clipboard, capabilities,
+    takeover: { pending: takeover.pending,
+      confirm: () => { if (active && available.current && takeover.confirm()) retry(); },
+      cancel: () => { takeover.cancel(); setStatus('client.remoteDesktop.connectionCancelled'); } },
     security, privacyScreen, togglePrivacy, resolution, frameRendered: () => receiver.current?.frameRendered(stream),
     waitingForPermission: waitingForDesktopPermission(status),
     input: (input: Parameters<DesktopDisplaySession['input']>[0]) => receiver.current?.input(input),
     inputFocus: async () => await receiver.current?.inputFocus() ?? null,
-    retry: () => {
-      if (!active || !available.current) return;
-      recovery.current?.stop();
-      recovery.current = new DesktopRecovery(() => setAttempt(value => value + 1), setStatus, client.permissionStatus);
-      setAttempt(value => value + 1);
-    } };
+    retry: () => { takeover.cancel(); retry(); } };
 }

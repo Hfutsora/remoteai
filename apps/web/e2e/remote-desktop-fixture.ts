@@ -11,6 +11,7 @@ import { STANDBY_PONG } from '../../../shared/remote-desktop/standbyProtocol';
 import { fileStreamFixture, hostFileRequest, localFileRequest, promised } from './remote-desktop-file-stream-fixture';
 import type { Channel } from '@tauri-apps/api/core';
 import type { FileReadEvent } from '../../../shared/remote-desktop/fileClipboard';
+import { createTakeoverFixture } from './remote-desktop-takeover-fixture';
 
 declare global { interface Window { desktopRelayFixture?: {
   iceServers: IceServer[]; upgrade?: boolean; failDirectAttempts?: number; loseCommitReply?: boolean; directFirst?: boolean;
@@ -288,4 +289,5 @@ export async function desktopRequest<T>(body: object): Promise<T> {
 }
 export const client = createGuiToolsClient(desktopRequest);
 Object.assign(window, { desktopTest });
+window.desktopTakeoverTest = createTakeoverFixture(host);
 window.addEventListener('beforeunload', () => host.release());

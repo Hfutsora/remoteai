@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import type { DesktopClient } from '../../../../../shared/remote-desktop/protocol';
 import { useDesktopSession } from '../../../../../shared/remote-desktop/useDesktopSession';
+import { DesktopTakeover } from './DesktopTakeover';
 import { desktopStatusAction } from '../../../../../shared/remote-desktop/statusAction';
 import { useTerminalOrientation } from '../terminal/useTerminalOrientation';
 import { DesktopMouse } from './MousePad';
@@ -129,7 +130,8 @@ export function RemoteDesktop({ client, active, close }: {
             {session.stream && <DesktopMouse pointer={session.pointer} viewport={viewport} panel={panel}
               visible={panelVisible} wheel={wheel}
               horizontal={!!session.capabilities.horizontalScroll} />}
-            {!security && !!(session.status || orientation.error) && <View pointerEvents="box-none" style={s.messageLayer}>
+            {!security && !session.takeover.pending && !!(session.status || orientation.error)
+              && <View pointerEvents="box-none" style={s.messageLayer}>
               <View style={s.message}>
                 <Text accessibilityRole="alert" style={[s.text, s.messageText]}>
                   {displayError(session.status || orientation.error)}</Text>
@@ -145,6 +147,7 @@ export function RemoteDesktop({ client, active, close }: {
               close={() => setDisplay(false)} />}
             {security && <SecuritySettings {...desktopSecuritySettings(session, () => setSecurity(false))}
               clipboardActions={securityClipboard} />}
+            {session.takeover.pending && <DesktopTakeover {...session.takeover} />}
           </View>
           {orientation.landscape
             ? <ScrollView style={s.rail} contentContainerStyle={[s.toolbar, s.railContent]}
