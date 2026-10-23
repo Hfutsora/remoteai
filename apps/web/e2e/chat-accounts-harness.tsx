@@ -25,8 +25,7 @@ function Harness() {
     <ChatSidebar desktop={desktop} open={open} onClose={() => setOpen(false)}>
       <button onClick={() => setOpen(false)}>保留的聊天</button>
       <ChatProfileMenu client={client} ready active={desktop || open} guiTools={guiTools}
-        running={false} deviceName="测试电脑" email="test@example.test" chooseDevice={() => {}}
-        openTokenSummary={() => {}} />
+        running={false} deviceName="测试电脑" email="test@example.test" chooseDevice={() => {}} />
     </ChatSidebar>
   </main>;
 }

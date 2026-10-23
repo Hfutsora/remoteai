@@ -1,7 +1,7 @@
 import { displayError } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
-import { BarChart3, Download, Monitor, User } from 'lucide-react';
+import { Download, Monitor, User } from 'lucide-react';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import type { GuiAccountChoice, GuiAccountsClient } from '../../../../shared/remote-chat/guiAccounts';
 import { guiAccountAvatar } from '../../../../shared/remote-chat/guiAccountAvatar';
@@ -14,7 +14,7 @@ export interface ChatConnectionProps {
   client: GuiAccountsClient; deviceName: string; chooseDevice: () => void;
 }
 type Props = ChatConnectionProps & { ready: boolean; active?: boolean } & (
-  { variant: 'settings' } | { variant?: 'profile'; email: string; openTokenSummary: () => void;
+  { variant: 'settings' } | { variant?: 'profile'; email: string;
     guiTools: GuiToolsClient; running: boolean }
 );
 
@@ -64,9 +64,6 @@ export function ChatProfileMenu(props: Props) {
           onClick={() => setPanel('update')}><Download size={22} /><span className="chat-grow">
             <strong>{t("client.app.updateCodexGui")}</strong><small>{t("client.app.checkAndUpdateCodexGuiOnThisComputer")}</small>
           </span><span>›</span></button>
-        <button type="button" className="chat-profile-option" aria-label={t("client.chat.tokenSummary")}
-          onClick={() => { close(); props.openTokenSummary(); }}><BarChart3 size={22} /><span className="chat-grow">
-            <strong>{t("client.chat.tokenSummary")}</strong><small>{t("client.chat.viewUsageTrendsAndRankings")}</small></span><span>›</span></button>
       </div> : <div className="chat-detail-stack">
         <input className="chat-answer" aria-label={t("client.chat.searchAccounts")} placeholder={t("client.chat.searchNamesOrNotes")} value={query}
           onChange={event => setQuery(event.target.value)} />

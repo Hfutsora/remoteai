@@ -19,7 +19,7 @@ export interface ChatConnectionProps {
 }
 
 type Props = ChatConnectionProps & { ready: boolean; active: boolean } & (
-  { variant: 'settings' } | { variant?: 'avatar'; email: string; openTokenSummary: () => void;
+  { variant: 'settings' } | { variant?: 'avatar'; email: string;
     guiTools: GuiToolsClient; running: boolean }
 );
 
@@ -92,13 +92,6 @@ export function ChatProfileMenu(props: Props) {
           <Feather name="download" size={22} color={color(palette.ink, 'ink')} />
           <View style={pickerStyles.copy}><Text style={styles.title}>{t("client.app.updateCodexGui")}</Text>
             <Text style={styles.subtitle}>{t("client.app.checkAndUpdateCodexGuiOnThisComputer")}</Text></View>
-          <Feather name="chevron-right" size={18} color={color(palette.muted, 'muted')} />
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.tokenSummary")} style={pickerStyles.option}
-          onPress={() => { setPanel(null); props.openTokenSummary(); }}>
-          <Feather name="bar-chart-2" size={22} color={color(palette.ink, 'ink')} />
-          <View style={pickerStyles.copy}><Text style={styles.title}>{t("client.chat.tokenSummary")}</Text>
-            <Text style={styles.subtitle}>{t("client.chat.viewUsageTrendsAndRankings")}</Text></View>
           <Feather name="chevron-right" size={18} color={color(palette.muted, 'muted')} />
         </Pressable>
       </SheetInset> : <View style={pickerStyles.panel}>

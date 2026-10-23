@@ -56,7 +56,7 @@ interface Props extends DesktopScreenLaunch {
   session: AuthSession; devices: RemoteDevice[]; devicesLoaded: boolean; active: boolean;
   notification: ChatNotificationTarget | null; notificationError: string;
   notificationHandled: (id: string) => void;
-  tokenSummary: boolean; openTokenSummary: () => void; closeTokenSummary: () => void;
+  tokenSummary: boolean; closeTokenSummary: () => void;
 }
 
 export function ChatPage(props: Props) {
@@ -93,7 +93,8 @@ export function ChatPage(props: Props) {
 }
 
 function ConnectedChat({ session, device, devices, selected, active: pageActive, chooseDevice, notification,
-  notificationHandled, tokenSummary, openTokenSummary, closeTokenSummary, screenRequest, screenRequestHandled }: Props & {
+  notificationHandled, tokenSummary, closeTokenSummary,
+  screenRequest, screenRequestHandled }: Props & {
   device?: RemoteDevice; selected: boolean; chooseDevice: (id: string) => void;
 }) {
   const styles = useStyles();
@@ -161,7 +162,6 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
         guiTools={controller.guiTools}
         running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
         chooseDevice={() => closeDrawer(() => setPickingDevice(true))}
-        openTokenSummary={() => closeDrawer(openTokenSummary)}
         ready={ready} active={active && foreground && drawer && !searching} />}
       select={(thread) => closeDrawer(() => { void controller.select(thread); })} />}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}

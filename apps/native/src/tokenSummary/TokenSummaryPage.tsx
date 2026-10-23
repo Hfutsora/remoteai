@@ -32,7 +32,7 @@ export function TokenSummaryPage({ read, ready, foreground, deviceName, onBack }
   };
   return <View style={s.page}>
     <View style={s.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.backToChat")} style={s.button} onPress={onBack}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.discovery.back")} style={s.button} onPress={onBack}>
         <Feather name="arrow-left" size={24} color={color("#17211b", 'ink')} />
       </Pressable><Text accessibilityRole="header" style={[s.title, s.fill]}>{t("client.chat.tokenSummary")}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.refreshTokenSummary")} style={s.button}

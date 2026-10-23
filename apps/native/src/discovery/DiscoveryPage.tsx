@@ -10,6 +10,7 @@ const entryIcons = {
   devices: 'server-outline',
   totp: 'shield-checkmark-outline',
   downloads: 'download-outline',
+  'token-summary': 'bar-chart-outline',
 } as const;
 
 export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination) => void }) {

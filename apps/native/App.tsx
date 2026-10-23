@@ -1300,13 +1300,12 @@ function AppContent() {
     <ChatPage session={session} devices={devices} active={activePage === 'chat' || activePage === 'token-summary'}
       screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
       devicesLoaded={devicesLoaded}
-      tokenSummary={activePage === 'token-summary'} openTokenSummary={() => setActivePage('token-summary')}
-      closeTokenSummary={() => setActivePage('chat')}
+      tokenSummary={activePage === 'token-summary'} closeTokenSummary={() => setActivePage('discover')}
       notification={chatNotification.target} notificationError={chatNotification.error}
       notificationHandled={chatNotification.handled} />
     {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('discover')} />}
     {activePage === 'discover' && <DiscoveryPage onOpen={setActivePage} />}
-    {isDiscoveryPage(activePage) && activePage !== 'downloads'
+    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary'
       && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
     {activePage === 'chat' || activePage === 'token-summary' || activePage === 'downloads' || activePage === 'discover'
       ? null : activePage === 'accounts'

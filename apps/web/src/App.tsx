@@ -344,13 +344,14 @@ function AppShell() {
     { key: "logout", label: t("client.app.signOut"), danger: true, icon: <LogOut size={16} />, onClick: () => void dispatch(signOut()) },
   ];
 
-  const pageDescriptions: Record<Exclude<AppPage, 'chat' | 'downloads'>, string> = {
+  const pageDescriptions: Record<Exclude<AppPage, 'chat' | 'downloads' | 'token-summary'>, string> = {
     accounts: t("client.app.welcomeBackYourAccountsAtAGlance"),
     discover: t('client.discovery.title'),
     devices: t("client.app.viewAndControlYourDesktopDevices"), totp: t("client.app.manageAndSyncYour2faCodes"), settings: t("client.app.managePreferencesAndAccountSecurity"),
   };
+  const discoveryPage = <DiscoveryPage onOpen={destination => dispatch(pageChanged(destination))} />;
   const otherPages = {
-    discover: <DiscoveryPage onOpen={destination => dispatch(pageChanged(destination))} />,
+    discover: discoveryPage, 'token-summary': discoveryPage,
     downloads: session && <DownloadManagerPage owner={downloadOwner(session)}
       onBack={() => dispatch(pageChanged('discover'))} />,
     accounts: <AccountsPage />, devices: <DevicesPage onScreenControl={(device, enabled) => {
@@ -361,7 +362,8 @@ function AppShell() {
   };
   const pageTitle = page === 'devices' ? t('client.app.devices')
     : page === 'totp' ? t('client.discovery.twoFactor') : navItems.find(item => item.key === page)?.label;
-  const shellClass = ['app-shell', page === 'chat' && 'chat-active', page === 'discover' && 'discovery-active',
+  const shellClass = ['app-shell', page === 'chat' && 'chat-active',
+    (page === 'discover' || page === 'token-summary') && 'discovery-active',
     !menuVisible && 'main-menu-collapsed'].filter(Boolean).join(' ');
   const MenuToggleIcon = menuVisible ? PanelLeftClose : PanelLeftOpen;
   return <div className={shellClass}>
@@ -394,7 +396,7 @@ function AppShell() {
       </Tooltip>
     </aside>
     <div className="content-shell">
-      {page !== 'chat' && page !== 'downloads' && <header className="desktop-topbar"><div>
+      {page !== 'chat' && page !== 'downloads' && page !== 'token-summary' && <header className="desktop-topbar"><div>
         <span>{pageTitle}</span><strong>{pageDescriptions[page]}</strong></div>
         <div><Tooltip title={t("client.app.refreshAllData")}><button className="icon-button" type="button"
           onClick={() => void dispatch(refreshAll())}>
@@ -402,11 +404,12 @@ function AppShell() {
           <span className="topbar-date">{new Intl.DateTimeFormat(getLocale(),
             { month: "long", day: "numeric", weekday: "short" }).format(new Date())}</span></div></header>}
       <main className="main-content">
-        {isDiscoveryPage(page) && page !== 'downloads'
+        {isDiscoveryPage(page) && page !== 'downloads' && page !== 'token-summary'
           && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
         {session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
           screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
-          active={page === "chat"} />}
+          active={page === "chat"} tokenSummary={page === 'token-summary'}
+          closeTokenSummary={() => dispatch(pageChanged('discover'))} />}
         {page !== "chat" && otherPages[page]}
       </main>
     </div>

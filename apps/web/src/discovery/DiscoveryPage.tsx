@@ -1,9 +1,9 @@
-import { ChevronLeft, ChevronRight, Download, Server, ShieldCheck } from 'lucide-react';
+import { BarChart3, ChevronLeft, ChevronRight, Download, Server, ShieldCheck } from 'lucide-react';
 import { discoveryEntries, type DiscoveryPage as DiscoveryDestination } from '../../../../shared/navigation/discovery';
 import { t, useLanguage } from '../i18n';
 import './styles.css';
 
-const entryIcons = { devices: Server, totp: ShieldCheck, downloads: Download };
+const entryIcons = { devices: Server, totp: ShieldCheck, downloads: Download, 'token-summary': BarChart3 };
 
 export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination) => void }) {
   useLanguage();

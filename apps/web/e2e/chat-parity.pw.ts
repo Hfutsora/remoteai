@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
-import { openChatList, connect, fixtureUrl, login, operationCount, screenshot, send, settled, state } from './chat-helpers';
+import { openChatList, connect, fixtureUrl, login, navigate, operationCount, screenshot, send, settled, state }
+  from './chat-helpers';
 
 const closeSheet = (page: Page) => page.getByRole('button', { name: /^(关闭|关闭详情抽屉)$/ }).last().click();
 async function selectChat(page: Page) {
@@ -224,7 +225,11 @@ test('changes context capacity and opens profile, account picker and token summa
   await expect(page.getByRole('button', { name: '演示账户一', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: '演示账户二', exact: true }).click();
   await expect(page.getByRole('button', { name: '切换账户', exact: true })).toContainText('演示账户二');
-  await page.getByRole('button', { name: 'Token 汇总', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Token 汇总', exact: true })).toHaveCount(0);
+  await closeSheet(page);
+  if (info.project.name === 'mobile') await page.locator('.chat-drawer .ant-drawer-close').click();
+  await navigate(page, '发现');
+  await page.locator('.discovery-list').getByRole('button', { name: 'Token 汇总', exact: true }).click();
   await expect(page.getByRole('heading', { name: '每日 Token 趋势' })).toBeVisible();
   await screenshot(page, info, 'token-summary');
   await page.getByRole('spinbutton', { name: '统计周数，1 至 52 周' }).fill('2');
@@ -232,6 +237,7 @@ test('changes context capacity and opens profile, account picker and token summa
   await expect.poll(async () => (await state(request)).operations.findLast(entry =>
     entry.operation === 'tokenSummary')?.weeks).toBe(2);
   await closeSheet(page);
+  await expect(page.getByRole('heading', { name: '发现', exact: true })).toBeVisible();
   const count = await operationCount(request, 'tokenSummary');
   await page.waitForTimeout(2300);
   expect(await operationCount(request, 'tokenSummary')).toBe(count);

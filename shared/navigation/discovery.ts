@@ -2,6 +2,7 @@ export const discoveryEntries = [
   { page: 'devices', label: 'client.app.devices' },
   { page: 'totp', label: 'client.discovery.twoFactor' },
   { page: 'downloads', label: 'client.downloads.downloads' },
+  { page: 'token-summary', label: 'client.chat.tokenSummary' },
 ] as const;
 
 export type DiscoveryPage = typeof discoveryEntries[number]['page'];

@@ -4,6 +4,7 @@ import { useAppDispatch } from '../hooks';
 import { chatDeviceSelected } from '../store';
 import type { AuthSession, RemoteDevice } from '../types';
 import { ConnectedChat } from './ConnectedChat';
+import { ChatTokenSummary } from './ChatTokenSummary';
 import { ChatTools } from './ChatTools';
 import { useChat } from './useChat';
 import { useChatViewport } from './useChatViewport';
@@ -20,9 +21,13 @@ import { RemoteGuiTools } from '../../../desktop/src/pages/codexGui/remote/Remot
 import { RemoteGuiProject } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiProject';
 import './desktopTools.css';
 
-interface Props extends DesktopScreenLaunch { session: AuthSession; devices: RemoteDevice[]; active: boolean }
+interface Props extends DesktopScreenLaunch {
+  session: AuthSession; devices: RemoteDevice[]; active: boolean;
+  tokenSummary: boolean; closeTokenSummary: () => void;
+}
 
-export function ChatPage({ session, devices, active, screenRequest, screenRequestHandled }: Props) {
+export function ChatPage({ session, devices, active, screenRequest, screenRequestHandled,
+  tokenSummary, closeTokenSummary }: Props) {
   useLanguage();
   const dispatch = useAppDispatch();
   const deviceRefresh = useComputerListRefresh();
@@ -52,6 +57,7 @@ export function ChatPage({ session, devices, active, screenRequest, screenReques
       return <div className="chat-device-session" hidden={!selected}
         key={JSON.stringify([scope, chatDevice?.deviceId])}>
         <WebChat session={session} device={chatDevice} devices={devices} selected={selected}
+          tokenSummary={tokenSummary && selected} closeTokenSummary={closeTokenSummary}
           screenRequest={screenRequest?.deviceId === chatDevice?.deviceId ? screenRequest : undefined}
           screenRequestHandled={screenRequestHandled}
           active={active && selected} chooseDevice={chooseDevice} deviceRefresh={deviceRefresh} />
@@ -73,7 +79,10 @@ function WebChat({ session, device, selected, ...props }: Props & {
   }, [selected, chat.state.ready, device?.deviceId, session.baseUrl, session.email]);
   useDownloadConnection({ session, deviceId: device?.deviceId ?? '', deviceName: device?.name ?? '',
     controller: chat.controller, enabled: selected });
-  return <ConnectedChat {...props} chat={chat} device={device} email={session.email}
+  return <>
+    {props.tokenSummary && <ChatTokenSummary read={chat.controller.readTokenSummary} ready={chat.state.ready}
+      deviceName={device?.name} onClose={props.closeTokenSummary} />}
+    <ConnectedChat {...props} chat={chat} device={device} email={session.email}
     cliVersion={installer.version}
     composerHeader={desktop && <RemoteGuiProject state={chat.state} controller={chat.controller}
       active={props.active && chat.foreground} computers={{ ...props.deviceRefresh, allowLocal: false,
@@ -89,5 +98,6 @@ function WebChat({ session, device, selected, ...props }: Props & {
         connected={chat.state.ready} deviceName={device?.name}
         cwd={chat.state.selected?.cwd ?? chat.state.draftProject?.cwd ?? ''} />
     </div>}
-    scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])} />;
+    scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])} />
+  </>;
 }
