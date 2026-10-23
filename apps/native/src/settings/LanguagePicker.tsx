@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LANGUAGE_OPTIONS, languageLabel, t, useLanguage, type Language } from '../i18n';
 import { setLanguage } from '../i18n/preference';
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 import { settingsColors, useStyles } from './styles';
 
 interface Anchor { x: number; y: number; width: number; height: number }
@@ -24,26 +25,41 @@ function menuPosition(anchor: Anchor, viewport: { width: number; height: number 
 }
 
 function LanguageOptions({ anchor, onClose, onChoose }: {
-  anchor: Anchor; onClose: () => void; onChoose: (language: Language) => void;
+  anchor: RefObject<View | null>; onClose: () => void; onChoose: (language: Language) => void;
 }) {
   const styles = useLocalStyles();
   const language = useLanguage();
-  const viewport = useWindowDimensions();
-  const [menuViewport, setMenuViewport] = useState({ width: viewport.width, height: viewport.height });
-  return <Modal transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}
+  const overlay = useRef<View>(null);
+  const [viewport, setViewport] = useState<{ width: number; height: number }>();
+  const [position, setPosition] = useState<ReturnType<typeof menuPosition>>();
+  useLayoutEffect(() => {
+    if (!viewport?.width || !viewport.height) return;
+    let cancelled = false;
+    // Both measurements must use the modal's laid-out coordinate space, including system-bar offsets.
+    overlay.current?.measureInWindow((rootX, rootY) => {
+      anchor.current?.measureInWindow((x, y, width, height) => {
+        if (!cancelled && width > 0 && height > 0) {
+          setPosition(menuPosition({ x: x - rootX, y: y - rootY, width, height }, viewport));
+        }
+      });
+    });
+    return () => { cancelled = true; };
+  }, [anchor, viewport]);
+  return <Modal transparent animationType="none" onRequestClose={onClose}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
-    <View style={styles.overlay} onLayout={({ nativeEvent }) => setMenuViewport(nativeEvent.layout)}>
+    <View ref={overlay} collapsable={false} style={styles.overlay}
+      onLayout={({ nativeEvent: { layout } }) => setViewport({ width: layout.width, height: layout.height })}>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button"
         accessibilityLabel={t('client.mobile.close', { value1: t('client.settings.language') })} />
-      <ScrollView style={[styles.options, menuPosition(anchor, menuViewport)]} keyboardShouldPersistTaps="handled"
+      {position && <ScrollView style={[styles.options, position]} keyboardShouldPersistTaps="handled"
         accessibilityRole="radiogroup" accessibilityLabel={t('client.settings.language')}>
         {LANGUAGE_OPTIONS.map(option => <Pressable key={option.value} accessibilityRole="radio"
           accessibilityLabel={option.label} accessibilityState={{ checked: language === option.value }}
           style={[styles.option, language === option.value && styles.selected]} onPress={() => onChoose(option.value)}>
           <Text style={styles.text}>{option.label}</Text>
-          {language === option.value && <Ionicons name="checkmark" size={18} style={styles.text} />}
+          {language === option.value && <Ionicons name="checkmark" size={18} style={styles.glyph} />}
         </Pressable>)}
-      </ScrollView>
+      </ScrollView>}
     </View>
   </Modal>;
 }
@@ -55,27 +71,24 @@ export function LanguagePicker() {
   const landscape = viewport.width > viewport.height;
   const trigger = useRef<View>(null);
   const saving = useRef(false);
-  const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState(false);
-  // Android modal system-bar insets can change height without changing orientation.
-  useEffect(() => { setAnchor(null); }, [landscape]);
+  useEffect(() => { setOpen(false); }, [landscape]);
   const choose = async (next: Language) => {
     if (saving.current) return;
     saving.current = true;
-    setAnchor(null);
+    setOpen(false);
     setError(!await setLanguage(next));
     saving.current = false;
   };
   return <View style={styles.container}>
     <Pressable ref={trigger} accessibilityRole="combobox" accessibilityLabel={t('client.settings.language')}
-      accessibilityValue={{ text: languageLabel(language) }} accessibilityState={{ expanded: !!anchor }}
-      style={styles.trigger} onPress={() => {
-        trigger.current?.measureInWindow((x, y, width, height) => setAnchor({ x, y, width, height }));
-      }}>
+      accessibilityValue={{ text: languageLabel(language) }} accessibilityState={{ expanded: open }}
+      style={styles.trigger} onPress={() => setOpen(true)}>
       <Text style={styles.text}>{languageLabel(language)}</Text>
-      <Ionicons name={anchor ? 'chevron-up' : 'chevron-down'} size={16} style={styles.text} />
+      <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} style={styles.glyph} />
     </Pressable>
-    {anchor && <LanguageOptions anchor={anchor} onClose={() => setAnchor(null)} onChoose={next => void choose(next)} />}
+    {open && <LanguageOptions anchor={trigger} onClose={() => setOpen(false)} onChoose={next => void choose(next)} />}
     {error && <Text accessibilityRole="alert" style={styles.error}>
       {t('client.mobile.languageChangedButCouldNotBeSavedChooseItAgain')}
     </Text>}
@@ -104,9 +117,10 @@ export function LoginLanguagePicker() {
 const useLocalStyles = createThemedStyles(color => ({
   container: { width: 160, maxWidth: '100%' },
   trigger: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    gap: 8, paddingHorizontal: 12, borderWidth: 1, borderRadius: 8,
+    gap: 8, paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderRadius: 8,
     borderColor: color(settingsColors.border, 'border'), backgroundColor: color('#fff', 'surface') },
-  text: { color: color(settingsColors.ink, 'ink'), fontSize: 15, flexShrink: 1 },
+  text: { ...textMetrics(15, 23), color: color(settingsColors.ink, 'ink'), flexShrink: 1 },
+  glyph: { color: color(settingsColors.ink, 'ink') },
   overlay: { flex: 1 },
   backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   options: { position: 'absolute', flexGrow: 0, maxWidth: 400, borderWidth: 1, borderRadius: 8, elevation: 8,
@@ -114,7 +128,7 @@ const useLocalStyles = createThemedStyles(color => ({
   option: { minHeight: 48, padding: 12, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', gap: 8 },
   selected: { backgroundColor: color('#e5fbf3', 'accentSoft') },
-  error: { maxWidth: 400, color: color(settingsColors.danger, 'danger'), fontSize: 14, marginTop: 6 },
+  error: { ...textMetrics(14, 21), maxWidth: 400, color: color(settingsColors.danger, 'danger'), marginTop: 6 },
   icon: { backgroundColor: color('#e7f3ff', 'elevated') },
   iconText: { color: color(settingsColors.blue, 'info') },
   login: { alignSelf: 'center', marginBottom: 8 },

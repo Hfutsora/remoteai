@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import { createThemedStyles } from './src/theme/styles';
+import { textMetrics } from './src/theme/text';
 import { loadTheme, useThemeMode, useThemeColor } from './src/theme/preference';
 import { t, useLanguage } from './src/i18n';
 import { loadLanguage } from './src/i18n/preference';
@@ -1408,8 +1409,8 @@ const useStyles = createThemedStyles((color) => ({
   navItem: { flex: 1, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 2 },
   // Give Android room to draw every glyph instead of using the exact intrinsic text width.
   navText: {
-    alignSelf: 'stretch', textAlign: 'center', paddingHorizontal: 4, includeFontPadding: true,
-    color: color('#7b8c82', 'muted'), fontSize: 11, lineHeight: 18, fontWeight: '700',
+    ...textMetrics(11, 18), alignSelf: 'stretch', textAlign: 'center', paddingHorizontal: 4,
+    color: color('#7b8c82', 'muted'), fontWeight: '700',
   },
   navTextActive: { color: color(COLORS.green, 'accent') },
 }));
