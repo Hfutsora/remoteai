@@ -8,6 +8,7 @@ import { RTCPeerConnection, RTCView, type MediaStream as NativeMediaStream } fro
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import type { DesktopClient } from '../../../../../shared/remote-desktop/protocol';
+import type { DesktopScreenRequest } from '../../../../../shared/remote-desktop/screenControl';
 import { useDesktopSession } from '../../../../../shared/remote-desktop/useDesktopSession';
 import { DesktopTakeover } from './DesktopTakeover';
 import { desktopStatusAction } from '../../../../../shared/remote-desktop/statusAction';
@@ -36,13 +37,13 @@ const createPeer = (configuration: RTCConfiguration) =>
     ...(configuration.iceTransportPolicy ? { iceTransportPolicy: configuration.iceTransportPolicy } : {})
   }) as unknown as globalThis.RTCPeerConnection;
 
-export function RemoteDesktop({ client, active, close }: {
-  client: DesktopClient; active: boolean; close: () => void;
+export function RemoteDesktop({ client, active, close, privacyRequest }: {
+  client: DesktopClient; active: boolean; close: () => void; privacyRequest?: DesktopScreenRequest;
 }) {
   const s = useS();
   const color = useThemeColor();
   useLanguage();
-  const session = useDesktopSession({ client, active, createPeer });
+  const session = useDesktopSession({ client, active, createPeer, privacyRequest });
   const statusAction = desktopStatusAction(session);
   const viewOnly = session.capabilities.control === false;
   const audioUnavailable = !session.hasAudio || session.stats?.audio === 'unavailable';
@@ -88,6 +89,12 @@ export function RemoteDesktop({ client, active, close }: {
       run: () => session.mute(!session.muted), selected: !session.muted && !audioUnavailable, disabled: audioUnavailable },
     { label: t("client.remoteDesktop.showDesktop"), icon: 'desktop-outline', run: () => session.input({ kind: 'key', key: 'desktop' }), disabled: viewOnly },
     { label: t("client.remoteDesktop.allWindows"), icon: 'grid-outline', run: () => session.input({ kind: 'key', key: 'windows' }), disabled: viewOnly },
+    ...(session.capabilities.privacyScreen ? [{
+      label: t(session.privacyScreen ? 'client.deviceScreen.restoreShort' : 'client.deviceScreen.turnOffShort'),
+      action: t(session.privacyScreen ? 'client.deviceScreen.restore' : 'client.deviceScreen.turnOff'),
+      icon: 'desktop-outline' as const, run: () => { void session.togglePrivacy(); },
+      selected: session.privacyScreen, disabled: viewOnly || session.saving || !session.stream,
+    }] : []),
     { label: t("client.remoteDesktop.security"), icon: 'shield-checkmark-outline', run: () => {
       setSecurity(!security); setDisplay(false); setKeyboard(false); }, selected: security },
     { label: t("client.remoteDesktop.display"), icon: 'options-outline', run: () => {

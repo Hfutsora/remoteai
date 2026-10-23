@@ -1,8 +1,10 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { Tooltip } from 'antd';
 import { Monitor } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 import type { DesktopClient } from '../../../../../shared/remote-desktop/protocol';
+import type { DesktopScreenLaunch } from '../../../../../shared/remote-desktop/screenControl';
+import { useDesktopLauncher } from '../../../../../shared/remote-desktop/useDesktopLauncher';
 import { uiText } from "../../i18n/uiText";
 import { localDesktopClipboard } from '../../remoteDesktop/localClipboard';
 import styles from './GuiRemoteDesktop.module.less';
@@ -10,15 +12,13 @@ import styles from './GuiRemoteDesktop.module.less';
 const RemoteDesktop = lazy(() => import('../../../../web/src/chat/desktop/RemoteDesktop')
   .then(module => ({ default: module.RemoteDesktop })));
 
-export function GuiRemoteDesktop({ client, active, connected }: {
+export function GuiRemoteDesktop({ client, active, connected, ...screenLaunch }: DesktopScreenLaunch & {
   client: DesktopClient; active: boolean; connected: boolean;
 }) {
-  const [opened, setOpened] = useState(false);
-  const [minimized, setMinimized] = useState(false);
+  const { opened, minimized, setMinimized, open, close, privacyRequest } =
+    useDesktopLauncher({ active, connected, ...screenLaunch });
   const background = opened && minimized && active;
   const label = uiText(background ? "client.remoteDesktop.restoreRemoteDesktop" : "client.remoteDesktop.openRemoteDesktop");
-  const open = () => { setMinimized(false); setOpened(true); };
-  const close = () => { setOpened(false); setMinimized(false); };
   return <>
     <Tooltip title={label} styles={{ root: { maxWidth: 400 } }}>
       <button type="button" className={styles.launcher} disabled={!active || (!opened && !connected)}
@@ -29,6 +29,7 @@ export function GuiRemoteDesktop({ client, active, connected }: {
     </Tooltip>
     <Suspense fallback={null}>
       {opened && <RemoteDesktop client={client} active visible={active} connected={connected} close={close}
+        privacyRequest={privacyRequest}
         windowState={{ minimized, setMinimized }} nativeWindow={isTauri()}
         localClipboard={isTauri() ? localDesktopClipboard : undefined} />}
     </Suspense>

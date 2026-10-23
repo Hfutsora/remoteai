@@ -8,6 +8,8 @@ import { waitingForDesktopPermission } from './permissionWait';
 import { sessionClipboard } from './sessionClipboard';
 import { useDesktopSecurity } from './useDesktopSecurity';
 import { useDesktopTakeover } from './useDesktopTakeover';
+import { useDesktopPrivacyRequest } from './useDesktopPrivacyRequest';
+import type { DesktopScreenRequest } from './screenControl';
 import { DEFAULT_SETTINGS, validateSettings, type DesktopCapabilities, type DesktopClient, type DesktopDisplay,
   type DesktopResolution, type DesktopSettings, type DesktopStats }
   from './protocol';
@@ -16,9 +18,10 @@ interface Options {
   client: DesktopClient;
   active: boolean;
   connected?: boolean;
+  privacyRequest?: DesktopScreenRequest;
   createPeer: (configuration: RTCConfiguration) => RTCPeerConnection;
 }
-export function useDesktopSession({ client, active, connected = true, createPeer }: Options) {
+export function useDesktopSession({ client, active, connected = true, createPeer, privacyRequest }: Options) {
   const available = useRef(connected); available.current = connected;
   const takeover = useDesktopTakeover(client, active);
   const receiver = useRef<DesktopDisplaySession>();
@@ -41,6 +44,8 @@ export function useDesktopSession({ client, active, connected = true, createPeer
   const [hasAudio, setHasAudio] = useState(false);
   const [capabilities, setCapabilities] = useState<DesktopCapabilities>({});
   const pointer = useMemo(() => new DesktopPointer(input => receiver.current?.input(input)), []);
+  const displayAction = { receiver, updating, saving: setSaving, status: setStatus, release: () => pointer.release() };
+  const privacyIntent = useDesktopPrivacyRequest({ request: privacyRequest, action: displayAction, saving });
   const recovery = useRef<DesktopRecovery>();
   const directRetry = useMemo(() => new DesktopDirectRetry(), [client, active, createPeer]);
 
@@ -63,7 +68,10 @@ export function useDesktopSession({ client, active, connected = true, createPeer
     if (!available.current) { recovery.current?.failed(DESKTOP_OFFLINE_STATUS); return; }
     const session = new DesktopDisplaySession({ client: takeover.client,
       createPeer, directRetry, stream: setStream, status: setStatus,
-      connected: () => recovery.current?.connected(),
+      connected: () => {
+        recovery.current?.connected();
+        if (receiver.current === session) privacyIntent.ready(session);
+      },
       failed: message => {
         pointer.release();
         if (takeover.failed(message)) {
@@ -81,7 +89,11 @@ export function useDesktopSession({ client, active, connected = true, createPeer
       } }, privacyRestore.current);
     session.mute(mutedRef.current);
     receiver.current = session;
-    void closing.current.then(() => { if (receiver.current === session) return session.start(settingsRef.current); });
+    void closing.current.then(async () => {
+      if (receiver.current !== session) return;
+      await session.start(settingsRef.current, !privacyIntent.pending());
+      if (receiver.current === session && session.available) privacyIntent.ready(session);
+    });
     return () => {
       pointer.release(); receiver.current = undefined; pointer.dispose(); closing.current = session.stop();
     };
@@ -107,10 +119,12 @@ export function useDesktopSession({ client, active, connected = true, createPeer
   const mute = (value: boolean) => {
     mutedRef.current = value; setMuted(value); receiver.current?.mute(value);
   };
-  const displayAction = { receiver, updating, saving: setSaving, status: setStatus, release: () => pointer.release() };
   const togglePrivacy = () => changeDesktopDisplay({ ...displayAction,
     allowed: capabilities.privacyScreen === true && capabilities.control !== false,
-    message: '正在切换隐私屏，请稍候。', run: current => current.privacy(!privacyScreen) });
+    message: '正在切换隐私屏，请稍候。', run: async current => {
+      await current.privacy(!privacyScreen);
+      if (receiver.current === current) privacyIntent.applied(privacyRequest?.id);
+    } });
   const resolution = { options: capabilities.resolution && capabilities.control !== false ? resolutions : [],
     change: (size: DesktopResolution) => changeDesktopDisplay({ ...displayAction,
       allowed: capabilities.resolution === true && capabilities.control !== false,
@@ -118,6 +132,7 @@ export function useDesktopSession({ client, active, connected = true, createPeer
   const clipboard = sessionClipboard(() => receiver.current, capabilities, security.clipboardSync);
   const retry = () => {
     if (!active || !available.current) return;
+    privacyIntent.retry();
     recovery.current?.stop();
     recovery.current = new DesktopRecovery(() => setAttempt(value => value + 1), setStatus, client.permissionStatus);
     setAttempt(value => value + 1);

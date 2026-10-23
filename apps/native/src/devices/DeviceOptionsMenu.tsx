@@ -1,7 +1,9 @@
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { supportsScreenControl } from '../../../../shared/remote-desktop/screenControl';
 import type { RemoteDevice } from '../types';
 import { deviceColors, useStyles } from './styles';
 
@@ -12,6 +14,7 @@ interface DeviceOptionsMenuProps {
   onClose: () => void;
   onDelete: (device: RemoteDevice) => void;
   onRevokeService: (device: RemoteDevice) => void;
+  onScreenControl: (device: RemoteDevice, enabled: boolean) => void;
   onSelectAuthAccount: (deviceId: string) => void;
 }
 
@@ -19,6 +22,8 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
   const styles = useStyles();
   const color = useThemeColor();
   useLanguage();
+  const [confirmScreen, setConfirmScreen] = useState(false);
+  useEffect(() => setConfirmScreen(false), [props.device?.deviceId]);
   const { device, deletingDeviceId, switchingAuthDeviceId, onClose, onDelete, onSelectAuthAccount } = props;
   if (!device) return null;
   const deleteDisabled = device.online || Boolean(deletingDeviceId);
@@ -35,6 +40,35 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
             <Ionicons name="close" size={22} color={color(deviceColors.muted, 'muted')} />
           </Pressable>
         </View>
+        <ScrollView style={styles.menuContent} keyboardShouldPersistTaps="handled">
+        {confirmScreen ? <>
+          <Text style={styles.optionLabel}>{t('client.deviceScreen.confirmTitle')}</Text>
+          <Text style={styles.hintText}>{t('client.deviceScreen.confirmMessage')}</Text>
+          <Pressable accessibilityRole="button" style={styles.option} onPress={() => setConfirmScreen(false)}>
+            <Text style={styles.optionLabel}>{t('client.accounts.cancel')}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" disabled={!device.online}
+            accessibilityState={{ disabled: !device.online }}
+            style={[styles.option, !device.online && styles.disabled]}
+            onPress={() => { onClose(); props.onScreenControl(device, true); }}>
+            <Text style={styles.optionLabel}>{t('client.deviceScreen.turnOff')}</Text>
+          </Pressable>
+        </> : <>
+        {supportsScreenControl(device) && <>
+          <Pressable accessibilityRole="button" disabled={!device.online}
+            accessibilityState={{ disabled: !device.online }} onPress={() => setConfirmScreen(true)}
+            style={({ pressed }) => [styles.option, pressed && styles.pressed, !device.online && styles.disabled]}>
+            <Ionicons name="desktop-outline" size={21} color={color(deviceColors.green, 'accent')} />
+            <Text style={styles.optionLabel}>{t('client.deviceScreen.turnOff')}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" disabled={!device.online}
+            accessibilityState={{ disabled: !device.online }}
+            onPress={() => { onClose(); props.onScreenControl(device, false); }}
+            style={({ pressed }) => [styles.option, pressed && styles.pressed, !device.online && styles.disabled]}>
+            <Ionicons name="sunny-outline" size={21} color={color(deviceColors.green, 'accent')} />
+            <Text style={styles.optionLabel}>{t('client.deviceScreen.restore')}</Text>
+          </Pressable>
+        </>}
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: authDisabled }} disabled={authDisabled}
           onPress={() => { onClose(); onSelectAuthAccount(device.deviceId); }}
           style={({ pressed }) => [styles.option, pressed && styles.pressed, authDisabled && styles.disabled]}>
@@ -56,6 +90,8 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
           {deletingDeviceId === device.deviceId && <ActivityIndicator color={color(deviceColors.danger, 'danger')} />}
         </Pressable>
         {!device.online && <Text style={styles.hintText}>{t("client.mobile.connectTheDeviceToChangeItsProxySignInAccount")}</Text>}
+        </>}
+        </ScrollView>
       </View>
     </View>
   </Modal>;

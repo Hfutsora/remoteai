@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
+import type { DesktopScreenLaunch } from '../../../../shared/remote-desktop/screenControl';
+import { useDesktopLauncher } from '../../../../shared/remote-desktop/useDesktopLauncher';
 import { ChatTerminal } from './ChatTerminal';
 import { ChatGit } from './git/ChatGit';
 import { RemoteDesktop } from './desktop/RemoteDesktop';
@@ -15,7 +17,7 @@ import { palette, useStyles } from './styles';
 import { ProjectBrowser } from './ProjectBrowser';
 import type { DownloadClient } from '../../../../shared/remote-chat/downloads';
 
-interface Props {
+interface Props extends DesktopScreenLaunch {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   scope: string; session?: AuthSession;
   downloads?: DownloadClient;
@@ -24,17 +26,23 @@ export function ChatTools(props: Props) {
   useLanguage();
   const [mapping, setMapping] = useState(false);
   const [project, setProject] = useState<string>();
+  const desktop = useDesktopLauncher(props);
   return <>
     <ProjectTools key={props.cwd} {...props} openMappings={() => setMapping(true)}
+      openDesktop={desktop.open}
       openFiles={() => setProject(value => value ?? props.cwd)} />
     {project && <ProjectBrowser client={props.client.projectBrowser} cwd={project}
       active={props.active} connected={props.connected} onClose={() => setProject(undefined)} />}
     <PortMappings client={props.client.files} scope={props.scope} connected={props.connected} session={props.session}
       active={props.active} deviceName={props.deviceName} open={mapping} close={() => setMapping(false)} />
+    {desktop.opened && <RemoteDesktop client={props.client.desktop} active={props.active}
+      privacyRequest={desktop.privacyRequest} close={desktop.close} />}
   </>;
 }
 
-function ProjectTools({ client, ...props }: Props & { openMappings: () => void; openFiles: () => void }) {
+function ProjectTools({ client, ...props }: Props & {
+  openMappings: () => void; openFiles: () => void; openDesktop: () => void;
+}) {
   const styles = useStyles();
   const color = useThemeColor();
   const menuStyles = useMenuStyles();
@@ -43,7 +51,6 @@ function ProjectTools({ client, ...props }: Props & { openMappings: () => void; 
   const [menu, setMenu] = useState(false);
   const [launchId, setLaunchId] = useState(0);
   const [git, setGit] = useState(false);
-  const [desktop, setDesktop] = useState(false);
   useEffect(() => { if (!props.active) setMenu(false); }, [props.active]);
   return <>
     <Pressable ref={anchor} collapsable={false} accessibilityRole="button" accessibilityLabel={t("client.git.openTools")}
@@ -59,7 +66,7 @@ function ProjectTools({ client, ...props }: Props & { openMappings: () => void; 
       <Pressable accessibilityRole="button" disabled={!props.connected}
         accessibilityState={{ disabled: !props.connected }}
         style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed, !props.connected && styles.disabled]}
-        onPress={() => { setMenu(false); setDesktop(true); }}>
+        onPress={() => { setMenu(false); props.openDesktop(); }}>
         <Ionicons name="desktop-outline" size={20} color={color(palette.ink, 'ink')} />
         <Text style={menuStyles.label}>{t("client.remoteDesktop.remoteDesktop")}</Text>
       </Pressable>
@@ -84,8 +91,6 @@ function ProjectTools({ client, ...props }: Props & { openMappings: () => void; 
     </ChatToolsPopover>}
     <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger />
     {git && <ChatGit {...props} client={client.git} onClose={() => setGit(false)} />}
-    {desktop && <RemoteDesktop client={client.desktop} active={props.active}
-      close={() => setDesktop(false)} />}
   </>;
 }
 

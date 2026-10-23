@@ -1,6 +1,8 @@
 import { getLocale, t, useLanguage } from '../i18n';
 import { Dropdown } from 'antd';
-import { Clock, ExternalLink, KeyRound, Laptop, MoreVertical, Server, Trash2, UserRound } from 'lucide-react';
+import { Clock, ExternalLink, KeyRound, Laptop, Monitor, MoreVertical, Server, Sun, Trash2, UserRound } from 'lucide-react';
+import { supportsScreenControl } from '../../../../shared/remote-desktop/screenControl';
+import { useScreenControlPrompt } from './useScreenControlPrompt';
 import type { AccountSummary, RemoteDevice, RemoteProviderSummary } from '../types';
 import { remoteModelOptions, type RemoteModelTarget } from '../../../../shared/remote-chat/modelTarget';
 
@@ -15,6 +17,7 @@ interface DeviceCardProps {
   onSelectAuthAccount: (deviceId: string) => void;
   onDelete: (device: RemoteDevice) => void;
   onRevokeService: (device: RemoteDevice) => void;
+  onScreenControl: (device: RemoteDevice, enabled: boolean) => void;
 }
 
 function platformLabel(platform: string) {
@@ -77,9 +80,16 @@ function DeviceDetails({ device, accounts, providers }: Pick<DeviceCardProps, 'd
 
 export function DeviceCard(props: DeviceCardProps) {
   useLanguage();
+  const screenControl = useScreenControlPrompt(props.onScreenControl);
   const { device, deletingDeviceId, switchingModelDeviceId, switchingAuthDeviceId } = props;
   const busy = switchingModelDeviceId === device.deviceId || deletingDeviceId === device.deviceId;
   const items = [
+    ...(supportsScreenControl(device) ? [
+      { key: 'screen-off', icon: <Monitor size={18} />, label: t('client.deviceScreen.turnOff'),
+        disabled: !device.online, onClick: () => void screenControl(device, true) },
+      { key: 'screen-restore', icon: <Sun size={18} />, label: t('client.deviceScreen.restore'),
+        disabled: !device.online, onClick: () => void screenControl(device, false) },
+    ] : []),
     { key: 'auth', icon: <ExternalLink size={18} />, label: t("client.app.proxySignInAccount"),
       disabled: !device.online || Boolean(switchingAuthDeviceId),
       onClick: () => props.onSelectAuthAccount(device.deviceId) },

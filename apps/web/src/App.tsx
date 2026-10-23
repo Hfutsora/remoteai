@@ -17,6 +17,7 @@ import { AdaptiveSheet } from "./components/AdaptiveSheet";
 import { BrandMark } from "./components/BrandMark";
 import { RegistrationSheet } from "./components/RegistrationSheet";
 import { DeviceManagementList } from "./devices/DeviceManagementList";
+import { useDeviceScreenRequest } from '../../../shared/remote-desktop/screenControl';
 import { useRevokeDesktopService } from './devices/useRevokeDesktopService';
 import { useRemoteModelRestartPrompt } from "./devices/useRemoteModelRestartPrompt";
 import { RemoteModelSwitchSheet } from "./components/RemoteModelSwitchSheet";
@@ -127,7 +128,7 @@ function LoginView() {
   </main>;
 }
 
-function DevicesPage() {
+function DevicesPage({ onScreenControl }: { onScreenControl: (device: RemoteDevice, enabled: boolean) => void }) {
   const revokeService = useRevokeDesktopService();
   useLanguage();
   const dispatch = useAppDispatch();
@@ -211,6 +212,7 @@ function DevicesPage() {
   return <>
     <PullToRefresh onRefresh={performRefresh} renderText={(status) => PULL_REFRESH_TEXT[status]}>
       <DeviceManagementList devices={sorted} accounts={accounts} providers={providers}
+        onScreenControl={onScreenControl}
         refreshing={refreshing} onRefresh={performRefresh} deletingDeviceId={deletingDeviceId}
         switchingModelDeviceId={switchingProvider?.deviceId ?? (switchingAccountId ? modelDeviceId : null)}
         switchingAuthDeviceId={switchingOpenAiAuth?.deviceId ?? null}
@@ -269,6 +271,7 @@ function AppShell() {
   const dispatch = useAppDispatch();
   const { session } = useAppSelector((state) => state.auth);
   const { page, profile, devices, refreshing, error } = useAppSelector((state) => state.data);
+  const screenControl = useDeviceScreenRequest(JSON.stringify([session?.baseUrl, session?.email]));
   const lastRefreshRef = useRef(Date.now());
   const totpManager = useTotpVault(session);
   const activeNavigationPage = primaryNavigationPage(page);
@@ -346,7 +349,10 @@ function AppShell() {
   };
   const otherPages = {
     discover: <DiscoveryPage onOpen={destination => dispatch(pageChanged(destination))} />,
-    accounts: <AccountsPage />, devices: <DevicesPage />,
+    accounts: <AccountsPage />, devices: <DevicesPage onScreenControl={(device, enabled) => {
+      const current = devices.find(item => item.deviceId === device.deviceId);
+      if (current && screenControl.open(current, enabled)) dispatch(pageChanged('chat'));
+    }} />,
     totp: <TotpPage manager={totpManager} />, settings: <SettingsPage totpManager={totpManager} />,
   };
   const pageTitle = page === 'devices' ? t('client.app.devices')
@@ -394,6 +400,7 @@ function AppShell() {
       <main className="main-content">
         {isDiscoveryPage(page) && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
         {session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
+          screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
           active={page === "chat"} />}
         {page !== "chat" && otherPages[page]}
       </main>

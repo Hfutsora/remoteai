@@ -4,6 +4,8 @@ import { WorkspaceDrawerContext, workspaceTabId } from '../../../../shared/chat/
 import { Popover } from 'antd';
 import { FolderSearch, GitBranch, Monitor, SquareTerminal, Wrench } from 'lucide-react';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
+import type { DesktopScreenLaunch } from '../../../../shared/remote-desktop/screenControl';
+import { useDesktopLauncher } from '../../../../shared/remote-desktop/useDesktopLauncher';
 import { ChatTerminal } from './ChatTerminal';
 import { ChatGit } from './git/ChatGit';
 import { RemoteDesktop } from './desktop/RemoteDesktop';
@@ -13,15 +15,19 @@ import { ProjectBrowserDrawer } from './projectBrowser/ProjectBrowserDrawer';
 import { useDesktopLayout } from '../useDesktopLayout';
 import { useProjectBrowsers } from '../../../../shared/project-browser/useProjectBrowsers';
 
-interface Props {
+interface Props extends DesktopScreenLaunch {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   desktopActions?: ReactNode;
 }
 export function ChatTools(props: Props) {
   const browsers = useProjectBrowsers();
+  const desktop = useDesktopLauncher(props);
+  const desktopLayout = useDesktopLayout();
+  const wide = desktopLayout && Boolean(props.desktopActions);
   const workspace = useContext(WorkspaceDrawerContext);
   return <>
-    <ProjectTools key={props.cwd} {...props} openFiles={() => {
+    {wide && props.desktopActions}
+    <ProjectTools key={props.cwd} {...props} wide={wide} openDesktop={desktop.open} openFiles={() => {
       const id = workspaceTabId.files(props.cwd);
       if (!workspace?.tabs.entries.some(tab => tab.id === id)) browsers.open(props.cwd);
       workspace?.tabs.open(id);
@@ -29,25 +35,25 @@ export function ChatTools(props: Props) {
     {browsers.projects.map(project => <ProjectBrowserDrawer key={project} client={props.client.projectBrowser}
       cwd={project} active={props.active && browsers.visible === project}
       connected={props.connected} onClose={browsers.close} />)}
+    {desktop.opened && <RemoteDesktop client={props.client.desktop} active={props.active} connected={props.connected}
+      privacyRequest={desktop.privacyRequest} close={desktop.close} />}
   </>;
 }
 
-function ProjectTools({ client, openFiles, desktopActions, ...props }: Props & { openFiles: () => void }) {
+function ProjectTools({ client, openFiles, wide, ...props }: Props & {
+  openFiles: () => void; openDesktop: () => void; wide: boolean;
+}) {
   const workspace = useContext(WorkspaceDrawerContext);
-  const desktopLayout = useDesktopLayout();
-  const wide = desktopLayout && Boolean(desktopActions);
   const [menu, setMenu] = useState(false);
   const [launchId, setLaunchId] = useState(0);
   const [git, setGit] = useState(false);
-  const [desktop, setDesktop] = useState(false);
   useEffect(() => { if (!props.active) setMenu(false); }, [props.active]);
   return <>
-    {wide && desktopActions}
     {!wide && <Popover trigger="click" placement="bottomRight" arrow={false}
       open={menu && props.active} onOpenChange={setMenu} styles={{ root: { maxWidth: 400 } }}
       content={<div className="chat-tools-menu">
         <button type="button" disabled={!props.connected}
-          onClick={() => { setMenu(false); setDesktop(true); }}>
+          onClick={() => { setMenu(false); props.openDesktop(); }}>
           <Monitor size={20} />{t("client.remoteDesktop.remoteDesktop")}</button>
         <button type="button" disabled={!props.connected}
           onClick={() => { setMenu(false); setLaunchId(value => value + 1); }}>
@@ -66,7 +72,5 @@ function ProjectTools({ client, openFiles, desktopActions, ...props }: Props & {
     </Popover>}
     <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger={!wide} />
     {git && <ChatGit {...props} client={client.git} onClose={() => setGit(false)} />}
-    {desktop && <RemoteDesktop client={client.desktop} active={props.active} connected={props.connected}
-      close={() => setDesktop(false)} />}
   </>;
 }

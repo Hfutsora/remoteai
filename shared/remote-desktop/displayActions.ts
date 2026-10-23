@@ -1,7 +1,7 @@
 import type { MutableRefObject } from 'react';
 import type { DesktopDisplaySession } from './displaySession';
 
-interface DisplayAction {
+export interface DisplayAction {
   allowed: boolean;
   receiver: MutableRefObject<DesktopDisplaySession | undefined>;
   updating: MutableRefObject<boolean>;

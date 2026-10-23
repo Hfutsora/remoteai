@@ -79,7 +79,9 @@ export const useStyles = createThemedStyles((color) => ({
   overlay: {
     flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#14251e55',
   },
-  menu: { width: '100%', maxWidth: 400, borderRadius: 20, padding: 16, backgroundColor: color('#fff', 'surface') },
+  menu: { width: '100%', maxWidth: 400, maxHeight: '100%', borderRadius: 20,
+    padding: 16, backgroundColor: color('#fff', 'surface') },
+  menuContent: { flexShrink: 1 },
   menuHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   menuTitle: { ...textInsets, flex: 1, color: color(deviceColors.ink, 'ink'), fontSize: 18, lineHeight: 28, fontWeight: '700' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
