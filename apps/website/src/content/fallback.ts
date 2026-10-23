@@ -4,7 +4,7 @@ function reportMissing(path: string) {
   // Report during the static export only; visitors silently get the English text.
   if (!import.meta.env.SSR || reported.has(path)) return;
   reported.add(path);
-  console.warn(`[website] Russian text is missing for ${path}; using English.`);
+  console.warn(`[website] Translation is missing for ${path}; using English.`);
 }
 
 /**

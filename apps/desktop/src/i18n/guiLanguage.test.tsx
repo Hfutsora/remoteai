@@ -32,7 +32,7 @@ it('refreshes memoized message actions and code labels without resetting local s
   const wrap = container.querySelector<HTMLButtonElement>('[aria-label="自动换行"]');
   expect(wrap).not.toBeNull();
   await act(async () => wrap?.click());
-  for (const language of ['ru', 'en', 'zh'] as const) {
+  for (const language of ['ru', 'ja', 'en', 'zh'] as const) {
     await act(async () => setGuiLanguage(language));
     expect(container.querySelector(`[aria-label="${uiText("client.workspaceActions.editMessage")}"]`)).not.toBeNull();
     const translatedWrap = container.querySelector(`[aria-label="${uiText("client.projectBrowser.wrapLines")}"]`);

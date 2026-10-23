@@ -21,6 +21,7 @@ export function AgreementConsent({ consent, language, disabled = false }: {
         <span>{copy.prefix}</span>
       </label>
       <button type="button" className="agreement-link" onClick={() => setReading(true)}>{copy.link}</button>
+      {copy.suffix && <span className="agreement-check-suffix">{copy.suffix}</span>}
     </div>
     <Modal open={consent.pendingAction !== null && !reading} centered width={400} title={copy.title}
       onCancel={consent.cancel} onOk={() => void consent.confirm()} cancelText={copy.cancel}

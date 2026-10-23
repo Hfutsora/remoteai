@@ -1,4 +1,5 @@
 import { uiText } from "../../i18n/uiText";
+import { translate, type Language } from "../../i18n";
 import {
   useCallback,
   useEffect,
@@ -71,17 +72,11 @@ function clampPercent(value: number) {
 
 type FloatingUsageMode = "account" | "concurrent" | "provider";
 
-function bubbleActionLabel(language: "en" | "zh" | "ru", refreshing: boolean, mode: FloatingUsageMode) {
-  if (language === "ru") {
-    return refreshing ? "Обновление статистики…" : mode === "concurrent"
-      ? "Обновить аккаунты и статистику" : "Обновить текущие лимиты";
+function bubbleActionLabel(language: Language, refreshing: boolean, mode: FloatingUsageMode) {
+  if (mode === "concurrent") {
+    return translate(language, refreshing ? "bubble.refreshingAccounts" : "bubble.refreshAccounts");
   }
-  if (language === "zh") {
-    if (refreshing) return mode === "concurrent" ? "正在刷新并发账号与统计" : "正在刷新当前用量";
-    return mode === "concurrent" ? "点击刷新并发账号与统计" : "点击刷新当前用量";
-  }
-  if (refreshing) return mode === "concurrent" ? "Refreshing concurrent accounts and totals" : "Refreshing usage";
-  return mode === "concurrent" ? "Click to refresh concurrent accounts and totals" : "Click to refresh usage";
+  return translate(language, refreshing ? "bubble.refreshingUsage" : "bubble.refreshUsage");
 }
 
 function floatingUsageClassName(mode: FloatingUsageMode, glass: boolean, settling: boolean, refreshing: boolean) {
@@ -215,10 +210,10 @@ export function FloatingUsageBubble() {
   const status = remaining === null
     ? "--"
     : remainingTone(remaining) === "danger"
-      ? ((language === "ru" ? uiText("client.usage.lowQuota", {}, language) : language === "zh" ? "额度较低" : "Low quota"))
+      ? ((language !== "zh" && language !== "en" ? uiText("client.usage.lowQuota", {}, language) : language === "zh" ? "额度较低" : "Low quota"))
       : remainingTone(remaining) === "warning"
-        ? ((language === "ru" ? uiText("client.usage.watchQuota", {}, language) : language === "zh" ? "额度注意" : "Quota warning"))
-        : ((language === "ru" ? uiText("client.usage.quotaAvailable", {}, language) : language === "zh" ? "额度充足" : "Quota healthy"));
+        ? ((language !== "zh" && language !== "en" ? uiText("client.usage.watchQuota", {}, language) : language === "zh" ? "额度注意" : "Quota warning"))
+        : ((language !== "zh" && language !== "en" ? uiText("client.usage.quotaAvailable", {}, language) : language === "zh" ? "额度充足" : "Quota healthy"));
   const bubbleLabel = bubbleActionLabel(language, refreshing, floatingMode);
   const ringStyle = {
     "--bubble-progress": `${remaining ?? 0}%`,
@@ -376,32 +371,32 @@ export function FloatingUsageBubble() {
           {bubbleStyle === "classic" && <ClassicBubbleVisual
             remaining={remaining}
             weeklyRemaining={weeklyRemaining}
-            weekLabel={(language === "ru" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? "周" : "W")}
+            weekLabel={(language !== "zh" && language !== "en" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? "周" : "W")}
             resetLabel={<BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay} />}
           />}
           {bubbleStyle === "glass" && <><span className="floating-glass-ring" aria-hidden="true">
             <span>{remaining === null ? "--" : `${remaining}%`}</span>
-            <small>{(language === "ru" ? uiText("client.usage.primaryUsageRemaining", {}, language) : language === "zh" ? "主用量剩余" : "Primary left")}</small>
+            <small>{(language !== "zh" && language !== "en" ? uiText("client.usage.primaryUsageRemaining", {}, language) : language === "zh" ? "主用量剩余" : "Primary left")}</small>
           </span>
           <span className="floating-glass-brand">Codex</span>
           <span className="floating-glass-details">
             <span>
-              <b>{(language === "ru" ? uiText("client.usage.timeUntilReset", {}, language) : language === "zh" ? "距离重置" : "Until reset")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.timeUntilReset", {}, language) : language === "zh" ? "距离重置" : "Until reset")}</b>
               <BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay}
                 className="floating-glass-reset" compact />
             </span>
             <span>
-              <b>{(language === "ru" ? uiText("client.usage.resetsRemaining", {}, language) : language === "zh" ? "剩余重置" : "Resets left")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.resetsRemaining", {}, language) : language === "zh" ? "剩余重置" : "Resets left")}</b>
               <strong>
-                {resetCreditsRemaining === null ? "--" : `${resetCreditsRemaining}${(language === "ru" ? uiText("client.usage.times", {}, language) : language === "zh" ? " 次" : "")}`}
+                {resetCreditsRemaining === null ? "--" : `${resetCreditsRemaining}${(language !== "zh" && language !== "en" ? uiText("client.usage.times", {}, language) : language === "zh" ? " 次" : "")}`}
               </strong>
             </span>
             <span>
-              <b>{(language === "ru" ? uiText("client.usage.secondaryUsageUsed", {}, language) : language === "zh" ? "次用量已使用" : "Secondary used")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.secondaryUsageUsed", {}, language) : language === "zh" ? "次用量已使用" : "Secondary used")}</b>
               <strong>{secondaryUsed === null ? "--" : `${secondaryUsed}%`}</strong>
             </span>
             <span>
-              <b>{(language === "ru" ? uiText("client.usage.quotaStatus", {}, language) : language === "zh" ? "额度状态" : "Quota status")}</b>
+              <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.quotaStatus", {}, language) : language === "zh" ? "额度状态" : "Quota status")}</b>
               <strong className={`floating-glass-status ${remaining === null ? "" : remainingTone(remaining)}`}>
                 {status}
               </strong>

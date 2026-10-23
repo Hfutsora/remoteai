@@ -1,6 +1,10 @@
 import type { Language } from "../../i18n";
 
 const labels = {
+  ja: {
+    today: '今日の使用量', noData: 'データがありません', details: '使用量の詳細を表示', used: '使用済み', disabled: '無効',
+    remaining: '残量', countdown: '残り {time}', hint: '割合は現在の残量です。表示された時刻にリセットされます。',
+  },
   zh: {
     today: "今日消耗", noData: "暂无数据", details: "查看用量详情", used: "已使用", disabled: "已禁用",
     remaining: "剩余额度", countdown: "剩余 {time}",

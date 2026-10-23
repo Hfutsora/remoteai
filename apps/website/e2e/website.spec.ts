@@ -54,6 +54,10 @@ test('navigation, feature filters, language switch and FAQ work', async ({ page 
     'href',
     `${basePath}en/features/remote-workspace/`,
   );
+  await page.getByRole('link', { name: '日本語', exact: true }).click();
+  await expect(page).toHaveURL(/\/ja\/features\/remote-workspace\/$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+  await expect(page.locator('h1')).toContainText('いつものコンピューターを');
   await page.getByRole('link', { name: '中文', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${basePath}features/remote-workspace/$`));
   await expect(page.locator('h1')).toContainText('电脑上的工作');
@@ -76,6 +80,9 @@ test('narrow screens keep navigation and long feature pages usable', async ({ pa
     'ru/',
     'ru/resources/',
     'ru/features/computer-use/',
+    'ja/',
+    'ja/resources/',
+    'ja/features/computer-use/',
   ]) {
     await page.goto(`${basePath}${path}`);
     await expect(page.locator('h1')).toBeVisible();
@@ -115,6 +122,11 @@ test('core content, FAQ and mobile navigation remain usable without JavaScript',
     .click();
   await expect(page).toHaveURL(/\/ru\/resources\/#learn$/);
   await expect(page.getByRole('heading', { name: 'Оценка моделей и обучение 4', exact: true })).toBeInViewport();
+  await page.goto('ja/');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+  await expect(page.locator('h1')).toContainText('アイデアを');
+  await page.goto('ja/resources/');
+  await expect(page.locator('.resource-card')).toHaveCount(26);
   await context.close();
 });
 
@@ -140,6 +152,11 @@ test('capture desktop and mobile visual checkpoints', async ({ page }) => {
   await page.screenshot({ path: 'test-results/home-white-desktop.png', fullPage: true });
   await page.goto('features/remote-workspace/');
   await page.screenshot({ path: 'test-results/feature-white-desktop.png', fullPage: true });
+  await page.goto('ja/');
+  await loadImages(page);
+  await page.screenshot({ path: 'test-results/home-japanese-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: 'test-results/home-japanese-mobile.png' });
 });
 
 async function loadImages(page: Page) {

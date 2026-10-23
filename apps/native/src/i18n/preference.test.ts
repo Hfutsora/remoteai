@@ -12,7 +12,7 @@ beforeEach(() => {
 });
 afterEach(() => { setInterfaceLanguage('zh'); vi.unstubAllGlobals(); });
 
-it.each([['zh-CN', 'zh'], ['en-US', 'en'], ['fr-FR', 'en'], ['ru-RU', 'en']])(
+it.each([['zh-CN', 'zh'], ['en-US', 'en'], ['fr-FR', 'en'], ['ru-RU', 'en'], ['ja-JP', 'en']])(
   'uses the system locale %s on first launch', async (locale, expected) => {
     vi.stubGlobal('navigator', { language: locale });
     vi.mocked(storage.getItemAsync).mockResolvedValue(null);
@@ -31,7 +31,7 @@ it('uses English when the saved preference is invalid or unavailable', async () 
   expect(getLanguage()).toBe('en');
 });
 
-it.each(['zh', 'en', 'ru'] as const)('restores the saved %s preference', async language => {
+it.each(['zh', 'en', 'ru', 'ja'] as const)('restores the saved %s preference', async language => {
   vi.mocked(storage.getItemAsync).mockResolvedValue(language);
   await loadLanguage();
   expect(getLanguage()).toBe(language);

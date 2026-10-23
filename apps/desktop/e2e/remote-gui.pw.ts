@@ -59,6 +59,37 @@ async function chooseHost(page: Page, name: string) {
   await expect(page.getByRole('menu', { name: '主机列表' })).toBeHidden();
 }
 
+test('remote GUI switches to Japanese without losing its connection or draft', async ({ context, page }, info) => {
+  test.setTimeout(90_000);
+  const host = await context.newPage();
+  await host.goto(`/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=true&title=My%20project`
+    + `&socket=${encodeURIComponent(endpoint)}`);
+  await expect(host.locator('#status')).toHaveText('registered');
+  await page.bringToFront();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/e2e/remote-gui-harness.html?socket=${encodeURIComponent(endpoint)}`);
+  await chooseComputer(page, 'Office PC');
+  await page.getByRole('button', { name: 'My project', exact: true }).click();
+  await expect(page.locator('.chat-connection-status')).toContainText('Relay');
+  await page.getByRole('textbox', { name: '聊天消息', exact: true }).fill('保留草稿 / draft');
+  await page.evaluate(async () => {
+    const module = '/src/i18n/uiText.ts';
+    const { setGuiLanguage }: typeof import('../src/i18n/uiText') = await import(module);
+    setGuiLanguage('ja');
+  });
+  await expect(page.getByRole('textbox', { name: 'チャットメッセージ', exact: true })).toHaveValue('保留草稿 / draft');
+  await expect(page.getByRole('button', { name: 'メッセージを送信', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'ポートマッピング', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'リモートデスクトップを開く', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'My project', exact: true })).toBeVisible();
+  await expect(page.getByText('可以，今天先完成这三件事：', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: info.outputPath('remote-gui-japanese.png') });
+  await page.getByRole('button', { name: 'メッセージを送信', exact: true }).click();
+  await expect.poll(() => host.evaluate(() => window.chatTest.demoState().operations
+    .filter(operation => operation.operation === 'send').map(operation => operation.text))).toEqual(['保留草稿 / draft']);
+});
+
 test('keeps remote search in its header dialog without filtering the sidebar', async ({ context, page }) => {
   const host = await context.newPage();
   await host.goto(`/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=false&title=Search%20example`

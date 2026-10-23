@@ -28,6 +28,7 @@ export function AgreementConsent({ consent, disabled }: { consent: Consent; disa
       <Pressable accessibilityRole="button" onPress={read} style={styles.linkButton}>
         <Text style={styles.link}>{copy.link}</Text>
       </Pressable>
+      {copy.suffix ? <Text style={styles.checkText}>{copy.suffix}</Text> : null}
     </View>
     <Modal transparent visible={reading || consent.pendingAction !== null} animationType="fade"
       supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}

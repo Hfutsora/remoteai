@@ -1,4 +1,5 @@
 import type { Language } from '../../i18n';
+import japanese from './copy-ja.json';
 import type { HelpError } from './types';
 import type { HelpSetupError, HelpSetupPhase } from './useHelpSetup';
 import type { HelpImageError } from './useHelpImages';
@@ -17,6 +18,7 @@ interface HelpCopy {
 }
 
 const copies: Record<Language, HelpCopy> = {
+  ja: japanese,
   zh: {
     stop: '停止', operating: '正在查看或操作界面…',
     hide: '隐藏助手', visibilityLabel: '显示助手入口', unread: '有新回答',

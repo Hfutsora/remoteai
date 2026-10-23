@@ -8,6 +8,7 @@ use crate::{commands, models::ProviderSummary, providers, storage::read_app_sett
 
 mod account_label;
 mod account_menu;
+mod localization;
 #[cfg(windows)]
 pub(crate) mod quick_menu;
 #[cfg(not(windows))]
@@ -124,6 +125,7 @@ fn initial_menu_labels(language: Option<&str>) -> (&'static str, &'static str, &
     match language {
         Some("zh") => ("Dashboard", "正在加载…", "Quit"),
         Some("ru") => ("Обзор", "Загрузка…", "Выйти"),
+        Some("ja") => ("ダッシュボード", "読み込み中…", "終了"),
         _ => ("Dashboard", "Loading…", "Quit"),
     }
 }
@@ -302,56 +304,13 @@ pub(crate) fn build_menu<R: Runtime>(
         true,
         None::<&str>,
     )?)?;
-    if settings
-        .as_ref()
-        .and_then(|settings| settings.language.as_deref())
-        == Some("ru")
-    {
-        for (id, label) in [
-            ("tray:accounts-header", "Аккаунты"),
-            ("tray:providers-header", "Провайдеры"),
-            ("tray:providers-empty", "Нет провайдеров"),
-            ("tray:providers-error", "Не удалось загрузить провайдеров"),
-            (SETTINGS_ID, "Настройки"),
-            (DASHBOARD_ID, "Обзор"),
-            (RESTART_CHATGPT_ID, "Перезапустить ChatGPT"),
-            (RESTART_APP_ID, "Перезапустить Remote AI"),
-            (QUIT_ID, "Выйти"),
-            (
-                FLOATING_BUBBLE_TOGGLE_ID,
-                if floating_bubble_enabled {
-                    "Скрыть индикатор расхода"
-                } else {
-                    "Показать индикатор расхода"
-                },
-            ),
-        ] {
-            if let Some(item) = menu.get(id).and_then(|item| item.as_menuitem().cloned()) {
-                item.set_text(label)?;
-            }
-        }
-        if let Some(item) = menu
-            .get("tray:accounts-notice")
-            .and_then(|item| item.as_menuitem().cloned())
-        {
-            item.set_text(if item.text()? == "No accounts" {
-                "Нет аккаунтов"
-            } else {
-                "Не удалось загрузить аккаунты"
-            })?;
-        }
-        // Only the text changes; Windows owner-draw reads it again when the menu is drawn.
-        for item in menu.items()? {
-            if !item.id().as_ref().starts_with(ACCOUNT_PREFIX) {
-                continue;
-            }
-            if let Some(item) = item.as_check_menuitem() {
-                if let Some(label) = account_label::russian_account_label(&item.text()?) {
-                    item.set_text(label)?;
-                }
-            }
-        }
-    }
+    localization::localize(
+        &menu,
+        settings
+            .as_ref()
+            .and_then(|settings| settings.language.as_deref()),
+        floating_bubble_enabled,
+    )?;
     Ok(menu)
 }
 

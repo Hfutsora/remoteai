@@ -2,7 +2,7 @@ import { uiText } from "../../i18n/uiText";
 import type { Language } from "../../i18n";
 
 export function quotaChartLabels(language: Language) {
-  return (language === "ru" ? {
+  return (language !== "zh" && language !== "en" ? {
     title: uiText("client.usage.officialAccountQuotaTrends", {}, language),
     account: uiText("client.usage.chooseOrSearchAccounts", {}, language),
     interval: uiText("client.usage.timeRange", {}, language),

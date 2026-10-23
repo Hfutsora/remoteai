@@ -19,6 +19,12 @@ export function setInterfaceLanguage(next: Language) {
   listeners.forEach(listener => listener());
 }
 
+/** Embedded views inherit their host's selection instead of restoring another app's preference. */
+export function initializeInterfaceLanguage(initial: Language): Language {
+  if (!language) setInterfaceLanguage(initial);
+  return getInterfaceLanguage();
+}
+
 export function subscribeInterfaceLanguage(listener: () => void) {
   listeners.add(listener);
   return () => { listeners.delete(listener); };

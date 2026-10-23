@@ -21,6 +21,11 @@ fn supported_language_code(value: &str) -> Option<u8> {
         .map(|(_, code)| *code)
 }
 
+/// Validate IPC language IDs against the generated desktop release policy.
+pub(crate) fn is_supported_interface_language(value: &str) -> bool {
+    supported_language_code(value).is_some()
+}
+
 /// Interface language for text that Rust renders itself (notifications, native dialogs,
 /// window titles, the OAuth callback page and proxy errors). Chinese is the canonical copy;
 /// a missing or unknown preference keeps the existing Chinese behavior.
@@ -29,6 +34,7 @@ pub(crate) enum InterfaceLanguage {
     Zh,
     En,
     Ru,
+    Ja,
 }
 
 impl InterfaceLanguage {
@@ -40,6 +46,7 @@ impl InterfaceLanguage {
         match code {
             1 => Self::En,
             2 => Self::Ru,
+            3 => Self::Ja,
             _ => Self::Zh,
         }
     }
@@ -49,6 +56,7 @@ impl InterfaceLanguage {
             Self::Zh => 0,
             Self::En => 1,
             Self::Ru => 2,
+            Self::Ja => 3,
         }
     }
 }
@@ -151,19 +159,19 @@ mod tests {
             assert_eq!(supported_language_code(id), Some(code));
             assert_eq!(InterfaceLanguage::from_setting(Some(id)).code(), code);
         }
-        // Japanese is registered for draft resources, but has not been enabled for desktop.
-        assert_eq!(supported_language_code("ja"), None);
+        assert_eq!(supported_language_code("ja"), Some(3));
         assert_eq!(supported_language_code("en-US"), None);
         assert_eq!(supported_language_code("unknown"), None);
     }
 
     #[test]
-    fn only_explicit_russian_or_english_leave_the_chinese_default() {
+    fn explicit_supported_preferences_override_the_chinese_default() {
         for (value, expected) in [
             (None, InterfaceLanguage::Zh),
             (Some("zh"), InterfaceLanguage::Zh),
             (Some("en"), InterfaceLanguage::En),
             (Some("ru"), InterfaceLanguage::Ru),
+            (Some("ja"), InterfaceLanguage::Ja),
             (Some("ru-RU"), InterfaceLanguage::Zh),
             (Some(""), InterfaceLanguage::Zh),
         ] {

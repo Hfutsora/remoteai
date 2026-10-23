@@ -49,7 +49,7 @@ it.each([
   expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe(language);
 });
 
-it.each(['zh', 'en', 'ru'] as const)('preserves the saved %s choice over the system language', async language => {
+it.each(['zh', 'en', 'ru', 'ja'] as const)('preserves the saved %s choice over the system language', async language => {
   vi.spyOn(navigator, 'language', 'get').mockReturnValue('fr-FR');
   localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
   await act(async () => root.render(<LanguageView />));

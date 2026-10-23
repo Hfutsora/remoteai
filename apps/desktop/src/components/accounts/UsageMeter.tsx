@@ -19,11 +19,11 @@ function tableResetLabel(timestamp: number | null | undefined, language: Languag
   if (resetWindow === "oneWeek") {
     const countdown = resetCountdownWithDays(timestamp, language, now);
     if (!countdown) return label;
-    return (language === "ru" ? uiText("client.usage.remaining", { value1: label, value2: countdown }, language) : language === "zh" ? `${label} · 剩 ${countdown}` : `${label} · ${countdown} left`);
+    return (language !== "zh" && language !== "en" ? uiText("client.usage.remaining", { value1: label, value2: countdown }, language) : language === "zh" ? `${label} · 剩 ${countdown}` : `${label} · ${countdown} left`);
   }
   const countdown = resetCountdownTime(timestamp, now);
   if (!countdown) return label;
-  return (language === "ru" ? uiText("client.usage.remaining", { value1: label, value2: countdown }, language) : language === "zh" ? `${label} · 剩 ${countdown}` : `${label} · ${countdown} left`);
+  return (language !== "zh" && language !== "en" ? uiText("client.usage.remaining", { value1: label, value2: countdown }, language) : language === "zh" ? `${label} · 剩 ${countdown}` : `${label} · ${countdown} left`);
 }
 
 function secondsSinceRefresh(timestamp: string | null | undefined, now: number) {

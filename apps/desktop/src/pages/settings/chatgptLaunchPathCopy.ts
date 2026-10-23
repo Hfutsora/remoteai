@@ -1,6 +1,14 @@
 import type { Language } from '../../i18n';
 
 const copy = {
+  ja: {
+    title: 'ChatGPT の起動パス', description: '起動や再起動にこのパスを使います。空欄の場合は自動検出します。',
+    label: 'アプリのパス', placeholder: 'ChatGPT が見つかりません。アプリのフルパスを入力してください',
+    loading: 'ChatGPT のパスを検出中…', save: '保存', saved: '保存しました。次回の起動または再起動時に適用されます。',
+    load: '起動パスを読み取れません。設定ページを開き直してください。',
+    invalid: '有効な ChatGPT アプリまたは実行ファイルのフルパスを入力してください。',
+    error: '起動パスを保存できませんでした。もう一度お試しください。',
+  },
   zh: {
     title: 'ChatGPT 启动路径',
     description: '启动和重启时优先使用此路径。留空则自动识别。',

@@ -110,7 +110,7 @@ it("opens the editor in the current interface language", async () => {
 it("sends language switches to the open editor without reloading it", async () => {
   const src = frame.getAttribute("src");
   const post = vi.spyOn(frame.contentWindow!, "postMessage");
-  for (const language of ["ru", "en", "zh"] as const) {
+  for (const language of ["ru", "ja", "en", "zh"] as const) {
     await act(async () => setGuiLanguage(language));
     expect(post).toHaveBeenLastCalledWith({ type: COZE_DESKTOP_STATE, busy: false, language }, origin);
     expect(host.querySelector("iframe")).toBe(frame);

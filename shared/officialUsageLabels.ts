@@ -36,8 +36,20 @@ const ru: Labels = {
   unavailableStatus: 'Данные о расходе временно недоступны. Повторите попытку позже.',
   updated: 'Обновлено', empty: 'Нет данных о расходе',
 };
+const ja: Labels = {
+  title: 'デバイス間の公式アカウント使用量', account: '公式アカウント', devices: 'デバイス', tokens: '使用トークン数',
+  cost: '使用料金（{unit}）', remaining: '推定残量（{unit}）', capacity: '上限 100% の推定量（{unit}）',
+  primary: 'メインの上限', secondary: 'サブの上限', unavailable: 'データが不足しています',
+  hint: '基準時点からの残量の減少と各デバイスの累積使用量に基づく推定です。残量が回復すると再計算します。参考値としてご利用ください。',
+  detail: '推定残量／推定総量。上限が 2 種類ある場合は残量が少ない方を表示します。直近の使用量に基づく参考値です。',
+  signedOut: 'ログインすると、デバイス間の使用量と推定残量を確認できます。',
+  ready: '各デバイスに記録された公式アカウントの使用量を集計します。',
+  unavailableStatus: 'アカウントの使用量を取得できません。しばらくしてから再試行してください。',
+  updated: '更新日時', empty: '公式アカウントの使用量がありません',
+};
+const localized: Readonly<Record<string, Labels>> = { zh, en, ru, ja };
 export function officialUsageLabels(language: string, unit = 'USD'): Labels {
-  const labels = language === 'zh' ? zh : language === 'ru' ? ru : en;
+  const labels = Object.hasOwn(localized, language) ? localized[language] : en;
   return { ...labels, cost: labels.cost.replace('{unit}', () => unit),
     remaining: labels.remaining.replace('{unit}', () => unit), capacity: labels.capacity.replace('{unit}', () => unit) };
 }

@@ -4,6 +4,7 @@ import { Button, ConfigProvider, Dropdown, Modal, theme as antdTheme } from "ant
 import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
 import ruRU from "antd/locale/ru_RU";
+import jaJP from "antd/locale/ja_JP";
 import { CalendarClock, Check, CircleHelp, PanelLeftClose, PanelLeftOpen, Play, Plus, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -1250,7 +1251,7 @@ export function DashboardApp() {
     : "nav.collapseSidebar");
 
   return (
-    <ConfigProvider locale={{ zh: zhCN, en: enUS, ru: ruRU }[language]} theme={{
+    <ConfigProvider locale={{ zh: zhCN, en: enUS, ru: ruRU, ja: jaJP }[language]} theme={{
       algorithm: themeMode.appliedMode === "dark"
         ? [antdTheme.darkAlgorithm, antdTheme.compactAlgorithm]
         : antdTheme.compactAlgorithm,

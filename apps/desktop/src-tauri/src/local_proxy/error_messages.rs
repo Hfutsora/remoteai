@@ -143,6 +143,9 @@ pub(super) fn gui(error: &str) -> String {
     if crate::storage::interface_language() == crate::storage::InterfaceLanguage::Ru {
         return russian::gui(error);
     }
+    if crate::storage::interface_language() == crate::storage::InterfaceLanguage::Ja {
+        return japanese::gui(error);
+    }
     if let Some(message) = transport(error) {
         return match transport_attempts(error) {
             Some(count) => format!("{message}已尝试 {count} 次。"),
@@ -198,9 +201,13 @@ pub(super) fn localized(source: &'static str) -> &'static str {
     if crate::storage::interface_language() == crate::storage::InterfaceLanguage::Ru {
         return russian::fixed(source).unwrap_or(source);
     }
+    if crate::storage::interface_language() == crate::storage::InterfaceLanguage::Ja {
+        return japanese::fixed(source).unwrap_or(source);
+    }
     source
 }
 
+mod japanese;
 mod known;
 mod russian;
 

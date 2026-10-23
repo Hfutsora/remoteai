@@ -1,4 +1,6 @@
 import { ru, ruHomeFaqs } from './copy-ru';
+import ja from './ja/copy.json';
+import jaHomeFaqs from './ja/faqs.json';
 import { withEnglishFallback } from './fallback';
 import type { Language } from './types';
 
@@ -284,10 +286,10 @@ const en: typeof zh = {
 
 // Russian copy lives in copy-ru.ts; anything it lacks falls back to English.
 const russian = withEnglishFallback(ru, en, 'copy');
+const localized = { zh, en, ru: russian, ja: withEnglishFallback(ja, en, 'ja.copy') };
 
 export function copy(language: Language) {
-  if (language === 'ru') return russian;
-  return language === 'en' ? en : zh;
+  return localized[language];
 }
 
 export const homeFaqs = {
@@ -344,5 +346,6 @@ export const homeFaqs = {
     },
   ],
   ru: ruHomeFaqs,
+  ja: jaHomeFaqs,
 };
 homeFaqs.ru = withEnglishFallback(homeFaqs.ru, homeFaqs.en, 'homeFaqs');

@@ -92,7 +92,7 @@ export function useTomlEditor(props: TomlEditorProps) {
       baseRevision.current = nextRevision;
     }
     if (value !== latest.current) { setStatus("changed"); return false; }
-    if (nextRevision === false) return failure((language === "ru" ? uiText("client.configHelp.couldNotSaveYourEditsArePreservedPleaseTryAgain", {}, language) : language === "zh"
+    if (nextRevision === false) return failure((language !== "zh" && language !== "en" ? uiText("client.configHelp.couldNotSaveYourEditsArePreservedPleaseTryAgain", {}, language) : language === "zh"
       ? "未能保存，修改内容已保留。请稍后重试。"
       : "Could not save. Your changes are kept here. Please try again."), true);
     setStatus("saved");
@@ -109,7 +109,7 @@ export function useTomlEditor(props: TomlEditorProps) {
     setSaving(true);
     const promise = saveValue(value).catch(() => {
       if (value !== latest.current) return false;
-      return failure((language === "ru" ? uiText("client.configHelp.couldNotValidateOrSaveYourEditsArePreservedPlease", {}, language) : language === "zh"
+      return failure((language !== "zh" && language !== "en" ? uiText("client.configHelp.couldNotValidateOrSaveYourEditsArePreservedPlease", {}, language) : language === "zh"
         ? "暂时无法校验或保存，修改内容已保留。请稍后重试。"
         : "Could not validate or save. Your changes are kept here. Please try again."));
     });

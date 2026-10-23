@@ -17,10 +17,10 @@ import { composerPatch, composerLabel } from '../../../../shared/remote-chat/com
 import { settingOptions } from '../../../../shared/remote-chat/settingsMenu';
 
 const placeholders = (text: string) => [...text.matchAll(/\{\w+\}/g)].map(match => match[0]).sort();
-const dictionaries: Readonly<Record<string, string>>[] = [english, russian];
+const dictionaries: Readonly<Record<string, string>>[] = [english, russian, clientResources.ja];
 afterEach(() => setInterfaceLanguage('zh'));
 
-it('covers all explicitly translated native copy in English and Russian', () => {
+it('covers all explicitly translated native copy in every released language', () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const files = readdirSync(root, { recursive: true }).map(String)
     .filter(file => /\.tsx?$/.test(file) && !/\.test\.|\.generated\./.test(file)).map(file => join(root, file));
@@ -44,7 +44,7 @@ it('covers all explicitly translated native copy in English and Russian', () => 
 });
 
 it('preserves untrusted values and ignores inherited dictionary properties', () => {
-  for (const language of ['zh', 'en', 'ru'] as const) {
+  for (const language of ['zh', 'en', 'ru', 'ja'] as const) {
     for (const text of ['toString', '__proto__', 'constructor', 'my_file.ts', '用户写的内容']) {
       expect(displayText(text, {}, language)).toBe(text);
     }
@@ -59,7 +59,7 @@ it('switches display language without changing model, permissions or request val
   const selection = { model: "取消", effort: 'high', access: 'workspace-write', speed: 'fast' } as const;
   const model = { id: 'test', model: selection.model, displayName: "取消", supportedReasoningEfforts: [],
     isDefault: true, defaultReasoningEffort: 'high' };
-  for (const language of ['zh', 'en', 'ru'] as const) {
+  for (const language of ['zh', 'en', 'ru', 'ja'] as const) {
     setInterfaceLanguage(language);
     expect(composerPatch(selection)).toEqual(selection);
     expect(settingOptions('model', [model], selection)[0]).toEqual({ value: '取消', label: '取消' });

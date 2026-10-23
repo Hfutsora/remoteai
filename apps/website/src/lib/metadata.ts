@@ -6,7 +6,9 @@ import { resourceListSchema } from './resource-content';
 import { languages, languageTags, pagePath, SITE_URL, LINKS } from './site';
 import { ui } from './ui-text';
 
-const openGraphLocales = { zh: 'zh_CN', en: 'en_US', ru: 'ru_RU' } satisfies Record<Route['language'], string>;
+const openGraphLocales: Record<Route['language'], string> = {
+  zh: 'zh_CN', en: 'en_US', ru: 'ru_RU', ja: 'ja_JP',
+};
 
 export function escapeHtml(value: string) {
   return value.replace(

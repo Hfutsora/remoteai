@@ -57,6 +57,17 @@ test('switches language while keeping the chat connection, draft and user conten
   await page.screenshot({ path: info.outputPath('chat-russian-draft.png') });
   await navigate(page, ru("client.app.settings"));
   await page.getByRole('button', { name: `${ru("client.settings.language")} Русский` }).click();
+  await page.getByRole('radio', { name: '日本語' }).click();
+  const ja = (key: MessageKey) => testText(key, {}, 'ja');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja-JP');
+  await navigate(page, ja('client.app.chat'));
+  await expect(page.getByRole('textbox', { name: 'チャットメッセージ' })).toHaveValue(draft);
+  await expect(page.getByRole('button', { name: 'メッセージを送信', exact: true })).toBeEnabled();
+  expect((await state(request)).mobileConnections).toBe(connections);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: info.outputPath('chat-japanese-draft.png') });
+  await navigate(page, ja('client.app.settings'));
+  await page.getByRole('button', { name: '言語 日本語' }).click();
   await page.getByRole('radio', { name: '简体中文' }).click();
   await navigate(page, '聊天');
   await expect(page.getByRole('textbox', { name: '聊天消息' })).toHaveValue(draft);

@@ -4,6 +4,10 @@ import { formatCompactTokenCount } from "../../utils/tokenContext";
 import type { ConcurrentUsageSummary } from "./concurrentUsageSummary";
 
 const COPY = {
+  ja: {
+    accountCount: '並列アカウント数', estimatedCost: '今日の推定合計料金',
+    title: '並列利用の集計', totalTokens: '今日の合計トークン使用量',
+  },
   ru: {
     accountCount: "Аккаунтов в параллельном режиме", estimatedCost: "Стоимость за сегодня",
     title: "Общая статистика", totalTokens: "Токены за сегодня",

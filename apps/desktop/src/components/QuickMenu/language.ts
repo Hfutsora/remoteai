@@ -7,6 +7,7 @@ const ACCOUNTS_HEADER_LANGUAGES = new Map<string, Language>([
   ["账号", "zh"],
   ["Accounts", "en"],
   ["Аккаунты", "ru"],
+  ["アカウント", "ja"],
 ]);
 
 /**

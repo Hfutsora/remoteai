@@ -1,3 +1,5 @@
+import type { EnabledLanguage } from '@remoteai/i18n';
+
 export interface GitChange {
   path: string; originalPath: string | null; status: string; conflict: boolean; version: string;
 }
@@ -14,7 +16,7 @@ export interface GitCommitRequest {
   cwd: string; head: string | null; message: string; files: { path: string; version: string }[];
 }
 export interface GitMessageRequest extends Omit<GitCommitRequest, 'message'> {
-  language: 'zh' | 'en' | 'ru';
+  language: EnabledLanguage;
 }
 export interface GitSettings { autoMessage: boolean; revision: number }
 export type GitFileAction = 'rollback' | 'delete';

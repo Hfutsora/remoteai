@@ -1,6 +1,8 @@
 import { isAppLanguage, localeForLanguage, type AppLanguage } from '@remoteai/i18n';
 import { useSyncExternalStore } from 'react';
-import { setInterfaceLanguage } from "../../../../shared/localization/interfaceLanguage";
+import {
+  getInterfaceLanguage, initializeInterfaceLanguage, setInterfaceLanguage, subscribeInterfaceLanguage,
+} from "../../../../shared/localization/interfaceLanguage";
 import { DEFAULT_LANGUAGE, deviceLanguage } from "../../../../shared/localization/language";
 
 export type Language = AppLanguage<'web'>;
@@ -15,8 +17,7 @@ function readLanguage(): Language {
   return deviceLanguage();
 }
 
-let language = readLanguage();
-setInterfaceLanguage(language);
+let language = initializeInterfaceLanguage(readLanguage());
 export const getLanguage = () => language;
 export const getLocale = () => localeForLanguage(language);
 
@@ -26,6 +27,9 @@ function publishLanguage(next: Language) {
   setInterfaceLanguage(next);
   listeners.forEach(listener => listener());
 }
+
+// Desktop embeds these chat views; follow its selection without writing Web preferences.
+subscribeInterfaceLanguage(() => publishLanguage(getInterfaceLanguage()));
 
 export function setLanguage(next: Language) {
   if (!isAppLanguage('web', next)) return;

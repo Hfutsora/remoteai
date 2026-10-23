@@ -10,7 +10,9 @@ mod model_context_settings;
 pub(crate) use interface_copy::{callback_page_copy, native_text};
 #[cfg(test)]
 pub(crate) use language_settings::with_interface_language;
-pub(crate) use language_settings::{interface_language, save_app_language, InterfaceLanguage};
+pub(crate) use language_settings::{
+    interface_language, is_supported_interface_language, save_app_language, InterfaceLanguage,
+};
 pub(crate) use model_context_settings::{update_model_context_window, ModelContextWindowUpdate};
 
 #[cfg(test)]

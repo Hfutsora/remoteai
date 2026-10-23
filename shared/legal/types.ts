@@ -1,4 +1,5 @@
-export type AgreementLanguage = 'zh' | 'en' | 'ru';
+import type { EnabledLanguage } from '@remoteai/i18n';
+export type AgreementLanguage = EnabledLanguage;
 export type AgreementAction = 'login' | 'register';
 
 export interface AgreementSection {

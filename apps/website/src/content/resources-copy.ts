@@ -1,5 +1,6 @@
 import { withEnglishFallback } from './fallback';
 import { ruResourcesCopy } from './resources-ru';
+import ja from './ja/resources-copy.json';
 import type { Language } from './types';
 
 const zh = {
@@ -38,8 +39,8 @@ const en: typeof zh = {
 
 // Russian copy lives in resources-ru.ts; anything it lacks falls back to English.
 const russian = withEnglishFallback(ruResourcesCopy, en, 'resourcesCopy');
+const localized = { zh, en, ru: russian, ja: withEnglishFallback(ja, en, 'ja.resourcesCopy') };
 
 export function resourcesCopy(language: Language) {
-  if (language === 'ru') return russian;
-  return language === 'en' ? en : zh;
+  return localized[language];
 }

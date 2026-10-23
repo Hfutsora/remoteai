@@ -55,7 +55,7 @@ function useHeatmapOption(context: OverviewContext) {
       itemWidth: 11,
       itemHeight: 11,
       itemGap: 4,
-      text: (language === "ru" ? [uiText("client.mobile.more", {}, language), uiText("client.mobile.less", {}, language)] : language === "zh" ? ["多", "少"] : ["More", "Less"]),
+      text: (language !== "zh" && language !== "en" ? [uiText("client.mobile.more", {}, language), uiText("client.mobile.less", {}, language)] : language === "zh" ? ["多", "少"] : ["More", "Less"]),
       textStyle: { color: palette.muted, fontSize: 10 },
       pieces: [
         { value: 0, color: palette.heat[0] },
@@ -75,9 +75,9 @@ function useHeatmapOption(context: OverviewContext) {
       itemStyle: { color: palette.heat[0], borderColor: palette.panel, borderWidth: 2 },
       yearLabel: { show: false },
       monthLabel: { color: palette.muted, fontSize: 10,
-        nameMap: language === "ru" ? [...RUSSIAN_MONTH_LABELS] : language === "zh" ? "ZH" : "EN" },
+        nameMap: language !== "zh" && language !== "en" ? [...RUSSIAN_MONTH_LABELS] : language === "zh" ? "ZH" : "EN" },
       dayLabel: { firstDay: 0, color: palette.muted, fontSize: 10,
-        nameMap: (language === "ru" ? [uiText("client.mobile.sun", {}, language), uiText("client.mobile.mon", {}, language), uiText("client.mobile.tue", {}, language), uiText("client.mobile.wed", {}, language), uiText("client.mobile.thu", {}, language), uiText("client.mobile.fri", {}, language), uiText("client.mobile.sat", {}, language)] : language === "zh" ? ["日", "一", "二", "三", "四", "五", "六"] : "EN") },
+        nameMap: (language !== "zh" && language !== "en" ? [uiText("client.mobile.sun", {}, language), uiText("client.mobile.mon", {}, language), uiText("client.mobile.tue", {}, language), uiText("client.mobile.wed", {}, language), uiText("client.mobile.thu", {}, language), uiText("client.mobile.fri", {}, language), uiText("client.mobile.sat", {}, language)] : language === "zh" ? ["日", "一", "二", "三", "四", "五", "六"] : "EN") },
     },
     series: [{
       type: "heatmap",
@@ -173,7 +173,7 @@ function useTokenTypeOption(context: OverviewContext) {
 export function useOverviewOptions(options: OverviewOptions) {
   const { dailyUsage, language } = options;
   const locale = getLocale(language);
-  const tokenLabels = useMemo(() => (language === "ru" ? { total: uiText("client.chat.total.e8dc87", {}, language), input: uiText("client.chat.input", {}, language), output: uiText("client.chat.output", {}, language), reasoning: uiText("client.chat.reasoning", {}, language), cached: uiText("client.chat.cached", {}, language) } : language === "zh"
+  const tokenLabels = useMemo(() => (language !== "zh" && language !== "en" ? { total: uiText("client.chat.total.e8dc87", {}, language), input: uiText("client.chat.input", {}, language), output: uiText("client.chat.output", {}, language), reasoning: uiText("client.chat.reasoning", {}, language), cached: uiText("client.chat.cached", {}, language) } : language === "zh"
     ? { total: "总计", input: "输入", output: "输出", reasoning: "推理", cached: "缓存" }
     : { total: "Total", input: "Input", output: "Output", reasoning: "Reasoning", cached: "Cached" }), [language]);
   const dailyByDate = useMemo(() => new Map(dailyUsage.map((entry) => [entry.date, entry])), [dailyUsage]);

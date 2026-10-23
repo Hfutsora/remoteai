@@ -22,7 +22,7 @@ export function DailyTokenUsageTooltip({ totals, language }: {
   totals: TokenTypeTotals;
   language: Language;
 }) {
-  const labels = (language === "ru" ? {
+  const labels = (language !== "zh" && language !== "en" ? {
       title: uiText("client.usage.todaySTokenUsage", {}, language),
       input: uiText("client.chat.input", {}, language),
       output: uiText("client.chat.output", {}, language),

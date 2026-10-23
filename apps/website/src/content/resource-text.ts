@@ -1,7 +1,16 @@
 import { withEnglishFallback } from './fallback';
 import { resourceGroups, type AiResource, type ResourceGroup } from './resources';
 import { ruResourceDescriptions, ruResourceGroups } from './resources-ru';
+import jaResourceDescriptions from './ja/resource-descriptions.json';
+import jaResourceGroups from './ja/resource-groups.json';
 import type { Language } from './types';
+
+const groupText: Partial<Record<Language, Record<string, { title: string; description: string }>>> = {
+  ru: ruResourceGroups, ja: jaResourceGroups,
+};
+const descriptions: Partial<Record<Language, Record<string, string>>> = {
+  ru: ruResourceDescriptions, ja: jaResourceDescriptions,
+};
 
 if (import.meta.env.SSR) {
   const names = new Set(resourceGroups.flatMap((group) => group.items.map((resource) => resource.name)));
@@ -12,20 +21,18 @@ if (import.meta.env.SSR) {
 
 /** Category title and description in the page language. Russian comes from resources-ru.ts. */
 export function resourceGroupText(group: ResourceGroup, language: Language) {
-  if (language !== 'ru') return { title: group.title[language], description: group.description[language] };
+  const source = language === 'zh' ? 'zh' : 'en';
   return withEnglishFallback(
-    ruResourceGroups[group.id],
-    { title: group.title.en, description: group.description.en },
-    `resources.${group.id}`,
+    groupText[language]?.[group.id] ?? { title: group.title[source], description: group.description[source] },
+    { title: group.title.en, description: group.description.en }, `${language}.resources.${group.id}`,
   );
 }
 
 /** Resource description in the page language. Russian comes from resources-ru.ts. */
 export function resourceDescription(resource: AiResource, language: Language) {
-  if (language !== 'ru') return resource.description[language];
   return withEnglishFallback(
-    ruResourceDescriptions[resource.name],
+    descriptions[language]?.[resource.name] ?? resource.description[language === 'zh' ? 'zh' : 'en'],
     resource.description.en,
-    `resources.${resource.name}`,
+    `${language}.resources.${resource.name}`,
   );
 }

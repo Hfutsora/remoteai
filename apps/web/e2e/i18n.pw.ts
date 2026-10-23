@@ -133,3 +133,26 @@ test('Russian settings persist and fit narrow and desktop layouts', async ({ pag
   await page.getByRole('radio', { name: '简体中文' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
 });
+
+test('Japanese settings persist and fit narrow and desktop layouts', async ({ page, request }, info) => {
+  const ja = (key: MessageKey) => testText(key, {}, 'ja');
+  await request.post('http://127.0.0.1:1491/test/reset');
+  await signIn(page);
+  await navigate(page, '设置');
+  await page.getByRole('button', { name: '语言 简体中文' }).click();
+  await page.getByRole('radio', { name: '日本語' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja-JP');
+  const languageName = `${ja("client.settings.language")} 日本語`;
+  await expect(page.getByRole('button', { name: languageName })).toBeVisible();
+  await expect(page.getByRole('button', { name: ja("client.settings.changePassword"), exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.getByText('欢迎回来', { exact: true })).toBeHidden();
+  await page.screenshot({ path: info.outputPath('settings-japanese.png') });
+  await page.reload();
+  await navigate(page, ja("client.app.settings"));
+  await expect(page.getByRole('button', { name: languageName })).toBeVisible();
+  await page.getByRole('button', { name: languageName }).click();
+  await expect(page.getByRole('radio', { name: '日本語' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('radio', { name: '简体中文' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
+});

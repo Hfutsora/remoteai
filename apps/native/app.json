@@ -13,6 +13,7 @@
     "locales": {
       "en": "./locales/en.json",
       "ru": "./locales/ru.json",
+      "ja": "./locales/ja.json",
       "zh-Hans": "./locales/zh.json",
       "zh-Hant": "./locales/zh.json"
     },

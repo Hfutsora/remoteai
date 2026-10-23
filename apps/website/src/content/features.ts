@@ -3,6 +3,7 @@ import { managementFeatures } from './features-management';
 import { toolFeatures } from './features-tools';
 import { personalFeatures } from './features-personal';
 import { ruFeatures } from './features-ru';
+import jaFeatures from './ja/features.json';
 import { withEnglishFallback } from './fallback';
 import type { Feature, FeatureContent, Language } from './types';
 
@@ -18,24 +19,30 @@ if (import.meta.env.SSR) {
   }
 }
 
-const russianContent = new Map<string, FeatureContent>();
+const localizedFeatures: Partial<Record<Language, Record<string, Partial<FeatureContent> & { imageAlt?: string }>>> = {
+  ru: ruFeatures, ja: jaFeatures,
+};
+const translatedContent = new Map<string, FeatureContent>();
 
-/** Feature text in the page language. Russian comes from features-ru.ts and falls back to English. */
+/** Resolve feature text independently for each page language, with English as a final fallback. */
 export function featureContent(feature: Feature, language: Language): FeatureContent {
-  if (language !== 'ru') return feature[language];
-  let content = russianContent.get(feature.slug);
+  const messages = localizedFeatures[language];
+  if (!messages) return language === 'zh' ? feature.zh : feature.en;
+  const key = `${language}/${feature.slug}`;
+  let content = translatedContent.get(key);
   if (!content) {
-    content = withEnglishFallback(ruFeatures[feature.slug], feature.en, `features.${feature.slug}`);
-    russianContent.set(feature.slug, content);
+    content = withEnglishFallback(messages[feature.slug], feature.en, `${language}.features.${feature.slug}`);
+    translatedContent.set(key, content);
   }
   return content;
 }
 
 export function featureImageAlt(feature: Feature, language: Language) {
-  if (language !== 'ru') return feature.imageAlt[language];
+  const messages = localizedFeatures[language];
+  if (!messages) return language === 'zh' ? feature.imageAlt.zh : feature.imageAlt.en;
   return withEnglishFallback(
-    ruFeatures[feature.slug]?.imageAlt,
+    messages[feature.slug]?.imageAlt,
     feature.imageAlt.en,
-    `features.${feature.slug}.imageAlt`,
+    `${language}.features.${feature.slug}.imageAlt`,
   );
 }

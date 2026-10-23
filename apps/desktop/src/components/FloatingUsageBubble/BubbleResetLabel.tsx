@@ -25,14 +25,14 @@ export function BubbleResetLabel({ timestamp, language, display, className, comp
     if (compact) {
       return (
         <small className={`floating-bubble-reset ${className ?? ""}`}>
-          <span>{clock ?? ((language === "ru" ? uiText("client.usage.unknown", {}, language) : language === "zh" ? "未知" : "unknown"))}</span>
+          <span>{clock ?? ((language !== "zh" && language !== "en" ? uiText("client.usage.unknown", {}, language) : language === "zh" ? "未知" : "unknown"))}</span>
         </small>
       );
     }
     return (
       <small className={`floating-bubble-reset floating-bubble-reset-stacked ${className ?? ""}`}>
-        <span>{(language === "ru" ? (clock ? uiText("client.usage.resetsAt", {}, language) : uiText("client.usage.resetTime", {}, language)) : language === "zh" ? (clock ? "重置于" : "重置时间") : (clock ? "Resets at" : "Reset time"))}</span>
-        <span>{clock ?? ((language === "ru" ? uiText("client.usage.unknown", {}, language) : language === "zh" ? "未知" : "unknown"))}</span>
+        <span>{(language !== "zh" && language !== "en" ? (clock ? uiText("client.usage.resetsAt", {}, language) : uiText("client.usage.resetTime", {}, language)) : language === "zh" ? (clock ? "重置于" : "重置时间") : (clock ? "Resets at" : "Reset time"))}</span>
+        <span>{clock ?? ((language !== "zh" && language !== "en" ? uiText("client.usage.unknown", {}, language) : language === "zh" ? "未知" : "unknown"))}</span>
       </small>
     );
   }
@@ -48,13 +48,13 @@ export function BubbleResetLabel({ timestamp, language, display, className, comp
   if (compact) {
     return (
       <small className={`floating-bubble-reset ${className ?? ""}`}>
-        <span>{time ? `${days}${(language === "ru" ? uiText("client.mobile.d", {}, language) : language === "zh" ? "天" : "d")}\u00a0${time}` : "--"}</span>
+        <span>{time ? `${days}${(language !== "zh" && language !== "en" ? uiText("client.mobile.d", {}, language) : language === "zh" ? "天" : "d")}\u00a0${time}` : "--"}</span>
       </small>
     );
   }
   return (
     <small className={`floating-bubble-reset floating-bubble-reset-stacked ${className ?? ""}`}>
-      {time ? <><span>{days}{(language === "ru" ? uiText("client.mobile.d", {}, language) : language === "zh" ? "天" : "d")}</span><span>{time}</span></> : <span>--</span>}
+      {time ? <><span>{days}{(language !== "zh" && language !== "en" ? uiText("client.mobile.d", {}, language) : language === "zh" ? "天" : "d")}</span><span>{time}</span></> : <span>--</span>}
     </small>
   );
 }

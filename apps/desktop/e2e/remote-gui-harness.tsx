@@ -14,11 +14,14 @@ import { guiFontStyle, useGuiFontSize } from '../src/pages/codexGui/guiAppearanc
 import { createAsyncGitFixture } from '../../../shared/remote-chat/testing/gitFixture';
 import { WindowControls } from '../src/components/WindowControls';
 import { translate } from '../src/i18n';
+import { useGuiLanguage } from '../src/i18n/useGuiLanguage';
 import 'antd/dist/reset.css';
 
 const localGit = createAsyncGitFixture();
 
 function Harness() {
+  // The real desktop root rerenders when its language preference changes.
+  useGuiLanguage();
   const fontSize = useGuiFontSize();
   const [localDraft, setLocalDraft] = useState('Local unsent draft');
   const [project, setProject] = useState('/local/workspace');

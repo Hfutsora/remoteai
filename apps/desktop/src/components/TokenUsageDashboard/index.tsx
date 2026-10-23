@@ -68,7 +68,7 @@ export function TokenUsageDashboard({
   const { entries, dailyUsage, breakdown, quotaHistory, loading, error, analyticsError, quotaError,
     updatedAt, startTs, endTs, load } = useDashboardData({ weeks, refreshSeconds, thresholdTokens });
   const locale = getLocale(language);
-  const labels = (language === "ru" ? {
+  const labels = (language !== "zh" && language !== "en" ? {
     eyebrow: "PROVIDER / TOKEN",
     title: uiText("client.usage.tokenUsageSummary", {}, language),
     period: uiText("client.usage.lastWeeks", { value1: weeks }, language),
@@ -114,11 +114,11 @@ export function TokenUsageDashboard({
     recent: `Rankings use the latest ${entries.length} proxy requests`,
     noData: "No token data",
   });
-  const proxyOnlyHint = (language === "ru" ? uiText("client.usage.tokenUsageIsRecordedOnlyInProxyMode", {}, language) : language === "zh"
+  const proxyOnlyHint = (language !== "zh" && language !== "en" ? uiText("client.usage.tokenUsageIsRecordedOnlyInProxyMode", {}, language) : language === "zh"
     ? "仅代理模式会统计 Token 消耗"
     : "Token usage is collected only in proxy mode");
-  const rangeLabel = (language === "ru" ? uiText("client.chat.recent", {}, language) : language === "zh" ? "最近" : "Last");
-  const weeksUnit = (language === "ru" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? "周" : "weeks");
+  const rangeLabel = (language !== "zh" && language !== "en" ? uiText("client.chat.recent", {}, language) : language === "zh" ? "最近" : "Last");
+  const weeksUnit = (language !== "zh" && language !== "en" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? "周" : "weeks");
   const palette = useMemo(() => chartPalette(themeColor, dark), [dark, themeColor]);
   const dateKeys = useMemo(() => calendarDateKeys(weeks), [dailyUsage, weeks]);
   const { heatmapOption, trendOption, breakdownOption } = useOverviewOptions({
@@ -129,7 +129,7 @@ export function TokenUsageDashboard({
   const modelData = useMemo(() => aggregateEntries(entries, (entry) => entry.model), [entries]);
   const accountData = useMemo(() => aggregateEntries(entries, (entry) => entry.accountEmail?.trim()
     || entry.accountId?.trim()
-    || ((language === "ru" ? uiText("client.usage.unidentifiedAccount", {}, language) : language === "zh" ? "未识别账户" : "Unknown account"))), [entries, language]);
+    || ((language !== "zh" && language !== "en" ? uiText("client.usage.unidentifiedAccount", {}, language) : language === "zh" ? "未识别账户" : "Unknown account"))), [entries, language]);
 
   return (
     <div className={`${styles.tokenDashboard}${embedded ? ` ${styles.embedded}` : ""}`}>
@@ -157,13 +157,13 @@ export function TokenUsageDashboard({
         </div>
       </header>
       {error ? <div className={styles.tokenUsageError} role="alert">
-        {(language === "ru" ? uiText("client.usage.couldNotRefreshTokenDataPleaseTryAgain", {}, language) : language === "zh" ? "Token 数据刷新失败，请重试。" : "Could not refresh token usage. Please retry.")}
+        {(language !== "zh" && language !== "en" ? uiText("client.usage.couldNotRefreshTokenDataPleaseTryAgain", {}, language) : language === "zh" ? "Token 数据刷新失败，请重试。" : "Could not refresh token usage. Please retry.")}
       </div> : null}
       <OfficialAccountUsage language={language} refreshSeconds={refreshSeconds}
         startTs={startTs} refreshKey={officialRefreshKey} />
       <AccountQuotaChart history={quotaHistory} startTs={startTs} endTs={endTs}
         language={language} dark={dark} themeColor={themeColor} loading={loading}
-        error={quotaError ? ((language === "ru" ? uiText("client.usage.couldNotRefreshQuotaHistoryPleaseTryAgain", {}, language) : language === "zh" ? "额度记录刷新失败，请重试。" : "Could not refresh quota history.")) : undefined} />
+        error={quotaError ? ((language !== "zh" && language !== "en" ? uiText("client.usage.couldNotRefreshQuotaHistoryPleaseTryAgain", {}, language) : language === "zh" ? "额度记录刷新失败，请重试。" : "Could not refresh quota history.")) : undefined} />
       <ConsumptionCharts daily={breakdown} dateKeys={dateKeys} language={language} palette={palette}
         thresholdTokens={thresholdTokens} loading={loading} error={analyticsError} />
       <div className={`${styles.tokenDashboardGrid} ${styles.tokenDashboardGridTop}`}>

@@ -27,7 +27,7 @@ function consumptionOption(options: {
   const byDate = new Map(daily.map((entry) => [entry.date, entry]));
   return {
     animationDurationUpdate: 280,
-    aria: { enabled: true, label: { description: (language === "ru" ? uiText("client.usage.dailyTokenUsageByCategoryUseTheLegendToToggle", {}, language) : language === "zh"
+    aria: { enabled: true, label: { description: (language !== "zh" && language !== "en" ? uiText("client.usage.dailyTokenUsageByCategoryUseTheLegendToToggle", {}, language) : language === "zh"
       ? "每日 Token 消耗堆叠柱状图，可通过图例切换分类。分类累计值和占比显示在图表上方。"
       : "Daily stacked token usage. Use the legend to toggle categories; totals and shares appear above.") } },
     color: [palette.series[0], "#cb8b41", palette.muted],
@@ -67,12 +67,12 @@ function ConsumptionPanel({ props, title, hint, definitions }: {
       </div>)}
     </div> : null}
     {error ? <p className={styles.tokenUsageError} role="alert">
-      {(language === "ru" ? uiText("client.usage.couldNotRefreshUsageStatisticsPleaseTryAgain", {}, language) : language === "zh" ? "消耗统计刷新失败，请重试。" : "Could not refresh consumption statistics. Please retry.")}
+      {(language !== "zh" && language !== "en" ? uiText("client.usage.couldNotRefreshUsageStatisticsPleaseTryAgain", {}, language) : language === "zh" ? "消耗统计刷新失败，请重试。" : "Could not refresh consumption statistics. Please retry.")}
     </p> : null}
     {error ? null : totalTokens > 0 ? <EChart option={option} label={title} />
       : <div className={styles.tokenDashboardEmpty}>
-      {loading ? ((language === "ru" ? uiText("client.projectBrowser.loading", {}, language) : language === "zh" ? "正在加载…" : "Loading…"))
-        : ((language === "ru" ? uiText("client.mobile.noTokenUsageInThisPeriod", {}, language) : language === "zh" ? "所选时段暂无 Token 消耗记录" : "No token usage in this period"))}
+      {loading ? ((language !== "zh" && language !== "en" ? uiText("client.projectBrowser.loading", {}, language) : language === "zh" ? "正在加载…" : "Loading…"))
+        : ((language !== "zh" && language !== "en" ? uiText("client.mobile.noTokenUsageInThisPeriod", {}, language) : language === "zh" ? "所选时段暂无 Token 消耗记录" : "No token usage in this period"))}
     </div>}
   </section>;
 }
@@ -80,28 +80,28 @@ function ConsumptionPanel({ props, title, hint, definitions }: {
 export function ConsumptionCharts(props: ConsumptionProps) {
   const { language } = props;
   const zh = language === "zh";
-  const ru = language === "ru";
-  const unknown = ru ? uiText("client.chat.unknown", {}, language) : zh ? "未识别" : "Unknown";
+  const localized = language !== "zh" && language !== "en";
+  const unknown = localized ? uiText("client.chat.unknown", {}, language) : zh ? "未识别" : "Unknown";
   const threshold = new Intl.NumberFormat(getLocale(language)).format(props.thresholdTokens);
   const contextDefinitions: SeriesDefinition[] = [
-    { name: ru ? uiText("client.chat.shortContext", {}, language) : zh ? "短上下文" : "Short context", field: "shortContextTokens" },
-    { name: ru ? uiText("client.chat.longContext", {}, language) : zh ? "长上下文" : "Long context", field: "longContextTokens" },
+    { name: localized ? uiText("client.chat.shortContext", {}, language) : zh ? "短上下文" : "Short context", field: "shortContextTokens" },
+    { name: localized ? uiText("client.chat.longContext", {}, language) : zh ? "长上下文" : "Long context", field: "longContextTokens" },
     { name: unknown, field: "unknownContextTokens" },
   ];
   const modeDefinitions: SeriesDefinition[] = [
-    { name: ru ? uiText("client.chat.standardMode", {}, language) : zh ? "普通模式" : "Standard mode", field: "standardModeTokens" },
-    { name: ru ? uiText("client.chat.fastMode.6e02d1", {}, language) : zh ? "快速模式" : "Fast mode", field: "fastModeTokens" },
+    { name: localized ? uiText("client.chat.standardMode", {}, language) : zh ? "普通模式" : "Standard mode", field: "standardModeTokens" },
+    { name: localized ? uiText("client.chat.fastMode.6e02d1", {}, language) : zh ? "快速模式" : "Fast mode", field: "fastModeTokens" },
     { name: unknown, field: "unknownModeTokens" },
   ];
   return <div className={`${styles.tokenDashboardGrid} ${styles.consumptionGrid}`}>
     <ConsumptionPanel props={props} definitions={contextDefinitions}
-      title={ru ? uiText("client.chat.shortLongContextUsage", {}, language) : zh ? "短 / 长上下文消耗" : "Short / Long Context Usage"}
-      hint={ru ? uiText("client.mobile.inputsAboveTokensIncludingCacheCountAsLongContextUsage", { value1: threshold }, language)
+      title={localized ? uiText("client.chat.shortLongContextUsage", {}, language) : zh ? "短 / 长上下文消耗" : "Short / Long Context Usage"}
+      hint={localized ? uiText("client.mobile.inputsAboveTokensIncludingCacheCountAsLongContextUsage", { value1: threshold }, language)
         : zh ? `单次输入超过 ${threshold} Tokens（含缓存）计为长上下文，累计整次请求的消耗。`
         : `Inputs above ${threshold} tokens (including cache) are long context. Totals include the whole request.`} />
     <ConsumptionPanel props={props} definitions={modeDefinitions}
-      title={ru ? uiText("client.chat.standardFastModeUsage", {}, language) : zh ? "普通 / 快速模式消耗" : "Standard / Fast Mode Usage"}
-      hint={ru ? uiText("client.chat.dailyTokenTotalsUsageWithoutARecordedModeIsShown", {}, language)
+      title={localized ? uiText("client.chat.standardFastModeUsage", {}, language) : zh ? "普通 / 快速模式消耗" : "Standard / Fast Mode Usage"}
+      hint={localized ? uiText("client.chat.dailyTokenTotalsUsageWithoutARecordedModeIsShown", {}, language)
         : zh ? "按每日实际 Token 数统计；缺少模式记录的消耗归入“未识别”。"
         : "Actual tokens per day; usage without a known mode is shown as unknown."} />
   </div>;

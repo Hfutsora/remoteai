@@ -1,6 +1,8 @@
 import type { Language } from "../../i18n";
+import japanese from './copy-ja.json';
 
 export const threadCopy = {
+  ja: japanese,
   ru: {
     searchPlaceholder: "Поиск по названию и содержимому чатов", clear: "Очистить", conversation: "Чат",
     external: "Внешний", subagent: "Подагент", allKinds: "Все типы", selectAll: "Выбрать все чаты",

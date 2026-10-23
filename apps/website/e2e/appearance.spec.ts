@@ -84,7 +84,7 @@ test('white theme remains usable on narrow and tablet screens', async ({ page })
     await page.setViewportSize({ width, height: 900 });
     const paths = [
       '', 'en/', 'ru/', 'features/', 'features/remote-workspace/', 'download/', 'ru/download/', 'guide/',
-      'resources/', 'en/resources/', 'ru/resources/',
+      'resources/', 'en/resources/', 'ru/resources/', 'ja/', 'ja/download/', 'ja/resources/',
     ];
     for (const path of paths) {
       await page.goto(`${basePath}${path}`);

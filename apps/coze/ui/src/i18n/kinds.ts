@@ -1,5 +1,7 @@
-import type { Language } from "../../../../../shared/localization/language";
+import type { AppLanguage } from '@remoteai/i18n';
+import japanese from './ja-kinds.json';
 import type { Kind } from "../types";
+type Language = AppLanguage<'coze'>;
 
 /**
  * Resource kind names in every UI language.
@@ -26,6 +28,7 @@ export interface KindCopy {
 }
 
 export const kindCopy: Readonly<Record<Language, Readonly<Record<Kind, KindCopy>>>> = {
+  ja: japanese,
   zh: {
     app: { section: "应用", item: "应用", create: "新建应用", empty: "还没有应用", first: "创建第一个应用" },
     agent: { section: "智能体", item: "智能体", create: "新建智能体", empty: "还没有智能体", first: "创建第一个智能体" },
