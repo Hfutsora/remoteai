@@ -15,6 +15,7 @@ test('defaults to white, and remembers dark across pages, languages and reloads'
   await expect(page.locator('html')).toHaveCSS('background-color', black);
   await page.reload();
   await expect(page.locator('html')).toHaveCSS('background-color', black);
+  await page.locator('.language-switch summary').click();
   await page.getByRole('link', { name: 'EN', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Switch to white theme' })).toBeVisible();
   const otherPage = await context.newPage();
