@@ -58,6 +58,23 @@
 - Android/iOS 系统能力等平台专属改动，不要求照搬到浏览器；应检查 Web 是否需要对应适配，并在交付时说明未同步的部分及原因。
 - 完成前验证两端受影响的功能与展示效果，并在交付时说明同步结果，不得只修改原生端就将移动端需求视为完成。
 
+## Native Text Layout: Prevent Glyph Clipping
+
+- 原生端新增或修改标题、列表入口、返回按钮、导航标签、状态提示等独立 `Text` 时，
+  统一复用 `apps/native/src/theme/text.ts` 的 `textMetrics(fontSize, lineHeight)`，
+  为中文、系统字体和回退字体保留完整的上下笔画空间，不要只设置 `fontSize`。
+- Android 不要直接用固定 `lineHeight` 代替该工具；React Native 的显式行高可能覆盖字体度量，
+  导致部分厂商字体被裁剪。保留工具提供的 `includeFontPadding`、上下留白和最小高度，
+  让系统字体决定实际所需高度；iOS 沿用工具中的平台适配。
+- 不要通过关闭字体缩放、缩小字号、固定文字容器高度或隐藏溢出来掩盖裁剪。
+  父容器应允许随字体增大或换行而增长；横向文字按需要设置收缩和换行，避免挤压图标。
+  图标字体、嵌套富文本等确有特殊排版要求时，应单独验证并说明不能直接复用的原因。
+- 修复文字裁剪时，同时检查同一功能的页面标题、入口、返回栏和相关提示，避免只修复截图中的一处。
+  Web 对应页面同步检查行高、上下留白和窄屏换行，继续遵守移动端与 Web 同步要求。
+- 完成前用 Android 真机分别检查默认字体和放大字体（至少系统字体缩放 1.0 和 1.3），
+  查看截图确认中文上下笔画完整，并验证入口和返回操作。
+  类型检查、构建通过或文字框尺寸正常不能替代视觉检查；无法真机验证时必须明确说明未验证范围。
+
 ## Tauri 2 WebView Window Creation On Windows
 
 - Do not create a `WebviewWindowBuilder` from a synchronous Tauri command on Windows. In this repo, opening the Token Usage window from a sync `#[tauri::command]` produced a native window shell, but the WebView content stayed white, the close button did not work reliably, and DevTools could not be opened.

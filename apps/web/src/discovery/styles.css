@@ -4,6 +4,7 @@
 .discovery-page { min-height: 100dvh; color: var(--app-ink, #181818); }
 .discovery-header { min-height: 56px; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .discovery-header h1 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.6; }
+.discovery-header h1, .discovery-row > span, .discovery-back > span { padding-block: 2px; }
 .discovery-list { padding-bottom: 20px; }
 .discovery-row {
   width: 100%; min-height: 58px; display: flex; align-items: center; gap: 18px;
@@ -11,7 +12,7 @@
   color: inherit; background: var(--app-surface, #fff); font: inherit; text-align: left; cursor: pointer;
 }
 .discovery-row > svg { flex-shrink: 0; }
-.discovery-row > span { flex: 1; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
+.discovery-row > span { flex: 1; min-width: 0; font-size: 17px; line-height: 1.53; overflow-wrap: anywhere; }
 .discovery-devices > svg:first-child { color: var(--app-info, #3984db); }
 .discovery-totp > svg:first-child,
 .discovery-downloads > svg:first-child { color: var(--app-accent, #07b775); }
@@ -23,6 +24,8 @@
   display: inline-flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 16px;
   border: 0; color: var(--app-ink, #222); background: transparent; font: inherit; font-size: 16px; cursor: pointer;
 }
+.discovery-back > svg { flex-shrink: 0; }
+.discovery-back > span { min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
 @media (min-width: 861px) {
   .discovery-header { min-height: 88px; }
   .discovery-list { max-width: 760px; margin: 0 auto; padding: 0 28px 28px; }

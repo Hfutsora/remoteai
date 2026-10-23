@@ -4,6 +4,7 @@ import { discoveryEntries, type DiscoveryPage as DiscoveryDestination } from '..
 import { t, useLanguage } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 
 const entryIcons = {
   devices: 'server-outline',
@@ -47,15 +48,15 @@ export function DiscoveryBackButton({ onBack }: { onBack: () => void }) {
 const useStyles = createThemedStyles(color => ({
   page: { flex: 1, backgroundColor: color('#ededed', 'canvas') },
   header: { minHeight: 56, alignItems: 'center', justifyContent: 'center', padding: 12 },
-  title: { fontSize: 20, fontWeight: '600', color: color('#181818', 'ink') },
+  title: { ...textMetrics(20, 32), fontWeight: '600', color: color('#181818', 'ink') },
   content: { paddingBottom: 20 },
   row: {
     flexDirection: 'row', alignItems: 'center', minHeight: 58, gap: 18,
     paddingHorizontal: 20, paddingVertical: 16, marginBottom: 10,
     backgroundColor: color('#fff', 'surface'),
   },
-  label: { flex: 1, fontSize: 17, color: color('#181818', 'ink') },
+  label: { ...textMetrics(17, 26), flex: 1, color: color('#181818', 'ink') },
   pressed: { opacity: 0.65 },
   back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', minHeight: 48, paddingHorizontal: 16 },
-  backLabel: { color: color('#222', 'ink'), fontSize: 16, marginLeft: 4 },
+  backLabel: { ...textMetrics(16, 24), flexShrink: 1, color: color('#222', 'ink'), marginLeft: 4 },
 }));
