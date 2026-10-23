@@ -10,6 +10,7 @@ vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>
   useEffect: vi.fn(), useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));
 vi.mock('react-native', () => ({ Modal: 'Modal', View: 'View', Text: 'Text', Pressable: 'Pressable', ScrollView: 'ScrollView',
+  Platform: { OS: 'android' },
   ActivityIndicator: 'ActivityIndicator', StyleSheet: { create: <T,>(value: T) => value, absoluteFill: {} } }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Icon' }));
 

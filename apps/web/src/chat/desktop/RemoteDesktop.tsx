@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clipboard, Grid2X2, Hand, Keyboard, Maximize, Monitor, Mouse, Settings2, Shield, Volume2, VolumeX, X } from 'lucide-react';
 import type { DesktopClient } from '../../../../../shared/remote-desktop/protocol';
-import type { DesktopScreenRequest } from '../../../../../shared/remote-desktop/screenControl';
 import type { LocalDesktopClipboard } from '../../../../../shared/remote-desktop/clipboard';
 import { useDesktopSession } from '../../../../../shared/remote-desktop/useDesktopSession';
 import { DisplaySettings } from './DisplaySettings';
@@ -46,7 +45,6 @@ interface Props {
   connected?: boolean;
   nativeWindow?: boolean;
   windowState?: DesktopWindowState;
-  privacyRequest?: DesktopScreenRequest;
 }
 
 export function RemoteDesktop(props: Props) {
@@ -56,12 +54,12 @@ export function RemoteDesktop(props: Props) {
 }
 
 function DesktopViewer({ client, active, visible = true, connected = true, close, localClipboard, nativeWindow = false,
-  windowState, privacyRequest }: Props) {
+  windowState }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const windowControls = useDesktopWindow(root, active, windowState);
   const shown = active && visible && !windowControls.minimized;
   const pageVisible = usePageVisibility();
-  const session = useDesktopSession({ client, active: active && pageVisible, connected, createPeer, privacyRequest });
+  const session = useDesktopSession({ client, active: active && pageVisible, connected, createPeer });
   const statusAction = desktopStatusAction(session);
   const viewOnly = session.capabilities.control === false;
   const [display, setDisplay] = useState(false);

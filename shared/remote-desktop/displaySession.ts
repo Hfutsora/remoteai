@@ -28,9 +28,6 @@ export class DesktopDisplaySession {
   constructor(private readonly options: ReceiverOptions, private readonly privacyRestore = { failed: false }) {}
 
   get displayId() { return this.selected?.displays.displayId; }
-  get available() {
-    return !this.stopped && this.selected?.connected === true && !this.selected.failure && !this.selected.receiver.closed;
-  }
   async security(change: DesktopSecurityChange) {
     if (this.stopped || !this.selected || this.switching) throw new Error('请等待桌面连接后重试。');
     const state = await this.selected.receiver.security(change);
@@ -51,13 +48,12 @@ export class DesktopDisplaySession {
   frameRendered(stream: MediaStream | undefined) { this.selected?.receiver.frameRendered(stream); }
   mute(value: boolean) { this.muted = value; this.selected?.receiver.mute(value); }
 
-  async start(settings: DesktopSettings, restorePrivacy = true) {
+  async start(settings: DesktopSettings) {
     if (this.stopped) return;
     const entry = this.create(settings);
     this.select(entry);
     await entry.receiver.start(settings);
-    if (!restorePrivacy || this.stopped || entry.receiver.closed || this.privacyRestore.failed
-      || !entry.displays.security?.privacyScreen
+    if (this.stopped || entry.receiver.closed || this.privacyRestore.failed || !entry.displays.security?.privacyScreen
       || entry.displays.privacyScreen || entry.capabilities.control !== true || !entry.capabilities.privacyScreen) return;
     try { await entry.receiver.privacy(true); }
     catch (error) {

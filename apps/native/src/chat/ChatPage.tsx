@@ -41,7 +41,6 @@ import { useChat } from './useChat';
 import { useRetainedChatDevices } from '../../../../shared/remote-chat/useRetainedChatDevices';
 import { useDownloadConnection } from '../downloads/useDownloadConnection';
 import { useChatDevice } from './useChatDevice';
-import type { DesktopScreenLaunch } from '../../../../shared/remote-desktop/screenControl';
 import { useOfflineDevices } from './offline/devices';
 import { useChatDrawerSwipe } from './useChatDrawerSwipe';
 import { SwipeGestureContext } from '../navigation/SwipeGestureBoundary';
@@ -53,7 +52,7 @@ import { threadPresentation } from '../../../../shared/remote-chat/sidebar';
 import type { ChatProject } from './types';
 import { compactUnavailableReason } from '../../../../shared/remote-chat/client/composerCommands';
 
-interface Props extends DesktopScreenLaunch {
+interface Props {
   session: AuthSession; devices: RemoteDevice[]; devicesLoaded: boolean; active: boolean;
   notification: ChatNotificationTarget | null; notificationError: string;
   notificationHandled: (id: string) => void;
@@ -67,14 +66,13 @@ export function ChatPage(props: Props) {
   const { session, active, notification, notificationError, notificationHandled } = props;
   const devices = useOfflineDevices(session, props.devices, props.devicesLoaded);
   const { device, chooseDevice: selectDevice } = useChatDevice({ session, devices,
-    devicesLoaded: props.devicesLoaded, requestedDeviceId: props.screenRequest?.deviceId ?? notification?.deviceId });
+    devicesLoaded: props.devicesLoaded, requestedDeviceId: notification?.deviceId });
   const scope = JSON.stringify([session.baseUrl, session.email]);
   const retained = useRetainedChatDevices({ scope, devices, selectedId: device?.deviceId });
   const chats = device ? retained : [...retained, undefined];
   const backgroundError = useChatBackground(retained.length > 0);
   const chooseDevice = (id: string) => {
     if (notification) notificationHandled(notificationId(notification));
-    if (props.screenRequest) props.screenRequestHandled?.(props.screenRequest.id);
     selectDevice(id);
   };
   return <View style={[styles.page, !active && styles.hidden]}>
@@ -95,8 +93,7 @@ export function ChatPage(props: Props) {
 }
 
 function ConnectedChat({ session, device, devices, selected, active: pageActive, chooseDevice, notification,
-  notificationHandled, tokenSummary, closeTokenSummary, openAccounts,
-  screenRequest, screenRequestHandled }: Props & {
+  notificationHandled, tokenSummary, closeTokenSummary, openAccounts }: Props & {
   device?: RemoteDevice; selected: boolean; chooseDevice: (id: string) => void;
 }) {
   const styles = useStyles();
@@ -185,8 +182,6 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
         <Text style={styles.buttonText}>{t("client.chat.restore")}</Text></Pressable>}
       <View style={styles.headerTools}>
         <ChatTools client={controller.guiTools} downloads={controller.downloads}
-          screenRequest={screenRequest?.deviceId === device?.deviceId ? screenRequest : undefined}
-          screenRequestHandled={screenRequestHandled}
           active={active && foreground} connected={ready}
           scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])}
           session={session}

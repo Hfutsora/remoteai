@@ -74,8 +74,7 @@ import { AppToastHost, Toast } from './src/components/AppToast';
 import { BottomSheet } from './src/components/BottomSheet';
 import { DeviceManagementList } from './src/devices/DeviceManagementList';
 import { useRevokeDesktopService } from './src/devices/useRevokeDesktopService';
-import { useDeviceScreenRequest } from '../../shared/remote-desktop/screenControl';
-import { notificationId } from './src/chat/notificationTarget';
+import { useDeviceScreenControl } from './src/devices/useDeviceScreenControl';
 import { RemoteModelSwitchSheet } from './src/components/RemoteModelSwitchSheet';
 import { QuotaConsumptionSheet } from './src/components/QuotaConsumptionSheet';
 import { TotpPage } from './src/totp/TotpPage';
@@ -486,7 +485,6 @@ function OpenAiAuthAccountDrawer({
 }
 
 function DeviceManagementPage({
-  onScreenControl,
   session,
   accounts,
   providers,
@@ -504,7 +502,6 @@ function DeviceManagementPage({
   onSetOpenAiAuthAccount,
 }: {
   session: AuthSession;
-  onScreenControl: (device: RemoteDevice, enabled: boolean) => void;
   accounts: AccountSummary[];
   providers: RemoteProviderSummary[];
   devices: RemoteDevice[];
@@ -522,6 +519,7 @@ function DeviceManagementPage({
 }) {
   useLanguage();
   const revokeService = useRevokeDesktopService(session);
+  const onScreenControl = useDeviceScreenControl(session);
   const [openAiAuthDeviceId, setOpenAiAuthDeviceId] = useState<string | null>(null);
   const [modelDeviceId, setModelDeviceId] = useState<string | null>(null);
   const sortedDevices = useMemo(() => [...devices].sort((left, right) => {
@@ -1289,7 +1287,6 @@ function AppContent() {
   }, []);
 
   const showBottomNavigation = activePage !== 'token-summary' && activePage !== 'downloads';
-  const screenControl = useDeviceScreenRequest(JSON.stringify([session?.baseUrl, session?.email]));
   if (initializing) return <View style={styles.boot}><ThemeStatusBar /><ActivityIndicator size="large" color={color(COLORS.green, 'accent')} /><Text style={styles.bootText}>Remote AI</Text></View>;
   if (!session) return <View style={styles.app}>
     <ThemeStatusBar /><LoginScreen initialBaseUrl={DEFAULT_CLOUD_BASE_URL} onLoggedIn={handleLogin} />
@@ -1304,7 +1301,6 @@ function AppContent() {
     <View style={styles.flex} {...pageSwipeHandlers}>
     <ChatPage session={session} devices={devices} active={activePage === 'chat' || activePage === 'token-summary'}
       openAccounts={openAccounts}
-      screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
       devicesLoaded={devicesLoaded}
       tokenSummary={activePage === 'token-summary'} closeTokenSummary={() => setActivePage('discover')}
       notification={chatNotification.target} notificationError={chatNotification.error}
@@ -1325,12 +1321,6 @@ function AppContent() {
         )))} />
       : activePage === 'devices'
         ? <DeviceManagementPage session={session} accounts={accounts} providers={providers} devices={devices}
-          onScreenControl={(device, enabled) => {
-            const current = devices.find(item => item.deviceId === device.deviceId);
-            if (!current || !screenControl.open(current, enabled)) return;
-            if (chatNotification.target) chatNotification.handled(notificationId(chatNotification.target));
-            setActivePage('chat');
-          }}
           refreshing={syncingServer} deletingDeviceId={deletingDeviceId}
           switchingAccountId={switchingAccountId} switchingProvider={switchingProvider}
           switchingOpenAiAuth={switchingOpenAiAuth} onRefresh={refreshServerData}

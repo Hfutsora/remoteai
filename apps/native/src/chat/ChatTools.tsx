@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
-import type { DesktopScreenLaunch } from '../../../../shared/remote-desktop/screenControl';
 import { useDesktopLauncher } from '../../../../shared/remote-desktop/useDesktopLauncher';
 import { ChatTerminal } from './ChatTerminal';
 import { ChatGit } from './git/ChatGit';
@@ -17,7 +16,7 @@ import { palette, useStyles } from './styles';
 import { ProjectBrowser } from './ProjectBrowser';
 import type { DownloadClient } from '../../../../shared/remote-chat/downloads';
 
-interface Props extends DesktopScreenLaunch {
+interface Props {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   scope: string; session?: AuthSession;
   downloads?: DownloadClient;
@@ -26,7 +25,7 @@ export function ChatTools(props: Props) {
   useLanguage();
   const [mapping, setMapping] = useState(false);
   const [project, setProject] = useState<string>();
-  const desktop = useDesktopLauncher(props);
+  const desktop = useDesktopLauncher();
   return <>
     <ProjectTools key={props.cwd} {...props} openMappings={() => setMapping(true)}
       openDesktop={desktop.open}
@@ -36,7 +35,7 @@ export function ChatTools(props: Props) {
     <PortMappings client={props.client.files} scope={props.scope} connected={props.connected} session={props.session}
       active={props.active} deviceName={props.deviceName} open={mapping} close={() => setMapping(false)} />
     {desktop.opened && <RemoteDesktop client={props.client.desktop} active={props.active}
-      privacyRequest={desktop.privacyRequest} close={desktop.close} />}
+      close={desktop.close} />}
   </>;
 }
 

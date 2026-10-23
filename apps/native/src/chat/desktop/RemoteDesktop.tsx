@@ -8,7 +8,6 @@ import { RTCPeerConnection, RTCView, type MediaStream as NativeMediaStream } fro
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import type { DesktopClient } from '../../../../../shared/remote-desktop/protocol';
-import type { DesktopScreenRequest } from '../../../../../shared/remote-desktop/screenControl';
 import { useDesktopSession } from '../../../../../shared/remote-desktop/useDesktopSession';
 import { DesktopTakeover } from './DesktopTakeover';
 import { desktopStatusAction } from '../../../../../shared/remote-desktop/statusAction';
@@ -37,13 +36,13 @@ const createPeer = (configuration: RTCConfiguration) =>
     ...(configuration.iceTransportPolicy ? { iceTransportPolicy: configuration.iceTransportPolicy } : {})
   }) as unknown as globalThis.RTCPeerConnection;
 
-export function RemoteDesktop({ client, active, close, privacyRequest }: {
-  client: DesktopClient; active: boolean; close: () => void; privacyRequest?: DesktopScreenRequest;
+export function RemoteDesktop({ client, active, close }: {
+  client: DesktopClient; active: boolean; close: () => void;
 }) {
   const s = useS();
   const color = useThemeColor();
   useLanguage();
-  const session = useDesktopSession({ client, active, createPeer, privacyRequest });
+  const session = useDesktopSession({ client, active, createPeer });
   const statusAction = desktopStatusAction(session);
   const viewOnly = session.capabilities.control === false;
   const audioUnavailable = !session.hasAudio || session.stats?.audio === 'unavailable';

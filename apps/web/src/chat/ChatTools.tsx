@@ -4,7 +4,6 @@ import { WorkspaceDrawerContext, workspaceTabId } from '../../../../shared/chat/
 import { Popover } from 'antd';
 import { FolderSearch, GitBranch, Monitor, SquareTerminal, Wrench } from 'lucide-react';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
-import type { DesktopScreenLaunch } from '../../../../shared/remote-desktop/screenControl';
 import { useDesktopLauncher } from '../../../../shared/remote-desktop/useDesktopLauncher';
 import { ChatTerminal } from './ChatTerminal';
 import { ChatGit } from './git/ChatGit';
@@ -15,13 +14,13 @@ import { ProjectBrowserDrawer } from './projectBrowser/ProjectBrowserDrawer';
 import { useDesktopLayout } from '../useDesktopLayout';
 import { useProjectBrowsers } from '../../../../shared/project-browser/useProjectBrowsers';
 
-interface Props extends DesktopScreenLaunch {
+interface Props {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   desktopActions?: ReactNode;
 }
 export function ChatTools(props: Props) {
   const browsers = useProjectBrowsers();
-  const desktop = useDesktopLauncher(props);
+  const desktop = useDesktopLauncher();
   const desktopLayout = useDesktopLayout();
   const wide = desktopLayout && Boolean(props.desktopActions);
   const workspace = useContext(WorkspaceDrawerContext);
@@ -36,7 +35,7 @@ export function ChatTools(props: Props) {
       cwd={project} active={props.active && browsers.visible === project}
       connected={props.connected} onClose={browsers.close} />)}
     {desktop.opened && <RemoteDesktop client={props.client.desktop} active={props.active} connected={props.connected}
-      privacyRequest={desktop.privacyRequest} close={desktop.close} />}
+      close={desktop.close} />}
   </>;
 }
 

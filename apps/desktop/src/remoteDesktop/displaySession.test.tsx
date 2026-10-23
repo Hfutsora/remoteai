@@ -9,12 +9,10 @@ import type { DesktopCapabilities, DesktopClient, DesktopDisplays, DesktopResolu
   from '../../../../shared/remote-desktop/protocol';
 import type { DesktopDirectRetry } from '../../../../shared/remote-desktop/directRetry';
 import { desktopOccupied } from '../../../../shared/remote-desktop/takeover';
-import type { DesktopScreenRequest } from '../../../../shared/remote-desktop/screenControl';
 
 interface FakeSession {
   options: { client: DesktopClient; stream: (stream?: MediaStream) => void; displays: (value: DesktopDisplays) => void;
     capabilities: (value: DesktopCapabilities) => void;
-    connected?: () => void;
     failed: (message: string) => void; status: (value: string) => void; directRetry: DesktopDirectRetry };
   start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn>; input: ReturnType<typeof vi.fn>;
   settings: ReturnType<typeof vi.fn>; mute: ReturnType<typeof vi.fn>; sessionId: string;
@@ -24,7 +22,7 @@ interface FakeSession {
 }
 const runtime = vi.hoisted(() => ({
   sessions: [] as FakeSession[], multiDisplay: false, openFailure: '',
-  security: undefined as DesktopSecurity | undefined, privacyFailure: '', pictureReady: true,
+  security: undefined as DesktopSecurity | undefined, privacyFailure: '',
 }));
 vi.mock('../../../../shared/remote-desktop/receiver', () => ({ DesktopReceiver: class {
   sessionId = `desktop-${runtime.sessions.length}`;
@@ -36,16 +34,13 @@ vi.mock('../../../../shared/remote-desktop/receiver', () => ({ DesktopReceiver: 
       this.options.capabilities({ displaySessions: true, control: true, privacyScreen: true });
     }
     this.options.stream({} as MediaStream);
-    if (runtime.pictureReady) this.options.connected?.();
   });
   stop = vi.fn(async () => { this.options.stream(undefined); });
   input = vi.fn(); settings = vi.fn(); mute = vi.fn();
   security = vi.fn(async (change: object) => ({ lockOnDisconnect: false, muteHost: false, ...change }));
   privacy = vi.fn(async (enabled: boolean) => {
     if (runtime.privacyFailure) throw new Error(runtime.privacyFailure);
-    const snapshot = { displayId: enabled ? 'private' : 'first', privacyScreen: enabled };
-    this.options.displays(snapshot);
-    return snapshot;
+    this.options.displays({ displayId: enabled ? 'private' : 'first', privacyScreen: enabled });
   });
   resolution = vi.fn(async (size: DesktopResolution) => {
     this.options.displays({ displayId: 'first', resolutions: [size],
@@ -57,14 +52,12 @@ const client: DesktopClient = { open: vi.fn(), signal: vi.fn(), settings: vi.fn(
 const createPeer = vi.fn();
 let root: Root;
 let session: ReturnType<typeof useDesktopSession>;
-function Harness({ active = true, connected = true, privacyRequest }: {
-  active?: boolean; connected?: boolean; privacyRequest?: DesktopScreenRequest;
-}) {
-  session = useDesktopSession({ client, active, connected, createPeer, privacyRequest }); return null;
+function Harness({ active = true, connected = true }) {
+  session = useDesktopSession({ client, active, connected, createPeer }); return null;
 }
 beforeEach(async () => {
   runtime.sessions.length = 0; runtime.multiDisplay = false; runtime.openFailure = '';
-  runtime.security = undefined; runtime.privacyFailure = ''; runtime.pictureReady = true;
+  runtime.security = undefined; runtime.privacyFailure = '';
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   root = createRoot(document.createElement('div'));
   await act(async () => root.render(<Harness />));
@@ -387,90 +380,4 @@ it('cancels an in-flight switch without opening unvisited screens after closing'
   await act(async () => root.render(<Harness active={false} />));
   await act(async () => { release(); await pending; });
   expect(runtime.sessions).toHaveLength(1); expect(session.saving).toBe(false);
-});
-
-const screenRequest = (id: number, enabled: boolean): DesktopScreenRequest => ({ id, enabled, deviceId: 'computer' });
-
-it('waits until the remote picture is usable before turning physical screens off', async () => {
-  await act(async () => root.render(<Harness active={false} />));
-  runtime.pictureReady = false;
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(9, true)} />));
-  const current = runtime.sessions.at(-1)!;
-  expect(current.privacy).not.toHaveBeenCalled();
-  await act(async () => current.options.connected?.());
-  expect(current.privacy).toHaveBeenCalledExactlyOnceWith(true);
-});
-
-it('applies device screen targets once on the existing connection, without toggling on rerenders', async () => {
-  const request = screenRequest(1, true);
-  await act(async () => root.render(<Harness privacyRequest={request} />));
-  expect(session.privacyScreen).toBe(true);
-  expect(runtime.sessions).toHaveLength(1);
-  expect(runtime.sessions[0].privacy).toHaveBeenCalledExactlyOnceWith(true);
-  await act(async () => root.render(<Harness privacyRequest={{ ...request }} />));
-  expect(runtime.sessions[0].privacy).toHaveBeenCalledOnce();
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(2, false)} />));
-  expect(session.privacyScreen).toBe(false);
-  expect(runtime.sessions).toHaveLength(1);
-  expect(runtime.sessions[0].privacy.mock.calls).toEqual([[true], [false]]);
-});
-
-it('restores screens and clears remembered privacy without first turning physical screens off', async () => {
-  await act(async () => root.render(<Harness active={false} />));
-  runtime.security = { lockOnDisconnect: false, muteHost: false, privacyScreen: true };
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(3, false)} />));
-  expect(runtime.sessions.at(-1)!.privacy.mock.calls).toEqual([[false]]);
-  expect(session.privacyScreen).toBe(false);
-});
-
-it('keeps a failed screen request visible without automatic retry loops and permits a manual retry', async () => {
-  runtime.privacyFailure = '隐私屏未能切换，请重新连接后重试。';
-  const request = screenRequest(4, true);
-  await act(async () => root.render(<Harness privacyRequest={request} />));
-  expect(session.status).toBe(runtime.privacyFailure);
-  await act(async () => root.render(<Harness active={false} privacyRequest={request} />));
-  await act(async () => root.render(<Harness privacyRequest={request} />));
-  expect(runtime.sessions.at(-1)!.privacy).not.toHaveBeenCalled();
-  expect(session.status).toBe(runtime.privacyFailure);
-  runtime.privacyFailure = '';
-  await act(async () => session.retry());
-  expect(runtime.sessions.at(-1)!.privacy).toHaveBeenCalledExactlyOnceWith(true);
-  expect(session.privacyScreen).toBe(true);
-});
-
-it('does not apply screen requests to a failed connection or overwrite a takeover prompt', async () => {
-  await act(async () => root.render(<Harness active={false} />));
-  runtime.openFailure = desktopOccupied(crypto.randomUUID());
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(5, true)} />));
-  expect(session.takeover.pending).toBe(true);
-  expect(session.status).toBe('client.remoteDesktop.connectionInUse');
-  expect(runtime.sessions.at(-1)!.privacy).not.toHaveBeenCalled();
-});
-
-it('queues a restore while a screen operation is pending and ignores replies after closing', async () => {
-  const current = runtime.sessions[0];
-  let release!: (snapshot: DesktopDisplays) => void;
-  current.privacy.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(6, true)} />));
-  expect(session.saving).toBe(true);
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(7, false)} />));
-  expect(current.privacy.mock.calls).toEqual([[true]]);
-  await act(async () => { release({ privacyScreen: true }); });
-  expect(current.privacy.mock.calls).toEqual([[true], [false]]);
-  expect(session.privacyScreen).toBe(false);
-  await act(async () => root.render(<Harness active={false} privacyRequest={screenRequest(8, true)} />));
-  expect(current.privacy.mock.calls).toEqual([[true], [false]]);
-});
-
-it('does not let an earlier toolbar action consume a newer device management request', async () => {
-  const current = runtime.sessions[0];
-  await act(async () => current.options.capabilities({ control: true, privacyScreen: true }));
-  let release!: (snapshot: DesktopDisplays) => void;
-  current.privacy.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
-  let pending!: Promise<void>;
-  await act(async () => { pending = session.togglePrivacy(); });
-  await act(async () => root.render(<Harness privacyRequest={screenRequest(10, false)} />));
-  expect(current.privacy.mock.calls).toEqual([[true]]);
-  await act(async () => { release({ privacyScreen: true }); await pending; });
-  expect(current.privacy.mock.calls).toEqual([[true], [false]]);
 });
