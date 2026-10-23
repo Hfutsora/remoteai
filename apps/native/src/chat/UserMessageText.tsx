@@ -7,7 +7,9 @@ import { useChatQuotes } from './ChatQuotes';
 import { ChatMarkdown } from './Markdown';
 import { quotedMessage } from './quotedMessage';
 
-export function UserMessageText({ text, copy = false }: { text: string; copy?: boolean }) {
+export function UserMessageText({ text, copy = false, compact = false }: {
+  text: string; copy?: boolean; compact?: boolean;
+}) {
   const messageStyles = useMessageStyles();
   useLanguage();
   const message = useMemo(() => quotedMessage(text), [text]);
@@ -20,7 +22,7 @@ export function UserMessageText({ text, copy = false }: { text: string; copy?: b
       {message.quotes.map((_, index) => <QuoteChip key={index} label={t("client.mobile.viewMessageQuote", { value1: index + 1 })}
         onOpen={() => setSelected(index)} />)}
     </View>}
-    {!!message.text && <ChatMarkdown text={message.text} user
+    {!!message.text && <ChatMarkdown text={message.text} user compact={compact}
       copy={copy ? { text, label: t("client.chat.copyMessage") } : undefined} />}
     {quote !== undefined && active && <QuoteDetails text={quote} onClose={() => setSelected(null)} />}
   </View>;

@@ -46,7 +46,9 @@ export const ChatMessage = memo(function ChatMessage({ item, onOpen, process = f
       <MessageAttachments key={text} attachments={files.attachments} t={t}
         renderFile={file => <ChatFileLink href={file.path}>{file.name}</ChatFileLink>} />
       {files.text && <ChatMarkdown text={files.text} desktop={desktop} />}
-      {!desktop && images.map((source, index) => <ChatImage key={index} source={source} />)}
+      {!desktop && images.length > 0 && <div className="chat-sent-image-previews">
+        {images.map((source, index) => <ChatImage key={index} source={source} />)}
+      </div>}
     </div> : <ChatMarkdown text={text} process={process} desktop={desktop} />}
     {!!text.trim() && !running && !(desktop && process) && <div className="chat-message-actions" data-quote-exclude>
       <ChatCopyButton text={text} label={user ? t("client.chat.copyMessage") : t("client.chat.copyReply")} iconOnly={!user} />

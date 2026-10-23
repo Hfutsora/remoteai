@@ -120,8 +120,10 @@ function MessageBody({ item, onOpen, running = false, process = false }: Message
     <View
       style={[styles.userMessage, messageStyles.bubble, images.length > 0 && messageStyles.imageBubble]}>
       <ChatMessageReferences item={item} />
-      {!!text && <UserMessageText text={text} />}
-      {images.map((source, index) => <ChatImage key={index} source={source} />)}
+      {!!text && <UserMessageText text={text} compact={images.length > 0} />}
+      {images.length > 0 && <View style={messageStyles.images}>
+        {images.map((source, index) => <ChatImage key={index} source={source} sent />)}
+      </View>}
     </View>
   </View>;
   if (item.type !== 'agentMessage') return <ChatActivityRow item={item} onOpen={onOpen} running={running} />;
@@ -138,5 +140,6 @@ const useMessageStyles = createThemedStyles(() => ({
   activity: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 5 },
   user: { alignItems: 'flex-end' },
   bubble: { borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 19, paddingVertical: 15, gap: 10 },
-  imageBubble: { width: '92%' },
+  imageBubble: { gap: 8 },
+  images: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, maxWidth: '100%' },
 }));

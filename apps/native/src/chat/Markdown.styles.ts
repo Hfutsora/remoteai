@@ -14,6 +14,7 @@ export const headingStyles: Record<string, TextStyle> = {
 export const useMarkdownStyles = createThemedStyles((color) => ({
   paragraph: { marginVertical: 10 },
   compact: { marginVertical: 0 },
+  compactContent: { gap: 8 },
   // The first paragraph shares its top edge with the marker; later paragraphs retain their spacing.
   listLead: { marginTop: 0 },
   bold: { fontWeight: '700' },

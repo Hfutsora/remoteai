@@ -123,13 +123,17 @@ function Block({ node, context = {} }: { node: MarkdownNode; context?: MarkdownC
   </View>;
 }
 
-export const ChatMarkdown = memo(function ChatMarkdown({ text, tone = 'default', copy, user = false }: {
-  text: string; tone?: 'default' | 'process'; copy?: CopyAction; user?: boolean;
+export const ChatMarkdown = memo(function ChatMarkdown({
+  text, tone = 'default', copy, user = false, compact = false,
+}: {
+  text: string; tone?: 'default' | 'process'; copy?: CopyAction; user?: boolean; compact?: boolean;
 }) {
+  const markdownStyles = useMarkdownStyles();
   useLanguage();
   const content = useMemo(() => markdownContent(text, user), [text, user]);
-  return <View><MarkdownPage nodes={content} render={(entry, index) => entry.type === 'review'
+  return <View style={compact && markdownStyles.compactContent}>
+    <MarkdownPage nodes={content} render={(entry, index) => entry.type === 'review'
     ? <ChatCodeReview key={index} comment={entry.comment} copy={index === content.length - 1 ? copy : undefined} />
     : <Block key={index} node={entry.node}
-      context={childContext({ tone, copy }, index, content.length)} />} /></View>;
+      context={childContext({ tone, copy, compact }, index, content.length)} />} /></View>;
 });
