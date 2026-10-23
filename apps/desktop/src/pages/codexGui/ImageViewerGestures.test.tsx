@@ -164,3 +164,57 @@ it('cancels queued painting when the preview closes', async () => {
   await act(async () => root.render(null));
   expect(frames.size).toBe(0);
 });
+
+it('keeps wheel zoom out of conversation scrolling and coalesces a burst into one paint', async () => {
+  const backgroundWheel = vi.fn();
+  host.addEventListener('wheel', backgroundWheel);
+  const mutations = vi.fn();
+  const observer = new MutationObserver(mutations);
+  observer.observe(image, { attributes: true, attributeFilter: ['style'] });
+  await act(async () => {
+    for (const deltaY of [-100, -100, 100, 100, 100]) {
+      const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY });
+      stage.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+  });
+  expect(backgroundWheel).not.toHaveBeenCalled();
+  expect(mutations).not.toHaveBeenCalled();
+  expect(frames.size).toBe(1);
+  await paint();
+  expect(mutations).toHaveBeenCalledOnce();
+  expect(host.querySelector('.cs-image-toolbar')?.textContent).toContain('83%');
+  observer.disconnect();
+});
+
+it('does not treat horizontal wheel input as zooming out', async () => {
+  await act(async () => {
+    stage.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaX: 100 }));
+  });
+  await paint();
+  expect(image.style.transform).toBe('translate(0px, 0px) rotate(0deg) scale(1)');
+});
+
+it.each(['wheel', 'buttons'])('keeps long drags smooth after zooming in then out with %s', async method => {
+  const zoom = async (direction: 'in' | 'out') => {
+    await act(async () => {
+      if (method === 'wheel') {
+        stage.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: direction === 'in' ? -100 : 100 }));
+      } else {
+        host.querySelectorAll<HTMLButtonElement>('.cs-image-toolbar button')[direction === 'in' ? 2 : 0].click();
+      }
+    });
+    await paint();
+  };
+  for (let step = 0; step < 5; step++) await zoom('in');
+  for (let step = 0; step < 7; step++) await zoom('out');
+  expect(host.querySelector('.cs-image-toolbar')?.textContent).toContain(method === 'wheel' ? '69%' : '50%');
+  rendered.mockClear();
+  await act(async () => { pointer('pointerdown', { clientX: 100, clientY: 100 }); });
+  for (let step = 1; step <= 10; step++) {
+    await act(async () => { pointer('pointermove', { clientX: 100 + step * 50, clientY: 100 + step * 20 }); });
+    await paint();
+    expect(image.style.transform).toContain(`translate(${step * 50}px, ${step * 20}px)`);
+  }
+  expect(rendered).not.toHaveBeenCalled();
+});
