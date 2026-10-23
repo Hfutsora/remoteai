@@ -7,6 +7,7 @@ import type { Account, Provider } from "../../types";
 import { useGuiAutoSwitchSettings } from "./useGuiAutoSwitchSettings";
 import { GuiAutoSwitchPanel } from "./GuiAutoSwitchPanel";
 import { GuiAppearanceSettings } from "./GuiAppearanceSettings";
+import { GuiMessageSettings } from "./GuiMessageSettings";
 import { GuiThemeSettings } from "./GuiThemeSettings";
 import { GuiSkinSettings } from "./GuiSkinSettings";
 import { GuiSystemPromptSettings } from "./GuiSystemPromptSettings";
@@ -16,6 +17,7 @@ import styles from "./GuiAutoSwitchSettingsDialog.module.less";
 const sections = [
   { key: "accounts", label: "client.workspaceSettings.automaticAccountSwitching", icon: ArrowLeftRight },
   { key: "context", label: "client.guiSettings.context", icon: MessageSquareText },
+  { key: "messages", label: "client.messageQueue.settings", icon: MessageSquareText },
   { key: "appearance", label: "client.workspaceSettings.appearance.785d65", icon: Type },
   { key: "theme", label: "client.configLabels.theme", icon: Palette },
   { key: "skin", label: "client.workspaceSettings.theme", icon: Image },
@@ -36,6 +38,7 @@ export function GuiAutoSwitchSettingsDialog({ accounts, providers, privacyMode, 
   const panels = {
     accounts: <GuiAutoSwitchPanel editor={editor} accounts={accounts} providers={providers} privacyMode={privacyMode} />,
     context: tab === "context" && <GuiModelContextSettings />,
+    messages: <GuiMessageSettings />,
     appearance: <GuiAppearanceSettings />,
     theme: <GuiThemeSettings />,
     skin: tab === "skin" && <GuiSkinSettings />,

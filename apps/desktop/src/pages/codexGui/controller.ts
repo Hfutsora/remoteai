@@ -15,6 +15,8 @@ import { deleteGuiThread } from "./deleteThread";
 import { conversation, reduceEvent } from "./events";
 import { acceptGuiTurn } from './acceptedTurn';
 import { MessageQueue } from "./messageQueue";
+import { isMessageQueueEnabled } from "../../../../../shared/chat/messageQueueSettings";
+import { sendImmediateMessage } from "./sendImmediateMessage";
 import { QueueJournal, type QueueStorage } from './queueJournal';
 import { asyncAnswerText, pendingAsyncQuestions, withAsyncAnswer } from "./asyncQuestionState";
 import { compactUnavailableReason } from "./composerOptions";
@@ -330,7 +332,13 @@ export class GuiController {
       || this.state.deleting || this.state.compacting === selected
       || this.state.connection !== "ready" || this.state.archived
       || (!text.trim() && !images.length && !skills.length && !attachments.length)) return false;
-    if (selected && (conversations[selected]?.activeTurn || this.state.queued[selected]?.length)) {
+    const queueEnabled = isMessageQueueEnabled();
+    if (!queueEnabled && selected && conversations[selected]?.activeTurn) {
+      return sendImmediateMessage({ getSnapshot: this.getSnapshot, patch: this.patch, report: this.report,
+        flushQueue: () => Object.keys(this.state.queued).forEach(id => void this.queue.flush(id)),
+      }, selected, { text, images, skills, ...(attachments.length ? { attachments } : {}) });
+    }
+    if (queueEnabled && selected && (conversations[selected]?.activeTurn || this.state.queued[selected]?.length)) {
       const accepted = this.queue.enqueue(selected, { text, images, skills, ...(attachments.length ? { attachments } : {}) });
       if (accepted) {
         try { await this.queueJournal.saved(); }

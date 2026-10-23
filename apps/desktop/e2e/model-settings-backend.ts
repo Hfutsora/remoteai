@@ -88,6 +88,7 @@ export function modelSettingsBackend(liveUpdate?: ModelSettingsSnapshot["liveUpd
         if (request.operation === "send") {
           sends.push(request); data = { turn: { id: "reply", status: "completed", items: [] } };
         }
+        if (request.operation === "steer") sends.push(request);
         result = { data };
       }
       if (command === "codex_gui_usage_summary") {
@@ -97,7 +98,7 @@ export function modelSettingsBackend(liveUpdate?: ModelSettingsSnapshot["liveUpd
       await route.fulfill({ json: { ok: true, result } });
     });
   }
-  return { attach, sends, contextDefaults, contextOverrides,
+  return { attach, sends, contextDefaults, contextOverrides, queue: () => queue,
     contextUsage: (threadId: string, tokenUsage: ThreadTokenUsage) => events.push({ name: 'codex-gui-event',
       payload: { method: 'thread/tokenUsage/updated', params: { threadId, tokenUsage } } }),
     discoveryRequests: () => discoveryRequests,

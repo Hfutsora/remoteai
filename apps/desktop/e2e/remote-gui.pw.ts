@@ -59,6 +59,44 @@ async function chooseHost(page: Page, name: string) {
   await expect(page.getByRole('menu', { name: '主机列表' })).toBeHidden();
 }
 
+test('remote GUI can disable and restore message queuing while a turn is running', async ({ context, page }, info) => {
+  test.setTimeout(90_000);
+  const host = await context.newPage();
+  await host.goto(`/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=false&title=Queue%20settings`
+    + `&socket=${encodeURIComponent(endpoint)}`);
+  await expect(host.locator('#status')).toHaveText('registered');
+  await page.bringToFront();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/e2e/remote-gui-harness.html?socket=${encodeURIComponent(endpoint)}`);
+  await chooseHost(page, 'Office PC');
+  await page.getByRole('button', { name: 'Queue settings', exact: true }).click();
+  const input = page.getByRole('textbox', { name: '聊天消息', exact: true });
+  await input.fill('slow queue settings');
+  await page.getByRole('button', { name: '发送消息', exact: true }).click();
+  await expect(input).toHaveValue('');
+  await page.getByRole('button', { name: 'Codex GUI 设置', exact: true }).click();
+  const toggle = page.getByRole('switch', { name: '待发送', exact: true });
+  await expect(toggle).toBeChecked();
+  await toggle.uncheck();
+  await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1');
+  await expect(page.getByRole('dialog')).toHaveCSS('transform', 'none');
+  await page.screenshot({ path: info.outputPath('remote-message-settings.png') });
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await input.fill('立即追加远程消息');
+  await page.getByRole('button', { name: '发送消息', exact: true }).click();
+  await expect.poll(() => host.evaluate(() => window.chatTest.demoState().operations
+    .filter(operation => operation.operation === 'steer').map(operation => operation.text)))
+    .toEqual(['立即追加远程消息']);
+  await expect(page.getByRole('region', { name: '待发送消息', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Codex GUI 设置', exact: true }).click();
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await input.fill('恢复排队');
+  await input.press('Enter');
+  await expect(page.getByRole('region', { name: '待发送消息', exact: true })).toContainText('恢复排队');
+});
+
 test('remote GUI switches to Japanese without losing its connection or draft', async ({ context, page }, info) => {
   test.setTimeout(90_000);
   const host = await context.newPage();
