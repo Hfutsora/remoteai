@@ -1,4 +1,5 @@
-import { displayText, displayError } from '../../i18n/index';
+import type { MessageKey } from '@remoteai/i18n';
+import { displayError } from '../../i18n/index';
 import { useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,13 +7,14 @@ import * as Clipboard from 'expo-clipboard';
 import type { ForwardingEntry, PortForwardingService } from '../../../../../shared/port-mapping/service';
 import { DEFAULT_MAPPING_HOST } from '../../../../../shared/port-mapping/target';
 import { protocolLabel } from '../../../../../shared/port-mapping/settings';
-import { t } from '../../i18n';
+import { t, useLanguage } from '../../i18n';
 import { useMappingStyles } from './mappingStyles';
 
 export function MappingRow({ entry, service, connected, open, edit }: {
   entry: ForwardingEntry; service: PortForwardingService; connected: boolean; open: () => void; edit: () => void;
 }) {
   const styles = useMappingStyles();
+  useLanguage();
   const [notice, setNotice] = useState('');
   const [menu, setMenu] = useState(false);
   const running = entry.status === 'running';
@@ -22,9 +24,9 @@ export function MappingRow({ entry, service, connected, open, edit }: {
     try { await Clipboard.setStringAsync(`127.0.0.1:${entry.localPort}`); setNotice('本地地址已复制'); }
     catch { setNotice('复制失败，请重试。'); }
   };
-  const details = [['协议', protocolLabel(entry.protocol)], ['目标 IP', entry.remoteHost || DEFAULT_MAPPING_HOST],
-    ['远程端口', entry.remotePort],
-    ['本地端口', entry.localPort], ['编辑时间', entry.updatedAt
+  const details: Array<[MessageKey, string | number]> = [["client.portForwarding.protocol", protocolLabel(entry.protocol)], ["client.portForwarding.targetIp", entry.remoteHost || DEFAULT_MAPPING_HOST],
+    ["client.portForwarding.remotePort", entry.remotePort],
+    ["client.portForwarding.localPort", entry.localPort], ["client.portMappingEditing.lastEdited.4f04ab", entry.updatedAt
       ? new Date(entry.updatedAt).toLocaleString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit',
         minute: '2-digit' }) : '—']];
   return <View style={styles.card}>
@@ -61,7 +63,7 @@ export function MappingRow({ entry, service, connected, open, edit }: {
       </View>
     </View>
     <View style={styles.metadata}>{details.map(([label, value]) => <View key={label} style={styles.detail}>
-      <Text style={styles.muted}>{displayText(String(label))}</Text><Text style={styles.value}>{value}</Text></View>)}</View>
+      <Text style={styles.muted}>{t(label)}</Text><Text style={styles.value}>{value}</Text></View>)}</View>
     {!!entry.error && <Text accessibilityRole="alert" style={styles.error}>{displayError(entry.error)}</Text>}
     {!!notice && <Text style={styles.muted}>{displayError(notice)}</Text>}
   </View>;

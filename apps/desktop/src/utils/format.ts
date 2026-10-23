@@ -87,8 +87,8 @@ export function resetLabel(
   if (hours < 24) {
     const remainder = rest ? ` ${uiText("client.settings.minutes", { value1: rest }, language)}` : "";
     return (language !== "zh" && language !== "en" ? uiText("client.usage.resetsInH", { value1: hours, value2: remainder }, language) : language === "zh"
-      ? interpolateCopy(inlineCopy["value1_value2_06f9df56"], { value1: String(hours), value2: String(rest ? ` ${rest} 分` : "") })
-      : interpolateCopy(inlineCopy["Resets_in_value1_hrvalue2_4654aae9"], { value1: String(hours), value2: String(rest ? ` ${rest} min` : "") }));
+      ? interpolateCopy(inlineCopy["value1_value2_06f9df56"], { value1: String(hours), value2: String(rest ? interpolateCopy(inlineCopy.minuteRemainderZh, { value1: rest }) : "") })
+      : interpolateCopy(inlineCopy["Resets_in_value1_hrvalue2_4654aae9"], { value1: String(hours), value2: String(rest ? interpolateCopy(inlineCopy.minuteRemainderEn, { value1: rest }) : "") }));
   }
   const days = Math.floor(hours / 24);
   const dayHours = hours % 24;

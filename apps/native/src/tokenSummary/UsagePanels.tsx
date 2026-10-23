@@ -1,15 +1,10 @@
-import { displayText } from '../i18n/index';
+import { TOKEN_FIELDS } from '../../../../shared/remote-chat/tokenSummaryLabels';
 import { t, useLanguage } from '../i18n';
 import { Text, View } from 'react-native';
 import type { TokenSummary, UsageRanking } from '../../../../shared/remote-chat/tokenSummary';
 import { formatTokens } from '../../../desktop/src/components/TokenUsageDashboard/chartUtils';
 import { TimeBars } from './TimeBars';
 import { useSummaryStyles as useS } from './styles';
-
-export const TOKEN_FIELDS = [
-  ['总计', 'totalTokens'], ['输入', 'inputTokens'], ['输出', 'outputTokens'],
-  ['推理', 'reasoningTokens'], ['缓存', 'cachedTokens'],
-] as const;
 
 export function UsageTotals({ data }: { data: TokenSummary }) {
   const s = useS();
@@ -19,7 +14,7 @@ export function UsageTotals({ data }: { data: TokenSummary }) {
     <Text style={s.number}>{formatTokens(data.dailyUsage.reduce((sum, day) => sum + day.totalTokens, 0), language)}</Text>
     <Text style={s.sectionTitle}>{t("client.mobile.tokenTotalsByType")}</Text>
     <View style={s.wrap}>{TOKEN_FIELDS.slice(1).map(([label, field]) => <View key={field} style={s.metric}>
-      <Text style={s.hint}>{displayText(label)}</Text>
+      <Text style={s.hint}>{t(label)}</Text>
       <Text style={s.value}>{formatTokens(data.dailyUsage.reduce((sum, day) => sum + day[field], 0), language)}</Text>
     </View>)}</View>
     {data.errors.usage && <Text style={s.error}>{t("client.chat.someTokenDataCouldNotBeLoadedPleaseRefreshTo")}</Text>}
@@ -31,7 +26,7 @@ export function UsageTrend({ data }: { data: TokenSummary }) {
   const language = useLanguage();
   const daily = new Map(data.dailyUsage.map((day) => [day.date, day]));
   return <View style={s.card}><Text style={s.sectionTitle}>{t("client.chat.dailyTokenTrend")}</Text>
-    <TimeBars labels={TOKEN_FIELDS.map(([label]) => displayText(label))} points={data.dateKeys.map((date) => ({
+    <TimeBars labels={TOKEN_FIELDS.map(([label]) => t(label))} points={data.dateKeys.map((date) => ({
       label: date, values: TOKEN_FIELDS.map(([, field]) => daily.get(date)?.[field] ?? 0),
     }))} />
   </View>;

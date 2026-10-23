@@ -5,6 +5,9 @@ import { useDiffText } from "../../../../../shared/chat/diffText";
 import styles from "./EditedFilesSummary.module.less";
 
 const COLLAPSED_FILE_COUNT = 3;
+const UNAPPLIED_STATUSES = [
+  'client.chat.notApplied', 'client.chat.editFailed', 'client.chat.editing', 'client.chat.reverted',
+] as const;
 
 function Counts({ added, removed }: { added: number; removed: number }) {
   const t = useDiffText();
@@ -36,7 +39,7 @@ export function EditedFilesSummary({ files, title, status, onReview, onReviewFil
   const summary = useMemo(() => summarizeFiles(files), [files]);
   const added = summary.reduce((sum, file) => sum + file.added, 0);
   const removed = summary.reduce((sum, file) => sum + file.removed, 0);
-  const changed = !["未应用", "修改失败", "正在修改", "已撤销"].includes(status ?? "");
+  const changed = !UNAPPLIED_STATUSES.some(key => status === key || status === t(key));
   const hiddenCount = summary.length - COLLAPSED_FILE_COUNT;
   const visibleFiles = expanded ? summary : summary.slice(0, COLLAPSED_FILE_COUNT);
   return <section className={styles.card} aria-label={t(title)}>

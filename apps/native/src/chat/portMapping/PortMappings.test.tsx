@@ -7,6 +7,7 @@ import { PortMappings } from './PortMappings';
 const runtime = vi.hoisted(() => ({ cursor: 0, component: '', states: new Map<string, unknown[]>(),
   service: undefined as PortForwardingService | undefined, syncStatus: '' }));
 vi.mock('react', async original => ({ ...await original<typeof React>(), useEffect: vi.fn(),
+  useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
   useState: (initial: unknown) => {
     const state = runtime.states.get(runtime.component) ?? [];
     runtime.states.set(runtime.component, state);

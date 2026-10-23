@@ -1,22 +1,15 @@
-import { displayText, displayError } from '../i18n/index';
+import { displayError } from '../i18n/index';
 import { getLocale, t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import { useTokenSummary } from '../../../../shared/remote-chat/client/useTokenSummary';
 import type { ReadTokenSummary, TokenSummary, UsageRanking } from '../../../../shared/remote-chat/tokenSummary';
 import { formatTokens } from '../../../../shared/remote-chat/usage';
-import type { DailyTokenUsageBreakdown } from '../../../desktop/src/types/tokenUsageAnalytics';
+import { TOKEN_FIELDS, CONTEXT_FIELDS, MODE_FIELDS, type ConsumptionField }
+  from '../../../../shared/remote-chat/tokenSummaryLabels';
 import { TokenBars, TokenQuota } from './ChatTokenCharts';
 import { OfficialUsagePanel } from './OfficialUsagePanel';
 import './tokenSummary.css';
-
-const TOKEN_FIELDS = [['总计', 'totalTokens'], ['输入', 'inputTokens'], ['输出', 'outputTokens'],
-  ['推理', 'reasoningTokens'], ['缓存', 'cachedTokens']] as const;
-type BreakdownField = Exclude<keyof DailyTokenUsageBreakdown, 'date'>;
-const CONTEXT_FIELDS: Array<[string, BreakdownField]> = [['短上下文', 'shortContextTokens'],
-  ['长上下文', 'longContextTokens'], ['未识别', 'unknownContextTokens']];
-const MODE_FIELDS: Array<[string, BreakdownField]> = [['普通模式', 'standardModeTokens'],
-  ['快速模式', 'fastModeTokens'], ['未识别', 'unknownModeTokens']];
 
 function Ranking({ title, ranking, count }: { title: string; ranking: UsageRanking; count: number }) {
   useLanguage();
@@ -31,15 +24,15 @@ function Ranking({ title, ranking, count }: { title: string; ranking: UsageRanki
   </section>;
 }
 function Consumption({ data, title, fields, hint }: {
-  data: TokenSummary; title: string; fields: Array<[string, BreakdownField]>; hint: string;
+  data: TokenSummary; title: string; fields: readonly ConsumptionField[]; hint: string;
 }) {
   useLanguage();
   const daily = new Map(data.breakdown.map(day => [day.date, day]));
   return <section className="chat-token-card"><h3>{title}</h3><p className="chat-muted">{hint}</p>
     {data.errors.analytics ? <p className="chat-error">{t("client.chat.couldNotLoadUsagePleaseRefreshToTryAgain")}</p> : <>
-      <div className="chat-token-metrics">{fields.map(([name, field]) => <div key={field}><small>{displayText(name)}</small>
+      <div className="chat-token-metrics">{fields.map(([name, field]) => <div key={field}><small>{t(name)}</small>
         <strong>{formatTokens(data.breakdown.reduce((sum, day) => sum + day[field], 0))}</strong></div>)}</div>
-      <TokenBars labels={fields.map(([label]) => displayText(label))} points={data.dateKeys.map(date => ({
+      <TokenBars labels={fields.map(([label]) => t(label))} points={data.dateKeys.map(date => ({
         label: date, values: fields.map(([, field]) => daily.get(date)?.[field] ?? 0),
       }))} />
     </>}
@@ -51,7 +44,7 @@ function SummaryContent({ data }: { data: TokenSummary }) {
   const maximum = Math.max(1, ...data.dailyUsage.map(day => day.totalTokens));
   return <>
     <section className="chat-token-card"><h3>{t("client.chat.recent")} {data.weeks}  {t("client.chat.weeksTotalTokens")}</h3>
-      <div className="chat-token-metrics">{TOKEN_FIELDS.map(([label, field]) => <div key={field}><small>{displayText(label)}</small>
+      <div className="chat-token-metrics">{TOKEN_FIELDS.map(([label, field]) => <div key={field}><small>{t(label)}</small>
         <strong>{formatTokens(data.dailyUsage.reduce((sum, day) => sum + day[field], 0))}</strong></div>)}</div>
       {data.errors.usage && <p className="chat-error">{t("client.chat.someTokenDataCouldNotBeLoadedPleaseRefreshTo")}</p>}
     </section>
@@ -68,7 +61,7 @@ function SummaryContent({ data }: { data: TokenSummary }) {
           style={{ background: `rgba(20,128,111,${tokens ? .2 + tokens / maximum * .8 : .07})` }} />;
       })}</div></section>
     <section className="chat-token-card"><h3>{t("client.chat.dailyTokenTrend")}</h3>
-      <TokenBars labels={TOKEN_FIELDS.map(([label]) => displayText(label))} points={data.dateKeys.map(date => ({ label: date,
+      <TokenBars labels={TOKEN_FIELDS.map(([label]) => t(label))} points={data.dateKeys.map(date => ({ label: date,
         values: TOKEN_FIELDS.map(([, field]) => daily.get(date)?.[field] ?? 0),
       }))} /></section>
     <Ranking title={t("client.chat.providerUsageRanking")} ranking={data.rankings.providers} count={data.entryCount} />

@@ -1,4 +1,4 @@
-import { defaultText } from '../localization/messages';
+import { defaultText, type MessageKey } from '../localization/messages';
 import { validateChatImages } from '../remote-chat/attachments';
 import type { ConnectionMode } from '../remote-chat/protocol';
 import { getChatPolicy, KIB } from '../remote-chat/policy';
@@ -21,7 +21,7 @@ export function imageEditorHtml(dataUrl: string, translate = defaultText, langua
   { scriptUrl, mode, themeMode = 'light' }: ImageEditorOptions = {}) {
   validateChatImages([dataUrl], mode);
   const policy = getChatPolicy(mode);
-  const label = (text: string) => escapeHtml(translate(text));
+  const label = (text: MessageKey) => escapeHtml(translate(text));
   const config = JSON.stringify({ dataUrl, desktop: !!scriptUrl, targetBytes: policy.imageTargetKb * KIB,
     maxEdge: policy.imageMaxEdge, labels: {
       saving: translate("client.projectBrowser.saving"),
@@ -33,7 +33,7 @@ export function imageEditorHtml(dataUrl: string, translate = defaultText, langua
       panHint: translate("client.shared.dragToMoveTheImageChooseAToolToKeep"),
       readFailed: translate("client.shared.couldNotReadTheImagePleaseChooseItAgain"),
     } }).replace(/</g, '\\u003c');
-  const locale = /^ru(?:-|$)/i.test(language) ? 'ru' : /^en(?:-|$)/i.test(language) ? 'en' : 'zh-CN';
+  const locale = /^ja(?:-|$)/i.test(language) ? 'ja' : /^ru(?:-|$)/i.test(language) ? 'ru' : /^en(?:-|$)/i.test(language) ? 'en' : 'zh-CN';
   return `<!doctype html><html lang="${locale}" data-theme="${themeMode === 'dark' ? 'dark' : 'light'}">
 <head><meta charset="utf-8">
 <meta name="viewport"

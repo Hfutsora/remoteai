@@ -1,4 +1,3 @@
-import { displayText } from '../i18n/index';
 import { useThemeMode } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
 import { t, useLanguage } from '../i18n';
@@ -6,7 +5,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { TokenSummary } from '../../../../shared/remote-chat/tokenSummary';
 import { chartPalette, formatTokens } from '../../../desktop/src/components/TokenUsageDashboard/chartUtils';
-import { TOKEN_FIELDS } from './UsagePanels';
+import { TOKEN_FIELDS } from '../../../../shared/remote-chat/tokenSummaryLabels';
 import { useSummaryStyles as useS } from './styles';
 
 const DAYS_PER_WEEK = 7;
@@ -41,7 +40,7 @@ export function UsageHeatmap({ data }: { data: TokenSummary }) {
       <View key={color} style={[h.legend, { backgroundColor: color }]} />)}<Text style={s.hint}>{t("client.mobile.more")}</Text></View>
     {selected && <View style={s.detail} accessibilityLiveRegion="polite"><Text style={s.value}>{selected}</Text>
       {TOKEN_FIELDS.map(([label, field]) => <Text key={field} style={s.hint}>
-        {displayText(label)}: {formatTokens(daily.get(selected)?.[field] ?? 0, language)}</Text>)}
+        {t(label)}: {formatTokens(daily.get(selected)?.[field] ?? 0, language)}</Text>)}
     </View>}
   </View>;
 }

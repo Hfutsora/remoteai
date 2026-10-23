@@ -1,4 +1,4 @@
-import { displayText } from '../i18n/index';
+import type { MessageKey } from '@remoteai/i18n';
 import { t, useLanguage } from '../i18n';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
@@ -12,8 +12,8 @@ import { TimeBars } from './TimeBars';
 import { quotaPoints } from './quotaPoints';
 import { useSummaryStyles as useS } from './styles';
 
-const intervals: Array<[QuotaInterval, string]> = [['hour', '每小时'], ['sixHours', '每 6 小时'], ['day', '每天']];
-const views: Array<[QuotaView, string]> = [['drop', '时段下降'], ['remaining', '剩余额度']];
+const intervals: Array<[QuotaInterval, MessageKey]> = [['hour', 'client.chat.hourly'], ['sixHours', 'client.chat.every6Hours'], ['day', 'client.chat.daily']];
+const views: Array<[QuotaView, MessageKey]> = [['drop', 'client.chat.usagePerPeriod'], ['remaining', 'client.accounts.remainingQuota']];
 
 export function QuotaPanel({ data }: { data: TokenSummary }) {
   const s = useS();
@@ -35,10 +35,10 @@ export function QuotaPanel({ data }: { data: TokenSummary }) {
     </Pressable>
     <View style={s.wrap}>{views.map(([value, label]) => <Pressable key={value} accessibilityRole="button"
       accessibilityState={{ selected: view === value }} style={[s.chip, view === value && s.selected]}
-      onPress={() => setView(value)}><Text style={s.action}>{displayText(label)}</Text></Pressable>)}</View>
+      onPress={() => setView(value)}><Text style={s.action}>{t(label)}</Text></Pressable>)}</View>
     <View style={s.wrap}>{intervals.map(([value, label]) => <Pressable key={value} accessibilityRole="button"
       accessibilityState={{ selected: interval === value }} style={[s.chip, interval === value && s.selected]}
-      onPress={() => setInterval(value)}><Text style={s.action}>{displayText(label)}</Text></Pressable>)}</View>
+      onPress={() => setInterval(value)}><Text style={s.action}>{t(label)}</Text></Pressable>)}</View>
     {data.errors.quota ? <Text style={s.error}>{labels.error}</Text>
       : chart.hasData ? <TimeBars key={`${selected?.accountId}:${interval}:${view}`} points={points}
         labels={[labels.primary, labels.secondary]} unit={view === 'drop' ? 'points' : '%'} />
