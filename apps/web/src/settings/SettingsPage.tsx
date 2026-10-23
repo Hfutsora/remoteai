@@ -3,7 +3,7 @@ import { t, useLanguage } from '../i18n';
 import { useState } from 'react';
 import { Button, Dialog, Switch } from 'antd-mobile';
 import { ChevronRight, Grid2X2, IdCard, Info, LockKeyhole, LogOut,
-  Download, Languages, Monitor, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
+  Download, Languages, Monitor, RefreshCw, ShieldCheck, Type, UserRound } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../hooks';
 import { signOut } from '../store';
 import type { useTotpVault } from '../useTotpVault';
@@ -26,13 +26,16 @@ import { DownloadManagerPage } from '../downloads/DownloadManagerPage';
 import { downloadOwner } from '../downloads/manager';
 import { AutoSaveSettings } from '../../../../shared/project-browser/AutoSaveSettings';
 import { useBrowserPreferences } from '../../../../shared/project-browser/useBrowserPreferences';
+import { GlobalFontSettings } from '../../../../shared/appearance/GlobalFontSettings';
+import { useGlobalFontSize } from '../../../../shared/appearance/fontSize';
 
 type Panel = 'profile' | 'identity' | 'refresh' | 'totp' | 'password' | 'about'
-  | 'language' | 'downloads' | 'desktop' | 'theme' | 'files' | null;
+  | 'language' | 'downloads' | 'desktop' | 'theme' | 'files' | 'font' | null;
 
 export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof useTotpVault> }) {
   useLanguage();
   const mode = useThemeMode();
+  const fontSize = useGlobalFontSize();
   const filePreferences = useBrowserPreferences();
   const dispatch = useAppDispatch();
   const session = useAppSelector(state => state.auth.session);
@@ -62,6 +65,8 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
         <section className="settings-group">
           <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon={Contrast}
             onClick={() => setPanel('theme')} />
+          <SettingsRow label={t('client.appearance.globalFontSize')} value={`${fontSize}px`} icon={Type}
+            onClick={() => setPanel('font')} />
           <SettingsRow label={t("client.downloads.downloads")} icon={Download} onClick={() => setPanel('downloads')} />
           <SettingsRow label={t("client.projectBrowser.autoSaveFiles")} icon={RefreshCw} onClick={() => setPanel('files')} />
           <SettingsRow label={t("client.settings.language")} value={languageLabel(getLanguage())} icon={Languages}
@@ -87,6 +92,9 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
     </div>
     <AdaptiveSheet open={panel === 'files'} title={t("client.projectBrowser.fileBrowserSettings")} onClose={close} width={400}>
       <div className="settings-sync"><AutoSaveSettings preferences={filePreferences} t={displayText} /></div>
+    </AdaptiveSheet>
+    <AdaptiveSheet open={panel === 'font'} title={t('client.appearance.globalFontSize')} onClose={close} width={480}>
+      <GlobalFontSettings t={t} />
     </AdaptiveSheet>
     <AdaptiveSheet open={panel === 'profile' || panel === 'identity'} onClose={close} width={400}
       title={panel === 'identity' ? t("client.settings.roleDetails") : t("client.settings.profile")}>

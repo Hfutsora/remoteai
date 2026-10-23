@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { ApplicationTypography } from '../../../shared/appearance/ApplicationTypography';
 import { refreshTokenCostPresetsOnce, subscribeToTokenCostPresetStorage } from "./utils/tokenCostPresetStartup";
 import { RemoteChatHost } from "./remoteChat/useChatHost";
 import { startRemoteUpdateBridge } from "./remoteUpdate/bridge";
@@ -35,6 +36,6 @@ document.documentElement.classList.toggle("token-usage-page", currentWindowRoute
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     {!currentWindowRoute && '__TAURI_INTERNALS__' in window && <RemoteChatHost />}
-    <App />
+    <ApplicationTypography><App /></ApplicationTypography>
   </React.StrictMode>,
 );

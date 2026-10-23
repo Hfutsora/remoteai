@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
+import { ConfigProvider } from 'antd';
 import { WorkspaceDrawerContext } from "../../../../../shared/chat/workspaceDrawer";
 import { useWorkspaceDrawer } from "../../../../../shared/chat/useWorkspaceDrawer";
 import { FileDiff, FileSearch, Maximize2, Minimize2, Minus, PanelRightOpen, X } from "lucide-react";
@@ -51,7 +52,8 @@ export function DetailsWorkspace({ selected, active, children, enabled = true, c
       ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   }, [visible, drawer.tabs.selected]);
   useEffect(() => { if (!visible || expanded) resize.cancel(); }, [visible, expanded, resize.cancel]);
-  return <DetailsContext.Provider value={enabled ? panel.context : null}>
+  return <ConfigProvider theme={{ token: { fontSize } }}>
+    <DetailsContext.Provider value={enabled ? panel.context : null}>
     <WorkspaceDrawerContext.Provider value={workspace}>
     <div ref={host} className={`${styles.host} ${className}`} data-dragging={resize.dragging || undefined}
       style={guiFontStyle(fontSize)}>
@@ -115,5 +117,5 @@ export function DetailsWorkspace({ selected, active, children, enabled = true, c
             : t(showingChanges ? "client.chat.restoreFileChanges" : "client.desktopGuiExtras.restorePreview")}</button>}
     </div>
     </WorkspaceDrawerContext.Provider>
-  </DetailsContext.Provider>;
+  </DetailsContext.Provider></ConfigProvider>;
 }

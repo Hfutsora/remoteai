@@ -75,7 +75,7 @@ function WebChat({ session, device, selected, ...props }: Props & {
       <ChatTools client={chat.controller.guiTools} active={props.active}
         desktopActions={<><GuiRemoteDesktop client={chat.controller.guiTools.desktop} active={props.active}
           connected={chat.state.mode === 'direct' || chat.state.mode === 'relay'} />
-          <RemoteGuiTools controller={chat.controller} state={chat.state} installer={installer} /></>}
+          <RemoteGuiTools controller={chat.controller} state={chat.state} installer={installer} active={props.active} /></>}
         connected={chat.state.ready} deviceName={device?.name}
         cwd={chat.state.selected?.cwd ?? chat.state.draftProject?.cwd ?? ''} />
     </div>}

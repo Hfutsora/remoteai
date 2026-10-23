@@ -17,6 +17,10 @@
   min-height: 44px; max-height: none; padding: 8px 10px; font: inherit;
   color: inherit; background: transparent; overflow: hidden; }
 .chat-composer textarea, .chat-composer-placeholder { font-size: 16px; line-height: 1.6; }
+@media (min-width: 861px) {
+  .chat-diff-workspace .chat-composer textarea,
+  .chat-diff-workspace .chat-composer-placeholder { font-size: var(--gui-font-size, 14px); }
+}
 /* Keep the shared focus outline from being clipped into lines inside the composer. */
 .chat-composer textarea:focus-visible { outline: none; }
 .chat-composer textarea::placeholder { color: transparent; }

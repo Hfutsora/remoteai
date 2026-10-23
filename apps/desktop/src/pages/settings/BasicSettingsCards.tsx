@@ -14,6 +14,7 @@ import {
 import { LANGUAGE_OPTIONS, type Language } from "../../i18n";
 import type { BubbleResetDisplay } from "../../types";
 import { AutoUpdateSettingsCard } from "./AutoUpdateSettingsCard";
+import { GlobalFontSettingsCard } from "./GlobalFontSettingsCard";
 import { ChatGptLaunchPathCard } from "./ChatGptLaunchPathCard";
 import { HelpAssistantSettingsCard } from "./HelpAssistantSettingsCard";
 import type { SettingsPageProps } from "./types";
@@ -383,6 +384,7 @@ export function AppearanceSettingsCards({
   return (
     <>
       <LanguageCard settings={settings} />
+      <GlobalFontSettingsCard />
       <NavigationStyleCard settings={settings} />
       <ThemeCard settings={settings} />
       <HelpAssistantSettingsCard language={settings.language} />

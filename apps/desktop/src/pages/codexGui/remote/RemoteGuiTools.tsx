@@ -8,11 +8,13 @@ import type { ChatController } from '../../../../../../shared/remote-chat/client
 import type { TerminalPanelState } from '../terminal/useTerminalPanel';
 import { Installer } from '../Installer';
 import { CliUpdateIcon } from '../CliUpdateIcon';
+import { GuiFontSettingsButton } from '../GuiFontSettingsButton';
 import type { useRemoteCliInstaller } from './useRemoteCliInstaller';
 
-export function RemoteGuiTools({ controller, state, installer, terminal }: {
+export function RemoteGuiTools({ controller, state, installer, terminal, active }: {
   controller: ChatController; state: ChatState; installer: ReturnType<typeof useRemoteCliInstaller>;
   terminal?: TerminalPanelState & { error?: string; busy?: boolean };
+  active: boolean;
 }) {
   const connected = state.mode === 'direct' || state.mode === 'relay';
   const [reconnecting, setReconnecting] = useState(false);
@@ -28,6 +30,7 @@ export function RemoteGuiTools({ controller, state, installer, terminal }: {
     finally { setReconnecting(false); }
   };
   return <div className="gui-remote-tools">
+    <GuiFontSettingsButton active={active} />
     <Tooltip title={uiText("client.workspaceActions.reconnectRemoteCodex")} styles={{ root: { maxWidth: 400 } }}>
       <Button type="text" className="gui-remote-secondary-tool"
         icon={<RefreshCw size={16} />} aria-label={uiText("client.workspaceActions.reconnectRemoteCodex")}

@@ -1,31 +1,37 @@
 import { uiText } from "../../i18n/uiText";
-import { useState } from "react";
-import { Button, InputNumber, Slider } from "antd";
-import { RotateCcw, Type } from "lucide-react";
+import { useId, useState } from "react";
+import { Switch } from "antd";
+import { Type } from "lucide-react";
+import { FontSizeControl } from "../../../../../shared/appearance/FontSizeControl";
 import {
-  DEFAULT_GUI_FONT_SIZE, guiFontStyle, MAX_GUI_FONT_SIZE, MIN_GUI_FONT_SIZE, saveGuiFontSize, useGuiFontSize,
+  guiFontStyle, saveGuiFontSize, setGuiFollowGlobal, useGuiFontSize, useGuiFollowGlobal,
 } from "./guiAppearance";
 import styles from "./GuiAppearanceSettings.module.less";
 
 export function GuiAppearanceSettings() {
   const fontSize = useGuiFontSize();
+  const followGlobal = useGuiFollowGlobal();
+  const followId = useId();
   const [error, setError] = useState("");
-  const update = (value: number | null) => {
-    if (value !== null) setError(saveGuiFontSize(value) ? "" : uiText("client.workspaceSettings.couldNotSaveTheFontSizePleaseTryAgain"));
+  const update = (value: number) => {
+    setError(saveGuiFontSize(value) ? ''
+      : uiText('client.workspaceSettings.couldNotSaveTheFontSizePleaseTryAgain'));
   };
   return <section className={styles.panel} aria-label={uiText("client.workspaceSettings.appearanceSettings")}>
     <div className={styles.card}>
     <h3>{uiText("client.workspaceSettings.fontSize")}</h3>
     <p className={styles.hint}>{uiText("client.workspaceSettings.adjustTextSizeForConversationsTheComposerAndCodeChanges")}</p>
+    <div className={styles.follow}>
+      <div><label htmlFor={followId}>{uiText('client.appearance.followGlobalFont')}</label>
+        <p className={styles.hint}>{uiText('client.appearance.followGlobalFontDescription')}</p></div>
+      <Switch id={followId} checked={followGlobal} onChange={follow => {
+        setError(setGuiFollowGlobal(follow) ? ''
+          : uiText('client.workspaceSettings.couldNotSaveTheFontSizePleaseTryAgain'));
+      }} />
+    </div>
     <div className={styles.controls}>
-      <Type size={15} className={styles.fontIcon} aria-hidden="true" />
-      <Slider min={MIN_GUI_FONT_SIZE} max={MAX_GUI_FONT_SIZE} value={fontSize} onChange={update}
-        ariaLabelForHandle={uiText("client.workspaceSettings.fontSize")} tooltip={{ open: false }} />
-      <InputNumber aria-label={uiText("client.workspaceSettings.fontSize")} min={MIN_GUI_FONT_SIZE} max={MAX_GUI_FONT_SIZE} precision={0}
-        value={fontSize} onChange={update} suffix="px" />
-      <Button icon={<RotateCcw size={13} />} onClick={() => update(DEFAULT_GUI_FONT_SIZE)}
-        disabled={fontSize === DEFAULT_GUI_FONT_SIZE}>
-        {uiText("client.chat.restoreDefaults")}</Button>
+      <FontSizeControl value={fontSize} onChange={update} label={uiText('client.workspaceSettings.fontSize')}
+        resetLabel={uiText('client.chat.restoreDefaults')} />
     </div>
     </div>
     {error && <p className={styles.error} role="alert">{error}</p>}

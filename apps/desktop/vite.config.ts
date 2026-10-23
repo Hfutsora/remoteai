@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { imageEditorPlugin } from '../../shared/chat/imageEditorPlugin';
+import { fontSizePlugin } from '../../shared/appearance/fontSizePlugin';
 
 export default defineConfig({
   plugins: [react(), imageEditorPlugin()],
+  css: { postcss: { plugins: [fontSizePlugin()] } },
   clearScreen: false,
   server: {
     port: 1420,
