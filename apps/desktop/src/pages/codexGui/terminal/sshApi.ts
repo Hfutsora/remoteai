@@ -1,0 +1,54 @@
+import { Channel, invoke } from '@tauri-apps/api/core';
+import type { SshApi, SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../../../../../../shared/terminal/ssh';
+import type { TerminalEvent, TerminalInfo } from '../../../../../../shared/terminal/types';
+import { TerminalOutput } from '../../../remoteChat/terminalOutput';
+
+interface Attachment { output: TerminalOutput; listener?: (event: TerminalEvent) => void }
+const attachments = new Map<string, Attachment>();
+
+export function openNativeSsh(request: SshConnect, onEvent: (event: TerminalEvent) => void) {
+  const channel = new Channel<TerminalEvent>();
+  channel.onmessage = onEvent;
+  return invoke<TerminalInfo>('codex_gui_ssh_open', { request, onEvent: channel });
+}
+export const probeSsh = (endpoint: SshEndpoint) => invoke<string>('codex_gui_ssh_probe', { endpoint });
+export const sshFiles = (id: string, request: SshFileAction) =>
+  invoke<SshFileReply>('codex_gui_ssh_files', { id, request });
+
+export const sshApi: SshApi = {
+  probe: probeSsh, files: sshFiles,
+  async open(request, projectCwd) {
+    const attachment: Attachment = { output: new TerminalOutput() };
+    const info = await openNativeSsh(request, event => {
+      attachment.output.push(event);
+      attachment.listener?.(event);
+    });
+    attachments.set(info.id, attachment);
+    return { ...info, projectCwd };
+  },
+};
+
+export async function attachSsh(info: TerminalInfo, onEvent: (event: TerminalEvent) => void) {
+  const attachment = attachments.get(info.id);
+  if (!attachment) throw new Error('client.ssh.closed');
+  attachment.listener = onEvent;
+  let cursor = 0;
+  for (;;) {
+    const output = attachment.output.read(cursor);
+    if (!output.events.length) break;
+    output.events.forEach(event => onEvent(event)); cursor = output.cursor;
+  }
+  return { ...info, detach: () => {
+    if (attachment.listener !== onEvent) return;
+    attachment.listener = undefined;
+    // React can immediately reattach effects in development; only an abandoned view owns the close.
+    setTimeout(() => {
+      if (!attachment.listener) void closeSsh(info.id).catch(() => console.error('SSH cleanup failed'));
+    }, 0);
+  } };
+}
+
+export async function closeSsh(id: string) {
+  await invoke<void>('codex_gui_ssh_command', { request: { type: 'close', id } });
+  attachments.delete(id);
+}

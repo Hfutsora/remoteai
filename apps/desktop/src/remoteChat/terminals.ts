@@ -2,6 +2,8 @@ import { terminalApi, type TerminalInfo, type TerminalSize } from '../pages/code
 import { TerminalOutput } from './terminalOutput';
 import { terminalBelongsToProject } from '../../../../shared/remote-chat/terminalProject';
 import { invoke } from '../api/backend';
+import { openNativeSsh, probeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
+import type { SshConnect, SshEndpoint, SshFileAction } from '../../../../shared/terminal/ssh';
 
 const MAX_TERMINALS = 8;
 interface Session { info?: TerminalInfo; output: TerminalOutput; exited: boolean; legacyCursor: number }
@@ -11,6 +13,7 @@ export class RemoteTerminals {
   private readonly owners = new Map<string, Set<Session>>();
 
   async request(body: Record<string, unknown>, owner: string) {
+    if (body.operation === 'guiTerminalSshProbe') return probeSsh(body.endpoint as SshEndpoint);
     if (body.operation === 'guiTerminalList') {
       const cwd = body.cwd;
       if (cwd !== undefined && typeof cwd !== 'string') throw new Error('请选择有效的项目目录。');
@@ -18,7 +21,7 @@ export class RemoteTerminals {
       // Older clients may still request all shells; current clients always send their project directory.
       return typeof cwd === 'string' ? sessions.filter(info => terminalBelongsToProject(info, cwd)) : sessions;
     }
-    if (body.operation === 'guiTerminalOpen') return this.open(body, owner);
+    if (body.operation === 'guiTerminalOpen' || body.operation === 'guiTerminalSshOpen') return this.open(body, owner);
     const session = [...(this.owners.get(owner) ?? [])].find(entry => entry.info?.id === body.id);
     if (body.operation === 'guiTerminalRead') return readOutput(session, body.cursor);
     if (!session?.info) {
@@ -26,6 +29,9 @@ export class RemoteTerminals {
       throw new Error('终端已关闭，请新建终端。');
     }
     switch (body.operation) {
+      case 'guiTerminalSshFiles':
+        if (!session.info.ssh || session.exited) throw new Error('client.ssh.closed');
+        return sshFiles(session.info.id, body.request as SshFileAction);
       case 'guiTerminalLink': {
         const request = body.request;
         if (!request || typeof request !== 'object' || Array.isArray(request)
@@ -60,10 +66,13 @@ export class RemoteTerminals {
     sessions.add(session);
     try {
       // The typed Rust command validates the directory, size and input limits off the UI thread.
-      const info = await terminalApi.open(body.cwd, body.size as TerminalSize, event => {
+      const onEvent = (event: import('../../../../shared/terminal/types').TerminalEvent) => {
         session.output.push(event);
         if (event.type === 'exit') session.exited = true;
-      });
+      };
+      const info = await (body.operation === 'guiTerminalSshOpen'
+        ? openNativeSsh(body.request as SshConnect, onEvent)
+        : terminalApi.open(body.cwd, body.size as TerminalSize, onEvent));
       // Rust resolves symlinks and the default home directory; retain the original project association separately.
       session.info = { ...info, projectCwd: body.projectCwd ?? body.cwd };
       return session.info;

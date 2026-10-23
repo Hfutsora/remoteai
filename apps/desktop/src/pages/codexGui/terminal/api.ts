@@ -1,9 +1,12 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
+import { sshApi, attachSsh, closeSsh } from './sshApi';
 
 import type { TerminalSize, TerminalInfo, TerminalEvent } from '../../../../../../shared/terminal/types';
 export type { TerminalSize, TerminalInfo, TerminalEvent, TerminalApi } from '../../../../../../shared/terminal/types';
 
 export const terminalApi = {
+  ssh: sshApi,
+  attach: (info: TerminalInfo, _size: TerminalSize, onEvent: (event: TerminalEvent) => void) => attachSsh(info, onEvent),
   open(cwd: string, size: TerminalSize, onEvent: (event: TerminalEvent) => void) {
     const onEventChannel = new Channel<TerminalEvent>();
     onEventChannel.onmessage = onEvent;
@@ -11,11 +14,14 @@ export const terminalApi = {
       request: { cwd: cwd || null, size }, onEvent: onEventChannel,
     });
   },
-  write: (id: string, data: string) => invoke<void>("codex_gui_terminal_command", {
+  write: (id: string, data: string) => invoke<void>(commandName(id), {
     request: { type: "write", id, data },
   }),
-  resize: (id: string, size: TerminalSize) => invoke<void>("codex_gui_terminal_command", {
+  resize: (id: string, size: TerminalSize) => invoke<void>(commandName(id), {
     request: { type: "resize", id, size },
   }),
-  close: (id: string) => invoke<void>("codex_gui_terminal_command", { request: { type: "close", id } }),
+  close: (id: string) => id.startsWith('ssh-') ? closeSsh(id)
+    : invoke<void>("codex_gui_terminal_command", { request: { type: "close", id } }),
 };
+
+const commandName = (id: string) => id.startsWith('ssh-') ? 'codex_gui_ssh_command' : 'codex_gui_terminal_command';

@@ -97,5 +97,10 @@ export function useRemoteTerminalPanel(options: {
   const select = (selected: SetStateAction<string>) => update(previous => ({
     selected: typeof selected === 'function' ? selected(previous.selected) : selected,
   }));
-  return { ...panel, add, addInDirectory, remove, toggle, select, hide: () => update({ open: false }) };
+  const adopt = (session: TerminalInfo) => update(previous => ({
+    tabs: [...previous.tabs.filter(tab => tab.id !== session.id), asTab(session)],
+    selected: session.id, open: true, error: '',
+  }));
+  return { ...panel, add, adopt, projectCwd: cwd, addInDirectory, remove, toggle, select,
+    hide: () => update({ open: false }) };
 }

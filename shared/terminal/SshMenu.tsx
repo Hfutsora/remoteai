@@ -1,0 +1,34 @@
+import { useState } from 'react';
+import { Dropdown, Tooltip } from 'antd';
+import { ChevronDown, Plus, Settings, Server } from 'lucide-react';
+import { SshConnectionDialog } from './SshConnectionDialog';
+import { readSshProfiles, sshLabel, type SshProfile } from './sshProfiles';
+import type { SshApi } from './ssh';
+import type { TerminalInfo } from './types';
+import { displayText as t } from '../localization/messages';
+import './ssh.css';
+
+export function SshMenu({ api, projectCwd, adopt, close, disabled, className }: {
+  api: SshApi; projectCwd: string; adopt: (info: TerminalInfo) => void;
+  close: (id: string) => Promise<void>; disabled: boolean; className: string;
+}) {
+  const [profiles, setProfiles] = useState(readSshProfiles);
+  const [dialog, setDialog] = useState<{ profile?: SshProfile }>();
+  return <>
+    <Dropdown trigger={['click']} overlayClassName="ssh-launch-menu" onOpenChange={open => {
+      if (open) setProfiles(readSshProfiles());
+    }} menu={{ items: [
+      { key: 'new', label: t('client.ssh.new'), icon: <Plus size={15} />, disabled },
+      ...profiles.map(profile => ({ key: profile.id, label: profile.name || sshLabel(profile),
+        icon: <Server size={15} />, disabled })),
+      { type: 'divider' },
+      { key: 'settings', label: t('client.ssh.manage'), icon: <Settings size={15} />, disabled },
+    ], onClick: ({ key }) => setDialog({ profile: profiles.find(profile => profile.id === key) }) }}>
+      <Tooltip title={t('client.ssh.menu')} styles={{ root: { maxWidth: 400 } }}>
+        <button type="button" className={className} aria-label={t('client.ssh.menu')}><ChevronDown size={17} /></button>
+      </Tooltip>
+    </Dropdown>
+    {dialog && <SshConnectionDialog api={api} initial={dialog.profile} projectCwd={projectCwd}
+      close={() => setDialog(undefined)} connected={adopt} dispose={close} changed={() => setProfiles(readSshProfiles())} />}
+  </>;
+}

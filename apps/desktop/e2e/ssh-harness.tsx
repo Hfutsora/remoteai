@@ -1,0 +1,93 @@
+import { StrictMode, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { mockIPC } from '@tauri-apps/api/mocks';
+import type { Channel } from '@tauri-apps/api/core';
+import { ConfigProvider, theme } from 'antd';
+import TerminalPanel from '../src/pages/codexGui/terminal/TerminalPanel';
+import { terminalApi } from '../src/pages/codexGui/terminal/api';
+import { useTerminalPanel } from '../src/pages/codexGui/terminal/useTerminalPanel';
+import { DetailsWorkspace } from '../src/pages/codexGui/DetailsWorkspace';
+import { ChatDetailsWorkspace } from '../../web/src/chat/ChatDetailsWorkspace';
+import { ChatTerminalLayout } from '../../web/src/chat/ChatTerminalLayout';
+import { ChatTerminal } from '../../web/src/chat/ChatTerminal';
+import { RemoteTerminals } from '../src/remoteChat/terminals';
+import { createGuiToolsClient } from '../../../shared/remote-chat/guiTools';
+import { remoteTerminalApi } from '../../../shared/remote-chat/terminalApi';
+import { useRemoteTerminalPanel } from '../../../shared/remote-chat/useRemoteTerminalPanel';
+import type { TerminalEvent, TerminalInfo, TerminalRead } from '../../../shared/terminal/types';
+import type { SshRemote } from '../../../shared/terminal/ssh';
+import { setInterfaceLanguage } from '../../../shared/localization/interfaceLanguage';
+import { applyThemeMode } from '../src/utils/themeMode';
+import '../src/styles.css';
+import '../../web/src/chat/chat.css';
+import 'antd/dist/reset.css';
+
+const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
+const timers = new Map<string, () => void>();
+const post = async <T,>(path: string, request: object): Promise<T> => {
+  const response = await fetch(`http://127.0.0.1:1498${path}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request),
+  });
+  const value = await response.json();
+  if (value.error) throw new Error(String(value.error));
+  return path === '/read' ? value as T : value.data as T;
+};
+mockIPC(async (command, body) => {
+  const args = body as { endpoint: SshRemote; request: Record<string, unknown>; id: string;
+    onEvent: Channel<TerminalEvent> };
+  if (command === 'codex_gui_ssh_probe') return post('/rpc', { type: 'probe', endpoint: args.endpoint });
+  if (command === 'codex_gui_ssh_files') return post('/rpc', { type: 'files', id: args.id, request: args.request });
+  if (command === 'codex_gui_ssh_command') return post('/rpc', { type: 'command', request: args.request });
+  if (command === 'codex_gui_ssh_open') {
+    const info = await post<TerminalInfo>('/rpc', { type: 'open', request: args.request });
+    let cursor = 0; let active = true;
+    const poll = async () => {
+      const value = await post<TerminalRead>('/read', { id: info.id, cursor });
+      if (!active) return;
+      cursor = value.cursor; value.events.forEach(event => args.onEvent.onmessage(event));
+      if (value.events.some(event => event.type === 'exit')) active = false;
+      if (active) setTimeout(() => { void poll(); }, 50);
+    };
+    timers.set(info.id, () => { active = false; }); void poll();
+    return info;
+  }
+  if (command === 'codex_gui_terminal_open') return { id: crypto.randomUUID(), cwd: '/fixture', shell: 'bash' };
+});
+const terminals = new RemoteTerminals();
+const client = createGuiToolsClient(<T,>(body: object) =>
+  terminals.request(body as Record<string, unknown>, 'fixture') as Promise<T>);
+const remoteApi = remoteTerminalApi(client.terminal);
+
+function Local() {
+  const panel = useTerminalPanel('/fixture');
+  return <><button onClick={panel.toggle}>打开终端</button>
+    <div style={{ flex: 1 }}>本地模式</div><TerminalPanel panel={panel} api={terminalApi} active /></>;
+}
+function Remote() {
+  const panel = useRemoteTerminalPanel({ client: client.terminal, cwd: '/fixture', connected: true });
+  return <><button onClick={panel.toggle}>打开终端</button>
+    <div style={{ flex: 1 }}>远程模式</div><TerminalPanel panel={panel} api={remoteApi} active /></>;
+}
+function App() {
+  const [dark, setDark] = useState(false);
+  const content = <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <button onClick={() => {
+      applyThemeMode(dark ? 'light' : 'dark'); setDark(!dark);
+    }}>切换主题</button>
+    <textarea aria-label="聊天输入" style={{ margin: 16 }} />
+    {mode === 'local' ? <Local /> : <Remote />}
+  </div>;
+  return <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
+    <div style={{ height: '100vh' }}>
+      <div style={{ height: 32 }}><button onClick={() => setInterfaceLanguage('en')}>English</button>
+        <button onClick={() => setInterfaceLanguage('zh')}>中文</button></div>
+      <div style={{ height: 'calc(100% - 32px)' }}>
+      {mode === 'web' ? <ChatDetailsWorkspace selected="fixture" active enabled>
+        <ChatTerminalLayout><div style={{ padding: 16 }}><ChatTerminal client={client.terminal} cwd="/fixture"
+          active connected /><textarea aria-label="聊天输入" /></div></ChatTerminalLayout>
+      </ChatDetailsWorkspace> : <DetailsWorkspace selected="fixture" active>{content}</DetailsWorkspace>}
+      </div>
+    </div>
+  </ConfigProvider>;
+}
+createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);

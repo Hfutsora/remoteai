@@ -4,7 +4,8 @@ import { readTerminal } from './terminalReader';
 import { remoteDevelopmentUrl } from '../terminal/links';
 import type { ResolveTerminalLink } from '../terminal/links';
 
-export function remoteTerminalApi(client: Omit<GuiToolsClient['terminal'], 'link'>,
+export function remoteTerminalApi(client: Omit<GuiToolsClient['terminal'], 'link' | 'ssh'>
+  & { ssh?: GuiToolsClient['terminal']['ssh'] },
   resolveLink?: ResolveTerminalLink): TerminalApi {
   const readers = new Map<string, () => void>();
   const attach: NonNullable<TerminalApi['attach']> = async (info, size, onEvent) => {
@@ -20,6 +21,7 @@ export function remoteTerminalApi(client: Omit<GuiToolsClient['terminal'], 'link
   };
   const detach = (id: string) => { readers.get(id)?.(); readers.delete(id); };
   return {
+    ssh: client.ssh,
     resolveLink: async (id, url) => {
       if (!remoteDevelopmentUrl(url)) return url;
       if (resolveLink) return resolveLink(id, url);

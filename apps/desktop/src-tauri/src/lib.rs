@@ -159,6 +159,7 @@ pub fn run() {
         .manage(codex_gui::releases::CliUpdateState::default())
         .manage(codex_gui::scheduled_tasks::ScheduledTasksState::default())
         .manage(std::sync::Arc::new(gui_terminal::TerminalState::default()))
+        .manage(std::sync::Arc::new(csw_ssh_client::Client::default()))
         .manage(std::sync::Arc::new(
             gui_terminal::links::LinkState::default(),
         ))
@@ -382,6 +383,10 @@ pub fn run() {
             local_proxy::gui_system_prompts::codex_gui_system_prompt_settings,
             local_proxy::gui_system_prompts::codex_gui_set_system_prompt_settings,
             gui_terminal::codex_gui_terminal_open,
+            gui_terminal::ssh::codex_gui_ssh_probe,
+            gui_terminal::ssh::codex_gui_ssh_open,
+            gui_terminal::ssh::codex_gui_ssh_command,
+            gui_terminal::ssh::codex_gui_ssh_files,
             gui_terminal::codex_gui_terminal_command,
             gui_terminal::links::codex_gui_terminal_link,
             gui_terminal::links::resources::codex_gui_resource_open,

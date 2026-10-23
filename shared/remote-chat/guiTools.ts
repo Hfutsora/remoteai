@@ -1,4 +1,5 @@
 import type { TerminalRead, TerminalInfo, TerminalSize } from '../terminal/types';
+import type { SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../terminal/ssh';
 import { createProjectBrowserClient } from '../project-browser/protocol';
 import { projectDownloads } from '../project-browser/downloads';
 import { createGuiFilesClient } from './files';
@@ -26,6 +27,7 @@ export const GUI_TOOL_OPERATIONS = new Set([
   'guiCliStatus', 'guiCliRelease', 'guiCliInstall', 'guiReconnect',
   'guiTerminalList', 'guiTerminalOpen', 'guiTerminalRead', 'guiTerminalWrite', 'guiTerminalResize', 'guiTerminalClose',
   'guiTerminalLink',
+  'guiTerminalSshProbe', 'guiTerminalSshOpen', 'guiTerminalSshFiles',
   'guiGitChanges', 'guiGitDiff', 'guiGitHistory', 'guiGitCommit', 'guiGitCommitFiles',
   'guiGitRepository', 'guiGitAction', 'guiGitFileAction', 'guiGitWorkspace', 'guiGitRevision',
   'guiGitGenerateMessage',
@@ -74,6 +76,13 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
       fileAction: (input: GitFileActionRequest) => request<void>({ ...input, operation: 'guiGitFileAction' }),
     },
     terminal: {
+      ssh: {
+        probe: (endpoint: SshEndpoint) => request<string>({ operation: 'guiTerminalSshProbe', endpoint }),
+        open: (input: SshConnect, cwd: string) =>
+          request<TerminalInfo>({ operation: 'guiTerminalSshOpen', request: input, cwd }),
+        files: (id: string, input: SshFileAction) =>
+          request<SshFileReply>({ operation: 'guiTerminalSshFiles', id, request: input }),
+      },
       link: (id: string, input: TerminalLinkRequest) =>
         request<TerminalLinkReply>({ operation: 'guiTerminalLink', id, request: input }),
       list: (cwd: string) => request<TerminalInfo[]>({ operation: 'guiTerminalList', cwd }),

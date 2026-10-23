@@ -42,6 +42,8 @@ import { RemoteThreadTitles } from './threadTitles';
 import { applyProjectOverride, effectiveProjectThread } from './projects';
 import { PROJECT_LIST_OPERATION } from '../../../../shared/remote-chat/projects';
 import { readRemoteThreadList, completeRemoteThreadListWrite, receiveRemoteThreadListEvent } from './threadList';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex } from '@noble/hashes/utils';
 
 const OPERATIONS = new Set([
   'projectFileRead', 'projectFileWrite', 'projectEntryAction',
@@ -125,7 +127,11 @@ export class ChatOperations {
   execute(request: RpcRequest, mode: ConnectionMode = 'relay', owner = 'default', terminalOwner = owner)
     : Promise<RpcResponse> {
     if (typeof request.id !== 'string' || request.id.length > 160) return Promise.reject(new Error('Invalid request'));
-    const fingerprint = JSON.stringify([request.method, request.body]);
+    const operation = (request.body as { operation?: string } | undefined)?.operation;
+    const serialized = JSON.stringify([request.method, request.body]);
+    // Retry matching must not retain SSH credentials or uploaded file contents in the response cache.
+    const fingerprint = typeof operation === 'string' && operation.startsWith('guiTerminalSsh')
+      ? bytesToHex(sha256(new TextEncoder().encode(serialized))) : serialized;
     const cacheKey = JSON.stringify([owner, request.id]);
     const cached = this.cache.get(cacheKey);
     if (cached) {
@@ -135,7 +141,6 @@ export class ChatOperations {
     this.pruneTerminalLink(request, owner);
     this.prune();
     if (this.cache.size >= 512) return Promise.reject(new Error('请求较多，请稍后重试。'));
-    const operation = (request.body as { operation?: string } | undefined)?.operation;
     const running = request.method === 'request' && GUI_FILE_OPERATIONS.has(operation ?? '')
       ? this.files.request(object(request.body), owner)
       : request.method === 'request' && operation === DESKTOP_OPERATION
@@ -160,6 +165,8 @@ export class ChatOperations {
       if (entry.terminalLink && reply.error) entry.readOnly = true;
       // Range reads are repeatable; caching their payloads would retain an entire file in memory.
       if (operation === 'videoRead' || operation === 'fileRead' || operation === 'projectFileRead'
+        || (operation === 'guiTerminalSshFiles' && ['read', 'list'].includes(String(object(object(request.body).request).type)))
+        || operation === 'guiTerminalSshProbe'
         || (operation === 'guiTerminalRead' && object(request.body).cursor !== undefined)) this.cache.delete(cacheKey);
     });
     return result;

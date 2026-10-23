@@ -9,6 +9,10 @@ export function useTerminalPanel(cwd: string) {
   const [selected, setSelected] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
+  const adopt = (session: TerminalInfo) => {
+    setTabs(current => [...current, { id: session.id, cwd: session.cwd, session }]);
+    setSelected(session.id); setOpen(true); setError('');
+  };
   const addInDirectory = (directory: string) => {
     setOpen(true);
     if (tabs.length >= MAX_TERMINAL_TABS) {
@@ -26,8 +30,11 @@ export function useTerminalPanel(cwd: string) {
     if (selected === id) setSelected(remaining.at(-1)?.id ?? "");
     if (!remaining.length) setOpen(false);
   };
-  return { tabs, selected, open, error, add, addInDirectory, remove, select: setSelected, hide: () => setOpen(false),
+  return { tabs, selected, open, error, add, adopt, projectCwd: cwd, addInDirectory,
+    remove, select: setSelected, hide: () => setOpen(false),
     toggle: () => { if (!tabs.length) add(); else setOpen(!open); } };
 }
 
-export type TerminalPanelState = ReturnType<typeof useTerminalPanel>;
+export type TerminalPanelState = Omit<ReturnType<typeof useTerminalPanel>, 'adopt' | 'projectCwd'> & {
+  adopt?: (session: TerminalInfo) => void; projectCwd?: string;
+};

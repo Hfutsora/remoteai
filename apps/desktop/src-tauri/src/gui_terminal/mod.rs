@@ -2,6 +2,7 @@
 pub(crate) mod links;
 mod platform;
 mod service;
+pub(crate) mod ssh;
 #[cfg(test)]
 mod tests;
 mod types;

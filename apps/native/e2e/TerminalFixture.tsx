@@ -11,6 +11,8 @@ import type { GuiToolsClient } from '../../../shared/remote-chat/guiTools';
 import type { TerminalEvent, TerminalInfo } from '../../../shared/terminal/types';
 import { ChatTerminal } from '../src/chat/ChatTerminal';
 
+const unsupportedSsh = async (): Promise<never> => { throw new Error('SSH is not simulated by this terminal fixture.'); };
+
 function App() {
   const [fonts] = useFonts(Ionicons.font);
   const [computer, setComputer] = useState('Office');
@@ -24,6 +26,7 @@ function App() {
     const sessions = new Map<string, { info: TerminalInfo; events: TerminalEvent[] }>();
     let sequence = 0;
     return {
+      ssh: { probe: unsupportedSsh, open: unsupportedSsh, files: unsupportedSsh },
       link: async () => { throw new Error('Website connections are not simulated by this terminal fixture.'); },
       list: async cwd => [...sessions.values()].filter(session => session.info.cwd === cwd).map(session => session.info),
       open: async cwd => {

@@ -1,5 +1,9 @@
+import type { SshApi } from './ssh';
+
 export interface TerminalSize { cols: number; rows: number }
-export interface TerminalInfo { id: string; cwd: string; shell: string; projectCwd?: string }
+export interface TerminalInfo {
+  id: string; cwd: string; shell: string; projectCwd?: string; ssh?: import('./ssh').SshRemote;
+}
 export interface TerminalAttachment extends TerminalInfo { detach?: () => void }
 export type TerminalEvent = { type: 'output'; data: number[] }
   | { type: 'exit'; code: number | null } | { type: 'error'; message: string }
@@ -11,6 +15,7 @@ export interface TerminalRead {
   truncated: boolean;
 }
 export interface TerminalApi {
+  ssh?: SshApi;
   resolveLink?: import('./links').ResolveTerminalLink;
   open: (cwd: string, size: TerminalSize, onEvent: (event: TerminalEvent) => void) => Promise<TerminalAttachment>;
   write: (id: string, data: string) => Promise<void>;
