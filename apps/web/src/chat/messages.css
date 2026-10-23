@@ -36,6 +36,11 @@
 .chat-text-action:hover { color: var(--app-accent, #14806f); }
 @media (max-width: 860px) {
   .chat-copy-icon { justify-content: center; min-width: 32px; min-height: 44px; margin-left: -8px; }
+  .chat-assistant-message > .chat-message-actions { margin-top: 10px; }
+  /* Match native replies: keep the generous touch area below the icon. */
+  .chat-assistant-message > .chat-message-actions > .chat-text-action {
+    align-items: flex-start; min-height: 44px; padding-block: 0; line-height: 15px;
+  }
 }
 .chat-markdown { min-width: 0; line-height: 1.8; }
 .chat-markdown > :first-child { margin-top: 0; }

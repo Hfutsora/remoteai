@@ -57,7 +57,6 @@ export const useStyles = createThemedStyles((color) => ({
   userMessage: { alignSelf: 'flex-end', maxWidth: '90%', borderRadius: 16, borderBottomRightRadius: 4,
     backgroundColor: color(palette.pale, 'accentSoft'), paddingHorizontal: 19, paddingVertical: 15 },
   messageText: { color: color(palette.ink, 'ink'), fontSize: 14, lineHeight: 25 },
-  assistantMessage: { gap: 8 },
   speaker: { color: color(palette.green, 'accent'), fontSize: 12, lineHeight: 18, fontWeight: '700' },
   tool: { borderLeftWidth: 2, borderLeftColor: color('#b7cbc0', 'border'), paddingLeft: 12, paddingVertical: 8 },
   code: { fontFamily: 'monospace', color: color(palette.ink, 'ink'), fontSize: 12, lineHeight: 19 },

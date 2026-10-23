@@ -127,7 +127,7 @@ function MessageBody({ item, onOpen, running = false, process = false }: Message
     </View>
   </View>;
   if (item.type !== 'agentMessage') return <ChatActivityRow item={item} onOpen={onOpen} running={running} />;
-  return <View style={styles.assistantMessage}>
+  return <View>
     <ChatMarkdown text={text} tone={process ? 'process' : 'default'} />
     {!process && !running && !!text.trim() && <View style={messageStyles.actions}>
       <CopyTextButton text={text} label={t("client.chat.copyReply")} variant="icon" />

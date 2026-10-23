@@ -90,7 +90,8 @@ export function CopyTextButton({ text, label = t("client.projectBrowser.copied")
 
 const useCopyStyles = createThemedStyles((color) => ({
   actionButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8 },
-  iconButton: { width: 32, justifyContent: 'center' },
+  // Keep the touch area below the icon so its height does not add space after the reply.
+  iconButton: { width: 32, justifyContent: 'center', alignItems: 'flex-start' },
   label: { color: color(palette.muted, 'muted'), fontSize: 14 },
   // Explicit dimensions let Android lay out this view as one inline attachment in a TextView.
   inline: { width: INLINE_COPY_WIDTH, height: 20 },
