@@ -36,15 +36,14 @@
   max-width: 100%; flex: 1 1 100px; padding-left: 0; color: var(--git-ink, #17211b); }
 .git-branch span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .git-branch svg, .git-file svg { flex-shrink: 0; }
-.git-menu { position: absolute; top: 100%; left: 0; z-index: 20;
-  box-sizing: border-box; width: calc(100% - 32px); max-width: 400px;
-  max-height: min(440px, 60vh); overflow: auto; margin: 0 16px 8px; padding: 12px;
+.git-toolbar-popover { width: min(400px, calc(100vw - 32px)); max-width: 400px; }
+.git-menu { box-sizing: border-box; width: 100%; color: var(--git-ink, #17211b);
+  max-height: min(440px, 60vh); overflow: auto; padding: 12px;
   border: 1px solid var(--git-border, #dfe5df);
   border-radius: 10px; background: var(--git-surface, #fafcfb); font-size: 12px;
   box-shadow: var(--git-shadow, 0 4px 20px #17211b22); }
 .git-menu p { max-width: 400px; line-height: 1.6; color: var(--git-muted, #718078); overflow-wrap: anywhere; }
-.git-menu-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.git-menu-heading button { background: transparent; border: 0; padding: 8px; }
+.git-menu-heading { margin-bottom: 8px; }
 .git-menu input, .git-menu select { border: 1px solid var(--git-border, #dfe5df); border-radius: 6px; padding: 8px;
   box-sizing: border-box; max-width: 100%; color: inherit; background: var(--git-surface, white); }
 .git-menu input { width: 100%; }
