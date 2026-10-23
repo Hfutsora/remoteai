@@ -34,6 +34,7 @@ import { ChatRetryProvider } from '../../../../shared/remote-chat/ChatRetryProvi
 import { ChatQuotesProvider } from './ChatQuotes';
 import { ChatFileReferencesProvider } from '../../../../shared/chat/ChatFileReferences';
 import { ChatDetailsWorkspace } from './ChatDetailsWorkspace';
+import { ChatTerminalLayout } from './ChatTerminalLayout';
 import { ConversationChangesButton } from '../../../desktop/src/pages/codexGui/ConversationChangesButton';
 import { ChatAsyncQuestions } from './ChatAsyncQuestions';
 import { ChatSearch } from './ChatSearch';
@@ -157,7 +158,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     <ChatFileReferencesProvider>
     <ChatQuotesProvider scope={state.selected?.id ?? null} sending={state.sending}
     enabled={active && !state.selectedArchived}>
-    <div className="chat-conversation">
+    <ChatTerminalLayout>
     <header className="chat-header" data-tauri-drag-region={draggableHeader || undefined}>
       {desktop ? <button type="button" className="chat-back"
         aria-label={listOpen ? t("client.chat.collapseChatList") : t("client.chat.openChatList")}
@@ -196,7 +197,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       </ChatRetryProvider></TaskReviewProvider>
     {!scrollableComposer && composer}
     {conversationFooter}
-    </div>
+    </ChatTerminalLayout>
     <ChatSidebar desktop={desktop} open={listOpen} onClose={closeList} customHeading={Boolean(renderSidebar)}>
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}

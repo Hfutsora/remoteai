@@ -1,5 +1,5 @@
 import { displayText } from "../../../i18n/uiText";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Plus, SquareTerminal, X } from "lucide-react";
 import { Tooltip } from "antd";
 import { MAX_TERMINAL_TABS, type TerminalPanelState, type TerminalTab } from "./useTerminalPanel";
@@ -11,10 +11,11 @@ import { TerminalKeys } from './TerminalKeys';
 import { TerminalLinkMenu, type TerminalLinkTarget } from './TerminalLinkMenu';
 
 
-export default function TerminalPanel({ panel, active, api, fill = false, translate = displayText, notice }: {
+export default function TerminalPanel({ panel, active, api, fill = false, translate = displayText, notice, empty }: {
   panel: TerminalPanelState; active: boolean; api: TerminalApi; fill?: boolean;
   translate?: (source: string) => string;
   notice?: string;
+  empty?: ReactNode;
 }) {
   const host = useRef<HTMLElement>(null);
   const resize = useTerminalResize(host);
@@ -44,6 +45,7 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
         aria-label={translate("client.chat.hideTerminal")} onClick={panel.hide}><X size={17} /></button>}
     </div>
     {notice && <div className={styles.status} role="alert">{translate(notice)}</div>}
+    {!panel.tabs.length && empty}
     {panel.tabs.map((tab) => <TerminalPane key={tab.id} tab={tab} api={api} translate={translate} shortcuts={fill}
       visible={visible && panel.selected === tab.id} />)}
   </section>;

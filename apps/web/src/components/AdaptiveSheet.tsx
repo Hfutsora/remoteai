@@ -53,7 +53,7 @@ export function AdaptiveSheet({
   const titleContent = onBack || titleIcon
     ? <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>{back}{titleIcon}{heading}</div> : heading;
   if (presentation === "drawer") {
-    if (workspace) return <WorkspaceDrawerTab active={open}
+    if (workspace) return <WorkspaceDrawerTab active={open} autoOpen
       tab={{ id: tabId ?? generatedId, title, icon: titleIcon }} onVisibilityChange={afterOpenChange}
       className={`workspace-drawer-tab-scroll ${className ?? ''}`}>
       {() => <>{(onBack || subtitle || titleAction) && titleContent}{children}</>}
