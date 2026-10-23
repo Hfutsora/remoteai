@@ -26,6 +26,8 @@ import { DiscoveryBackButton, DiscoveryPage } from './discovery/DiscoveryPage';
 import { isDiscoveryPage, primaryNavigationPage } from '../../../shared/navigation/discovery';
 import { AccountsPage } from "./accounts/AccountsPage";
 import { SettingsPage } from "./settings/SettingsPage";
+import { DownloadManagerPage } from './downloads/DownloadManagerPage';
+import { downloadOwner } from './downloads/manager';
 import { loadRefreshMinutes, REFRESH_INTERVAL_EVENT } from "./settings/refreshInterval";
 import { useTotpVault } from "./useTotpVault";
 import { ChatPage } from "./chat/ChatPage";
@@ -342,13 +344,15 @@ function AppShell() {
     { key: "logout", label: t("client.app.signOut"), danger: true, icon: <LogOut size={16} />, onClick: () => void dispatch(signOut()) },
   ];
 
-  const pageDescriptions: Record<Exclude<AppPage, 'chat'>, string> = {
+  const pageDescriptions: Record<Exclude<AppPage, 'chat' | 'downloads'>, string> = {
     accounts: t("client.app.welcomeBackYourAccountsAtAGlance"),
     discover: t('client.discovery.title'),
     devices: t("client.app.viewAndControlYourDesktopDevices"), totp: t("client.app.manageAndSyncYour2faCodes"), settings: t("client.app.managePreferencesAndAccountSecurity"),
   };
   const otherPages = {
     discover: <DiscoveryPage onOpen={destination => dispatch(pageChanged(destination))} />,
+    downloads: session && <DownloadManagerPage owner={downloadOwner(session)}
+      onBack={() => dispatch(pageChanged('discover'))} />,
     accounts: <AccountsPage />, devices: <DevicesPage onScreenControl={(device, enabled) => {
       const current = devices.find(item => item.deviceId === device.deviceId);
       if (current && screenControl.open(current, enabled)) dispatch(pageChanged('chat'));
@@ -390,7 +394,7 @@ function AppShell() {
       </Tooltip>
     </aside>
     <div className="content-shell">
-      {page !== 'chat' && <header className="desktop-topbar"><div>
+      {page !== 'chat' && page !== 'downloads' && <header className="desktop-topbar"><div>
         <span>{pageTitle}</span><strong>{pageDescriptions[page]}</strong></div>
         <div><Tooltip title={t("client.app.refreshAllData")}><button className="icon-button" type="button"
           onClick={() => void dispatch(refreshAll())}>
@@ -398,7 +402,8 @@ function AppShell() {
           <span className="topbar-date">{new Intl.DateTimeFormat(getLocale(),
             { month: "long", day: "numeric", weekday: "short" }).format(new Date())}</span></div></header>}
       <main className="main-content">
-        {isDiscoveryPage(page) && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
+        {isDiscoveryPage(page) && page !== 'downloads'
+          && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
         {session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
           screenRequest={screenControl.request} screenRequestHandled={screenControl.handled}
           active={page === "chat"} />}

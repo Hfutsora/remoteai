@@ -1,7 +1,9 @@
-import { ChevronLeft, ChevronRight, Server, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Server, ShieldCheck } from 'lucide-react';
 import { discoveryEntries, type DiscoveryPage as DiscoveryDestination } from '../../../../shared/navigation/discovery';
 import { t, useLanguage } from '../i18n';
 import './styles.css';
+
+const entryIcons = { devices: Server, totp: ShieldCheck, downloads: Download };
 
 export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination) => void }) {
   useLanguage();
@@ -9,7 +11,7 @@ export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination)
     <header className="discovery-header"><h1 id="discovery-title">{t('client.discovery.title')}</h1></header>
     <div className="discovery-list">
       {discoveryEntries.map(entry => {
-        const Icon = entry.page === 'devices' ? Server : ShieldCheck;
+        const Icon = entryIcons[entry.page];
         return <button key={entry.page} type="button" className={`discovery-row discovery-${entry.page}`}
           onClick={() => onOpen(entry.page)}>
           <Icon size={25} aria-hidden="true" />

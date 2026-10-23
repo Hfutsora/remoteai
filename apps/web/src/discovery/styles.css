@@ -13,7 +13,8 @@
 .discovery-row > svg { flex-shrink: 0; }
 .discovery-row > span { flex: 1; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
 .discovery-devices > svg:first-child { color: var(--app-info, #3984db); }
-.discovery-totp > svg:first-child { color: var(--app-accent, #07b775); }
+.discovery-totp > svg:first-child,
+.discovery-downloads > svg:first-child { color: var(--app-accent, #07b775); }
 .discovery-chevron { color: var(--app-muted, #b2b2b2); }
 .discovery-row:hover { background: var(--app-elevated, #fafafa); }
 .discovery-row:active { opacity: .65; }

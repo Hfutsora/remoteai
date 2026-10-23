@@ -5,7 +5,7 @@ import { ThemeSheet } from './ThemeSheet';
 import { useThemeMode } from '../theme/preference';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { BottomSheet } from '../components/BottomSheet';
 import { TotpSyncSettings } from '../totp/TotpSyncSettings';
 import type { TotpManagerState } from '../totp/types';
@@ -25,7 +25,6 @@ interface SettingsPageProps {
   onGlobalRefreshMinutesChange: (minutes: number) => Promise<void>;
   onOpenAbout: () => void;
   onOpenAdmin: () => void;
-  onOpenDownloads: () => void;
   onLogout: () => void;
   totpManager: TotpManagerState;
 }
@@ -41,7 +40,7 @@ function identityLabel(profile?: UserProfile | null) {
 }
 
 export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalRefreshMinutesChange,
-  onOpenAbout, onOpenAdmin, onOpenDownloads, onLogout, totpManager }: SettingsPageProps) {
+  onOpenAbout, onOpenAdmin, onLogout, totpManager }: SettingsPageProps) {
   const styles = useStyles();
   const color = useThemeColor();
   useLanguage();
@@ -84,10 +83,6 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
           icon="shield-checkmark-outline" color={color(settingsColors.green, 'accent')} background="#e5fbf3"
           onPress={() => setPanel('totp')} />
       </View>
-      {Platform.OS === 'android' && <View style={styles.group}>
-        <SettingsRow label={t("client.downloads.downloads")} icon="download-outline" color={color(settingsColors.green, 'accent')}
-          background="#e5fbf3" onPress={onOpenDownloads} />
-      </View>}
       {activeProfile?.role === 'admin' && <View style={styles.group}>
         <SettingsRow label={t("client.settings.adminConsole")} icon="grid-outline" color={color(settingsColors.green, 'accent')}
           background="#e5fbf3" onPress={onOpenAdmin} />

@@ -97,7 +97,7 @@ test('2FA search, sorting, eight digits, editing and failed clipboard', async ({
   const navigation = page.locator(info.project.name === 'desktop' ? '.desktop-sidebar nav' : '.mobile-tabbar');
   await expect(navigation.getByText('设备', { exact: true })).toHaveCount(0);
   await expect(navigation.getByText('2FA', { exact: true })).toHaveCount(0);
-  await expect(page.locator('.discovery-row')).toHaveCount(2);
+  await expect(page.locator('.discovery-row')).toHaveCount(3);
   await noOverflow(page);
   await page.screenshot({ path: info.outputPath('discover.png') });
   await page.locator('.discovery-list').getByRole('button', { name: '设备', exact: true }).click();

@@ -1,9 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { discoveryEntries, type DiscoveryPage as DiscoveryDestination } from '../../../../shared/navigation/discovery';
 import { t, useLanguage } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
+
+const entryIcons = {
+  devices: 'server-outline',
+  totp: 'shield-checkmark-outline',
+  downloads: 'download-outline',
+} as const;
 
 export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination) => void }) {
   useLanguage();
@@ -14,10 +20,11 @@ export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination)
       <Text accessibilityRole="header" style={styles.title}>{t('client.discovery.title')}</Text>
     </View>
     <ScrollView contentContainerStyle={styles.content}>
-      {discoveryEntries.map(entry => <Pressable key={entry.page} accessibilityRole="button"
+      {discoveryEntries.filter(entry => entry.page !== 'downloads' || Platform.OS === 'android')
+        .map(entry => <Pressable key={entry.page} accessibilityRole="button"
         onPress={() => onOpen(entry.page)}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-        <Ionicons name={entry.page === 'devices' ? 'server-outline' : 'shield-checkmark-outline'}
+        <Ionicons name={entryIcons[entry.page]}
           size={25} color={entry.page === 'devices' ? color('#3984db', 'info') : color('#07b775', 'accent')} />
         <Text style={styles.label}>{t(entry.label)}</Text>
         <Ionicons name="chevron-forward" size={20} color={color('#b2b2b2', 'muted')} />

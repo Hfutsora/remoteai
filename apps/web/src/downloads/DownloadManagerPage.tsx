@@ -17,7 +17,7 @@ export function DownloadManagerPage({ owner, onBack }: { owner: string; onBack: 
     connection={connection} scope={view} back={() => setView('tasks')} />;
   return <section className="downloads-page">
     <header className="downloads-header"><button type="button" className="download-icon-button"
-      aria-label={t("client.downloads.backToSettings")} onClick={onBack}><ArrowLeft size={22} /></button><h2>{t("client.downloads.downloads")}</h2></header>
+      aria-label={t("client.discovery.back")} onClick={onBack}><ArrowLeft size={22} /></button><h2>{t("client.downloads.downloads")}</h2></header>
     <div className="download-source-heading">
       <span>{t("client.mobile.addDownload")}</span>
       <div className="download-connection" role="status">

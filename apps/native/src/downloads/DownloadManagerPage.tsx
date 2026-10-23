@@ -30,7 +30,7 @@ export function DownloadManagerPage({ session, onBack }: { session: AuthSession;
     connection={connection} scope={view} back={() => setView('tasks')} />;
 
   return <View style={styles.page}>
-    <DownloadPageHeader title={t("client.downloads.downloads")} back={onBack} backLabel={t("client.downloads.backToSettings")} />
+    <DownloadPageHeader title={t("client.downloads.downloads")} back={onBack} backLabel={t("client.discovery.back")} />
     <FlatList data={tasks} keyExtractor={task => task.id} style={styles.list}
       contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}
       ListHeaderComponent={<>

@@ -1304,9 +1304,10 @@ function AppContent() {
       closeTokenSummary={() => setActivePage('chat')}
       notification={chatNotification.target} notificationError={chatNotification.error}
       notificationHandled={chatNotification.handled} />
-    {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('settings')} />}
+    {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('discover')} />}
     {activePage === 'discover' && <DiscoveryPage onOpen={setActivePage} />}
-    {isDiscoveryPage(activePage) && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
+    {isDiscoveryPage(activePage) && activePage !== 'downloads'
+      && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
     {activePage === 'chat' || activePage === 'token-summary' || activePage === 'downloads' || activePage === 'discover'
       ? null : activePage === 'accounts'
       ? <Dashboard session={session} accounts={accounts} devices={devices} loading={loading}
@@ -1342,7 +1343,6 @@ function AppContent() {
                 onGlobalRefreshMinutesChange={handleGlobalRefreshMinutesChange}
                 onOpenAbout={() => setActivePage('about')}
                 onOpenAdmin={() => setActivePage('admin')}
-                onOpenDownloads={() => setActivePage('downloads')}
                 onLogout={handleLogout}
                 totpManager={totpManager} />}
     {showBottomNavigation && <BottomNavigation activePage={activePage} onChange={setActivePage} />}

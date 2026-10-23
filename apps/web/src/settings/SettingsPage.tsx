@@ -3,7 +3,7 @@ import { t, useLanguage } from '../i18n';
 import { useState } from 'react';
 import { Button, Dialog, Switch } from 'antd-mobile';
 import { ChevronRight, Grid2X2, IdCard, Info, LockKeyhole, LogOut,
-  Download, Monitor, RefreshCw, ShieldCheck, Type, UserRound } from 'lucide-react';
+  Monitor, RefreshCw, ShieldCheck, Type, UserRound } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../hooks';
 import { signOut } from '../store';
 import type { useTotpVault } from '../useTotpVault';
@@ -20,15 +20,13 @@ import { ThemeSheet } from './ThemeSheet';
 import { ThemeSettingsRow } from './ThemeSettingsRow';
 import { profileRole } from '../i18n/profile';
 import './styles.css';
-import { DownloadManagerPage } from '../downloads/DownloadManagerPage';
-import { downloadOwner } from '../downloads/manager';
 import { AutoSaveSettings } from '../../../../shared/project-browser/AutoSaveSettings';
 import { useBrowserPreferences } from '../../../../shared/project-browser/useBrowserPreferences';
 import { GlobalFontSettings } from '../../../../shared/appearance/GlobalFontSettings';
 import { useGlobalFontSize } from '../../../../shared/appearance/fontSize';
 
 type Panel = 'profile' | 'identity' | 'refresh' | 'totp' | 'password' | 'about'
-  | 'downloads' | 'desktop' | 'theme' | 'files' | 'font' | null;
+  | 'desktop' | 'theme' | 'files' | 'font' | null;
 
 export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof useTotpVault> }) {
   useLanguage();
@@ -48,7 +46,6 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
     if (confirmed) void dispatch(signOut());
   };
   if (panel === 'about') return <AboutPage onBack={close} />;
-  if (panel === 'downloads' && session) return <DownloadManagerPage owner={downloadOwner(session)} onBack={close} />;
   return <>
     <div className="page-body settings-page">
       <div className="settings-layout"><section className="settings-group settings-profile-group">
@@ -63,7 +60,6 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
           <ThemeSettingsRow onOpen={() => setPanel('theme')} />
           <SettingsRow label={t('client.appearance.globalFontSize')} value={`${fontSize}px`} icon={Type}
             onClick={() => setPanel('font')} />
-          <SettingsRow label={t("client.downloads.downloads")} icon={Download} onClick={() => setPanel('downloads')} />
           <SettingsRow label={t("client.projectBrowser.autoSaveFiles")} icon={RefreshCw} onClick={() => setPanel('files')} />
           <LanguageSettingsRow />
           <SettingsRow label={t("client.settings.autoRefreshUsage")} value={t("client.settings.minutes", { value1: minutes })} icon={RefreshCw}
