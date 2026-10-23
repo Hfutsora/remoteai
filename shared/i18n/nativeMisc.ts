@@ -1,8 +1,2 @@
-/** Mobile downloads, administration and account sheets. */
-export const nativeMiscEnglish: Readonly<Record<string, string>> = {
-  '由 {email} 创建': 'Created by {email}',
-};
-
-export const nativeMiscRussian: Readonly<Record<string, string>> = {
-  '由 {email} 创建': 'Создатель: {email}',
-};
+/** @deprecated Import from @remoteai/i18n instead. */
+export * from '@remoteai/i18n/legacy/resources/nativeMisc';

@@ -1,4 +1,5 @@
-export type Language = 'zh' | 'en' | 'ru';
+import type { AppLanguage } from '@remoteai/i18n';
+export type Language = AppLanguage<'website'>;
 /** Languages stored next to each feature. Russian feature text lives in features-ru.ts. */
 export type SourceLanguage = Exclude<Language, 'ru'>;
 

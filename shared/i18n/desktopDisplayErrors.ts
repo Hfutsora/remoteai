@@ -1,6 +1,2 @@
-/** Desktop notifications and panels that display backend messages. */
-export const desktopDisplayErrorsEnglish: Readonly<Record<string, string>> = {
-};
-
-export const desktopDisplayErrorsRussian: Readonly<Record<string, string>> = {
-};
+/** @deprecated Import from @remoteai/i18n instead. */
+export * from '@remoteai/i18n/legacy/resources/desktopDisplayErrors';

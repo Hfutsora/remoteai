@@ -1,6 +1,2 @@
-/** Web client copy. */
-export const webRenderEnglish: Readonly<Record<string, string>> = {
-};
-
-export const webRenderRussian: Readonly<Record<string, string>> = {
-};
+/** @deprecated Import from @remoteai/i18n instead. */
+export * from '@remoteai/i18n/legacy/resources/webRender';

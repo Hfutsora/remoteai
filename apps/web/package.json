@@ -45,7 +45,8 @@
     "rehype-katex": "^7.0.1",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "@remoteai/i18n": "0.1.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

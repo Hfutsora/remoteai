@@ -1,4 +1,5 @@
 import { deviceLanguage, isLanguage, type Language } from './language';
+import { isAppLanguage } from '@remoteai/i18n';
 
 let language: Language | undefined;
 const listeners = new Set<() => void>();
@@ -7,7 +8,7 @@ export function getInterfaceLanguage(): Language {
   if (language) return language;
   try {
     const stored = globalThis.localStorage?.getItem('codex-switch:language');
-    if (isLanguage(stored)) return stored;
+    if (isAppLanguage('desktop', stored)) return stored;
   } catch { /* The native app and private browser sessions may not have local storage. */ }
   return deviceLanguage();
 }

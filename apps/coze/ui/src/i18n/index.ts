@@ -4,11 +4,11 @@
  * Keys and storage
  * - Chinese source strings are the keys. Chinese output is the source itself, so the
  *   zh UI, the zh-CN unit tests and the Chinese e2e selectors stay byte-identical.
- * - Translations live in per-area files `./en/<area>.ts` and `./ru/<area>.ts`. Each file
+ * - Translations live in @remoteai/i18n/legacy/coze, with forwarding area files here. Each file
  *   has one default export, `export default { "中文": "English" } satisfies Record<string, string>;`.
  *   They are collected with `import.meta.glob`, so adding an area needs no aggregator
  *   edit. The same key in two areas must have the same value (coverage.test.ts checks).
- * - Coze does not use the shared Remote AI dictionaries (shared/i18n/en, ru): they are
+ * - Coze uses the shared engine with its own dictionaries. The legacy Remote AI dictionaries are
  *   large and some short keys mean something else there (`应用` is "Apply").
  *
  * API (import from "./i18n" or "../i18n")
@@ -61,12 +61,16 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { COZE_DESKTOP_STATE } from "../../../../../shared/coze/desktopBridge";
 import {
-  deviceLanguage, isLanguage, localeForLanguage, type Language,
+  deviceLanguage, localeForLanguage,
 } from "../../../../../shared/i18n/language";
+import { isAppLanguage, type AppLanguage } from '@remoteai/i18n';
+import { createLegacyTranslator, interpolate } from '@remoteai/i18n/legacy';
 import type { Kind } from "../types";
 import { kindCopy, type KindCopy } from "./kinds";
 
-export { isLanguage, kindCopy, localeForLanguage };
+type Language = AppLanguage<'coze'>;
+const isLanguage = (value: unknown): value is Language => isAppLanguage('coze', value);
+export { isLanguage, kindCopy, localeForLanguage, interpolate };
 export type { KindCopy, Language };
 
 export type TranslationValues = Record<string, string | number>;
@@ -106,11 +110,7 @@ export const dictionaries: Readonly<Record<TranslatedLanguage, Dictionary>> = {
 
 const hasOwn = (dictionary: Dictionary, key: string) => Object.prototype.hasOwnProperty.call(dictionary, key);
 
-/** Substitute once so values containing placeholders stay verbatim (same as shared translate.ts). */
-export function interpolate(template: string, values: TranslationValues = {}): string {
-  return template.replace(/\{(\w+)\}/g, (placeholder, key: string) =>
-    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : placeholder);
-}
+const translateSource = createLegacyTranslator(dictionaries);
 
 /** Runtime messages with an embedded value; each captured value is looked up as its own key. */
 const PATTERNS = [msg("暂时无法导入此节点：{reason}。")].map((key) => {
@@ -136,10 +136,11 @@ function translatePattern(dictionary: Dictionary, source: string): string | unde
 
 /** Translate application copy; anything without a dictionary entry is returned as is. */
 export function translate(language: Language, source: string, values: TranslationValues = {}): string {
-  if (language === "zh") return interpolate(source, values);
-  const dictionary = dictionaries[language];
-  if (hasOwn(dictionary, source)) return interpolate(dictionary[source], values);
-  return translatePattern(dictionary, source) ?? interpolate(source, values);
+  const dictionary = language === "zh" ? undefined : dictionaries[language];
+  if (dictionary && !hasOwn(dictionary, source)) {
+    return translatePattern(dictionary, source) ?? translateSource(language, source, values);
+  }
+  return translateSource(language, source, values);
 }
 
 let current: Language | undefined;

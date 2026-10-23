@@ -1,5 +1,11 @@
 # Russian localization
 
+Translation resources now live in the private workspace package [`@remoteai/i18n`](../packages/i18n/README.md).
+The old `shared/i18n` dictionary paths are forwarding modules. Edit shared legacy resources in
+`packages/i18n/src/legacy/resources`, Coze resources in `packages/i18n/src/legacy/coze`, and desktop semantic
+resources in `packages/i18n/src/catalogs/desktop`. Run `npm run generate:i18n` and `npm run check:i18n` after edits.
+Language metadata, application release policies and the generated Rust acceptance table are documented in that README.
+
 Desktop, web, Android and iOS support Chinese, English and Russian (Русский). Every client opens in Chinese on a Chinese system or browser locale and in English on any other locale, Russian locales included; Russian is chosen in the language selector (desktop and web settings, the native login screen and native Settings). Native apps save the choice in secure storage and restore it before showing the app. A saved choice always takes precedence.
 
 Coverage includes desktop navigation, accounts, providers, token usage, settings, themes, plugins, conversation controls, permissions, scheduled tasks, terminal actions, configuration labels, tray actions and the user agreement. Native coverage includes login, accounts, devices, chat and its tools, remote desktop controls, downloads, 2FA, settings and updates. Web uses the shared interface dictionaries and matching component-library locales, with narrow mobile and desktop layouts checked. Desktop also covers the built-in plugin cards (Chrome browser assistant, Computer Use, remote command), remote desktop and Mac permission settings, Codex GUI errors, the quick menu and HTTP status descriptions. `README_RU.md` is the Russian README.
@@ -12,9 +18,13 @@ The review of `bbbc02617b7c4bf8c7cbfcea58ffa1bfe579ad62` also fixes inherited-pr
 
 ## Maintenance
 
-- Desktop keys: apps/desktop/src/i18n/ru/.
-- Shared GUI/web/native source strings: shared/i18n/en/ and shared/i18n/ru/. Mobile additions are grouped in mobile*.ts.
-- New shared entries go into a per-feature file `shared/i18n/<feature>.ts` that exports `<feature>English` and `<feature>Russian`. `shared/i18n/featureCopy.ts` aggregates these files, the backend dictionaries `shared/i18n/backend/{codexGui,accounts,conversations,cloud}.ts` (through `backend/index.ts`) and `shared/i18n/ru/messages9.ts` (Russian for upstream keys that had only English). `en/index.ts` and `ru/index.ts` spread `featureCopy` last, so a later definition silently wins: define each key once, look it up in the existing dictionaries first, and do not redefine an upstream key to change its value.
+- Desktop semantic keys: `packages/i18n/src/catalogs/desktop/{zh,en,ru}/`.
+- Shared GUI/web/native source strings: `packages/i18n/src/legacy/resources/en/` and `ru/`.
+  Mobile additions are grouped in `mobile*.ts`; old `shared/i18n` paths only forward exports.
+- Prefer semantic keys for new code. When extending legacy source-key copy, use a per-feature file under
+  `packages/i18n/src/legacy/resources` exporting `<feature>English` and `<feature>Russian`. Its `featureCopy.ts`
+  aggregates feature and backend dictionaries. `en/index.ts` and `ru/index.ts` spread `featureCopy` last:
+  define each key once and check existing dictionaries before adding it.
 - Backend messages: `translateBackendMessage(language, message)` and `backendText(message)` in shared/i18n/backend/translateBackendMessage.ts. They try an exact dictionary match, then the `featureCopy` templates that contain Chinese text, then each line of a multi-line message, and return unknown text unchanged. Import them from that file, not from `backend/index.ts` (import cycle). Keep the Chinese source in state and translate at display time (`useToast` does this for every toast). Add English and Russian together for each template.
 - Never translate values that other code matches by equality or pattern, such as shared/remote-chat/connectionErrors.ts, shared/remote-desktop/diagnostics.ts and apps/desktop/src/utils/usageErrors.ts.
 - Host messages sent to remote clients come in two kinds. Fixed error sources stay Chinese on the wire and clients translate them when displayed: Codex GUI command errors from Rust, the `operationError` fallback in apps/desktop/src/remoteChat/operations.ts and fixed validator messages such as `附件名称无效，请重新选择。` or `图片较大，请减少图片后再发送。`. Messages and details that contain values are formatted in the host's interface language, because the remote client normally belongs to the same user. These are the shared validator messages with limits when the host checks client data (`checkFileUploadSize` and the total-size check in `validateUploadedFiles` via apps/desktop/src/remoteChat/queue.ts and operations.ts, the image count in `validateChatImages`, the frame-rate range in `validateSettings` via remoteDesktop/host.ts), the account picker details from remoteChat/guiAccounts.ts (plan, remaining limits and provider balances from guiAccountBalances.ts) and the unknown-account label in remoteChat/tokenSummary.ts. remoteChat/connectionDetails.ts also names unnamed devices in the host language, for the host's own list of connected devices. A client set to another language shows these strings in the host's language.

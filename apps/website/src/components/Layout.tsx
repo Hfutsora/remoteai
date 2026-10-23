@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useT } from '@remoteai/i18n/react';
 import { Button } from 'antd';
 import { ArrowUpRight, Github, Languages, Menu } from 'lucide-react';
 import { copy } from '../content/copy';
@@ -16,10 +17,11 @@ interface LayoutProps {
 
 function Navigation({ language, path }: Omit<LayoutProps, 'children'>) {
   const t = copy(language);
+  const translate = useT();
   return (
     <>
       <a href={href(language, 'features/')} aria-current={path.startsWith('features/') ? 'page' : undefined}>
-        {t.nav.features}
+        {translate('website.navigation.features')}
       </a>
       <a href={href(language, 'guide/')} aria-current={path === 'guide/' ? 'page' : undefined}>
         {t.nav.guide}

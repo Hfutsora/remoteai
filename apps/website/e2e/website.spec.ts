@@ -143,15 +143,17 @@ test('capture desktop and mobile visual checkpoints', async ({ page }) => {
 });
 
 async function loadImages(page: Page) {
-  await page.locator('img').evaluateAll(async (images) => {
-    await Promise.all(
-      images.map(async (image) => {
-        if (!(image instanceof HTMLImageElement)) return;
-        image.loading = 'eager';
-        await image.decode();
-      }),
-    );
-  });
+  // Resizing can replace a srcset candidate while decode() is pending. Require a successful
+  // decode after the selected source settles; genuinely broken images still fail this check.
+  await expect.poll(() => page.locator('img').evaluateAll(async (images) => {
+    const failures = await Promise.all(images.map(async (image) => {
+      if (!(image instanceof HTMLImageElement)) return null;
+      image.loading = 'eager';
+      try { await image.decode(); return null; }
+      catch { return image.currentSrc || image.src; }
+    }));
+    return failures.filter(source => source !== null);
+  })).toEqual([]);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }

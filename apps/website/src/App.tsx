@@ -1,4 +1,8 @@
 import { ConfigProvider } from 'antd';
+import { useMemo } from 'react';
+import { applications, createI18n } from '@remoteai/i18n';
+import { I18nProvider } from '@remoteai/i18n/react';
+import { resources } from '@remoteai/i18n/website';
 import { findFeature } from './content/features';
 import type { Language } from './content/types';
 import { Layout } from './components/Layout';
@@ -36,25 +40,30 @@ function Page({ language, path }: Route) {
 }
 
 export function App({ language, path }: Route) {
+  const instance = useMemo(() => createI18n({
+    locale: language, enabledLanguages: applications.website, resources,
+  }), [language]);
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#e92f73',
-          colorText: '#19191e',
-          colorBgContainer: '#fff',
-          borderRadius: 8,
-          fontFamily: 'Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
-          controlHeight: 40,
-          controlHeightLG: 50,
-          fontSize: 14,
-        },
-        components: { Button: { primaryShadow: 'none', fontWeight: 600 } },
-      }}
-    >
-      <Layout language={language} path={path}>
-        <Page language={language} path={path} />
-      </Layout>
-    </ConfigProvider>
+    <I18nProvider instance={instance}>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#e92f73',
+            colorText: '#19191e',
+            colorBgContainer: '#fff',
+            borderRadius: 8,
+            fontFamily: 'Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+            controlHeight: 40,
+            controlHeightLG: 50,
+            fontSize: 14,
+          },
+          components: { Button: { primaryShadow: 'none', fontWeight: 600 } },
+        }}
+      >
+        <Layout language={language} path={path}>
+          <Page language={language} path={path} />
+        </Layout>
+      </ConfigProvider>
+    </I18nProvider>
   );
 }

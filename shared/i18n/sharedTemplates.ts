@@ -1,6 +1,2 @@
-/** Parameterised shared messages (attachments, quotes, image limits). */
-export const sharedTemplatesEnglish: Readonly<Record<string, string>> = {
-};
-
-export const sharedTemplatesRussian: Readonly<Record<string, string>> = {
-};
+/** @deprecated Import from @remoteai/i18n instead. */
+export * from '@remoteai/i18n/legacy/resources/sharedTemplates';

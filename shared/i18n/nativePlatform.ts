@@ -1,6 +1,2 @@
-/** Mobile platform labels passed to native modules. */
-export const nativePlatformEnglish: Readonly<Record<string, string>> = {
-};
-
-export const nativePlatformRussian: Readonly<Record<string, string>> = {
-};
+/** @deprecated Import from @remoteai/i18n instead. */
+export * from '@remoteai/i18n/legacy/resources/nativePlatform';
