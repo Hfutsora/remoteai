@@ -36,11 +36,14 @@ it('rejects malformed credentials without echoing the rejected value', () => {
     .toEqual({ autoUnlock: { enabled: true, username: 'PC\\alice', password: ' p ' } });
 });
 
-it('clears credentials on save, cancel, and lost control without persisting them', async () => {
+it.each(['alice', 'PC\\alice'])(
+  'saves %s and clears credentials on save, cancel, and lost control without persisting them', async username => {
   await act(async () => root.render(<Form {...base} />));
-  await act(async () => { form.edit(); form.setUsername(' PC\\alice '); form.setPassword('fixture-password'); });
+  await act(async () => { form.edit(); form.setUsername(` ${username} `); form.setPassword('fixture-password'); });
   await act(async () => form.save());
-  expect(update).toHaveBeenCalledWith({ autoUnlock: { enabled: true, username: 'PC\\alice', password: 'fixture-password' } });
+  const change = { autoUnlock: { enabled: true, username, password: 'fixture-password' } };
+  expect(update).toHaveBeenCalledWith(change);
+  expect(validateDesktopSecurity(change)).toEqual(change);
   expect(form.password).toBe(''); expect(form.username).toBe(''); expect(form.editing).toBe(false);
   await act(async () => { form.edit(); form.setPassword('unsaved'); });
   await act(async () => form.cancel()); expect(form.password).toBe('');

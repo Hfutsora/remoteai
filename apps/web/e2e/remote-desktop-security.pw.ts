@@ -57,22 +57,24 @@ test('legacy hosts show unavailable controls and retain clipboard support', asyn
 });
 
 for (const native of [false, true]) {
-  test(`automatic unlock saves, clears credentials, and disables (native=${native})`, async ({ page }, info) => {
+  test(`automatic unlock accepts a username without a computer name (native=${native})`, async ({ page }, info) => {
     await open(page, 'security&unlock&privacy', native);
     const toggle = page.getByRole('switch', { name: '自动解锁被控端' });
     await toggle.click();
-    await page.getByLabel('Windows 账号', { exact: true }).fill('PC\\alice');
+    const username = page.getByLabel('Windows 账号', { exact: true });
+    await expect(username).toHaveAttribute('placeholder', '请输入用户名，无需填写电脑名');
     await page.getByLabel('Windows 登录密码', { exact: true }).fill('fixture-only-password');
     const panel = page.getByRole('complementary', { name: '安全选项' });
     expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(400);
     expect(await panel.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     await page.getByRole('button', { name: '保存并启用' }).scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`unlock-form-${native ? 'desktop' : 'web'}.png`) });
+    await username.fill('alice');
     await page.getByRole('button', { name: '保存并启用' }).click();
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByLabel('Windows 登录密码', { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => window.desktopTest.securityChanges)).toEqual([
-      { autoUnlock: { enabled: true, username: 'PC\\alice', password: 'fixture-only-password' } },
+      { autoUnlock: { enabled: true, username: 'alice', password: 'fixture-only-password' } },
     ]);
     expect(await page.evaluate(() => JSON.stringify(window.desktopTest.security))).not.toContain('fixture-only-password');
     await expect(panel.getByText('已保存在远程电脑，下次连接自动生效。')).toBeInViewport();

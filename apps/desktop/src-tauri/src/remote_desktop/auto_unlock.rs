@@ -103,9 +103,11 @@ mod tests {
                 .validate()
                 .is_err());
         }
-        let valid: Change = serde_json::from_value(serde_json::json!({
-            "enabled":true,"username":"PC\\alice","password":" valid password "}))
-        .unwrap();
-        assert!(valid.validate().is_ok());
+        for username in ["alice", "PC\\alice"] {
+            let valid: Change = serde_json::from_value(serde_json::json!({
+                "enabled":true,"username":username,"password":" valid password "}))
+            .unwrap();
+            assert!(valid.validate().is_ok());
+        }
     }
 }

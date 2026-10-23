@@ -29,7 +29,7 @@ export function AutoUnlockSettings(props: SecuritySettingsProps) {
       <TextInput accessibilityLabel={t("client.remoteDesktop.windowsAccount")} value={form.username} onChangeText={form.setUsername}
         autoCapitalize="none" autoCorrect={false} autoComplete="off" textContentType="none"
         importantForAutofill="noExcludeDescendants" maxLength={256} editable={!disabled} style={s.input}
-        placeholder={t("client.remoteDesktop.forExampleComputerUsername")} placeholderTextColor="#aab6c9" />
+        placeholder={t("client.remoteDesktop.windowsUsernamePlaceholder")} placeholderTextColor="#aab6c9" />
       <Text style={s.title}>{t("client.remoteDesktop.windowsPassword")}</Text>
       <TextInput accessibilityLabel={t("client.remoteDesktop.windowsPassword")} value={form.password} onChangeText={form.setPassword}
         secureTextEntry autoCapitalize="none" autoCorrect={false} autoComplete="off" textContentType="none"

@@ -74,15 +74,15 @@ pub(in crate::remote_desktop) fn apply(mut change: Change) -> Result<(), Error> 
         return storage::clear();
     }
     let config = configuration::read().map_err(|_| Error::Unavailable)?;
-    let username = change.username.take().ok_or(Error::Invalid)?;
-    if identity::account_sid(&username)? != config.owner_sid {
+    let account = identity::resolve_account(change.username.as_deref().ok_or(Error::Invalid)?)?;
+    if account.sid != config.owner_sid {
         return Err(Error::Account);
     }
     let value = Credentials {
         owner_sid: config.owner_sid,
         device_id: config.device_id,
         service_binding: format!("{:x}", Sha256::digest(config.credential.as_bytes())),
-        username,
+        username: account.username,
         password: change.password.take().ok_or(Error::Invalid)?,
         blocked: false,
         pending: None,

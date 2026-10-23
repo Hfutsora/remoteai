@@ -23,7 +23,8 @@ export function AutoUnlockSettings(props: SecuritySettingsProps) {
     }} onKeyDown={event => event.stopPropagation()}>
       <label>{t("client.remoteDesktop.windowsAccount")}<input aria-label={t("client.remoteDesktop.windowsAccount")} value={form.username}
         autoFocus autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={256} disabled={disabled}
-        placeholder={t("client.remoteDesktop.forExampleComputerUsername")} onChange={event => form.setUsername(event.target.value)} /></label>
+        placeholder={t("client.remoteDesktop.windowsUsernamePlaceholder")}
+        onChange={event => form.setUsername(event.target.value)} /></label>
       <label>{t("client.remoteDesktop.windowsPassword")}<input type="password" aria-label={t("client.remoteDesktop.windowsPassword")}
         autoComplete="new-password" value={form.password} maxLength={256} disabled={disabled}
         onChange={event => form.setPassword(event.target.value)} /></label>
