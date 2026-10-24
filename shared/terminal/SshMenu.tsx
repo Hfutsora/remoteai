@@ -14,7 +14,7 @@ export function SshMenu({ api, projectCwd, adopt, close, disabled, className }: 
   close: (id: string) => Promise<void>; disabled: boolean; className: string;
 }) {
   const { profiles, refresh, loading, error } = useSshProfiles(api.profiles, false);
-  const [dialog, setDialog] = useState<{ profile?: SshProfile }>();
+  const [dialog, setDialog] = useState<{ profile?: SshProfile; manage: boolean }>();
   useEffect(() => { setDialog(undefined); }, [api, projectCwd]);
   return <>
     <Dropdown trigger={['click']} overlayClassName="ssh-launch-menu" onOpenChange={open => {
@@ -26,12 +26,13 @@ export function SshMenu({ api, projectCwd, adopt, close, disabled, className }: 
         icon: <Server size={15} />, disabled: disabled || loading || !!error })),
       { type: 'divider' },
       { key: 'settings', label: t('client.ssh.manage'), icon: <Settings size={15} />, disabled },
-    ], onClick: ({ key }) => setDialog({ profile: profiles.find(profile => profile.id === key) }) }}>
-      <Tooltip title={t('client.ssh.menu')} styles={{ root: { maxWidth: 400 } }}>
+    ], onClick: ({ key }) => setDialog({ profile: profiles.find(profile => profile.id === key),
+      manage: key !== 'new' }) }}>
+      <Tooltip title={t('client.ssh.menu')} open={dialog ? false : undefined} styles={{ root: { maxWidth: 400 } }}>
         <button type="button" className={className} aria-label={t('client.ssh.menu')}><ChevronDown size={17} /></button>
       </Tooltip>
     </Dropdown>
-    {dialog && <SshConnectionDialog api={api} initial={dialog.profile} projectCwd={projectCwd}
+    {dialog && <SshConnectionDialog api={api} initial={dialog.profile} manage={dialog.manage} projectCwd={projectCwd}
       close={() => setDialog(undefined)} connected={adopt} dispose={close} changed={() => void refresh()} />}
   </>;
 }

@@ -1,13 +1,5 @@
 .ssh-launch-menu { max-width: min(400px, calc(100vw - 24px)); }
 .ssh-launch-menu .ant-dropdown-menu-title-content { white-space: normal; overflow-wrap: anywhere; }
-.ssh-dialog .ant-form { margin-top: 16px; }
-.ssh-dialog .ant-form-item { margin-bottom: 12px; }
-.ssh-wide { width: 100%; }
-.ssh-address { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; }
-.ssh-address .ant-input-number { width: 100%; }
-.ssh-hint { font-size: 12px; color: var(--muted, #888); }
-.ssh-fingerprint { overflow-wrap: anywhere; font-size: 12px; }
-.ssh-dialog-actions { margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px; }
 .ssh-files { display: flex; flex-direction: column; min-height: 0; height: 100%; padding: 12px; box-sizing: border-box;
   gap: 10px; color: var(--ink, inherit); }
 .ssh-file-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -27,5 +19,4 @@
 @media (max-width: 600px) {
   .ssh-files .ant-btn { min-height: 40px; }
   .ssh-file-list button { min-height: 44px; padding-block: 10px; }
-  .ssh-dialog .ant-modal-body { overflow-wrap: anywhere; }
 }

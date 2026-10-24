@@ -50,6 +50,7 @@ test('PC local, PC remote, web and phone share the Go server profile list', asyn
     await phone.getByRole('button', { name: '终端连接选项' }).click();
     await phone.getByRole('menuitem', { name: 'Edited on phone' }).click();
     await phone.getByRole('button', { name: /^移\s*除$/ }).click();
+    await phone.getByRole('tooltip').getByRole('button', { name: /^移\s*除$/ }).click();
     await expect.poll(async () => (await request.get(`${base}/sync/ssh-profiles`, { headers })).json())
       .toEqual([expect.objectContaining({ id: 'legacy' })]);
     await expect(web.getByText('此连接已在其他设备修改或移除，请重新选择后操作。'))

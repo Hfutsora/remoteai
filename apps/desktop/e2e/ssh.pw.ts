@@ -19,8 +19,7 @@ async function connect(page: Page, fixture: Fixture, key = false) {
   await page.getByLabel('端口').fill(String(fixture.port));
   await page.getByLabel('用户名').fill(fixture.username);
   if (key) {
-    await page.getByLabel('登录方式').press('ArrowDown');
-    await page.getByTitle('私钥', { exact: true }).click();
+    await page.getByText('私钥登录', { exact: true }).click();
     await page.getByRole('textbox', { name: /私钥$/ }).fill(fixture.privateKey);
   } else await page.getByLabel('密码', { exact: true }).fill(fixture.password);
   await page.getByRole('button', { name: '连接并保存' }).click();

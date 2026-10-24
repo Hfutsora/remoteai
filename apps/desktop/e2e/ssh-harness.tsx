@@ -79,16 +79,18 @@ function Remote() {
 function App() {
   const [dark, setDark] = useState(false);
   const content = <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-    <button onClick={() => {
-      applyThemeMode(dark ? 'light' : 'dark'); setDark(!dark);
-    }}>切换主题</button>
     <textarea aria-label="聊天输入" style={{ margin: 16 }} />
     {mode === 'local' ? <Local /> : <Remote />}
   </div>;
   return <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
     <div style={{ height: '100vh' }}>
       <div style={{ height: 32 }}><button onClick={() => setInterfaceLanguage('en')}>English</button>
-        <button onClick={() => setInterfaceLanguage('zh')}>中文</button></div>
+        <button onClick={() => setInterfaceLanguage('zh')}>中文</button>
+        <button onClick={() => setInterfaceLanguage('ru')}>Русский</button>
+        <button onClick={() => setInterfaceLanguage('ja')}>日本語</button>
+        <button onClick={() => {
+          applyThemeMode(dark ? 'light' : 'dark'); setDark(!dark);
+        }}>切换主题</button></div>
       <div style={{ height: 'calc(100% - 32px)' }}>
       {mode === 'web' ? <ChatDetailsWorkspace selected="fixture" active enabled>
         <ChatTerminalLayout><div style={{ padding: 16 }}><ChatTerminal client={client.terminal} cwd="/fixture"
