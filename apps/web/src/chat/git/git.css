@@ -32,8 +32,9 @@
 .git-branch { font-weight: 600; overflow-wrap: anywhere; }
 .git-toolbar button { border: 0; background: transparent; padding: 10px; min-height: 44px;
   color: var(--git-muted, #587267); }
-.git-toolbar .git-branch { display: flex; align-items: center; gap: 8px; margin-right: auto; min-width: 0;
-  max-width: 100%; flex: 1 1 100px; padding-left: 0; color: var(--git-ink, #17211b); }
+.git-branch-slot { flex: 1 1 100px; min-width: 0; max-width: 100%; }
+.git-toolbar .git-branch { display: flex; align-items: center; gap: 8px; min-width: 0;
+  max-width: 100%; padding-left: 0; color: var(--git-ink, #17211b); }
 .git-branch span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .git-branch svg, .git-file svg { flex-shrink: 0; }
 .git-toolbar-popover { width: min(400px, calc(100vw - 32px)); max-width: 400px; }

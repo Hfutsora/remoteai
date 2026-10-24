@@ -31,16 +31,18 @@ export function GitToolbar({ panel, connected }: { panel: RemoteGit; connected: 
     if (event.key === 'Escape' && menu) { event.stopPropagation(); close(); }
   }}>
     <div className="git-toolbar">
-      <Popover {...MENU_POPOVER_PROPS} placement="bottomLeft" open={menu === 'branches'}
-        onOpenChange={open => changeMenu('branches', open)}
-        content={<GitBranchMenu panel={panel} disabled={disabled} onClose={close}
-          query={query} onQueryChange={setQuery} />}>
-        <button className="git-branch" type="button" aria-label={t('client.git.switchBranch')} disabled={disabled}
-          aria-expanded={menu === 'branches'}>
-          <GitBranch size={16} /><span>{panel.changes?.branch ?? t('client.git.detachedHead')}</span>
-          <ChevronDown size={14} />
-        </button>
-      </Popover>
+      <div className="git-branch-slot">
+        <Popover {...MENU_POPOVER_PROPS} placement="bottomLeft" open={menu === 'branches'}
+          onOpenChange={open => changeMenu('branches', open)}
+          content={<GitBranchMenu panel={panel} disabled={disabled} onClose={close}
+            query={query} onQueryChange={setQuery} />}>
+          <button className="git-branch" type="button" aria-label={t('client.git.switchBranch')} disabled={disabled}
+            aria-expanded={menu === 'branches'}>
+            <GitBranch size={16} /><span>{panel.changes?.branch ?? t('client.git.detachedHead')}</span>
+            <ChevronDown size={14} />
+          </button>
+        </Popover>
+      </div>
       <div className="git-toolbar-actions">
         {GIT_ACTIONS.map(item => {
           const Icon = ACTION_ICONS[item.action];
