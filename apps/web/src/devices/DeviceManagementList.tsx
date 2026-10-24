@@ -22,12 +22,11 @@ export function DeviceManagementList({ devices, refreshing, onRefresh, ...cardPr
     </header>
     <p className="devices-subtitle">{t("client.app.viewDeviceStatusAndSelectACardToSwitchModels")}</p>
     <section className="device-overview" aria-label={t("client.app.deviceSummary")}>
-      <div className="device-stat"><span className="device-stat-icon"><Smartphone size={28} aria-hidden /></span>
-        <div><strong>{online}</strong><span><i />{t("client.app.onlineNow")}</span></div></div>
-      <div className="device-stat"><span className="device-stat-icon"><Layers size={28} aria-hidden /></span>
-        <div><strong>{devices.length}</strong><span>{t("client.app.allDevices")}</span></div></div>
+      <div className="device-stat"><span className="device-stat-icon"><Smartphone size={20} aria-hidden /></span>
+        <span className="device-stat-label">{t("client.app.onlineNow")}</span><strong>{online}</strong></div>
+      <div className="device-stat"><span className="device-stat-icon"><Layers size={20} aria-hidden /></span>
+        <span className="device-stat-label">{t("client.app.allDevices")}</span><strong>{devices.length}</strong></div>
     </section>
-    <h2 className="devices-list-title">{t("client.app.signedInDevices")} <span>({devices.length})</span></h2>
     {devices.length ? <>
       <div className="device-grid">{devices.map((device) =>
         <DeviceCard key={device.deviceId} device={device} {...cardProps} />)}</div>

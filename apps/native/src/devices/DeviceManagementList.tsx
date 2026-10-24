@@ -32,17 +32,17 @@ function DeviceOverview({ devices }: { devices: RemoteDevice[] }) {
   return <View style={styles.summary}>
     <View style={styles.stat}>
       <View style={styles.statIcon}>
-        <Ionicons name="phone-portrait-outline" size={25} color={color(deviceColors.green, 'accent')} />
+        <Ionicons name="phone-portrait-outline" size={20} color={color(deviceColors.green, 'accent')} />
       </View>
-      <View style={styles.identity}>
-        <Text style={styles.statValue}>{online}</Text>
-        <View style={styles.statLabelRow}><View style={styles.dot} /><Text style={styles.statLabel}>{t("client.app.onlineNow")}</Text></View>
-      </View>
+      <Text style={styles.statLabel}>{t("client.app.onlineNow")}</Text>
+      <Text style={styles.statValue}>{online}</Text>
     </View>
     <View style={styles.stat}>
-      <View style={styles.statIcon}><Ionicons name="layers-outline" size={27} color={color(deviceColors.green, 'accent')} /></View>
-      <View style={styles.identity}><Text style={styles.statValue}>{devices.length}</Text>
-        <Text style={[styles.statLabel, { marginTop: 3 }]}>{t("client.app.allDevices")}</Text></View>
+      <View style={styles.statIcon}>
+        <Ionicons name="layers-outline" size={20} color={color(deviceColors.green, 'accent')} />
+      </View>
+      <Text style={styles.statLabel}>{t("client.app.allDevices")}</Text>
+      <Text style={styles.statValue}>{devices.length}</Text>
     </View>
   </View>;
 }
@@ -69,9 +69,6 @@ export function DeviceManagementList(props: DeviceManagementListProps) {
       </View>
       <Text style={styles.subtitle}>{t("client.app.viewDeviceStatusAndSelectACardToSwitchModels")}</Text>
       <DeviceOverview devices={devices} />
-      <Text style={styles.listTitle}>
-        {t("client.app.signedInDevices")}{' '}<Text style={styles.listCount}>({devices.length})</Text>
-      </Text>
       {devices.map((device) => <DeviceCard key={device.deviceId} device={device}
         accounts={props.accounts} providers={props.providers}
         busy={props.switchingModelDeviceId === device.deviceId || props.deletingDeviceId === device.deviceId}

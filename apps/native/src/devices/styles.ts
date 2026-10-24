@@ -8,30 +8,25 @@ export const deviceColors = {
 
 export const useStyles = createThemedStyles((color) => ({
   page: { flex: 1, backgroundColor: color(deviceColors.canvas, 'canvas') },
-  scroll: { padding: 20, paddingTop: 22, paddingBottom: 32 },
+  scroll: { padding: 20, paddingTop: 12, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heading: { ...textMetrics(30, 42), flex: 1, color: color(deviceColors.ink, 'ink'), fontWeight: '800' },
-  subtitle: { ...textMetrics(13, 20), color: color(deviceColors.muted, 'muted'), marginTop: 5, marginBottom: 18 },
+  heading: { ...textMetrics(22, 32), flex: 1, color: color(deviceColors.ink, 'ink'), fontWeight: '700' },
+  subtitle: { ...textMetrics(13, 20), color: color(deviceColors.muted, 'muted'), marginBottom: 10 },
   refresh: {
-    width: 44, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12,
+    width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12,
     borderWidth: 1, borderColor: color('#bfe9dc', 'border'), backgroundColor: color(deviceColors.mint, 'accentSoft'),
   },
-  summary: { flexDirection: 'row', gap: 12, marginBottom: 22 },
+  summary: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   stat: {
-    flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 14,
-    padding: 12, borderRadius: 16, backgroundColor: color('#fff', 'surface'),
+    flex: 1, minWidth: 0, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: color('#fff', 'surface'),
   },
   statIcon: {
-    width: 52, height: 52, borderRadius: 26, backgroundColor: color(deviceColors.mint, 'accentSoft'),
+    width: 20, flexShrink: 0,
     alignItems: 'center', justifyContent: 'center',
   },
-  statValue: { ...textMetrics(28, 38), color: color(deviceColors.ink, 'ink'), fontWeight: '800' },
-  statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-  statLabel: { ...textMetrics(12, 18), flexShrink: 1, color: color(deviceColors.muted, 'muted') },
-  listTitle: {
-    ...textMetrics(17, 26), color: color(deviceColors.ink, 'ink'), fontWeight: '700', marginBottom: 14,
-  },
-  listCount: { color: color(deviceColors.muted, 'muted'), fontWeight: '400' },
+  statValue: { ...textMetrics(20, 28), flexShrink: 1, color: color(deviceColors.ink, 'ink'), fontWeight: '700' },
+  statLabel: { ...textMetrics(12, 18), flex: 1, color: color(deviceColors.muted, 'muted') },
   card: {
     borderRadius: 18, backgroundColor: color('#fff', 'surface'), padding: 14, marginBottom: 14,
     shadowColor: '#538f7c', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 },
