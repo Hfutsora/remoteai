@@ -1,9 +1,61 @@
 use crate::types::*;
+use crate::{
+    file_mutations,
+    uploads::{StartUpload, Uploads, WriteChunk},
+};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use russh_sftp::{client::SftpSession, protocol::OpenFlags};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 
 const MAX_ENTRIES: usize = 5000;
+
+pub(crate) struct FileSession {
+    sftp: SftpSession,
+    uploads: Uploads,
+}
+
+impl FileSession {
+    pub(crate) fn new(sftp: SftpSession) -> Self {
+        Self {
+            sftp,
+            uploads: Uploads::default(),
+        }
+    }
+
+    pub(crate) async fn cleanup(&mut self) {
+        self.uploads.cleanup(&self.sftp, true).await;
+    }
+
+    pub(crate) async fn perform(&mut self, action: FileAction) -> Result<FileReply> {
+        self.uploads.cleanup(&self.sftp, false).await;
+        match action {
+            FileAction::UploadStart { path, size, mode } => {
+                self.uploads
+                    .start(&self.sftp, StartUpload { path, size, mode })
+                    .await
+            }
+            FileAction::UploadChunk {
+                token,
+                offset,
+                data,
+            } => {
+                self.uploads
+                    .chunk(
+                        &self.sftp,
+                        WriteChunk {
+                            token,
+                            offset,
+                            data,
+                        },
+                    )
+                    .await
+            }
+            FileAction::UploadFinish { token } => self.uploads.finish(&self.sftp, &token).await,
+            FileAction::UploadCancel { token } => self.uploads.cancel(&self.sftp, &token).await,
+            action => perform(&self.sftp, action).await,
+        }
+    }
+}
 
 pub(crate) fn validate_path(path: &str) -> Result<()> {
     if path.is_empty() || path.len() > 4096 || path.chars().any(char::is_control) {
@@ -15,17 +67,28 @@ pub(crate) fn validate_path(path: &str) -> Result<()> {
 pub(crate) async fn perform(sftp: &SftpSession, action: FileAction) -> Result<FileReply> {
     let path = match &action {
         FileAction::List { path }
+        | FileAction::ReadChunk { path, .. }
         | FileAction::Read { path }
         | FileAction::Upload { path, .. }
         | FileAction::CreateFolder { path }
+        | FileAction::CreateFile { path }
+        | FileAction::DeleteTree { path }
         | FileAction::Rename { path, .. }
         | FileAction::Delete { path } => path,
+        _ => return Err(Error::Invalid),
     };
     validate_path(path)?;
     match action {
         FileAction::List { path } => list(sftp, &path).await,
         FileAction::Read { path } => read(sftp, &path).await,
+        FileAction::ReadChunk {
+            path,
+            offset,
+            length,
+        } => read_chunk(sftp, &path, offset, length).await,
         FileAction::Upload { path, data } => upload(sftp, &path, &data).await,
+        FileAction::CreateFile { path } => file_mutations::create_file(sftp, &path).await,
+        FileAction::DeleteTree { path } => file_mutations::delete_tree(sftp, &path).await,
         FileAction::CreateFolder { path } => {
             sftp.create_dir(path).await.map_err(|_| Error::File)?;
             Ok(FileReply::Done)
@@ -53,6 +116,7 @@ pub(crate) async fn perform(sftp: &SftpSession, action: FileAction) -> Result<Fi
             .map_err(|_| Error::File)?;
             Ok(FileReply::Done)
         }
+        _ => Err(Error::Invalid),
     }
 }
 
@@ -117,6 +181,24 @@ async fn read(sftp: &SftpSession, path: &str) -> Result<FileReply> {
     if data.len() > MAX_FILE_BYTES {
         return Err(Error::FileTooLarge);
     }
+    Ok(FileReply::File {
+        data: STANDARD.encode(data),
+    })
+}
+
+async fn read_chunk(sftp: &SftpSession, path: &str, offset: u64, length: u32) -> Result<FileReply> {
+    if length == 0 || length as usize > UPLOAD_CHUNK_BYTES {
+        return Err(Error::Invalid);
+    }
+    let mut file = sftp.open(path).await.map_err(|_| Error::File)?;
+    file.seek(std::io::SeekFrom::Start(offset))
+        .await
+        .map_err(|_| Error::File)?;
+    let mut data = Vec::new();
+    file.take(u64::from(length))
+        .read_to_end(&mut data)
+        .await
+        .map_err(|_| Error::File)?;
     Ok(FileReply::File {
         data: STANDARD.encode(data),
     })

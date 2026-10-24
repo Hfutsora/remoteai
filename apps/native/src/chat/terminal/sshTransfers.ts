@@ -2,7 +2,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import { randomUUID } from 'expo-crypto';
 import { cacheDirectory, EncodingType, readAsStringAsync, getInfoAsync, deleteAsync } from 'expo-file-system';
 import type { SshDownload, SshUpload } from '../../../../../shared/terminal/sshTransfers';
-import { SSH_FILE_LIMIT } from '../../../../../shared/terminal/ssh';
 import { nativeDownloadTarget } from '../fileDownloadTarget';
 import { validSshName } from '../../../../../shared/terminal/useSshFiles';
 
@@ -21,9 +20,8 @@ export async function pickSshUpload(upload: (file: SshUpload) => Promise<boolean
   try {
     const info = await getInfoAsync(file.uri);
     if (!info.exists || info.isDirectory) throw new Error('client.ssh.fileFailed');
-    if (info.size > SSH_FILE_LIMIT) throw new Error('client.ssh.fileTooLarge');
     await upload({ name: file.name, size: info.size,
-      read: () => readAsStringAsync(file.uri, { encoding: EncodingType.Base64 }) });
+      read: (position, length) => readAsStringAsync(file.uri, { encoding: EncodingType.Base64, position, length }) });
   } finally {
     if (cacheDirectory && file.uri.startsWith(cacheDirectory)) await deleteAsync(file.uri, { idempotent: true });
   }

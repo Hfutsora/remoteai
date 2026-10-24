@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import { Alert, Button, Form, Modal, Popconfirm, theme } from 'antd';
-import { ArrowUpRight, ShieldCheck, Terminal, Trash2 } from 'lucide-react';
+import { ArrowUpRight, PlugZap, Save, ShieldCheck, Terminal, Trash2 } from 'lucide-react';
 import type { SshApi } from './ssh';
 import type { TerminalInfo } from './types';
 import { sshLabel, type SshProfile } from './sshProfiles';
@@ -21,13 +21,22 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
   const { token } = theme.useToken();
   const connection = useSshConnection({ api, initial, projectCwd, close: () => { changed(); close(); },
     connected, dispose, createId: () => crypto.randomUUID() });
-  const { profiles, selected, busy, finished, error, trust, loading } = connection;
+  const { profiles, selected, busy, finished, error, trust, loading, tested, action } = connection;
   const disabled = busy || finished || loading;
   const managing = manage || !!initial;
   useEffect(() => { if (finished) form.resetFields(); }, [finished, form]);
   useEffect(() => {
-    if (trust || error) feedback.current?.scrollIntoView({ block: 'nearest' });
-  }, [trust, error]);
+    if (trust || error || tested) feedback.current?.scrollIntoView({ block: 'nearest' });
+  }, [trust, error, tested]);
+  const authenticate = (operation: 'test' | 'submit') => {
+    void form.validateFields().then(values => {
+      if (values.auth === 'key' && !values.privateKey?.trim()) {
+        form.setFields([{ name: 'privateKey', errors: [t('client.ssh.keyRequiredForConnection')] }]);
+        form.scrollToField('privateKey', { block: 'center' }); return;
+      }
+      return connection[operation](values);
+    }, () => { /* The form displays validation errors next to the affected fields. */ });
+  };
   const choose = (profile?: SshProfile) => {
     form.resetFields();
     form.setFieldsValue(connection.choose(profile));
@@ -54,9 +63,12 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
       {managing && <SshProfileList profiles={profiles} selected={selected} disabled={disabled}
         loading={loading} choose={choose} />}
       <Form id={formId} form={form} layout="vertical" className="ssh-connection-form"
-        onFinish={values => void connection.submit(values)} disabled={disabled}
+        onFinish={values => void connection.saveSettings(values)} disabled={disabled}
         initialValues={initial ?? newSshValues()} requiredMark={false} scrollToFirstError={{ block: 'center' }}
-        onValuesChange={values => { if ('host' in values || 'port' in values) connection.clearTrust(); }}>
+        onValuesChange={values => {
+          connection.clearTest();
+          if ('host' in values || 'port' in values) connection.clearTrust();
+        }}>
         <div className="ssh-form-scroll">
           {managing && <div className="ssh-detail-heading">
             <h3>{selected ? selected.name || sshLabel(selected) : t('client.ssh.createTitle')}</h3>
@@ -66,8 +78,13 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
           </div>}
           <SshConnectionFields form={form} disabled={disabled} />
           <div className="ssh-credentials-note"><ShieldCheck size={17} aria-hidden />
-            <p>{t('client.ssh.credentialsHint')}</p></div>
+            <div><p>{t('client.ssh.settingsCredentialsHint')}</p>
+              <p>{t('client.ssh.credentialsHint')}</p></div></div>
+          <Button className="ssh-test" icon={<PlugZap size={16} />} disabled={disabled}
+            loading={action === 'test'} onClick={() => authenticate('test')}>
+            {t(trust ? 'client.ssh.trustAndTest' : 'client.ssh.testConnection')}</Button>
           <div ref={feedback} aria-live="polite">
+            {tested && <Alert showIcon type="success" message={t('client.ssh.testSucceeded')} />}
             {trust && <Alert showIcon type="warning" message={t('client.ssh.trustHost')}
               description={<code className="ssh-fingerprint">{trust.fingerprint}</code>} />}
             {error && <Alert showIcon type="error" role="alert" message={remoteErrorText(error)}
@@ -85,9 +102,13 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
           </Popconfirm>}
           <div className="ssh-submit-actions">
             <Button disabled={busy} onClick={close}>{t('client.ssh.cancel')}</Button>
-            {!finished && <Button className="ssh-connect" type="primary" htmlType="submit"
-              loading={busy || loading} icon={<ArrowUpRight size={16} />}>
-              {t(trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connect')}</Button>}
+            {!finished && <>
+              <Button onClick={() => authenticate('submit')} loading={action === 'connect'}
+                icon={<ArrowUpRight size={16} />}>
+                {t(trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connect')}</Button>
+              <Button className="ssh-connect" type="primary" htmlType="submit"
+                loading={action === 'save'} icon={<Save size={16} />}>{t('client.ssh.saveSettings')}</Button>
+            </>}
           </div>
         </div>
       </Form>

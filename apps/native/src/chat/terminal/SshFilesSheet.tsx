@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { SshApi } from '../../../../../shared/terminal/ssh';
 import { sshError } from '../../../../../shared/terminal/ssh';
@@ -11,8 +11,17 @@ import { useThemeColor } from '../../theme/store';
 import { SshButton, SshField } from './SshControls';
 import { useSshStyles } from './sshStyles';
 import { nativeSshDownload, pickSshUpload } from './sshTransfers';
+import type { SshConflictChoice } from '../../../../../shared/terminal/sshUpload';
 
 type Prompt = { kind: 'rename' | 'createFolder' | 'delete'; name: string; path?: string };
+
+const resolveUploadConflict = (name: string) => new Promise<SshConflictChoice>(resolve => {
+  Alert.alert(t('client.ssh.uploadConflictTitle'), t('client.ssh.uploadConflictHint', { name }), [
+    { text: t('client.ssh.cancel'), style: 'cancel', onPress: () => resolve(undefined) },
+    { text: t('client.ssh.overwrite'), style: 'destructive', onPress: () => resolve('overwrite') },
+    { text: t('client.ssh.keepBoth'), onPress: () => resolve('rename') },
+  ], { cancelable: true, onDismiss: () => resolve(undefined) });
+});
 
 export function SshFilesSheet({ api, info, connected, close }: {
   api: SshApi; info: TerminalInfo; connected: boolean; close: () => void;
@@ -34,7 +43,7 @@ export function SshFilesSheet({ api, info, connected, close }: {
   const upload = async () => {
     if (disabled) return;
     setPicking(true); setError(''); setNotice('');
-    try { await pickSshUpload(files.upload); }
+    try { await pickSshUpload(file => files.upload(file, resolveUploadConflict)); }
     catch (failure) { setError(sshError(failure, 'client.ssh.fileFailed')); }
     finally { setPicking(false); }
   };

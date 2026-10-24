@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SSH_FILE_LIMIT, sshError, type SshApi, type SshEntry, type SshFileAction } from './ssh';
 import { browserSshDownload, type SshDownload, type SshUpload } from './sshTransfers';
+import { SshUploadCancelled, uploadSshFile, type SshResolveConflict, type SshUploadProgress } from './sshUpload';
 
 export const sshParent = (path: string) => path.replace(/\/+$/, '').slice(0, path.replace(/\/+$/, '').lastIndexOf('/')) || '/';
 export const sshChild = (path: string, name: string) => `${path.replace(/\/+$/, '')}/${name}`;
@@ -14,6 +15,8 @@ export function useSshFiles(api: SshApi, id: string, saveDownload: SshDownload =
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [truncated, setTruncated] = useState(false);
+  const [progress, setProgress] = useState<SshUploadProgress>();
+  const uploadController = useRef<AbortController>();
   const active = useRef(true);
   const running = useRef(false);
   const run = async (action: () => Promise<void>) => {
@@ -21,7 +24,7 @@ export function useSshFiles(api: SshApi, id: string, saveDownload: SshDownload =
     running.current = true; setBusy(true); setError('');
     try { await action(); return true; }
     catch (failure) {
-      if (active.current) setError(sshError(failure, 'client.ssh.fileFailed'));
+      if (active.current && !(failure instanceof SshUploadCancelled)) setError(sshError(failure, 'client.ssh.fileFailed'));
       return false;
     }
     finally { running.current = false; if (active.current) setBusy(false); }
@@ -34,7 +37,7 @@ export function useSshFiles(api: SshApi, id: string, saveDownload: SshDownload =
   const load = (directory = path) => run(() => list(directory));
   useEffect(() => {
     active.current = true; void load('.');
-    return () => { active.current = false; };
+    return () => { active.current = false; uploadController.current?.abort(); };
   }, [api, id]);
   const mutate = (request: SshFileAction) => run(async () => {
     await api.files(id, request); await list(path);
@@ -45,12 +48,15 @@ export function useSshFiles(api: SshApi, id: string, saveDownload: SshDownload =
     if (response.type !== 'file' || !active.current) return;
     await saveDownload(entry, response.data);
   });
-  const upload = (file: SshUpload) => run(async () => {
+  const upload = (file: SshUpload, resolveConflict?: SshResolveConflict) => run(async () => {
     if (!validSshName(file.name)) throw new Error('client.ssh.invalidName');
-    if (file.size > SSH_FILE_LIMIT) throw new Error('client.ssh.fileTooLarge');
-    const data = await file.read();
-    await api.files(id, { type: 'upload', path: sshChild(path, file.name), data });
-    await list(path);
+    const controller = new AbortController(); uploadController.current = controller;
+    try {
+      await uploadSshFile({ api, id, path: sshChild(path, file.name), file, signal: controller.signal, resolveConflict,
+        progress: value => { if (active.current) setProgress(value); } });
+      if (active.current) await list(path);
+    } finally { uploadController.current = undefined; if (active.current) setProgress(undefined); }
   });
-  return { path, entries, selected, select, busy, error, truncated, load, mutate, download, upload };
+  return { path, entries, selected, select, busy, error, truncated, load, mutate, download, upload, progress,
+    cancelUpload: () => uploadController.current?.abort() };
 }

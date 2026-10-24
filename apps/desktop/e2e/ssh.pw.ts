@@ -117,7 +117,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.getByRole('button', { name: /^确\s*定$/ }).click();
     await page.getByRole('button', { name: new RegExp(`renamed-${fileName}`) }).click();
     await page.getByRole('button', { name: /^删\s*除$/ }).click();
-    await page.getByRole('tooltip').getByRole('button', { name: /^删\s*除$/ }).click();
+    await page.getByRole('dialog', { name: '删除', exact: true }).getByRole('button', { name: /^删\s*除$/ }).click();
     await expect(page.getByRole('button', { name: new RegExp(`renamed-${fileName}`) })).toBeHidden();
     const stored = await page.evaluate(() => localStorage.getItem('remoteai.ssh.profiles.v1'));
     expect(stored).toBeNull();

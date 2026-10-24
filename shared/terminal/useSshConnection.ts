@@ -3,15 +3,9 @@ import { sshError, type SshApi } from './ssh';
 import { sshEndpointKey, type SshProfile } from './sshProfiles';
 import type { TerminalInfo } from './types';
 import { useSshProfiles } from './useSshProfiles';
-
-export interface SshValues {
-  name: string; host: string; port: number; username: string; auth: 'password' | 'key';
-  password?: string; privateKey?: string; passphrase?: string;
-}
-export const newSshValues = (): SshValues => ({ name: '', host: '', port: 22, username: '', auth: 'password' });
-export const validSshValues = (value: SshValues) => Boolean(value.host.trim() && value.username.trim()
-  && Number.isInteger(value.port) && value.port > 0 && value.port <= 65535
-  && (value.auth !== 'key' || value.privateKey?.trim()));
+import { newSshValues, sameSshProfile, sshConnectFromValues, sshProfileFromValues, validSshSettings, validSshValues,
+  type SshValues } from './sshConnectionValues';
+export { newSshValues, validSshValues, type SshValues } from './sshConnectionValues';
 
 interface Options {
   api: SshApi; projectCwd: string; initial?: SshProfile; createId: () => string;
@@ -27,11 +21,13 @@ export function useSshConnection(options: Options) {
   const [finished, setFinished] = useState(false);
   const [error, setError] = useState('');
   const [trust, setTrust] = useState<{ endpoint: string; fingerprint: string }>();
+  const [tested, setTested] = useState<{ endpoint: string; fingerprint: string }>();
+  const [action, setAction] = useState<'connect' | 'test' | 'save' | 'remove'>();
   const lifetime = useRef(true);
   const pending = useRef(false);
   useEffect(() => { lifetime.current = true; return () => { lifetime.current = false; }; }, []);
   const choose = (profile?: SshProfile) => {
-    setSelected(profile); setError(''); setTrust(undefined);
+    setSelected(profile); setError(''); setTrust(undefined); setTested(undefined);
     return profile ?? newSshValues();
   };
   const fingerprintFor = async (values: SshValues) => {
@@ -48,22 +44,17 @@ export function useSshConnection(options: Options) {
     }
     const known = profiles.filter(value => sshEndpointKey(value) === endpointKey && value.fingerprint);
     if (known.some(value => value.fingerprint !== fingerprint)) throw new Error('client.ssh.hostChanged');
-    if (!known.length && (trust?.endpoint !== endpointKey || trust.fingerprint !== fingerprint)) {
+    if (!known.length && (trust?.endpoint !== endpointKey || trust.fingerprint !== fingerprint)
+      && (tested?.endpoint !== endpointKey || tested.fingerprint !== fingerprint)) {
       if (lifetime.current) setTrust({ endpoint: endpointKey, fingerprint });
       return;
     }
     return fingerprint;
   };
   const connect = async (values: SshValues, fingerprint: string) => {
-    const endpoint = { host: values.host.trim(), port: values.port };
-    const info = await api.open({ endpoint, username: values.username.trim(), fingerprint,
-      size: { cols: 80, rows: 24 }, ...(values.auth === 'key'
-        ? { privateKey: values.privateKey, passphrase: values.passphrase }
-        : { password: values.password }) }, projectCwd);
+    const info = await api.open(sshConnectFromValues(values, fingerprint), projectCwd);
     if (!lifetime.current) { await dispose(info.id); return; }
-    const profile: SshProfile = { id: selected?.id ?? createId(), name: values.name?.trim() ?? '',
-      ...endpoint, username: values.username.trim(), auth: values.auth, fingerprint,
-      ...(selected ? { revision: selected.revision, accountScope: selected.accountScope } : {}) };
+    const profile = sshProfileFromValues({ values, id: selected?.id ?? createId(), selected, fingerprint });
     let stored = true;
     try { await saved.save(profile); }
     catch (failure) { stored = false;
@@ -72,30 +63,56 @@ export function useSshConnection(options: Options) {
     connected(info); setFinished(true);
     if (stored) close();
   };
-  const submit = async (values: SshValues) => {
+  const run = async (operation: 'connect' | 'test' | 'save', values: SshValues) => {
     if (pending.current || finished || saved.loading || saved.error) return;
-    if (!validSshValues(values)) { setError('client.ssh.invalid'); return; }
-    pending.current = true; setBusy(true); setError('');
+    if (!(operation === 'save' ? validSshSettings(values) : validSshValues(values))) {
+      setError('client.ssh.invalid'); return;
+    }
+    pending.current = true; setBusy(true); setAction(operation); setError('');
     try {
+      if (operation === 'save') { await saveSettings(values); return; }
+      setTested(undefined);
       const fingerprint = await fingerprintFor(values);
-      if (fingerprint && lifetime.current) await connect(values, fingerprint);
-    } catch (failure) { if (lifetime.current) setError(sshError(failure, 'client.ssh.connectionFailed')); }
-    finally { pending.current = false; if (lifetime.current) setBusy(false); }
+      if (!fingerprint || !lifetime.current) return;
+      if (operation === 'test') await testConnection(values, fingerprint);
+      else await connect(values, fingerprint);
+    } catch (failure) {
+      if (lifetime.current) setError(sshError(failure,
+        operation === 'save' ? 'client.ssh.storageFailed' : 'client.ssh.connectionFailed'));
+    } finally { pending.current = false; if (lifetime.current) { setBusy(false); setAction(undefined); } }
+  };
+  const saveSettings = async (values: SshValues) => {
+    const endpoint = sshEndpointKey({ ...values, host: values.host.trim() });
+    const profile = sshProfileFromValues({ values, id: selected?.id ?? createId(), selected,
+      fingerprint: tested?.endpoint === endpoint ? tested.fingerprint : undefined });
+    if (!selected || !sameSshProfile(selected, profile)) await saved.save(profile);
+    if (lifetime.current) { setFinished(true); close(); }
+  };
+  const testConnection = async (values: SshValues, fingerprint: string) => {
+    const request = sshConnectFromValues(values, fingerprint);
+    const info = await api.open(request, projectCwd);
+    await dispose(info.id);
+    if (lifetime.current) {
+      setTrust(undefined);
+      setTested({ endpoint: sshEndpointKey({ ...request.endpoint, username: request.username }), fingerprint });
+    }
   };
   const remove = async () => {
     if (!selected || pending.current) return false;
-    pending.current = true; setBusy(true); setError('');
+    pending.current = true; setBusy(true); setAction('remove'); setError('');
     try {
       await saved.remove(selected.id, selected.revision, selected.accountScope);
       if (lifetime.current) choose(); return true;
     }
     catch (failure) { if (lifetime.current) setError(sshError(failure, 'client.ssh.storageFailed')); return false; }
-    finally { pending.current = false; if (lifetime.current) setBusy(false); }
+    finally { pending.current = false; if (lifetime.current) { setBusy(false); setAction(undefined); } }
   };
   const current = selected && saved.profiles.find(value => value.id === selected.id);
   const selectionError = selected?.revision && !saved.loading && !saved.error
     && (!current || current.revision !== selected.revision || current.accountScope !== selected.accountScope)
     ? 'client.ssh.profileChanged' : '';
-  return { ...saved, selected, choose, busy, finished, error: error || saved.error || selectionError, trust,
-    clearTrust: () => setTrust(undefined), submit, remove };
+  return { ...saved, selected, choose, busy, action, finished, error: error || saved.error || selectionError, trust,
+    tested: !!tested, clearTest: () => setTested(undefined), clearTrust: () => setTrust(undefined),
+    submit: (values: SshValues) => run('connect', values), saveSettings: (values: SshValues) => run('save', values),
+    test: (values: SshValues) => run('test', values), remove };
 }

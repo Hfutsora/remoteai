@@ -62,7 +62,8 @@ const server = createServer(async (request, response) => {
     } else response.end(JSON.stringify({ data: await rpc(input) }));
   } catch (error) { response.end(JSON.stringify({ error: error.message })); }
 });
-server.listen(1498, '127.0.0.1', () => process.stdout.write('SSH fixture bridge ready\n'));
+server.listen(Number(process.env.SSH_FIXTURE_PORT ?? 1498), '127.0.0.1',
+  () => process.stdout.write('SSH fixture bridge ready\n'));
 const stop = () => { bridge.kill(); server.close(); };
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);

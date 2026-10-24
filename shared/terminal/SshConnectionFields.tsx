@@ -43,8 +43,7 @@ export function SshConnectionFields({ form, disabled }: { form: FormInstance<Ssh
         </Form.Item>
       </div>
       {auth === 'key' ? <>
-        <Form.Item name="privateKey" label={t('client.ssh.privateKey')}
-          rules={[{ required: true, message: t('client.ssh.required') }]}>
+        <Form.Item name="privateKey" label={t('client.ssh.privateKey')}>
           <SshPrivateKeyInput disabled={disabled} />
         </Form.Item>
         <Form.Item name="passphrase" label={t('client.ssh.passphrase')}>

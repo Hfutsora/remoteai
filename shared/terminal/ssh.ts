@@ -7,11 +7,17 @@ export interface SshConnect {
   password?: string; privateKey?: string; passphrase?: string;
 }
 export interface SshEntry { name: string; path: string; directory: boolean; size: number }
-export type SshFileAction = { type: 'list' | 'read' | 'createFolder' | 'delete'; path: string }
+export type SshUploadMode = 'reject' | 'overwrite' | 'rename';
+export type SshFileAction = { type: 'list' | 'read' | 'createFolder' | 'createFile' | 'delete' | 'deleteTree'; path: string }
   | { type: 'rename'; path: string; destination: string }
-  | { type: 'upload'; path: string; data: string };
+  | { type: 'upload'; path: string; data: string }
+  | { type: 'readChunk'; path: string; offset: number; length: number }
+  | { type: 'uploadStart'; path: string; size: number; mode: SshUploadMode }
+  | { type: 'uploadChunk'; token: string; offset: number; data: string }
+  | { type: 'uploadFinish' | 'uploadCancel'; token: string };
 export type SshFileReply = { type: 'list'; path: string; entries: SshEntry[]; truncated: boolean }
-  | { type: 'file'; data: string } | { type: 'done' };
+  | { type: 'file'; data: string } | { type: 'done' }
+  | { type: 'upload'; token: string } | { type: 'uploaded'; path: string };
 export interface SshApi {
   profiles: import('./sshProfiles').SshProfileStore;
   probe: (endpoint: SshEndpoint) => Promise<string>;

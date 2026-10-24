@@ -1,12 +1,12 @@
 import type { SshEntry } from './ssh';
 
-export interface SshUpload { name: string; size: number; read: () => Promise<string> }
+export interface SshUpload { name: string; size: number; read: (offset: number, length: number) => Promise<string> }
 export type SshDownload = (entry: SshEntry, data: string) => Promise<void>;
 
 export const browserSshUpload = (file: File): SshUpload => ({
   name: file.name, size: file.size,
-  async read() {
-    const bytes = new Uint8Array(await file.arrayBuffer());
+  async read(offset, length) {
+    const bytes = new Uint8Array(await file.slice(offset, offset + length).arrayBuffer());
     let binary = '';
     const chunkSize = 8192;
     for (let offset = 0; offset < bytes.length; offset += chunkSize) {

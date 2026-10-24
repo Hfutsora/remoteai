@@ -3,7 +3,6 @@ import { getDocumentAsync } from 'expo-document-picker';
 import { deleteAsync, getInfoAsync, readAsStringAsync } from 'expo-file-system';
 import { nativeDownloadTarget } from '../fileDownloadTarget';
 import { nativeSshDownload, pickSshUpload } from './sshTransfers';
-import { SSH_FILE_LIMIT } from '../../../../../shared/terminal/ssh';
 import type { SshUpload } from '../../../../../shared/terminal/sshTransfers';
 
 vi.mock('expo-document-picker', () => ({ getDocumentAsync: vi.fn() }));
@@ -19,20 +18,22 @@ it('uploads selected files as base64 and removes only the temporary picker copy'
   vi.mocked(getInfoAsync).mockResolvedValue({ exists: true, isDirectory: false, size: 5,
     modificationTime: 0, uri: 'file:///cache/pick' });
   vi.mocked(readAsStringAsync).mockResolvedValue('aGVsbG8=');
-  const upload = vi.fn(async (file: SshUpload) => { expect(await file.read()).toBe('aGVsbG8='); return true; });
+  const upload = vi.fn(async (file: SshUpload) => { expect(await file.read(0, 5)).toBe('aGVsbG8='); return true; });
   await pickSshUpload(upload);
   expect(upload).toHaveBeenCalledWith(expect.objectContaining({ name: 'hello.txt', size: 5 }));
   expect(deleteAsync).toHaveBeenCalledWith('file:///cache/pick', { idempotent: true });
 });
 
-it('rejects oversized files before loading them and never deletes the source document', async () => {
+it('reads large uploads in bounded ranges and never deletes the source document', async () => {
   vi.mocked(getDocumentAsync).mockResolvedValue({ canceled: false,
     assets: [{ name: 'large.txt', uri: 'content://documents/file' }] });
-  vi.mocked(getInfoAsync).mockResolvedValue({ exists: true, isDirectory: false, size: SSH_FILE_LIMIT + 1,
+  vi.mocked(getInfoAsync).mockResolvedValue({ exists: true, isDirectory: false, size: 12 * 1024 * 1024,
     modificationTime: 0, uri: 'content://documents/file' });
-  const upload = vi.fn();
-  await expect(pickSshUpload(upload)).rejects.toThrow('client.ssh.fileTooLarge');
-  expect(upload).not.toHaveBeenCalled(); expect(readAsStringAsync).not.toHaveBeenCalled();
+  const upload = vi.fn(async (file: SshUpload) => { await file.read(262144, 262144); return true; });
+  await pickSshUpload(upload);
+  expect(upload).toHaveBeenCalledOnce();
+  expect(readAsStringAsync).toHaveBeenCalledWith('content://documents/file',
+    { encoding: 'base64', position: 262144, length: 262144 });
   expect(deleteAsync).not.toHaveBeenCalled();
 });
 

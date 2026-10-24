@@ -167,8 +167,10 @@ export class ChatOperations {
       }
       if (entry.terminalLink && reply.error) entry.readOnly = true;
       // Range reads are repeatable; caching their payloads would retain an entire file in memory.
+      // Upload chunks retry fixed ranges; retaining every acknowledgement would cap large uploads at 512 requests.
       if (operation === 'videoRead' || operation === 'fileRead' || operation === 'projectFileRead'
-        || (operation === 'guiTerminalSshFiles' && ['read', 'list'].includes(String(object(object(request.body).request).type)))
+        || (operation === 'guiTerminalSshFiles' && ['read', 'readChunk', 'list', 'uploadChunk']
+          .includes(String(object(object(request.body).request).type)))
         || operation === 'guiTerminalSshProbe' || operation === 'guiTerminalSshProfiles'
         || (operation === 'guiTerminalRead' && object(request.body).cursor !== undefined)) this.cache.delete(cacheKey);
     });

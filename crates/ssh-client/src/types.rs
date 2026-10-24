@@ -4,6 +4,8 @@ use zeroize::Zeroize;
 pub const MAX_SESSIONS: usize = 8;
 // Base64 plus JSON stays below the authenticated relay's minimum message allowance.
 pub const MAX_FILE_BYTES: usize = 4 * 1024 * 1024;
+/// Per-request memory bound; chunked uploads have no total file-size limit.
+pub const UPLOAD_CHUNK_BYTES: usize = 256 * 1024;
 pub const MAX_INPUT_BYTES: usize = 64 * 1024;
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -142,12 +144,62 @@ pub enum Command {
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum FileAction {
-    List { path: String },
-    Read { path: String },
-    Upload { path: String, data: String },
-    CreateFolder { path: String },
-    Rename { path: String, destination: String },
-    Delete { path: String },
+    ReadChunk {
+        path: String,
+        offset: u64,
+        length: u32,
+    },
+    List {
+        path: String,
+    },
+    Read {
+        path: String,
+    },
+    Upload {
+        path: String,
+        data: String,
+    },
+    CreateFolder {
+        path: String,
+    },
+    Rename {
+        path: String,
+        destination: String,
+    },
+    Delete {
+        path: String,
+    },
+    CreateFile {
+        path: String,
+    },
+    DeleteTree {
+        path: String,
+    },
+    UploadStart {
+        path: String,
+        size: u64,
+        mode: UploadMode,
+    },
+    UploadChunk {
+        token: String,
+        offset: u64,
+        data: String,
+    },
+    UploadFinish {
+        token: String,
+    },
+    UploadCancel {
+        token: String,
+    },
+}
+
+/// An existing destination is only replaced after an explicit overwrite choice.
+#[derive(Clone, Copy, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum UploadMode {
+    Reject,
+    Rename,
+    Overwrite,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -169,4 +221,10 @@ pub enum FileReply {
         data: String,
     },
     Done,
+    Upload {
+        token: String,
+    },
+    Uploaded {
+        path: String,
+    },
 }

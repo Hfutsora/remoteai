@@ -90,6 +90,9 @@
 }
 .ssh-credentials-note svg { flex-shrink: 0; margin-top: 2px; color: var(--ssh-accent); }
 .ssh-credentials-note p { max-width: 400px; margin: 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.ssh-credentials-note p + p { margin-top: 4px; }
+.ssh-dialog .ssh-test { height: auto; min-height: 36px; margin-top: 14px; white-space: normal; }
+.ssh-test .ant-btn-icon { display: inline-flex; }
 .ssh-dialog .ant-alert { max-width: 400px; margin-top: 14px; border-radius: 10px; overflow-wrap: anywhere; }
 .ssh-fingerprint { font-size: 12px; overflow-wrap: anywhere; }
 .ssh-dialog-actions {
@@ -172,7 +175,10 @@
   .ssh-dialog-heading { gap: 10px; }
   .ssh-dialog-title { font-size: 18px; }
   .ssh-dialog-symbol { width: 40px; height: 40px; border-radius: 12px; }
-  .ssh-dialog-manager .ssh-dialog-layout { display: block; max-height: calc(100dvh - 160px); overflow: auto; }
+  .ssh-dialog-manager .ssh-dialog-layout {
+    display: block; max-height: calc(100dvh - 160px); overflow: auto;
+    scroll-padding-block-end: 160px;
+  }
   .ssh-profile-sidebar { gap: 10px; padding: 16px 20px; border-right: 0; border-bottom: 1px solid var(--ssh-line); }
   .ssh-profile-results { flex: none; min-height: 0; }
   .ssh-profile-list { position: static; max-height: 160px; }

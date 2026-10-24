@@ -25,9 +25,10 @@ import { cloudFixtureCommand, fixtureProfiles } from './ssh-cloud-fixture';
 
 const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
 const simulatedShell = new URLSearchParams(location.search).has('cloud');
+const bridgePort = Number(new URLSearchParams(location.search).get('bridge') ?? 1498);
 const timers = new Map<string, () => void>();
 const post = async <T,>(path: string, request: object): Promise<T> => {
-  const response = await fetch(`http://127.0.0.1:1498${path}`, {
+  const response = await fetch(`http://127.0.0.1:${bridgePort}${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request),
   });
   const value = await response.json();
@@ -42,9 +43,10 @@ mockIPC(async (command, body) => {
   if (command === 'codex_gui_ssh_probe') return simulatedShell ? 'SHA256:fixture'
     : post('/rpc', { type: 'probe', endpoint: args.endpoint });
   if (command === 'codex_gui_ssh_files') return post('/rpc', { type: 'files', id: args.id, request: args.request });
-  if (command === 'codex_gui_ssh_command') return post('/rpc', { type: 'command', request: args.request });
+  if (command === 'codex_gui_ssh_command') return simulatedShell ? undefined
+    : post('/rpc', { type: 'command', request: args.request });
   if (command === 'codex_gui_ssh_open') {
-    if (simulatedShell) return { id: crypto.randomUUID(), cwd: '/', shell: 'SSH',
+    if (simulatedShell) return { id: `ssh-${crypto.randomUUID()}`, cwd: '/', shell: 'SSH',
       ssh: { ...(args.request.endpoint as object), username: args.request.username } };
     const info = await post<TerminalInfo>('/rpc', { type: 'open', request: args.request });
     let cursor = 0; let active = true;

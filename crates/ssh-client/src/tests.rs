@@ -1,6 +1,35 @@
 use super::*;
 
 #[test]
+fn upload_chunks_validate_ranges_without_limiting_total_file_size() {
+    use crate::uploads::{decode_chunk, validate_range};
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    assert!(decode_chunk(&STANDARD.encode(vec![0; UPLOAD_CHUNK_BYTES])).is_ok());
+    assert!(decode_chunk(&STANDARD.encode(vec![0; UPLOAD_CHUNK_BYTES + 1])).is_err());
+    assert!(decode_chunk("not base64").is_err());
+    assert!(decode_chunk("").is_err());
+    assert_eq!(validate_range(0, 4, 0, 5 * 1024 * 1024 * 1024).unwrap(), 4);
+    assert_eq!(validate_range(0, 4, 4, 8).unwrap(), 4);
+    for (offset, length, written, size) in [
+        (5, 1, 4, 8),
+        (3, 2, 4, 8),
+        (8, 1, 8, 8),
+        (u64::MAX, 2, u64::MAX, u64::MAX),
+    ] {
+        assert!(validate_range(offset, length, written, size).is_err());
+    }
+}
+
+#[test]
+fn numbered_names_preserve_extensions_and_hidden_files() {
+    use crate::upload_destination::numbered_path;
+    assert_eq!(numbered_path("/home/report.txt", 2), "/home/report (2).txt");
+    assert_eq!(numbered_path("/.env", 1), "/.env (1)");
+    assert_eq!(numbered_path("/name", 1), "/name (1)");
+    assert_eq!(numbered_path("/中文.tar.gz", 3), "/中文.tar (3).gz");
+}
+
+#[test]
 fn rejects_invalid_endpoints_sizes_and_paths() {
     for host in ["", "host\nname", "user@host", "host/path"] {
         assert!(Endpoint {

@@ -23,7 +23,8 @@ it('deduplicates SSH opens without retaining credentials and rejects changed ret
   expect(open).toHaveBeenCalledTimes(1);
 });
 
-it.each(['read', 'list'])('releases completed SFTP %s payloads but retains upload acknowledgements', async type => {
+it.each(['read', 'readChunk', 'list', 'uploadChunk'])(
+  'releases completed SFTP %s payloads but retains legacy upload acknowledgements', async type => {
   const terminals = new RemoteTerminals();
   const files = vi.spyOn(terminals, 'request').mockResolvedValue({ type: 'file', data: 'private-data' });
   const operations = new ChatOperations(terminals);

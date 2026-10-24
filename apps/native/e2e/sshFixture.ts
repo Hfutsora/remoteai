@@ -17,6 +17,7 @@ export function createSshFixture(computer: string, adopt: (info: TerminalInfo) =
     { name: '中文目录', path: '/中文目录', directory: true, size: 0 },
     { name: 'hello.txt', path: '/hello.txt', directory: false, size: 5 },
   ];
+  const uploads = new Map<string, { path: string; size: number }>();
   return {
     profiles: cloud ?? {
       list: async () => stores.get(computer) ?? [],
@@ -37,6 +38,16 @@ export function createSshFixture(computer: string, adopt: (info: TerminalInfo) =
       adopt(info); return info;
     },
     files: async (_id, action) => {
+      if (action.type === 'uploadStart') {
+        const token = String(uploads.size + 1); uploads.set(token, action); return { type: 'upload', token };
+      }
+      if (action.type === 'uploadFinish') {
+        const upload = uploads.get(action.token)!;
+        entries.push({ ...upload, name: upload.path.split('/').at(-1)!, directory: false });
+        uploads.delete(action.token); return { type: 'uploaded', path: upload.path };
+      }
+      if (action.type === 'uploadCancel') uploads.delete(action.token);
+      if (!('path' in action)) return { type: 'done' };
       const path = action.path === '.' ? '/' : action.path;
       if (action.type === 'list') return { type: 'list', path, truncated: false,
         entries: entries.filter(entry => entry.path.slice(0, entry.path.lastIndexOf('/')) === path.replace(/\/$/, '')) };

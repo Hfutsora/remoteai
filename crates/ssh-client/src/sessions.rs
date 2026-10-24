@@ -16,7 +16,7 @@ struct Input {
 struct Session {
     input: mpsc::Sender<Input>,
     ssh: Arc<client::Handle<HostKey>>,
-    files: Mutex<Option<SftpSession>>,
+    files: Mutex<Option<files::FileSession>>,
 }
 
 /// A registry owns connections; a bounded actor serializes each terminal's input and resize requests.
@@ -60,6 +60,9 @@ impl Client {
             let _permit = permit;
             run_shell(channel, receive, &sink).await;
             state.sessions.lock().await.remove(&task_id);
+            if let Some(files) = session.files.lock().await.as_mut() {
+                files.cleanup().await;
+            }
             if session
                 .ssh
                 .disconnect(Disconnect::ByApplication, "", "")
@@ -124,7 +127,8 @@ impl Client {
 
     pub async fn files(&self, id: &str, action: FileAction) -> Result<FileReply> {
         let session = self.get(id).await?;
-        tokio::time::timeout(TIMEOUT, async {
+        // Let a mutation finish (or roll back) even if its caller times out or disconnects.
+        let operation = tokio::spawn(async move {
             let mut sftp = session.files.lock().await;
             if sftp.is_none() {
                 let channel = session
@@ -136,16 +140,18 @@ impl Client {
                     .request_subsystem(true, "sftp")
                     .await
                     .map_err(|_| Error::File)?;
-                *sftp = Some(
+                *sftp = Some(files::FileSession::new(
                     SftpSession::new(channel.into_stream())
                         .await
                         .map_err(|_| Error::File)?,
-                );
+                ));
             }
-            files::perform(sftp.as_ref().ok_or(Error::File)?, action).await
-        })
-        .await
-        .map_err(|_| Error::File)?
+            sftp.as_mut().ok_or(Error::File)?.perform(action).await
+        });
+        tokio::time::timeout(TIMEOUT, operation)
+            .await
+            .map_err(|_| Error::File)?
+            .map_err(|_| Error::File)?
     }
 }
 

@@ -3,13 +3,18 @@
 This crate is used by desktop local terminals and by the authenticated PC host for
 desktop remote and Web PC terminals. It supports password or pasted private-key
 authentication, SHA256 host-key pinning, terminal input/resize, and SFTP browsing,
-upload, download, mkdir, rename, and deletion of files or empty directories.
+upload, download, file/folder creation, rename, and confirmed recursive deletion.
 
-Connections are limited to eight. Transfers are limited to 4 MiB per file to fit
-the existing remote relay. Upload and rename do not overwrite existing files.
+Connections are limited to eight. Uploads use 256 KiB chunks with progress and cancellation;
+there is no total upload size cap. Temporary files belong to their SSH session and are removed
+on cancellation or session close. Inactive uploads are also pruned on subsequent file requests.
+Existing destinations require an explicit overwrite or numbered-name choice. SFTP v3 rename
+protects numbered uploads from concurrent name collisions; overwrite retains the previous file
+until the complete upload can be published and attempts rollback if publication fails.
+The legacy whole-file download API remains limited to 4 MiB. Bounded range reads are also available.
 Profiles retain only connection metadata and the accepted host fingerprint;
 passwords, private keys and passphrases are never persisted. SSH agents, jump
-hosts, tunnels, recursive transfers and remote editing are outside this version.
+hosts, tunnels, recursive uploads and remote editing are outside this version.
 
 ## Automated checks
 
