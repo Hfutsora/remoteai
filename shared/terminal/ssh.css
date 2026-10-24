@@ -22,3 +22,10 @@
 .ssh-file-list small { color: var(--muted, #888); white-space: nowrap; }
 .ssh-files .ant-alert { max-width: 400px; overflow-wrap: anywhere; }
 .ssh-file-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ssh-files-drawer .ant-drawer-body { padding: 0 0 env(safe-area-inset-bottom); overflow: hidden; }
+.ssh-files-drawer .ant-drawer-close { min-width: 44px; min-height: 44px; }
+@media (max-width: 600px) {
+  .ssh-files .ant-btn { min-height: 40px; }
+  .ssh-file-list button { min-height: 44px; padding-block: 10px; }
+  .ssh-dialog .ant-modal-body { overflow-wrap: anywhere; }
+}

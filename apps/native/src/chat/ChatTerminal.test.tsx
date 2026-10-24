@@ -9,10 +9,12 @@ const panel = vi.hoisted(() => ({ tabs: [], selected: '', open: false, busy: fal
 vi.mock('../../../../shared/remote-chat/useRemoteTerminalLauncher', () => ({ useRemoteTerminalLauncher: () => panel }));
 vi.mock('../../../../shared/remote-chat/useToolLaunch', () => ({ useToolLaunch: vi.fn() }));
 vi.mock('react-native', () => ({ Pressable: 'Pressable', Text: 'Text', ScrollView: 'ScrollView',
-  ActivityIndicator: 'Spinner', Keyboard: { dismiss: vi.fn() }, StyleSheet: { create: <T,>(value: T) => value } }));
+  ActivityIndicator: 'Spinner', Keyboard: { dismiss: vi.fn() }, Platform: { OS: 'android' },
+  StyleSheet: { create: <T,>(value: T) => value } }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Icon' }));
 vi.mock('../components/BottomSheet', () => ({ BottomSheet: 'BottomSheet' }));
 vi.mock('./terminal/TerminalSession', () => ({ TerminalSession: 'TerminalSession' }));
+vi.mock('./terminal/TerminalTabs', () => ({ TerminalTabs: 'TerminalTabs' }));
 
 interface Props {
   children?: ReactNode; disabled?: boolean; onPress?: () => void; visible?: boolean; color?: string;

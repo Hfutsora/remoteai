@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { Keyboard } from 'react-native';
-import { adjacentPage, type PrimaryPage } from '../../../../shared/navigation/pageSwipe';
+import { adjacentPage, type PrimaryPage, type SwipeProgress } from '../../../../shared/navigation/pageSwipe';
 import { useHorizontalSwipe } from './useHorizontalSwipe';
 
-export function usePrimaryPageSwipe(page: string, onChange: (page: PrimaryPage) => void) {
+export function usePrimaryPageSwipe(page: string, onChange: (page: PrimaryPage) => void, progress?: SwipeProgress) {
   const previous = adjacentPage(page, 'right');
   const next = adjacentPage(page, 'left');
   const onLeft = useCallback(() => { if (next) { Keyboard.dismiss(); onChange(next); } }, [next, onChange]);
@@ -11,5 +11,5 @@ export function usePrimaryPageSwipe(page: string, onChange: (page: PrimaryPage) 
   // Chat owns its gesture so its drawer and overlays can take precedence.
   // Claim boundary swipes too: a wide row must not receive a tap when the finger lifts.
   return useHorizontalSwipe({ enabled: page !== 'chat' && Boolean(next || previous),
-    onLeft, onRight }).panHandlers;
+    onLeft, onRight, ...progress }).panHandlers;
 }

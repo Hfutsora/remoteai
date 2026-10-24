@@ -1,5 +1,8 @@
+import { usePageSwipe } from '../../../../shared/navigation/PageSwipeContext';
 import { useHorizontalSwipe } from '../navigation/useHorizontalSwipe';
 
 export function useChatDrawerSwipe(enabled: boolean, onOpen: () => void, onNext?: () => void) {
-  return useHorizontalSwipe({ enabled, onRight: onOpen, onLeft: onNext });
+  const swipe = usePageSwipe();
+  return useHorizontalSwipe({ enabled, onRight: onOpen, onLeft: swipe?.onNext ?? onNext,
+    onMove: swipe?.onMove, onEnd: swipe?.onEnd });
 }

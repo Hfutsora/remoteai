@@ -1,11 +1,11 @@
 import { displayError } from '../i18n/index';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
-import { ActivityIndicator, Keyboard, Pressable, ScrollView, Text } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
-import { MAX_REMOTE_TERMINALS } from '../../../../shared/remote-chat/useRemoteTerminalPanel';
 import { useRemoteTerminalLauncher } from '../../../../shared/remote-chat/useRemoteTerminalLauncher';
+import { TerminalTabs } from './terminal/TerminalTabs';
 import { TerminalSession } from './terminal/TerminalSession';
 import { useTerminalStyles as useStyles } from './terminal/styles';
 import { BottomSheet } from '../components/BottomSheet';
@@ -36,19 +36,13 @@ export function ChatTerminal({ client, cwd, active, connected, deviceName, launc
     {!selected && <BottomSheet visible={active && panel.open} title={t("client.chat.remoteTerminal")} subtitle={deviceName}
       onClose={hide} maxWidth={400} actions={[{ label: panel.error ? t("client.terminal.retry") : t("client.chat.newTerminal"),
         onPress: panel.retry, disabled: !connected, loading: panel.busy }]}>
+      <TerminalTabs panel={panel} client={client} cwd={cwd} connected={connected} active={active && !!panel.open} />
       {panel.busy ? <ActivityIndicator color={color(palette.green, 'accent')} />
         : !!panel.error && <Text accessibilityRole="alert" style={styles.status}>{displayError(panel.error)}</Text>}
     </BottomSheet>}
-    {selected && <TerminalSession key={selected.id} client={client} session={selected.session} deviceName={deviceName}
+    {selected && <TerminalSession client={client} session={selected.session} deviceName={deviceName}
       visible={active && panel.open} hide={hide} close={() => panel.remove(selected.id)} notice={panel.error}
-      tabs={<ScrollView horizontal style={styles.tabs} contentContainerStyle={styles.tabItems}>
-        {panel.tabs.map((tab, index) => <Pressable key={tab.id} accessibilityRole="tab"
-          accessibilityLabel={t("client.mobile.terminal", { value1: index + 1 })} accessibilityState={{ selected: tab.id === panel.selected }}
-          style={[styles.tab, tab.id === panel.selected && styles.selected]} onPress={() => panel.select(tab.id)}>
-          <Text style={styles.tabLabel}>{t("client.projectBrowser.terminal")}{' '}{index + 1}</Text></Pressable>)}
-        <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.newTerminal")} style={styles.button}
-          disabled={panel.busy || !connected || panel.tabs.length >= MAX_REMOTE_TERMINALS} onPress={panel.add}>
-          <Ionicons name="add-outline" size={22} color={color("#17211b", 'ink')} /></Pressable>
-      </ScrollView>} />}
+      tabs={<TerminalTabs key={cwd} panel={panel} client={client} cwd={cwd} connected={connected}
+        active={active && !!panel.open} />} />}
   </>;
 }

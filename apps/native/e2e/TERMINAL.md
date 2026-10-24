@@ -43,3 +43,22 @@ npm run test:chat:e2e -w @codex-switch/web -- chat-terminal-display.pw.ts --proj
 
 iOS keyboard avoidance uses `KeyboardAvoidingView` and still needs device testing
 on a Mac; the Android regression does not validate iOS layout.
+
+## SSH and files
+
+The terminal fixture also simulates PC-owned SSH profiles and an SFTP directory.
+Build the same fixture with `-PreactNativeArchitectures=arm64-v8a` for a physical phone,
+install `terminal-fixture.apk`, then run:
+
+```powershell
+$env:ANDROID_SERIAL = '<device serial>'
+node apps/native/e2e/ssh-test.mjs
+```
+
+Run this alone on the device. It checks pulling saved connections, adding a connection,
+host confirmation, directory navigation, folder creation, rename, deletion, and returning
+to the terminal at font scales 1.0 and 1.3, including landscape. It restores the original
+font and rotation settings. Inspect `.codex-tmp/mobile-ssh-android/` screenshots for glyph
+clipping. Native transfer unit tests cover picker uploads and download publication;
+desktop `ssh.pw.ts` covers actual SSH/SFTP in local, remote, Web PC and phone layouts
+using the disposable WSL server. iOS presentation still requires device validation.

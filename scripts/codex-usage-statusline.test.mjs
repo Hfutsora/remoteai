@@ -1,16 +1,25 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import { JSDOM } from "jsdom";
+import { composerUsageOverlay, usageStatuslineScript } from "./fixtures/usage-statusline-source.mjs";
 
-const base = new URL("../apps/desktop/src-tauri/src/dream_skin_native/", import.meta.url);
-const read = name => readFileSync(new URL(name, base), "utf8");
-const metrics = readFileSync(new URL("../shared/context-usage/metrics.js", import.meta.url), "utf8");
-const expression = [read("native_registry_reader.js"), read("context_usage_reader.js"),
-  metrics.replaceAll("export ", ""), read("usage_statusline.js")
-    .replace("__USAGE_STATUSLINE_CSS__", JSON.stringify(read("usage_statusline.css")))].join("\n");
 const drain = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+
+function trackVisibilityListeners(document) {
+  const listeners = new Set();
+  const addListener = document.addEventListener.bind(document);
+  const removeListener = document.removeEventListener.bind(document);
+  document.addEventListener = (name, fn, ...options) => {
+    if (name === "visibilitychange") listeners.add(fn);
+    addListener(name, fn, ...options);
+  };
+  document.removeEventListener = (name, fn, ...options) => {
+    if (name === "visibilitychange") listeners.delete(fn);
+    removeListener(name, fn, ...options);
+  };
+  return listeners;
+}
 
 function setup(autoRespond = true) {
   const dom = new JSDOM(`<div data-codex-composer-root data-composer-placement="thread">
@@ -35,18 +44,21 @@ function setup(autoRespond = true) {
   const timing = { totalOutputTokens: 102, totalOutputTimeMs: 2000, outputRequestCount: 1 };
   const requests = [];
   const respond = (request, value = timing) => window.__CODEX_SWITCH_USAGE_STATUSLINE__
-    .receiveTiming(request.conversationId, request.requestId, value);
+    ?.receiveTiming(request.conversationId, request.requestId, value);
   window.codexSwitchRequestConversationMetrics = payload => {
     const request = JSON.parse(payload); requests.push(request);
     if (autoRespond) respond(request);
   };
   let now = 1000;
   const timers = new Set();
-  const context = { window, document, Element: window.Element, Date: { now: () => now }, setTimeout,
+  const visibilityListeners = trackVisibilityListeners(document);
+  const context = { window, document, Element: window.Element, Date: { now: () => now }, setTimeout, clearTimeout,
+    MutationObserver: window.MutationObserver,
     setInterval(fn) { timers.add(fn); return fn; }, clearInterval(fn) { timers.delete(fn); } };
-  const run = () => runInNewContext(`(() => { ${expression} })()`, context);
+  const run = () => runInNewContext(usageStatuslineScript, context);
   run();
-  return { window, document, conversations, timers, run, requests, respond, timing,
+  return { window, document, conversations, timers, run, requests, respond, timing, visibilityListeners,
+    installOwner: () => runInNewContext(composerUsageOverlay, context),
     setNow(value) { now = value; }, refresh: () => window.__CODEX_SWITCH_USAGE_STATUSLINE__.refresh() };
 }
 
@@ -79,9 +91,84 @@ test("switches identities, clears drafts, follows language and hides with the or
   h.document.querySelector("[data-codex-composer-root]").setAttribute("data-composer-placement", "home");
   await h.refresh(); assert.equal(bar.textContent, "— tok/sCache hit ——");
   h.window.__CODEX_SWITCH_SPEED_SELECTOR__.usage.enabled = false;
-  await h.refresh(); assert.equal(bar.hidden, true);
-  h.window.__CODEX_SWITCH_USAGE_STATUSLINE__.dispose();
+  await h.refresh(); assert.equal(bar.isConnected, false);
+  assert.equal(h.timers.size, 0);
   assert.equal(h.document.querySelector("[data-codex-switch-usage-statusline]"), null);
+});
+
+test("the real usage switch disposes resources and reopens without accepting old timing replies", async () => {
+  const h = setup(false); await drain();
+  h.installOwner();
+  const owner = h.window.__CODEX_SWITCH_SPEED_SELECTOR__;
+  owner.updateUsage({ enabled: true }); await drain();
+  const pending = h.requests.at(-1);
+  owner.updateUsage({ enabled: false });
+  assert.equal(h.window.__CODEX_SWITCH_USAGE_STATUSLINE__, undefined);
+  assert.equal(h.document.querySelector("[data-codex-switch-usage-statusline]"), null);
+  assert.equal(h.document.querySelector("style"), null);
+  assert.equal(h.timers.size, 2, "only the original selector's timers remain");
+  assert.equal(h.visibilityListeners.size, 1);
+  h.respond(pending); await drain();
+  owner.updateUsage({ enabled: true }); await drain();
+  assert.equal(h.timers.size, 3);
+  assert.equal(h.visibilityListeners.size, 2);
+  const current = h.requests.at(-1);
+  assert.notEqual(current.requestId, pending.requestId);
+  const bar = h.document.querySelector("[data-codex-switch-usage-statusline]");
+  h.respond(pending); await drain();
+  assert.match(bar.textContent, /^— tok\/s/);
+  h.respond(current); await drain();
+  assert.match(bar.textContent, /^51.0 tok\/s/);
+  h.window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ = false;
+  h.window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__();
+  assert.equal(h.timers.size, 0);
+  assert.equal(h.visibilityListeners.size, 0);
+});
+
+test("proxy stop clears all polling and restart restores exactly one statusline", async () => {
+  const h = setup(); await drain();
+  h.installOwner();
+  h.window.__CODEX_SWITCH_SPEED_SELECTOR__.updateUsage({ enabled: true }); await drain();
+  h.window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ = false;
+  h.window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__();
+  assert.equal(h.timers.size, 0);
+  assert.equal(h.visibilityListeners.size, 0);
+  assert.equal(h.document.querySelector("style"), null);
+  const requests = h.requests.length;
+  h.installOwner(); await drain();
+  h.document.dispatchEvent(new h.window.Event("visibilitychange"));
+  assert.equal(h.requests.length, requests);
+  assert.equal(h.timers.size, 0, "reinjection outside proxy mode stays inactive");
+  h.window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ = true;
+  h.window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__();
+  h.window.__CODEX_SWITCH_SPEED_SELECTOR__.updateUsage({ enabled: true }); await drain();
+  h.installOwner(); await drain();
+  assert.equal(h.document.querySelectorAll("[data-codex-switch-usage-statusline]").length, 1);
+  assert.equal(h.timers.size, 3);
+  h.window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ = false;
+  h.window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__();
+});
+
+test("Japanese reaches both overlays before accounting succeeds and through usage updates", async () => {
+  const h = setup(); await drain();
+  h.installOwner();
+  const owner = h.window.__CODEX_SWITCH_SPEED_SELECTOR__;
+  owner.updateLanguage("ja");
+  assert.equal(owner.language, "ja");
+  owner.updateUsage({ enabled: true }); await drain();
+  const bar = h.document.querySelector("[data-codex-switch-usage-statusline]");
+  assert.equal(bar.getAttribute("aria-label"), "会話の使用状況");
+  assert.match(bar.textContent, /キャッシュ命中率 99.9%/);
+  assert.equal(bar.querySelector('[data-usage-metric="0"]').title,
+    "この会話で完了したリクエストの平均出力速度。");
+  owner.updateLanguage("en"); await drain();
+  assert.match(bar.textContent, /Cache hit/);
+  owner.updateUsage({ enabled: true, language: "ja" }); await drain();
+  assert.match(bar.textContent, /キャッシュ命中率/);
+  owner.updateLanguage("__proto__");
+  assert.equal(owner.language, "ja");
+  h.window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ = false;
+  h.window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__();
 });
 
 test("ambiguous editor identities and missing registries cannot leak another conversation", async () => {

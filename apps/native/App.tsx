@@ -82,7 +82,7 @@ import { DiscoveryBackButton, DiscoveryPage } from './src/discovery/DiscoveryPag
 import { isDiscoveryPage, primaryNavigationPage } from '../../shared/navigation/discovery';
 import { usePageStyles as useTotpPageStyles } from './src/totp/pageStyles';
 import { ChatPage } from './src/chat/ChatPage';
-import { usePrimaryPageSwipe } from './src/navigation/usePrimaryPageSwipe';
+import { PrimaryPagePager } from './src/navigation/PrimaryPagePager';
 import { palette as chatPalette } from './src/chat/styles';
 import { useChatNotificationNavigation } from './src/chat/useChatNotificationNavigation';
 import { SettingsPage } from './src/settings/SettingsPage';
@@ -713,7 +713,6 @@ function AppContent() {
   }, []);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activePage, setActivePage] = useState<AppPage>(DEFAULT_APP_PAGE);
-  const pageSwipeHandlers = usePrimaryPageSwipe(activePage, setActivePage);
   const openAccounts = useCallback(() => { Keyboard.dismiss(); setActivePage('accounts'); }, []);
   const openChat = useCallback(() => setActivePage('chat'), []);
   const chatNotification = useChatNotificationNavigation(session, openChat);
@@ -1298,28 +1297,31 @@ function AppContent() {
     activePage === 'chat' && styles.chatCanvas,
     (activePage === 'settings' || activePage === 'about' || activePage === 'downloads') && styles.settingsCanvas]}>
     <ThemeStatusBar />
-    <View style={styles.flex} {...pageSwipeHandlers}>
-    <ChatPage session={session} devices={devices} active={activePage === 'chat' || activePage === 'token-summary'}
+    <PrimaryPagePager page={activePage} onChange={setActivePage} pages={{
+    chat: <ChatPage session={session} devices={devices} active={activePage === 'chat' || activePage === 'token-summary'}
       openAccounts={openAccounts}
       devicesLoaded={devicesLoaded}
       tokenSummary={activePage === 'token-summary'} closeTokenSummary={() => setActivePage('discover')}
       notification={chatNotification.target} notificationError={chatNotification.error}
-      notificationHandled={chatNotification.handled} />
-    {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('discover')} />}
-    {activePage === 'discover' && <DiscoveryPage onOpen={setActivePage} />}
-    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary'
-      && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
-    {activePage === 'chat' || activePage === 'token-summary' || activePage === 'downloads' || activePage === 'discover'
-      ? null : activePage === 'accounts'
-      ? <Dashboard session={session} accounts={accounts} devices={devices} loading={loading}
+      notificationHandled={chatNotification.handled} />,
+    discover: <DiscoveryPage onOpen={setActivePage} />,
+    accounts: <Dashboard session={session} accounts={accounts} devices={devices} loading={loading}
         syncingServer={syncingServer} refreshingUsage={refreshingUsage} consumingQuota={consumingQuota}
         refreshingAccountId={refreshingAccountId} switchingAccountId={switchingAccountId}
         onRefreshServer={refreshServerData} onRefreshUsage={refreshAllUsage} onConsumeQuota={consumeSelectedQuota}
         onRefreshAccount={refreshAccount} onSwitch={handleRemoteSwitch}
         onAccountUpdated={(updated) => setAccounts((current) => current.map((account) => (
           account.id === updated.id ? { ...account, ...updated } : account
-        )))} />
-      : activePage === 'devices'
+        )))} />,
+    settings: <SettingsPage session={session} profile={profile} globalRefreshMinutes={globalRefreshMinutes}
+      onGlobalRefreshMinutesChange={handleGlobalRefreshMinutesChange}
+      onOpenAbout={() => setActivePage('about')} onOpenAdmin={() => setActivePage('admin')}
+      onLogout={handleLogout} totpManager={totpManager} />,
+    }}>
+    {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('discover')} />}
+    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary'
+      && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
+    {activePage === 'devices'
         ? <DeviceManagementPage session={session} accounts={accounts} providers={providers} devices={devices}
           refreshing={syncingServer} deletingDeviceId={deletingDeviceId}
           switchingAccountId={switchingAccountId} switchingProvider={switchingProvider}
@@ -1334,13 +1336,8 @@ function AppContent() {
             ? <AdminArea session={session} profile={profile} onExit={() => setActivePage('settings')} />
             : activePage === 'about'
               ? <AboutPage onBack={() => setActivePage('settings')} />
-              : <SettingsPage session={session} profile={profile} globalRefreshMinutes={globalRefreshMinutes}
-                onGlobalRefreshMinutesChange={handleGlobalRefreshMinutesChange}
-                onOpenAbout={() => setActivePage('about')}
-                onOpenAdmin={() => setActivePage('admin')}
-                onLogout={handleLogout}
-                totpManager={totpManager} />}
-    </View>
+              : null}
+    </PrimaryPagePager>
     {showBottomNavigation && <BottomNavigation activePage={activePage} onChange={setActivePage} />}
   </SafeAreaView>;
 }

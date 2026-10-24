@@ -1,9 +1,14 @@
 const KEY = "__CODEX_SWITCH_USAGE_STATUSLINE__";
-const VERSION = 6;
+const VERSION = 7;
 const REFRESH_MS = 1000;
 const TIMING_REFRESH_MS = 2000;
 const TIMING_TIMEOUT_MS = 10000;
 const previous = window[KEY];
+function isStatuslineEnabled() {
+  const owner = window.__CODEX_SWITCH_SPEED_SELECTOR__;
+  return window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ === true && owner?.installed && owner.usage?.enabled;
+}
+if (!isStatuslineEnabled()) { previous?.dispose(); return; }
 if (previous?.version === VERSION) { void previous.refresh(); return; }
 previous?.dispose();
 // i18n:usage-statusline:start
@@ -29,11 +34,18 @@ const copy = {
     contextHint: "Расход контекста этого диалога, отдельно от лимита аккаунта.",
     waiting: "Ожидание данных о расходе в этом диалоге.",
   },
+  ja: {
+    label: "会話の使用状況", cache: value => `キャッシュ命中率 ${value}`,
+    speedHint: "この会話で完了したリクエストの平均出力速度。",
+    cacheHint: "この会話の累計入力トークンに占めるキャッシュ済みトークンの割合。",
+    contextHint: "この会話のコンテキスト使用率。アカウントの残り利用枠とは異なります。",
+    waiting: "この会話の使用状況を取得しています。",
+  },
 };
 // i18n:usage-statusline:end
 const state = { version: VERSION, disposed: false, busy: false, registry: null,
   nextDiscovery: 0, records: new Map(), timings: new Map(), node: null, parts: [],
-  timingRequest: null, timingConversationId: null, nextTiming: 0, nextRequestId: Date.now() * 1000 };
+  timingRequest: null, timingConversationId: null, nextTiming: 0 };
 const style = document.createElement("style");
 style.textContent = __USAGE_STATUSLINE_CSS__;
 document.head.append(style);
@@ -142,7 +154,10 @@ function requestTiming(id) {
   if (pending?.conversationId === id && now - pending.time < TIMING_TIMEOUT_MS) return;
   if (pending?.conversationId === id) state.timings.delete(id);
   if (state.timingConversationId === id && now < state.nextTiming) return;
-  const request = { conversationId: id, requestId: ++state.nextRequestId, time: now };
+  // Keep identities unique across disposal and reinstallation, including within the same millisecond.
+  const requestId = Math.max(now * 1000, (window.__CODEX_SWITCH_USAGE_TIMING_REQUEST_ID__ ?? 0) + 1);
+  window.__CODEX_SWITCH_USAGE_TIMING_REQUEST_ID__ = requestId;
+  const request = { conversationId: id, requestId, time: now };
   state.timingRequest = request;
   state.timingConversationId = id;
   state.nextTiming = now + TIMING_REFRESH_MS;
@@ -161,12 +176,10 @@ function receiveTiming(id, requestId, timing) {
 }
 
 async function refresh() {
+  if (!isStatuslineEnabled()) { api.dispose(); return; }
   if (state.disposed || state.busy || document.hidden) return;
-  const owner = window.__CODEX_SWITCH_SPEED_SELECTOR__;
   const card = activeComposer();
-  const allowed = window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ === true
-    && owner?.installed && owner.usage?.enabled;
-  if (!allowed || !card) { if (state.node) state.node.hidden = true; return; }
+  if (!card) { if (state.node) state.node.hidden = true; return; }
   state.node ??= createStatusline();
   if (card.nextElementSibling !== state.node) card.after(state.node);
   state.node.hidden = false;
@@ -187,8 +200,11 @@ async function refresh() {
 const timer = setInterval(refresh, REFRESH_MS);
 const onVisible = () => { if (!document.hidden) void refresh(); };
 document.addEventListener("visibilitychange", onVisible);
-window[KEY] = { version: VERSION, refresh, receiveTiming, dispose() {
+const api = { version: VERSION, refresh, receiveTiming, dispose() {
   state.disposed = true; clearInterval(timer); document.removeEventListener("visibilitychange", onVisible);
   state.node?.remove(); style.remove(); state.records.clear(); state.timings.clear(); state.timingRequest = null;
+  state.registry = null;
+  if (window[KEY] === api) delete window[KEY];
 } };
+window[KEY] = api;
 void refresh();

@@ -1,7 +1,7 @@
 import { displayText } from "../../../i18n/uiText";
 import { useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { FolderSearch, Plus, SquareTerminal, X } from "lucide-react";
-import { Tooltip } from "antd";
+import { Drawer, Tooltip } from "antd";
 import { MAX_TERMINAL_TABS, type TerminalPanelState, type TerminalTab } from "./useTerminalPanel";
 import { useTerminalResize } from "./useTerminalResize";
 import { useTerminalSession } from "./useTerminalSession";
@@ -10,7 +10,7 @@ import styles from "./terminal.module.less";
 import { TerminalKeys } from './TerminalKeys';
 import { TerminalLinkMenu, type TerminalLinkTarget } from './TerminalLinkMenu';
 import { SshMenu } from '../../../../../../shared/terminal/SshMenu';
-import { SshFiles, sshFilesTabId } from '../../../../../../shared/terminal/SshFiles';
+import { SshFiles, SshFileBrowser, sshFilesTabId } from '../../../../../../shared/terminal/SshFiles';
 import { WorkspaceDrawerContext } from '../../../../../../shared/chat/workspaceDrawer';
 import { sshLabel } from '../../../../../../shared/terminal/sshProfiles';
 import { useGuiLanguage } from '../../../i18n/useGuiLanguage';
@@ -28,6 +28,8 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
   const visible = panel.open && active;
   const workspace = useContext(WorkspaceDrawerContext);
   const [fileTabs, setFileTabs] = useState<string[]>([]);
+  const [mobileFiles, setMobileFiles] = useState<string>();
+  const fileSession = panel.tabs.find(tab => tab.session?.id === mobileFiles)?.session;
   const selectedSession = panel.tabs.find(tab => tab.id === panel.selected)?.session;
   return <section ref={host} className={`${styles.panel} ${fill ? styles.fill : ''}`}
     hidden={!visible} aria-label={translate("client.projectBrowser.terminal")} style={fill ? undefined : { height: resize.height }}>
@@ -58,6 +60,7 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
         styles={{ root: { maxWidth: 400 } }}>
         <button className={`${styles.iconButton} ${styles.close}`} aria-label={translate('client.ssh.files')}
           onClick={() => {
+            if (fill) { setMobileFiles(selectedSession.id); return; }
             setFileTabs(previous => previous.includes(selectedSession.id) ? previous : [...previous, selectedSession.id]);
             workspace?.tabs.open(sshFilesTabId(selectedSession.id));
           }}><FolderSearch size={17} /></button>
@@ -70,8 +73,13 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
     {!panel.tabs.length && empty}
     {panel.tabs.map((tab) => <TerminalPane key={tab.id} tab={tab} api={api} translate={translate} shortcuts={fill}
       visible={visible && panel.selected === tab.id} />)}
-    {api.ssh && panel.tabs.filter(tab => tab.session?.ssh && fileTabs.includes(tab.session.id)).map(tab =>
+    {api.ssh && !fill && panel.tabs.filter(tab => tab.session?.ssh && fileTabs.includes(tab.session.id)).map(tab =>
       <SshFiles key={tab.id} info={tab.session!} api={api.ssh!} active={active} />)}
+    {api.ssh && fill && fileSession && <Drawer open={visible} placement="bottom" height="100%"
+      rootClassName="ssh-files-drawer" title={translate('client.ssh.files')} onClose={() => setMobileFiles(undefined)}
+      closable={{ 'aria-label': translate('client.ssh.backToTerminal'), placement: 'end' }}>
+      <SshFileBrowser key={fileSession.id} id={fileSession.id} api={api.ssh} />
+    </Drawer>}
   </section>;
 }
 

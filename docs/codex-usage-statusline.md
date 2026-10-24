@@ -4,7 +4,9 @@ Remote AI 会在官方 Codex 的输入框下方显示当前会话的输出速度
 它与输入框内已有的「今日 Token、费用、账号余额」共用增强功能的加载和开关，不需要安装或应用皮肤。
 
 启用 Remote AI 的本地代理和官方 Codex 用量显示，再通过 Remote AI 连接官方 Codex 即可使用。
-关闭原有用量显示或退出代理模式时，这一行也会隐藏。Remote AI 自己的聊天页和网页版继续使用原有统计界面。
+关闭原有用量显示或退出代理模式时，统计栏会移除并停止刷新；重新开启时自动恢复。
+支持中文、英语、俄语和日语，随 Remote AI 的语言设置切换。
+Remote AI 自己的聊天页和网页版继续使用原有统计界面。
 
 ![官方 Codex 输入框下方的会话统计栏示例](images/codex-conversation-usage-statusline.png)
 

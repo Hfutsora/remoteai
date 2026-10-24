@@ -8,5 +8,9 @@ fn speed_selector_overlay_expression(service_tier: &str) -> String {
         include_str!("../../../../../shared/context-usage/metrics.js").replace("export ", "");
     let css = json!(include_str!("usage_statusline.css")).to_string();
     let statusline = include_str!("usage_statusline.js").replace("__USAGE_STATUSLINE_CSS__", &css);
-    format!("{selector}\n(() => {{\n{registry}\n{identity}\n{metrics}\n{statusline}\n}})();")
+    format!(
+        "window.__CODEX_SWITCH_REFRESH_USAGE_STATUSLINE__ = () => {{\n\
+         {registry}\n{identity}\n{metrics}\n{statusline}\n}};\n\
+         {selector}\nwindow.__CODEX_SWITCH_REFRESH_USAGE_STATUSLINE__();"
+    )
 }

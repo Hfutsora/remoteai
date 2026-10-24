@@ -1,5 +1,6 @@
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
+import { usePagePreview } from '../../../../shared/navigation/PageSwipeContext';
 import { useAppDispatch } from '../hooks';
 import { chatDeviceSelected } from '../store';
 import type { AuthSession, RemoteDevice } from '../types';
@@ -30,6 +31,7 @@ interface Props {
 export function ChatPage({ session, devices, active, openAccounts,
   tokenSummary, closeTokenSummary }: Props) {
   useLanguage();
+  const preview = usePagePreview() === 'chat';
   const dispatch = useAppDispatch();
   const deviceRefresh = useComputerListRefresh();
   const [lastConnectedDeviceId] = useState(() => loadLastConnectedDevice(session));
@@ -50,7 +52,7 @@ export function ChatPage({ session, devices, active, openAccounts,
   const chooseDevice = (id: string) => {
     setDeviceId(id);
   };
-  return <section className="chat-page" hidden={!active} aria-label={t("client.chat.codexChat")}>
+  return <section className="chat-page" hidden={!active && !preview} aria-label={t("client.chat.codexChat")}>
     {chats.map(chatDevice => {
       const selected = chatDevice?.deviceId === device?.deviceId;
       return <div className="chat-device-session" hidden={!selected}

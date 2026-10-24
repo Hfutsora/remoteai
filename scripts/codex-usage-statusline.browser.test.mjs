@@ -1,17 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import { chromium, expect } from "@playwright/test";
+import { composerUsageOverlay, usageStatuslineScript as script } from "./fixtures/usage-statusline-source.mjs";
 
-const base = new URL("../apps/desktop/src-tauri/src/dream_skin_native/", import.meta.url);
-const read = name => readFile(new URL(name, base), "utf8");
-const [registry, identity, metrics, overlay, css] = await Promise.all([
-  read("native_registry_reader.js"), read("context_usage_reader.js"),
-  readFile(new URL("../shared/context-usage/metrics.js", import.meta.url), "utf8"),
-  read("usage_statusline.js"), read("usage_statusline.css"),
-]);
-const script = `(() => { ${registry}\n${identity}\n${metrics.replaceAll("export ", "")}\n`
-  + `${overlay.replace("__USAGE_STATUSLINE_CSS__", JSON.stringify(css))} })()`;
 let browser;
 before(async () => { browser = await chromium.launch({ headless: true }); });
 after(async () => { await browser?.close(); });
@@ -112,3 +103,39 @@ for (const dark of [false, true]) {
     } finally { await page.close(); }
   });
 }
+
+test("Japanese and usage toggles stay responsive while conversation timings are pending", async () => {
+  const page = await browser.newPage({ viewport: { width: 420, height: 320 } });
+  try {
+    await setup(page, true);
+    await page.evaluate(() => { window.codexSwitchRequestConversationMetrics = () => {}; });
+    await page.evaluate(composerUsageOverlay);
+    await page.evaluate(() => {
+      const owner = window.__CODEX_SWITCH_SPEED_SELECTOR__;
+      owner.updateLanguage("ja");
+      owner.updateUsage({ enabled: true });
+    });
+    const bar = page.getByRole("status", { name: "会話の使用状況" });
+    await expect(bar).toContainText("キャッシュ命中率 99.9%");
+    await expect(bar).toContainText("— tok/s");
+    await page.locator("[contenteditable]").fill("入力中のメッセージ");
+    await expect(page.locator("[contenteditable]")).toHaveText("入力中のメッセージ");
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    if (process.env.CODEX_USAGE_STATUSLINE_JAPANESE_SCREENSHOT) {
+      await page.screenshot({ path: process.env.CODEX_USAGE_STATUSLINE_JAPANESE_SCREENSHOT });
+    }
+    await page.evaluate(() => window.__CODEX_SWITCH_SPEED_SELECTOR__.updateUsage({ enabled: false }));
+    await expect(bar).toHaveCount(0);
+    assert.equal(await page.evaluate(() => window.__CODEX_SWITCH_USAGE_STATUSLINE__ === undefined), true);
+    await page.evaluate(() => window.__CODEX_SWITCH_SPEED_SELECTOR__.updateUsage({ enabled: true }));
+    await expect(bar).toHaveCount(1);
+    await expect(page.locator("[contenteditable]")).toHaveText("入力中のメッセージ");
+    await page.evaluate(() => {
+      window.__CODEX_SWITCH_COMPOSER_STATUS_ALLOWED__ = false;
+      window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__();
+    });
+    await expect(bar).toHaveCount(0);
+    await page.evaluate(composerUsageOverlay);
+    assert.equal(await page.evaluate(() => window.__CODEX_SWITCH_USAGE_STATUSLINE__ === undefined), true);
+  } finally { await page.close(); }
+});
