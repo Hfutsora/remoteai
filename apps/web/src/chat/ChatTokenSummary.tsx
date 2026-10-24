@@ -69,8 +69,8 @@ function SummaryContent({ data }: { data: TokenSummary }) {
     <Ranking title={t("client.chat.accountUsageRanking")} ranking={data.rankings.accounts} count={data.entryCount} />
   </>;
 }
-export function ChatTokenSummary({ read, ready, deviceName, onClose }: {
-  read: ReadTokenSummary; ready: boolean; deviceName?: string; onClose: () => void;
+export function ChatTokenSummary({ read, ready, scope, deviceName, onClose }: {
+  read: ReadTokenSummary; ready: boolean; scope: string; deviceName?: string; onClose: () => void;
 }) {
   useLanguage();
   const [visible, setVisible] = useState(document.visibilityState === 'visible');
@@ -79,7 +79,7 @@ export function ChatTokenSummary({ read, ready, deviceName, onClose }: {
     document.addEventListener('visibilitychange', update);
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
-  const summary = useTokenSummary({ read, active: ready && visible });
+  const summary = useTokenSummary({ read, active: ready && visible, scope });
   const [weeks, setWeeks] = useState('');
   useEffect(() => { setWeeks(String(summary.weeks ?? '')); }, [summary.weeks]);
   return <AdaptiveSheet open title={t("client.chat.tokenSummary")} width={900} onClose={onClose} onBack={onClose}>

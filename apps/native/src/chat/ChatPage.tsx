@@ -151,6 +151,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
   }, [active, drawer, pickingDevice, state.selected?.id, state.sending, controller]);
   return <>
   {tokenSummary && pageActive && <TokenSummaryPage read={controller.readTokenSummary} ready={ready}
+    scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])}
     foreground={foreground} deviceName={device?.name} onBack={closeTokenSummary} />}
   <View style={[styles.fill, tokenSummary && styles.hidden]}>
   <ChatFileReferencesProvider enabled={active && !state.selectedArchived}>

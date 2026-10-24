@@ -3,6 +3,7 @@ import { displayError, t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import Storage from 'expo-sqlite/kv-store';
 import { MAX_SUMMARY_WEEKS, MIN_SUMMARY_WEEKS, type ReadTokenSummary } from
   '../../../../shared/remote-chat/tokenSummary';
 import { useTokenSummary } from '../../../../shared/remote-chat/client/useTokenSummary';
@@ -13,13 +14,15 @@ import { QuotaPanel } from './QuotaPanel';
 import { OfficialUsagePanel } from './OfficialUsagePanel';
 import { useSummaryStyles as useS } from './styles';
 
-interface Props { read: ReadTokenSummary; ready: boolean; foreground: boolean; deviceName?: string; onBack: () => void }
+interface Props {
+  read: ReadTokenSummary; ready: boolean; foreground: boolean; scope: string; deviceName?: string; onBack: () => void;
+}
 
-export function TokenSummaryPage({ read, ready, foreground, deviceName, onBack }: Props) {
+export function TokenSummaryPage({ read, ready, foreground, scope, deviceName, onBack }: Props) {
   const s = useS();
   const color = useThemeColor();
   useLanguage();
-  const summary = useTokenSummary({ read, active: ready && foreground });
+  const summary = useTokenSummary({ read, active: ready && foreground, scope, storage: Storage });
   const { data, loading, error } = summary;
   const [draftWeeks, setDraftWeeks] = useState('');
   useEffect(() => { setDraftWeeks(summary.weeks?.toString() ?? ''); }, [summary.weeks]);

@@ -84,6 +84,7 @@ function WebChat({ session, device, selected, ...props }: Props & {
     controller: chat.controller, enabled: selected });
   return <TerminalLaunchContext.Provider value={terminal.addInDirectory}>
     {props.tokenSummary && <ChatTokenSummary read={chat.controller.readTokenSummary} ready={chat.state.ready}
+      scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])}
       deviceName={device?.name} onClose={props.closeTokenSummary} />}
     <ConnectedChat {...props} chat={chat} device={device} email={session.email}
     cliVersion={installer.version}

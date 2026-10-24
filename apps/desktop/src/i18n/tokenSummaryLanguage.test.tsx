@@ -56,7 +56,8 @@ afterEach(async () => {
 });
 
 it('switches Web token categories and quota labels while keeping the selected interval and user names', async () => {
-  await act(async () => root.render(<ChatTokenSummary read={async () => data} ready onClose={() => {}} />));
+  await act(async () => root.render(<ChatTokenSummary read={async () => data} ready scope="language-test"
+    onClose={() => {}} />));
   const interval = container.querySelector<HTMLSelectElement>(`[aria-label="${translateMessage("zh", "client.chat.quotaInterval")}"]`);
   expect(interval).not.toBeNull();
   await act(async () => {
