@@ -22,11 +22,11 @@ async function leaveRemaining(viewport: Locator, remaining: number) {
   }, remaining);
 }
 
-test('shows the bottom shortcut only beyond one fifth of the visible chat height', async ({ page }, info) => {
+test('shows the bottom shortcut only beyond half of the visible chat height', async ({ page }, info) => {
   const viewport = await open(page);
   const button = page.getByRole('button', { name: '回到底部' });
   await expect(button).toHaveCount(0);
-  const threshold = await viewport.evaluate(node => node.clientHeight * 0.2);
+  const threshold = await viewport.evaluate(node => node.clientHeight * 0.5);
   await leaveRemaining(viewport, Math.floor(threshold));
   await expect(button).toHaveCount(0);
   await leaveRemaining(viewport, Math.ceil(threshold) + 1);
@@ -59,7 +59,7 @@ test('rechecks the threshold when the visible chat area changes height', async (
   const viewport = await open(page);
   await viewport.evaluate(node => { node.parentElement!.style.flex = '0 0 500px'; });
   await expect.poll(() => viewport.evaluate(node => node.clientHeight)).toBe(500);
-  await leaveRemaining(viewport, 120);
+  await leaveRemaining(viewport, 270);
   const button = page.getByRole('button', { name: '回到底部' });
   await expect(button).toBeVisible();
   const position = await viewport.evaluate(node => node.scrollTop);

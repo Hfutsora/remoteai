@@ -1,4 +1,4 @@
-const SCROLL_BOTTOM_VISIBLE_RATIO = 0.2;
+const SCROLL_BOTTOM_VISIBLE_RATIO = 0.5;
 const HISTORY_PREFETCH_VIEWPORT_RATIO = 0.5;
 const MIN_HISTORY_PREFETCH_DISTANCE = 100;
 const FOLLOW_SCROLL_DISTANCE = 100;
@@ -15,7 +15,7 @@ export function shouldFollowScroll({ contentHeight, viewportHeight, offset, move
   return movement > 0 && contentHeight - viewportHeight - offset < FOLLOW_SCROLL_DISTANCE;
 }
 
-/** Show the shortcut only when more than one fifth of a viewport remains below the visible content. */
+/** Show the shortcut only when more than half a viewport remains below the visible content. */
 export function shouldShowScrollToBottom({ contentHeight, viewportHeight, offset }: ScrollPosition): boolean {
   return viewportHeight > 0 && contentHeight - viewportHeight - Math.max(0, offset)
     > viewportHeight * SCROLL_BOTTOM_VISIBLE_RATIO;

@@ -47,6 +47,9 @@ for (const width of [1280, 1960]) {
     await page.evaluate(detail => window.dispatchEvent(new CustomEvent('conversation-fixture', { detail })), value);
     await expect(page.locator('[data-message-id]')).toHaveCount(21);
     expect(await viewport.evaluate(node => node.scrollTop)).toBe(top);
+    // The tall fixture can pause following while less than half a viewport remains below it.
+    const size = page.viewportSize()!;
+    await page.setViewportSize({ ...size, height: 850 });
     await page.getByRole('button', { name: '回到最新消息', exact: true }).click();
     await expect(page.locator('[data-message-id]')).toHaveCount(10);
     await expect.poll(() => viewport.evaluate(node => node.scrollHeight - node.clientHeight - node.scrollTop))

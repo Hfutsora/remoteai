@@ -31,7 +31,7 @@ export function Messages({ value, selected, active = true, footer, pendingReques
   onFork?: (threadId: string, turnId: string) => Promise<boolean>; forkDisabled?: boolean;
 } & CapacityRetryControl) {
   const last = lastUserMessage(value);
-  const { viewport, content, movement, away, onScroll, jumpToLatest, pauseFollowing }
+  const { viewport, content, movement, away, showJumpToLatest, onScroll, jumpToLatest, pauseFollowing }
     = useFollowScroll(selected, active);
   const history = useMessageWindow({ turns: value?.turns, selected, active, viewport, movement, pauseFollowing, away });
   const entries = useMemo(() => groupVisibleTurns(history.entries), [history.entries]);
@@ -51,7 +51,6 @@ export function Messages({ value, selected, active = true, footer, pendingReques
     <div ref={viewport} className={styles.messageViewport} aria-label={uiText("client.conversation.conversationMessages")}
       onWheel={history.onWheel} onScroll={() => {
         const offsetChange = history.onScroll();
-        if (offsetChange === 0) return;
         if (history.hasNewer) pauseFollowing();
         else onScroll(offsetChange);
       }}>
@@ -93,7 +92,7 @@ export function Messages({ value, selected, active = true, footer, pendingReques
           {sending && <WorkingStatus key={`sending:${selected}`} active={active} pendingRequest={pendingRequest} />}
         </div>
         <div className={styles.messageFooter}>
-          {away && <button type="button" className={styles.jumpToLatest} onClick={jumpToLatest}>
+          {showJumpToLatest && <button type="button" className={styles.jumpToLatest} onClick={jumpToLatest}>
             <ArrowDown size={15} />{uiText("client.conversation.jumpToLatestMessage")}</button>}
           {footer}
         </div>
