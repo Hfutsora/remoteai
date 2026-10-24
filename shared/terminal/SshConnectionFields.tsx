@@ -2,9 +2,10 @@ import { useId } from 'react';
 import { Form, Input, InputNumber, Radio, type FormInstance } from 'antd';
 import { KeyRound, LockKeyhole, Server, UserRound } from 'lucide-react';
 import type { SshValues } from './useSshConnection';
+import { SshPrivateKeyInput } from './SshPrivateKeyInput';
 import { displayText as t } from '../localization/messages';
 
-export function SshConnectionFields({ form }: { form: FormInstance<SshValues> }) {
+export function SshConnectionFields({ form, disabled }: { form: FormInstance<SshValues>; disabled: boolean }) {
   const auth = Form.useWatch('auth', form);
   const sectionId = useId();
   return <>
@@ -44,8 +45,7 @@ export function SshConnectionFields({ form }: { form: FormInstance<SshValues> })
       {auth === 'key' ? <>
         <Form.Item name="privateKey" label={t('client.ssh.privateKey')}
           rules={[{ required: true, message: t('client.ssh.required') }]}>
-          <Input.TextArea className="ssh-private-key" rows={3} autoComplete="off" maxLength={65536}
-            placeholder={t('client.ssh.keyPlaceholder')} />
+          <SshPrivateKeyInput disabled={disabled} />
         </Form.Item>
         <Form.Item name="passphrase" label={t('client.ssh.passphrase')}>
           <Input.Password autoComplete="new-password" maxLength={4096} />

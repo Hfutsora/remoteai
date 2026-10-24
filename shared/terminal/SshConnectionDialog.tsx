@@ -38,7 +38,7 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
   const colors = {
     '--ssh-surface': token.colorBgElevated, '--ssh-field': token.colorBgContainer,
     '--ssh-subtle': token.colorFillAlter, '--ssh-line': token.colorBorderSecondary,
-    '--ssh-text': token.colorText, '--ssh-muted': token.colorTextSecondary,
+    '--ssh-text': token.colorText, '--ssh-muted': token.colorTextSecondary, '--ssh-error': token.colorError,
   } as CSSProperties;
   const title = t(managing ? 'client.ssh.manage' : 'client.ssh.createTitle');
   return <Modal open centered title={<div className="ssh-dialog-heading">
@@ -64,7 +64,7 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
               {t(selected ? 'client.ssh.savedConnection' : 'client.ssh.newConnection')}
             </span>
           </div>}
-          <SshConnectionFields form={form} />
+          <SshConnectionFields form={form} disabled={disabled} />
           <div className="ssh-credentials-note"><ShieldCheck size={17} aria-hidden />
             <p>{t('client.ssh.credentialsHint')}</p></div>
           <div ref={feedback} aria-live="polite">
