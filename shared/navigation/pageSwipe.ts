@@ -6,6 +6,16 @@ export const SWIPE_START_DISTANCE = 12;
 export const SWIPE_COMPLETE_DISTANCE = 60;
 export const SWIPE_DIRECTION_RATIO = 1.5;
 export const SWIPE_LONG_PRESS_MS = 500;
+export const SWIPE_SETTLE_MS = 220;
+
+export interface SwipeProgress {
+  onMove?: (dx: number, direction: SwipeDirection) => void;
+  onEnd?: (direction?: SwipeDirection) => void;
+}
+
+export function pageSwipeOffset(dx: number, direction: SwipeDirection, width: number) {
+  return direction === 'left' ? Math.max(-width, Math.min(0, dx)) : Math.min(width, Math.max(0, dx));
+}
 
 export function adjacentPage(page: string, direction: SwipeDirection): PrimaryPage | undefined {
   const index = PRIMARY_PAGES.findIndex(item => item === page);

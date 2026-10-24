@@ -93,6 +93,59 @@ test('desktop touch drags do not replace sidebar navigation', async ({ page, isM
   await expect(menu.getByRole('button', { name: '账号', exact: true })).toHaveAttribute('aria-current', 'page');
 });
 
+test('shows both real pages under the finger before committing and keeps the tab bar still',
+  async ({ page, isMobile }, info) => {
+    test.skip(!isMobile, 'Page previews belong to the mobile layout.');
+    const session = await page.context().newCDPSession(page);
+    const tabs = await page.locator('.mobile-tabbar').boundingBox();
+    try {
+      for (const [from, to, label, targetLabel, direction] of [
+        ['chat', 'accounts', '聊天', '账号', -1],
+        ['accounts', 'discover', '账号', '发现', -1],
+        ['discover', 'settings', '发现', '设置', -1],
+        ['settings', 'discover', '设置', '发现', 1],
+        ['discover', 'accounts', '发现', '账号', 1],
+        ['accounts', 'chat', '账号', '聊天', 1],
+      ] as const) {
+        const start = direction < 0 ? 280 : 90;
+        await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start, y: 300 }] });
+        await session.send('Input.dispatchTouchEvent', {
+          type: 'touchMove', touchPoints: [{ x: start + direction * 100, y: 300 }],
+        });
+        const outgoing = page.locator(`[data-primary-page="${from}"]`);
+        const incoming = page.locator(`[data-primary-page="${to}"]`);
+        await expect(incoming).toHaveClass(/is-preview/);
+        await expect(incoming).toHaveAttribute('inert', '');
+        expect((await incoming.textContent())?.trim().length).toBeGreaterThan(0);
+        const outgoingBox = (await outgoing.boundingBox())!;
+        const incomingBox = (await incoming.boundingBox())!;
+        expect(outgoingBox.x).toBeCloseTo(direction * 100, 0);
+        expect(incomingBox.x - outgoingBox.x).toBeCloseTo(-direction * outgoingBox.width, 0);
+        await expect(activeTab(page)).toHaveText(label);
+        expect(await page.locator('.mobile-tabbar').boundingBox()).toEqual(tabs);
+        await screenshot(page, info, `mid-swipe-${from}-${to}`);
+        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await expect(activeTab(page)).toHaveText(targetLabel);
+        await expect(incoming).not.toHaveClass(/is-preview/);
+      }
+    } finally { await session.detach(); }
+  });
+
+test('returns partial and cancelled previews to their original position without opening a row',
+  async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'Page previews belong to the mobile layout.');
+    await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
+    const pane = page.locator('[data-primary-page="discover"]');
+    const original = await pane.boundingBox();
+    for (const cancel of [false, true]) {
+      await swipe(page, cancel ? left : left.slice(0, 2), cancel);
+      await expect(page.locator('.primary-page-pane.is-preview')).toHaveCount(0);
+      expect(await pane.boundingBox()).toEqual(original);
+      await expect(activeTab(page)).toHaveText('发现');
+      await expect(page.locator('.discovery-list')).toBeVisible();
+    }
+  });
+
 test('swipes right across the conversation to open and left across a row or mask to close',
   async ({ page, isMobile }, info) => {
     test.skip(!isMobile, 'Touch gestures are exercised by the mobile browser project.');

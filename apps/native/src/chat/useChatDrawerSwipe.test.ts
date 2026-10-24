@@ -3,6 +3,7 @@ import { PanResponder, type GestureResponderEvent, type PanResponderGestureState
 import { useChatDrawerSwipe } from './useChatDrawerSwipe';
 
 vi.mock('react', () => ({ useRef: (current: unknown) => ({ current }),
+  createContext: () => ({}), useContext: () => undefined,
   useMemo: (factory: () => unknown) => factory() }));
 vi.mock('react-native', () => ({ PanResponder: { create: vi.fn(() => ({ panHandlers: {} })) } }));
 

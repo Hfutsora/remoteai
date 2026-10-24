@@ -31,7 +31,7 @@ import { downloadOwner } from './downloads/manager';
 import { loadRefreshMinutes, REFRESH_INTERVAL_EVENT } from "./settings/refreshInterval";
 import { useTotpVault } from "./useTotpVault";
 import { ChatPage } from "./chat/ChatPage";
-import { usePrimaryPageSwipe } from './navigation/usePrimaryPageSwipe';
+import { PrimaryPagePager } from './navigation/PrimaryPagePager';
 import type { PrimaryPage } from '../../../shared/navigation/pageSwipe';
 import { usePanelVisibility } from "./useDesktopLayout";
 import { AgreementConsent } from '../../../shared/legal/AgreementConsent';
@@ -280,7 +280,6 @@ function AppShell() {
   const totpManager = useTotpVault(session);
   const activeNavigationPage = primaryNavigationPage(page);
   const changePrimaryPage = useCallback((next: PrimaryPage) => { dispatch(pageChanged(next)); }, [dispatch]);
-  usePrimaryPageSwipe(page, changePrimaryPage);
   const openAccounts = useCallback(() => changePrimaryPage('accounts'), [changePrimaryPage]);
 
   useEffect(() => {
@@ -406,13 +405,17 @@ function AppShell() {
           <span className="topbar-date">{new Intl.DateTimeFormat(getLocale(),
             { month: "long", day: "numeric", weekday: "short" }).format(new Date())}</span></div></header>}
       <main className="main-content">
+        <PrimaryPagePager page={page} onChange={changePrimaryPage} pages={{
+          chat: session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
+            openAccounts={openAccounts}
+            active={page === 'chat'} tokenSummary={page === 'token-summary'}
+            closeTokenSummary={() => dispatch(pageChanged('discover'))} />,
+          accounts: otherPages.accounts, discover: discoveryPage, settings: otherPages.settings,
+        }}>
         {isDiscoveryPage(page) && page !== 'downloads' && page !== 'token-summary'
           && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
-        {session && <ChatPage key={session.baseUrl + session.email} session={session} devices={devices}
-          openAccounts={openAccounts}
-          active={page === "chat"} tokenSummary={page === 'token-summary'}
-          closeTokenSummary={() => dispatch(pageChanged('discover'))} />}
-        {page !== "chat" && otherPages[page]}
+        {page !== 'chat' && page !== 'accounts' && page !== 'discover' && page !== 'settings' && otherPages[page]}
+        </PrimaryPagePager>
       </main>
     </div>
     <div className="mobile-tabbar">

@@ -7,6 +7,7 @@ import { remotePromptSuggestion } from '../../../../shared/remote-chat/client/pr
 import Storage from 'expo-sqlite/kv-store';
 import { t, useLanguage } from '../i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePagePreview } from '../../../../shared/navigation/PageSwipeContext';
 import { BackHandler, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AuthSession, RemoteDevice } from '../types';
@@ -62,6 +63,7 @@ interface Props {
 
 export function ChatPage(props: Props) {
   const styles = useStyles();
+  const preview = usePagePreview() === 'chat';
   useLanguage();
   const { session, active, notification, notificationError, notificationHandled } = props;
   const devices = useOfflineDevices(session, props.devices, props.devicesLoaded);
@@ -75,7 +77,7 @@ export function ChatPage(props: Props) {
     if (notification) notificationHandled(notificationId(notification));
     selectDevice(id);
   };
-  return <View style={[styles.page, !active && styles.hidden]}>
+  return <View style={[styles.page, !active && !preview && styles.hidden]}>
     {notification && devices.length > 0 && !device && <Text style={styles.error}>
       {t("client.mobile.theComputerForThisNotificationIsUnavailableChooseAnother")}</Text>}
     {!!backgroundError && <Text accessibilityRole="alert" style={styles.error}>{backgroundError}</Text>}
