@@ -2,6 +2,7 @@ import { displayText } from '../i18n/index';
 import { displayError } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { useThemeColor } from '../theme/store';
+import { textMetrics } from '../theme/text';
 import { t, useLanguage } from '../i18n';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
@@ -58,7 +59,7 @@ const useStyles = createThemedStyles((color) => ({
   pressed: { backgroundColor: color(palette.pale, 'accentSoft') },
   disabled: { opacity: 0.4 },
   container: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color(palette.border, 'border'), paddingTop: 14, gap: 4 },
-  row: { color: color(palette.muted, 'muted'), fontSize: 12, lineHeight: 20, flexShrink: 1 },
+  row: { color: color(palette.muted, 'muted'), ...textMetrics(12, 20), flexShrink: 1 },
   tokens: { color: color(palette.green, 'accent'), fontWeight: '600' },
   cost: { color: color('#b45d00', 'warning'), fontWeight: '600' },
   quota: { color: color('#16874e', 'accent'), fontWeight: '600' },

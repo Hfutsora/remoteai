@@ -14,6 +14,7 @@ import { RemoteImages } from './images';
 import { parseHistoryWindow, sliceHistory } from '../../../../shared/remote-chat/historyPage';
 import { historyNotification } from '../../../../shared/remote-chat/historyNotification';
 import { LiveHistory } from './liveHistory';
+import { CommandMetricsStore } from './commandMetrics';
 import { composerCatalog } from './composerCatalog';
 import { remoteQueue } from './queue';
 import { readGuiAccounts, selectGuiAccount } from './guiAccounts';
@@ -22,7 +23,8 @@ import { chatHandshake, validateChatHandshake } from '../../../../shared/remote-
 import { guiConnectionError } from '../../../../shared/remote-chat/connectionErrors';
 import { invoke } from '../api/backend';
 import type { UsageSummary } from '../../../../shared/remote-chat/usage';
-import { CONVERSATION_METRICS_OPERATION } from '../../../../shared/remote-chat/conversationMetrics';
+import { CONVERSATION_METRICS_OPERATION, type ConversationMetrics }
+  from '../../../../shared/remote-chat/conversationMetrics';
 import { TOKEN_SUMMARY_OPERATION } from '../../../../shared/remote-chat/tokenSummary';
 import { encodeTokenSummary, QUOTA_HISTORY_FORMAT } from '../../../../shared/remote-chat/tokenSummaryCodec';
 import { readTokenSummary } from './tokenSummary';
@@ -122,6 +124,7 @@ export class ChatOperations {
   private readonly cache = new Map<string, Cached>();
   private readonly images = new RemoteImages();
   private readonly liveHistory = new LiveHistory();
+  private readonly commandMetrics = new CommandMetricsStore();
   private readonly titles = new RemoteThreadTitles();
 
   execute(request: RpcRequest, mode: ConnectionMode = 'relay', owner = 'default', terminalOwner = owner)
@@ -175,7 +178,7 @@ export class ChatOperations {
   release(owner?: string) {
     this.files.release(owner);
     this.desktop.release(owner);
-    if (owner === undefined) this.titles.clear();
+    if (owner === undefined) { this.titles.clear(); this.commandMetrics.clear(); }
     for (const key of this.cache.keys()) {
       if (owner === undefined || (JSON.parse(key) as string[])[0] === owner) this.cache.delete(key);
     }
@@ -222,7 +225,8 @@ export class ChatOperations {
     }
     if (request.method === 'request' && body.operation === CONVERSATION_METRICS_OPERATION) {
       if (typeof body.threadId !== 'string' || !body.threadId.trim()) throw new Error('请选择聊天后重试。');
-      return invoke('get_proxy_session_metrics', { threadId: body.threadId });
+      const metrics = await invoke<ConversationMetrics>('get_proxy_session_metrics', { threadId: body.threadId });
+      return { ...metrics, ...this.commandMetrics.read(body.threadId) };
     }
     if (request.method === 'request' && body.operation === 'guiAccountsRead') return readGuiAccounts();
     if (request.method === 'request' && body.operation === 'guiAccountSelect') return selectGuiAccount(body.selection);
@@ -240,6 +244,7 @@ export class ChatOperations {
       const thread = await this.liveHistory.read(threadId,
         () => guiApi.request<{ thread: Thread }>({ operation: 'read', threadId }));
       const current = effectiveProjectThread(thread);
+      this.commandMetrics.seed(current);
       const sliced = sliceHistory(acknowledgedMessages.merge(current), window);
       return { ...historyDelta(this.images.prepare(sliced.thread, thread.id), known), page: sliced.page };
     }
@@ -303,6 +308,7 @@ export class ChatOperations {
     if (body.operation === 'resume' || body.operation === 'send' || body.operation === 'steer') return {};
     if (body.operation === 'read') {
       const response = result as { thread: Thread };
+      this.commandMetrics.seed(response.thread);
       return this.images.prepare({ ...response, thread: effectiveProjectThread(response.thread) }, String(body.threadId));
     }
     return this.images.prepare(result, String(body.threadId ?? ''));
@@ -321,6 +327,7 @@ export class ChatOperations {
   prepareEvent(event: GuiEvent) {
     receiveRemoteThreadListEvent(event);
     this.liveHistory.receive(event);
+    this.commandMetrics.receive(event);
     if (event.params.thread) {
       event = { ...event, params: { ...event.params, thread: effectiveProjectThread(event.params.thread) } };
     }

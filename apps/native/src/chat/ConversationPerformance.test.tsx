@@ -8,6 +8,7 @@ vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));
 vi.mock('react-native', () => ({ Text: 'Text', View: 'View', Pressable: 'Pressable',
+  Platform: { OS: 'android' },
   StyleSheet: { create: <T,>(value: T) => value, hairlineWidth: 1 },
 }));
 vi.mock('@expo/vector-icons/Feather', () => ({ default: 'Icon' }));
@@ -23,13 +24,14 @@ function text(node: ReactNode): string {
       return text((child.type as (props: object) => ReactNode)(child.props));
     }
     return text(child.props.children);
-  }).join('');
+  }).join('').replaceAll('\u00a0', ' ');
 }
 beforeEach(() => {
   vi.stubGlobal('React', React);
   vi.mocked(useConversationMetrics).mockReturnValue({
     totalOutputTokens: 300, totalOutputTimeMs: 2_000, outputRequestCount: 1,
     totalFirstTokenTimeMs: 2_500, firstTokenRequestCount: 2,
+    successfulCommandCount: 3, completedCommandCount: 4,
   });
 });
 afterEach(() => { vi.clearAllMocks(); vi.unstubAllGlobals(); });
@@ -38,7 +40,7 @@ it('shows TPS and TTFT to the right of current conversation tokens in mobile set
   const readConversationMetrics = vi.fn();
   const content = text(ChatUsage({ read: vi.fn(), active: true, ready: true, readConversationMetrics,
     threadId: 'mobile-thread', tokenUsage: { total: { totalTokens: 2_500 }, last: { totalTokens: 500 } } }));
-  expect(content).toContain('当前对话 2.50K Token · 150.0 TPS · 1.25 TTFT');
+  expect(content).toContain('当前对话 2.50K Token · 75.0% TSR · 150.0 TPS · 1.25 TTFT');
   expect(useConversationMetrics).toHaveBeenCalledWith(readConversationMetrics, 'mobile-thread', true);
 });
 
@@ -47,7 +49,7 @@ it('shows a placeholder and disables polling while disconnected or settings are 
   for (const state of [{ active: false, ready: true }, { active: true, ready: false }]) {
     const readConversationMetrics = vi.fn();
     expect(text(ChatUsage({ read: vi.fn(), readConversationMetrics, threadId: 'mobile-thread', ...state })))
-      .toContain('当前对话 — Token · — TPS · — TTFT');
+      .toContain('当前对话 — Token · — TSR · — TPS · — TTFT');
     expect(useConversationMetrics).toHaveBeenLastCalledWith(readConversationMetrics, 'mobile-thread', false);
   }
 });

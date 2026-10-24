@@ -1,7 +1,9 @@
+import type { CommandMetrics } from './commandMetrics';
+
 export const CONVERSATION_METRICS_OPERATION = 'conversationMetrics';
 export const CONVERSATION_METRICS_REFRESH_MS = 2_000;
 
-export interface ConversationMetrics {
+export interface ConversationMetrics extends Partial<CommandMetrics> {
   /** Older remote hosts may not report first-token timing yet. */
   totalFirstTokenTimeMs?: number;
   firstTokenRequestCount?: number;

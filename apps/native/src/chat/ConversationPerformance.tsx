@@ -1,4 +1,5 @@
 import { Text } from 'react-native';
+import { CONVERSATION_TSR_DESCRIPTION, formatConversationTsr } from '../../../../shared/remote-chat/commandMetrics';
 import { t, useLanguage } from '../i18n';
 import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 import { CONVERSATION_TPS_DESCRIPTION, CONVERSATION_TTFT_DESCRIPTION, formatConversationTps, formatConversationTtft,
@@ -9,9 +10,14 @@ export function ConversationPerformance({ read, threadId, active }: {
 }) {
   useLanguage();
   const metrics = useConversationMetrics(read, threadId, active);
-  const speed = `${formatConversationTps(metrics)} TPS`;
-  const firstToken = `${formatConversationTtft(metrics)} TTFT`;
+  // Nested spans inherit ChatUsage's text metrics; keep each value and abbreviation on the same line.
+  const success = `${formatConversationTsr(metrics)}\u00a0TSR`;
+  const speed = `${formatConversationTps(metrics)}\u00a0TPS`;
+  const firstToken = `${formatConversationTtft(metrics)}\u00a0TTFT`;
   return <>
+    <Text accessibilityLabel={t('client.chat.commandSuccessRateValue', { value: success })}
+      accessibilityHint={t(CONVERSATION_TSR_DESCRIPTION)}>{success}</Text>
+    {' · '}
     <Text accessibilityLabel={`${t("client.mobile.conversationOutputSpeed")} ${speed}`}
       accessibilityHint={t(CONVERSATION_TPS_DESCRIPTION)}>{speed}</Text>
     {' · '}

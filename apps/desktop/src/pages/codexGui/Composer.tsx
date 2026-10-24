@@ -177,7 +177,7 @@ export const Composer = forwardRef<ComposerHandle, {
     </div>
     <div className={styles.composerHint}><span>Codex{cliVersion ? ` ${cliVersion}` : ''}</span>
       <ConversationTokenStatus threadId={state.selected} tokens={current?.tokens ?? 0}
-        active={active && state.connection === 'ready'} /></div>
+        turns={current?.turns} active={active && state.connection === 'ready'} /></div>
     {dialog === "files" && <ComposerFilesDialog onAdd={addAttachments} onImages={() => fileInput.current?.click()}
       onClose={() => setDialog(null)} onError={controller.report} />}
     {dialog === "goal" && <GoalDialog state={state} controller={controller} onClose={() => setDialog(null)} />}
