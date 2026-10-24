@@ -4,6 +4,9 @@ export interface PacketCipher {
   decrypt(payload: string): string;
   encryptBytes?(bytes: Uint8Array, nonceHex: string): string;
   decryptBytes?(payload: string): Uint8Array;
+  /** One native worker call owns UTF-8, bounded DEFLATE and AEAD. The nonce starts with flag 0. */
+  encryptWithCompression?(text: string, nonceHex: string): Promise<string>;
+  decryptWithDecompression?(payload: string): Promise<string>;
   destroy(): void;
 }
 

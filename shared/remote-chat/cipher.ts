@@ -26,6 +26,7 @@ export class SessionCipher {
   private sequence = 0;
   private highestReceived = 0;
   private readonly received = new Uint32Array(REPLAY_WINDOW);
+  private readonly opening = new Set<number>();
   private readonly bulkEpochs = new Set<string>();
 
   constructor(options: {
@@ -59,6 +60,32 @@ export class SessionCipher {
 
   get supportsBinaryPlaintext() {
     return !this.packetCipher || Boolean(this.packetCipher.encryptBytes && this.packetCipher.decryptBytes);
+  }
+
+  get supportsIntegratedCompression() {
+    return Boolean(this.packetCipher?.encryptWithCompression && this.packetCipher.decryptWithDecompression);
+  }
+
+  async encryptWithCompression(text: string): Promise<string> {
+    if (!this.supportsIntegratedCompression) throw new Error('Native packet codec unavailable');
+    const payload = await this.packetCipher!.encryptWithCompression!(text, bytesToHex(this.nonce(false)));
+    if (this.destroyed) throw new Error('Session closed');
+    return payload;
+  }
+
+  async decryptWithDecompression(payload: string): Promise<string | null> {
+    if (!this.supportsIntegratedCompression) throw new Error('Native packet codec unavailable');
+    const { sequence } = this.packet(payload, true);
+    if (this.replayed(sequence) || this.opening.has(sequence)) return null;
+    this.opening.add(sequence);
+    try {
+      const text = await this.packetCipher!.decryptWithDecompression!(payload);
+      if (this.destroyed) throw new Error('Session closed');
+      // Other native workers and synchronous controls can advance the window while this call is pending.
+      if (this.replayed(sequence)) return null;
+      this.remember(sequence);
+      return text;
+    } finally { this.opening.delete(sequence); }
   }
 
   private nonce(compressed: boolean) {
@@ -105,7 +132,7 @@ export class SessionCipher {
     return plain;
   }
 
-  private open(payload: string, compressed: boolean): string | Uint8Array | null {
+  private packet(payload: string, compressed: boolean) {
     if (this.destroyed) throw new Error('Session closed');
     if (payload.length > 40_000 || payload.length < 56 || payload.length % 2 !== 0) throw new Error('Invalid packet');
     // Native codecs validate and decode the ciphertext. Hermes only needs the fixed-size nonce for replay checks.
@@ -119,13 +146,25 @@ export class SessionCipher {
       || view.getUint32(4) !== (compressed ? 1 : 0) || sequence === 0) {
       throw new Error('Invalid nonce');
     }
-    const slot = sequence % REPLAY_WINDOW;
-    if (this.received[slot] === sequence || sequence <= this.highestReceived - REPLAY_WINDOW) return null;
+    return { bytes, nonce, sequence };
+  }
+
+  private replayed(sequence: number) {
+    return this.received[sequence % REPLAY_WINDOW] === sequence || sequence <= this.highestReceived - REPLAY_WINDOW;
+  }
+
+  private remember(sequence: number) {
+    this.received[sequence % REPLAY_WINDOW] = sequence;
+    this.highestReceived = Math.max(this.highestReceived, sequence);
+  }
+
+  private open(payload: string, compressed: boolean): string | Uint8Array | null {
+    const { bytes, nonce, sequence } = this.packet(payload, compressed);
+    if (this.replayed(sequence)) return null;
     const plain = this.packetCipher ? this.openNative(payload, compressed)
       : chacha20poly1305(this.key, nonce, this.context).decrypt(bytes.subarray(12));
     // Only authenticated packets enter the ring. Sequences sharing a slot cannot both be inside the replay window.
-    this.received[slot] = sequence;
-    this.highestReceived = Math.max(this.highestReceived, sequence);
+    this.remember(sequence);
     return plain;
   }
 
@@ -140,6 +179,7 @@ export class SessionCipher {
     this.key.fill(0);
     this.bulkKey.fill(0);
     this.received.fill(0);
+    this.opening.clear();
     this.bulkEpochs.clear();
     this.packetCipher?.destroy();
   }

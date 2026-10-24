@@ -60,3 +60,21 @@ it('bridges authenticated binary plaintext without UTF-8 decoding or network Bas
   expect(() => cipher.decryptBytes!('bad')).toThrow('Invalid encrypted packet');
   cipher.destroy();
 });
+
+it('uses one asynchronous native call per compressed direction and retains old module compatibility', async () => {
+  const native = { available: true, compressedPackets: true, create: () => 'session',
+    encrypt: vi.fn(), decrypt: vi.fn(), destroy: vi.fn(),
+    encryptWithCompression: vi.fn(async () => 'packet'),
+    decryptWithDecompression: vi.fn(async () => ({ text: '中文😀\0' })) };
+  runtime.NativeModules.ChatPacketCipher = native;
+  const cipher = createNativePacketCipher(material)!;
+  expect(await cipher.encryptWithCompression!('中文😀', 'nonce')).toBe('packet');
+  expect(native.encryptWithCompression).toHaveBeenCalledWith('session', { text: '中文😀' }, 'nonce');
+  expect(await cipher.decryptWithDecompression!('packet')).toBe('中文😀\0');
+  expect(native.decryptWithDecompression).toHaveBeenCalledWith('session', 'packet');
+  expect(native.encrypt).not.toHaveBeenCalled(); expect(native.decrypt).not.toHaveBeenCalled();
+  native.encryptWithCompression.mockRejectedValueOnce(new Error('failed'));
+  await expect(cipher.encryptWithCompression!('plain', 'nonce')).rejects.toThrow('failed');
+  native.compressedPackets = false;
+  expect(createNativePacketCipher(material)!.encryptWithCompression).toBeUndefined();
+});

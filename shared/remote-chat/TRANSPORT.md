@@ -22,6 +22,13 @@ must contain a complete stream without trailing bytes. Unknown nonce format IDs 
 
 Desktop and Android/iOS use the shared Rust codec at compression level 1 on native workers.
 Android reserves a separate bounded executor so network polling cannot delay codec tasks.
+New Android binaries combine UTF-8 conversion, Rust DEFLATE and platform AEAD in one async
+native call per direction. Intermediate plaintext and compressed bytes never cross the JS
+bridge. The native encoder applies the same threshold and saving policy, sets the authenticated
+nonce flag, and returns the existing ciphertext representation. JS reserves send sequences
+before dispatch and suppresses pending duplicates; receive sequences enter the shared replay
+window only after successful native completion and are checked again against newer arrivals.
+Older Android binaries, iOS, desktop and Web retain their existing codec adapters and wire format.
 Web uses native `CompressionStream`/`DecompressionStream` in a dedicated Worker; its browser
 chooses the compression level because that API does not expose one. Both produce interoperable
 raw DEFLATE. Browsers without native raw-DEFLATE support advertise no compression capability.

@@ -83,7 +83,7 @@ it('authenticates the compression flag and length before decoding, and rejects d
   expect(() => output.receive(corrupted, accept)).toThrow();
   expect(decode).not.toHaveBeenCalled();
   output.receive(packet, accept); output.receive(packet, accept);
-  await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 0));
   expect(decode).toHaveBeenCalledOnce(); expect(accept).toHaveBeenCalledWith(plain.toString());
   expect(failed).not.toHaveBeenCalled(); output.close(); sender.destroy(); receiver.destroy();
 });
@@ -100,7 +100,7 @@ it('bounds declared lengths and avoids compressing short or incompressible packe
   expect(compress).not.toHaveBeenCalled(); expect(receiver.decrypt(packets[0])).toBe('tiny');
   compress.mockImplementationOnce(async bytes => bytes);
   stream.send('random', 'x'.repeat(1000), packet => packets.push(packet));
-  await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 0));
   expect(receiver.decrypt(packets[1])).toBe('x'.repeat(1000));
   stream.close(); sender.destroy(); receiver.destroy();
 });
