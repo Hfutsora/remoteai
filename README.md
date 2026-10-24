@@ -61,6 +61,11 @@ Codex GUI 是内置的图形化对话工作区。选择项目后，用自然语�
 
 ![Remote AI Token 消耗分析界面](docs/assets/codex-switch-token-usage.png)
 
+### 官方 Codex 会话统计
+
+官方 Codex 输入框下方还可显示当前会话的平均输出速度、累计缓存命中率和上下文占用，沿用原有用量显示开关，
+无需启用皮肤。指标口径和验证方式见 [官方 Codex 会话统计栏](docs/codex-usage-statusline.md)。
+
 ### 一键换肤
 
 内置 300+ 套主题预设，并兼容 [Fei-Away/Codex-Dream-Skin](https://github.com/Fei-Away/Codex-Dream-Skin)。

@@ -1,7 +1,7 @@
 const CODEX_SPEED_SELECTOR_OVERLAY: &str = r#"
   window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__ = () => {
     const stateKey = "__CODEX_SWITCH_SPEED_SELECTOR__";
-    const overlayVersion = 22;
+    const overlayVersion = 23;
     const usageRefreshMs = 5000;
     const usageRequestTimeoutMs = 15000;
     const usageStaleMs = 30000;
@@ -9,6 +9,7 @@ const CODEX_SPEED_SELECTOR_OVERLAY: &str = r#"
     const fastModeAllowed = window.__CODEX_SWITCH_FAST_MODE_ALLOWED__ === true;
     const existing = window[stateKey];
     const removeSelectors = (installed = existing) => {
+      window.__CODEX_SWITCH_USAGE_STATUSLINE__?.dispose();
       if (installed) installed.installed = false;
       installed?.observer?.disconnect();
       if (installed?.timer) clearInterval(installed.timer);
@@ -75,6 +76,15 @@ const CODEX_SPEED_SELECTOR_OVERLAY: &str = r#"
         tokens: "Токены за сегодня", cost: "Стоимость за сегодня",
         quota: "Остаток лимита аккаунта", totalQuota: "Общий остаток лимитов параллельных аккаунтов",
         apiCost: "Стоимость текущего API за сегодня", totalApiCost: "Общая стоимость API за сегодня",
+      },
+      ja: {
+        today: "今日", normal: "通常モード", fast: "高速モード", ultrafast: "Ultrafast モード",
+        group: "今日の使用量と速度モード", switchTo: "クリックして切り替え：",
+        speedError: "速度を変更できませんでした。もう一度お試しください。",
+        pending: "更新待ち",
+        tokens: "今日のトークン使用量", cost: "今日の推定コスト",
+        quota: "現在のアカウントの残り利用枠", totalQuota: "同時利用アカウントの残り利用枠の合計",
+        apiCost: "現在の API の今日の推定コスト", totalApiCost: "集約 API の今日の推定コスト合計",
       },
     };
     // i18n:speed-selector:end
@@ -204,17 +214,18 @@ const CODEX_SPEED_SELECTOR_OVERLAY: &str = r#"
         selector.hidden = !visible;
         selector.style.setProperty("display", visible ? "inline-flex" : "none", "important");
       }
+      window.__CODEX_SWITCH_REFRESH_USAGE_STATUSLINE__?.();
     };
     state.syncAll = syncAll;
     state.updateLanguage = language => {
-      if (!["zh", "en", "ru"].includes(language) || state.language === language) return;
+      if (!Object.hasOwn(copy, language) || state.language === language) return;
       state.language = language;
       syncAll();
     };
     state.completeUsageRequest = () => { state.usagePending = false; state.usageRequestedAt = 0; };
     state.updateUsage = summary => {
       state.completeUsageRequest();
-      if (["zh", "en", "ru"].includes(summary?.language)) state.language = summary.language;
+      if (Object.hasOwn(copy, summary?.language)) state.language = summary.language;
       const totalTokens = summary?.totalTokens;
       const estimatedCostUsd = summary?.estimatedCostUsd;
       const primaryRemainingPercent = summary?.primaryRemainingPercent;

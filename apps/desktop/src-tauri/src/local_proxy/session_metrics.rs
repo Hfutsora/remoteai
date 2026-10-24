@@ -16,11 +16,15 @@ enum MetricsError {
 pub(crate) async fn get_proxy_session_metrics(
     thread_id: String,
 ) -> Result<ProxySessionLatencySummary, String> {
-    validate_thread_id(&thread_id).map_err(|error| error.to_string())?;
-    tauri::async_runtime::spawn_blocking(move || read_session_metrics(&thread_id))
+    tauri::async_runtime::spawn_blocking(move || load_session_metrics(&thread_id))
         .await
         .map_err(|_| MetricsError::Unavailable.to_string())?
-        .map_err(|error| error.to_string())
+}
+
+/// Shared by the GUI command and the existing renderer worker; never call on the UI thread.
+pub(crate) fn load_session_metrics(thread_id: &str) -> Result<ProxySessionLatencySummary, String> {
+    validate_thread_id(thread_id).map_err(|error| error.to_string())?;
+    read_session_metrics(thread_id).map_err(|error| error.to_string())
 }
 
 fn validate_thread_id(thread_id: &str) -> Result<(), MetricsError> {

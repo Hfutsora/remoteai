@@ -43,6 +43,35 @@ fn tps_uses_combined_output_time_without_first_response_wait() {
 }
 
 #[test]
+fn renderer_metrics_read_only_the_requested_thread() {
+    let id = "renderer-metrics-isolated-thread";
+    let other = "renderer-metrics-unrelated-thread";
+    {
+        let mut sessions = super::super::proxy_sessions().lock().unwrap();
+        sessions.insert(
+            id.to_string(),
+            session(1, vec![request(Some(100), Some(3_000))]),
+        );
+        sessions.insert(
+            other.to_string(),
+            session(2, vec![request(Some(90_000), Some(2_000))]),
+        );
+    }
+    let result = load_session_metrics(id).unwrap();
+    let missing = load_session_metrics("renderer-metrics-no-history").unwrap();
+    {
+        let mut sessions = super::super::proxy_sessions().lock().unwrap();
+        sessions.remove(id);
+        sessions.remove(other);
+    }
+    assert_eq!(result.total_output_tokens, 100);
+    assert_eq!(result.total_output_time_ms, 2_000);
+    assert_eq!(result.output_request_count, 1);
+    assert_eq!(missing.output_request_count, 0);
+    assert!(load_session_metrics("bad thread id").is_err());
+}
+
+#[test]
 fn ttft_averages_observed_tokens_including_active_requests_without_using_first_bytes() {
     let historical = request(Some(100), Some(2_000));
     assert_eq!(

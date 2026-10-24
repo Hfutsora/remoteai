@@ -370,6 +370,17 @@ test("localizes the injected panel and updates an existing panel when language c
   assert.match(harness.usage.title, /Остаток лимита аккаунта: 100%/);
 });
 
+test("Japanese also localizes the shared usage and speed controls", () => {
+  const harness = createHarness();
+  harness.state.updateLanguage("ja");
+  update(harness, { providerEstimatedCost: { amountUsd: 1.25, aggregated: true } });
+  assert.equal(harness.usage.querySelector("[data-today-label]").textContent, "今日");
+  assert.match(harness.usage.title, /集約 API の今日の推定コスト合計/);
+  const selector = harness.document.querySelector("[data-codex-switch-speed-selector]");
+  assert.equal(selector.attributes["aria-label"], "今日の使用量と速度モード");
+  assert.match(selector.querySelector("[data-speed-button]").attributes["aria-label"], /高速モード/);
+});
+
 test("updates language during a failed usage refresh without clearing data or overlapping requests", () => {
   const harness = createHarness();
   update(harness, { language: "en", providerEstimatedCost: { amountUsd: 1.25, aggregated: true } });

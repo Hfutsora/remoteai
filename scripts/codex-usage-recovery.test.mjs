@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import { chromium, expect } from "@playwright/test";
+import { composerUsageOverlay } from "./fixtures/usage-statusline-source.mjs";
 
 const root = new URL("../apps/desktop/src-tauri/src/dream_skin_native/", import.meta.url);
-const [sync, overlay, queryClient, status] = await Promise.all([
-  "renderer_sync.rs", "speed_selector_overlay.rs", "composer_query_client.js", "composer_status.js",
+const [sync, queryClient, status] = await Promise.all([
+  "renderer_sync.rs", "composer_query_client.js", "composer_status.js",
 ].map(path => readFile(new URL(path, root), "utf8")));
 const substitutions = {
   query_client: queryClient,
-  overlay: overlay.slice(overlay.indexOf('r#"') + 3, overlay.lastIndexOf('"#;'))
-    .replace("__CODEX_SWITCH_SERVICE_TIER__", '"default"'),
+  overlay: composerUsageOverlay,
   status,
 };
 const template = sync.match(/r#"(\(\(\) => \{\{[\s\S]*?\}\}\)\(\))"#/)[1];
