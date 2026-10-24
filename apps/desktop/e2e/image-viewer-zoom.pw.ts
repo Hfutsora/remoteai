@@ -31,7 +31,9 @@ for (const mode of ['local', 'remote', 'web']) {
       await page.route('https://fonts.googleapis.com/**', route => route.abort());
       await page.goto(`/e2e/image-viewer-drag-harness.html?mode=${mode}&large`);
       await page.getByRole('button', { name: '放大查看：拖动测试', exact: true }).click();
-      await page.getByRole('button', { name: '查看原图', exact: true }).click();
+      const original = page.getByRole('button', { name: '查看原图', exact: true });
+      if (mode === 'local') await expect(original).toHaveCount(0);
+      else await original.click();
       const conversation = page.getByTestId('conversation');
       const initialScroll = await conversation.evaluate(element => element.scrollTop);
       const percentage = page.getByRole('button', { name: '还原图片', exact: true });

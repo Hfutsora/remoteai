@@ -16,11 +16,12 @@ interface Props {
   feedback?: string;
   translate?: (text: string) => string;
   formatError?: (error: unknown) => string;
+  autoLoadOriginal?: boolean;
 }
 
 export function ImageViewer({ thumbnail, description, load, close, download, contextMenu, feedback,
-  translate = defaultText, formatError = remoteErrorText }: Props) {
-  const image = useImageViewer(load);
+  translate = defaultText, formatError = remoteErrorText, autoLoadOriginal = false }: Props) {
+  const image = useImageViewer(load, autoLoadOriginal);
   const [downloadError, setDownloadError] = useState('');
   const [saving, setSaving] = useState(false);
   const gestures = useImageGestures();

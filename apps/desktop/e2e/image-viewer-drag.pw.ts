@@ -20,6 +20,9 @@ for (const mode of ['local', 'remote', 'web']) {
       await page.goto(`/e2e/image-viewer-drag-harness.html?mode=${mode}${linked ? '&linked' : ''}`);
       await page.getByRole('button', { name: '放大查看：拖动测试', exact: true }).click();
       await expect(page.locator('.cs-image-stage img')).toBeVisible();
+      await expect(page.locator('.cs-image-viewer')).toHaveCSS('user-select', 'none');
+      await expect(page.getByRole('button', { name: '关闭图片', exact: true })).toHaveCSS('user-select', 'none');
+      await expect(page.locator('.cs-image-toolbar')).toHaveCSS('user-select', 'none');
       await drag(page, { x: 300, y: 200 }, { x: 900, y: 500 });
       await expect.poll(() => position(page)).toEqual({ x: 600, y: 300 });
       // Cross the toolbar while held: pointer capture must keep the image moving.
