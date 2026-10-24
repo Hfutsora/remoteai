@@ -22,6 +22,7 @@ import { useRevokeDesktopService } from './devices/useRevokeDesktopService';
 import { useRemoteModelRestartPrompt } from "./devices/useRemoteModelRestartPrompt";
 import { RemoteModelSwitchSheet } from "./components/RemoteModelSwitchSheet";
 import { TotpPage } from "./components/TotpPage";
+import { DownloadCountIcon } from './downloads/DownloadCountIcon';
 import { DiscoveryBackButton, DiscoveryPage } from './discovery/DiscoveryPage';
 import { isDiscoveryPage, primaryNavigationPage } from '../../../shared/navigation/discovery';
 import { AccountsPage } from "./accounts/AccountsPage";
@@ -353,7 +354,8 @@ function AppShell() {
     discover: t('client.discovery.title'),
     devices: t("client.app.viewAndControlYourDesktopDevices"), totp: t("client.app.manageAndSyncYour2faCodes"), settings: t("client.app.managePreferencesAndAccountSecurity"),
   };
-  const discoveryPage = <DiscoveryPage onOpen={destination => dispatch(pageChanged(destination))} />;
+  const downloadScope = session ? downloadOwner(session) : undefined;
+  const discoveryPage = <DiscoveryPage owner={downloadScope} onOpen={destination => dispatch(pageChanged(destination))} />;
   const otherPages = {
     discover: discoveryPage, 'token-summary': discoveryPage,
     downloads: session && <DownloadManagerPage owner={downloadOwner(session)}
@@ -381,7 +383,9 @@ function AppShell() {
         <button type="button" aria-label={item.label} aria-current={activeNavigationPage === item.key ? 'page' : undefined}
           className={`sidebar-nav-${item.key}${activeNavigationPage === item.key ? ' active' : ''}`}
           onClick={() => dispatch(pageChanged(item.key))}>
-          <item.icon size={19} /><span>{item.label}</span>
+          {item.key === 'discover'
+            ? <DownloadCountIcon owners={[downloadScope]}><item.icon size={19} /></DownloadCountIcon>
+            : <item.icon size={19} />}<span>{item.label}</span>
         </button>
       </Tooltip>)}</nav>
       <div className="sidebar-live"><span><i />  {t("client.app.connected")}</span><p>{t("client.app.manageYourAccountsAndDevices")}</p></div>
@@ -420,7 +424,10 @@ function AppShell() {
     </div>
     <div className="mobile-tabbar">
       <TabBar activeKey={activeNavigationPage}>
-        {navItems.map(item => <TabBar.Item key={item.key} title={item.label} icon={<item.icon size={21} />}
+        {navItems.map(item => <TabBar.Item key={item.key} title={item.label}
+          icon={item.key === 'discover'
+            ? <DownloadCountIcon owners={[downloadScope]}><item.icon size={21} /></DownloadCountIcon>
+            : <item.icon size={21} />}
           onClick={() => dispatch(pageChanged(item.key))} />)}
       </TabBar><SafeArea position="bottom" />
     </div>

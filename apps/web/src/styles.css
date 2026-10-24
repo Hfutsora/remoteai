@@ -172,7 +172,8 @@ h1, h2, h3, .brand-lockup { font-family: "Manrope", "PingFang SC", "Microsoft Ya
   .main-menu-collapsed .desktop-sidebar nav { flex: 1; min-height: 272px; gap: 8px; margin-top: 24px; }
   .main-menu-collapsed .desktop-sidebar nav button { justify-content: center; flex-shrink: 0; height: 48px;
     padding: 0; border-radius: 10px; }
-  .main-menu-collapsed .desktop-sidebar nav button > svg { width: 23px; height: 23px; }
+  .main-menu-collapsed .desktop-sidebar nav button > svg,
+  .main-menu-collapsed .desktop-sidebar nav button > .download-count-icon > svg { width: 23px; height: 23px; }
   .main-menu-collapsed .desktop-sidebar nav .sidebar-nav-settings { margin-top: auto; }
   .main-menu-collapsed .sidebar-profile { display: flex; justify-content: center; flex-shrink: 0; padding: 6px 0; }
   .main-menu-collapsed .content-shell { margin-left: 72px; }

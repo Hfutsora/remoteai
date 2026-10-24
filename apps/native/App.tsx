@@ -1,6 +1,5 @@
 import 'react-native-gesture-handler';
 import { createThemedStyles } from './src/theme/styles';
-import { textMetrics } from './src/theme/text';
 import { loadTheme, useThemeMode, useThemeColor } from './src/theme/preference';
 import { t, useLanguage } from './src/i18n';
 import { loadLanguage } from './src/i18n/preference';
@@ -78,8 +77,10 @@ import { useDeviceScreenControl } from './src/devices/useDeviceScreenControl';
 import { RemoteModelSwitchSheet } from './src/components/RemoteModelSwitchSheet';
 import { QuotaConsumptionSheet } from './src/components/QuotaConsumptionSheet';
 import { TotpPage } from './src/totp/TotpPage';
+import { downloadOwner } from './src/downloads/manager';
+import { BottomNavigation } from './src/discovery/BottomNavigation';
 import { DiscoveryBackButton, DiscoveryPage } from './src/discovery/DiscoveryPage';
-import { isDiscoveryPage, primaryNavigationPage } from '../../shared/navigation/discovery';
+import { isDiscoveryPage } from '../../shared/navigation/discovery';
 import { usePageStyles as useTotpPageStyles } from './src/totp/pageStyles';
 import { ChatPage } from './src/chat/ChatPage';
 import { PrimaryPagePager } from './src/navigation/PrimaryPagePager';
@@ -594,42 +595,6 @@ function DeviceManagementPage({
 type AppPage = 'accounts' | 'devices' | 'chat' | 'discover' | 'totp' | 'admin' | 'settings' | 'about'
   | 'token-summary' | 'downloads';
 const DEFAULT_APP_PAGE: AppPage = 'chat';
-
-function BottomNavigation({ activePage, onChange }: {
-  activePage: AppPage;
-  onChange: (page: AppPage) => void;
-}) {
-  const resolveThemeColor = useThemeColor();
-  const styles = useStyles();
-  useLanguage();
-  const settingsActive = ['admin', 'about', 'settings'].includes(activePage);
-  const discoveryActive = primaryNavigationPage(activePage) === 'discover';
-  // Keep the home-indicator area inside the navigation background.
-  return <SafeAreaView edges={['bottom']} style={styles.bottomNavigation} accessibilityRole="tablist">
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: activePage === 'chat' }}
-      onPress={() => onChange('chat')} style={styles.navItem}>
-      <Ionicons name="chatbubble-outline" size={23} color={activePage === 'chat' ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
-      <Text style={[styles.navText, activePage === 'chat' && styles.navTextActive]}>{t("client.app.chat")}</Text>
-    </Pressable>
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: activePage === 'accounts' }}
-      onPress={() => onChange('accounts')} style={styles.navItem}>
-      <Ionicons name={activePage === 'accounts' ? 'people' : 'people-outline'}
-        size={23} color={activePage === 'accounts' ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
-      <Text style={[styles.navText, activePage === 'accounts' && styles.navTextActive]}>{t("client.app.accounts")}</Text>
-    </Pressable>
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: discoveryActive }}
-      onPress={() => onChange('discover')} style={styles.navItem}>
-      <Ionicons name={discoveryActive ? 'compass' : 'compass-outline'} size={23}
-        color={discoveryActive ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
-      <Text style={[styles.navText, discoveryActive && styles.navTextActive]}>{t('client.discovery.title')}</Text>
-    </Pressable>
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: settingsActive }}
-      onPress={() => onChange('settings')} style={styles.navItem}>
-      <Ionicons name="settings" size={23} color={settingsActive ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
-      <Text style={[styles.navText, settingsActive && styles.navTextActive]}>{t("client.app.settings")}</Text>
-    </Pressable>
-  </SafeAreaView>;
-}
 
 function DeviceSwitchDrawer({ account, devices, switching, onClose, onSwitch }: {
   account: AccountSummary | null;
@@ -1304,7 +1269,7 @@ function AppContent() {
       tokenSummary={activePage === 'token-summary'} closeTokenSummary={() => setActivePage('discover')}
       notification={chatNotification.target} notificationError={chatNotification.error}
       notificationHandled={chatNotification.handled} />,
-    discover: <DiscoveryPage onOpen={setActivePage} />,
+    discover: <DiscoveryPage owner={session ? downloadOwner(session) : undefined} onOpen={setActivePage} />,
     accounts: <Dashboard session={session} accounts={accounts} devices={devices} loading={loading}
         syncingServer={syncingServer} refreshingUsage={refreshingUsage} consumingQuota={consumingQuota}
         refreshingAccountId={refreshingAccountId} switchingAccountId={switchingAccountId}
@@ -1338,7 +1303,8 @@ function AppContent() {
               ? <AboutPage onBack={() => setActivePage('settings')} />
               : null}
     </PrimaryPagePager>
-    {showBottomNavigation && <BottomNavigation activePage={activePage} onChange={setActivePage} />}
+    {showBottomNavigation && <BottomNavigation activePage={activePage}
+      owner={session ? downloadOwner(session) : undefined} onChange={setActivePage} />}
   </SafeAreaView>;
 }
 
@@ -1408,15 +1374,4 @@ const useStyles = createThemedStyles((color) => ({
   switchDeviceEmptyTitle: { color: color(COLORS.ink, 'ink'), fontSize: 16, fontWeight: '800' },
   switchDeviceEmptyText: { color: color(COLORS.muted, 'muted'), fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 7 },
   settingsTitle: { color: color(COLORS.ink, 'ink'), fontSize: 28, fontWeight: '800' }, settingsSubtitle: { color: color(COLORS.muted, 'muted'), fontSize: 13, marginTop: 4 }, sectionLabel: { color: color(COLORS.muted, 'muted'), fontSize: 13, fontWeight: '700', marginLeft: 3, marginBottom: 9, marginTop: 2 },
-  bottomNavigation: {
-    flexDirection: 'row', backgroundColor: color(COLORS.card, 'surface'), borderTopWidth: 1, borderTopColor: color(COLORS.border, 'border'),
-    shadowColor: '#314c3d', shadowOpacity: 0.08, shadowRadius: 8, elevation: 10,
-  },
-  navItem: { flex: 1, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  // Give Android room to draw every glyph instead of using the exact intrinsic text width.
-  navText: {
-    ...textMetrics(11, 18), alignSelf: 'stretch', textAlign: 'center', paddingHorizontal: 4,
-    color: color('#7b8c82', 'muted'), fontWeight: '700',
-  },
-  navTextActive: { color: color(COLORS.green, 'accent') },
 }));

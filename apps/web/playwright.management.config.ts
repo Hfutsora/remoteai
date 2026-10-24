@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e', testMatch: ['**/management.pw.ts', '**/account-usage.pw.ts',
-    '**/i18n.pw.ts', '**/agreement.pw.ts', '**/theme.pw.ts'],
+    '**/i18n.pw.ts', '**/agreement.pw.ts', '**/theme.pw.ts', '**/download-count.pw.ts'],
   workers: 1, timeout: 45_000,
   outputDir: '../../.codex-tmp/web-management-playwright',
   reporter: [['list'], ['html', { outputFolder: '../../.codex-tmp/web-management-report', open: 'never' }]],

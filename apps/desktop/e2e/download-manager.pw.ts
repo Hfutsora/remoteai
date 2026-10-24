@@ -40,7 +40,7 @@ test('collapsed download icon counts active tasks and receives the download anim
   expect(points.at(-1)!.x).toBeCloseTo(destination.x + destination.width / 2, 0);
   expect(points.at(-1)!.y).toBeCloseTo(destination.y + destination.height / 2, 0);
   await expect(count).toHaveText('1');
-  await expect(count).toHaveCSS('color', 'rgb(53, 173, 167)');
+  await expect(count).toHaveCSS('color', 'rgb(255, 255, 255)');
   const badge = (await count.boundingBox())!;
   expect(badge.y).toBeLessThan(destination.y);
   expect(badge.x).toBeGreaterThan(destination.x);
@@ -50,14 +50,16 @@ test('collapsed download icon counts active tasks and receives the download anim
   await page.getByRole('button', { name: '切换电脑', exact: true }).click();
   await enqueue(page);
   await expect(count).toHaveText('2');
+  await page.evaluate(() => window.desktopDownloads.addLocal());
+  await expect(count).toHaveText('3');
   await page.getByRole('button', { name: '切换账号' }).click();
-  await expect(count).toHaveCount(0);
+  await expect(count).toHaveText('1');
   await page.getByRole('button', { name: '切换账号' }).click();
-  await expect(count).toHaveText('2');
+  await expect(count).toHaveText('3');
   await page.getByRole('navigation').getByRole('button', { name: '下载管理', exact: true }).click();
   const office = page.getByRole('article', { name: 'office.msi' });
   await office.getByRole('button', { name: '暂停', exact: true }).click();
-  await expect(count).toHaveText('1');
+  await expect(count).toHaveText('2');
   await page.evaluate(() => { window.desktopDownloads.delay = 10; });
   await expect(page.getByRole('article', { name: 'home.msi' })).toContainText('文件已就绪', { timeout: 30_000 });
   await expect(count).toHaveCount(0);

@@ -16,7 +16,7 @@
 .discovery-devices > svg:first-child { color: var(--app-info, #3984db); }
 .discovery-totp > svg:first-child,
 .discovery-token-summary > svg:first-child,
-.discovery-downloads > svg:first-child { color: var(--app-accent, #07b775); }
+.discovery-downloads > .download-count-icon { color: var(--app-accent, #07b775); }
 .discovery-chevron { color: var(--app-muted, #b2b2b2); }
 .discovery-row:hover { background: var(--app-elevated, #fafafa); }
 .discovery-row:active { opacity: .65; }

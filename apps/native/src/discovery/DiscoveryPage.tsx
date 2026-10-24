@@ -5,6 +5,7 @@ import { t, useLanguage } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
 import { textMetrics } from '../theme/text';
+import { DownloadCountIcon } from '../downloads/DownloadCountIcon';
 
 const entryIcons = {
   devices: 'server-outline',
@@ -13,7 +14,10 @@ const entryIcons = {
   'token-summary': 'bar-chart-outline',
 } as const;
 
-export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination) => void }) {
+export function DiscoveryPage({ owner, onOpen }: {
+  owner?: string;
+  onOpen: (page: DiscoveryDestination) => void;
+}) {
   useLanguage();
   const styles = useStyles();
   const color = useThemeColor();
@@ -26,8 +30,12 @@ export function DiscoveryPage({ onOpen }: { onOpen: (page: DiscoveryDestination)
         .map(entry => <Pressable key={entry.page} accessibilityRole="button"
         onPress={() => onOpen(entry.page)}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-        <Ionicons name={entryIcons[entry.page]}
-          size={25} color={entry.page === 'devices' ? color('#3984db', 'info') : color('#07b775', 'accent')} />
+        {entry.page === 'downloads'
+          ? <DownloadCountIcon owner={owner}>
+            <Ionicons name="download-outline" size={25} color={color('#07b775', 'accent')} />
+          </DownloadCountIcon>
+          : <Ionicons name={entryIcons[entry.page]} size={25}
+            color={entry.page === 'devices' ? color('#3984db', 'info') : color('#07b775', 'accent')} />}
         <Text style={styles.label}>{t(entry.label)}</Text>
         <Ionicons name="chevron-forward" size={20} color={color('#b2b2b2', 'muted')} />
       </Pressable>)}
