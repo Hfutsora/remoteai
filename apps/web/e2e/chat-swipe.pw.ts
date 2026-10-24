@@ -18,6 +18,19 @@ const right = [{ x: 90, y: 300 }, { x: 115, y: 302 }, { x: 170, y: 306 }, { x: 2
 const left = [{ x: 280, y: 300 }, { x: 250, y: 302 }, { x: 190, y: 306 }, { x: 100, y: 310 }];
 const activeTab = (page: Page) => page.locator('.mobile-tabbar .adm-tab-bar-item-active');
 
+async function trackSettling(page: Page, key: string) {
+  return page.locator(`[data-primary-page="${key}"]`).evaluate(node => new Promise<number[]>(resolve => {
+    const positions: number[] = [];
+    const started = performance.now();
+    const sample = () => {
+      positions.push(node.getBoundingClientRect().x);
+      if (performance.now() - started < 650) requestAnimationFrame(sample);
+      else resolve(positions);
+    };
+    sample();
+  }));
+}
+
 test.beforeEach(async ({ page, request }) => {
   await request.post(`${fixtureUrl}/test/reset`);
   await login(page);
@@ -124,12 +137,32 @@ test('shows both real pages under the finger before committing and keeps the tab
         await expect(activeTab(page)).toHaveText(label);
         expect(await page.locator('.mobile-tabbar').boundingBox()).toEqual(tabs);
         await screenshot(page, info, `mid-swipe-${from}-${to}`);
+        const settling = trackSettling(page, to);
         await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
         await expect(activeTab(page)).toHaveText(targetLabel);
         await expect(incoming).not.toHaveClass(/is-preview/);
+        const positions = await settling;
+        for (let index = 1; index < positions.length; index++) {
+          expect(Math.abs(positions[index])).toBeLessThanOrEqual(Math.abs(positions[index - 1]) + 1);
+        }
+        expect(positions.at(-1)).toBeCloseTo(0, 0);
       }
     } finally { await session.detach(); }
   });
+
+test('keeps the selected page onscreen when changing between phone and desktop widths', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Exercise both responsive layouts in one session.');
+  await page.locator('.mobile-tabbar').getByText('设置', { exact: true }).click();
+  const pane = page.locator('[data-primary-page="settings"]');
+  for (const width of [1280, 390, 861, 860]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(pane).toBeInViewport();
+    await expect.poll(async () => {
+      const bounds = await pane.boundingBox();
+      return bounds ? bounds.x >= 0 && bounds.x + bounds.width <= width + 1 : false;
+    }).toBe(true);
+  }
+});
 
 test('returns partial and cancelled previews to their original position without opening a row',
   async ({ page, isMobile }) => {

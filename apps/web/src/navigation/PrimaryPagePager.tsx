@@ -1,8 +1,9 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { PRIMARY_PAGES, SWIPE_SETTLE_MS, type PrimaryPage } from '../../../../shared/navigation/pageSwipe';
 import { PagePreviewContext, PageSwipeContext } from '../../../../shared/navigation/PageSwipeContext';
 import { usePageTransition, type PageAnimation } from '../../../../shared/navigation/usePageTransition';
 import { usePrimaryPageSwipe } from './usePrimaryPageSwipe';
+import { useDesktopLayout } from '../useDesktopLayout';
 import './pagePager.css';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
   const track = useRef<HTMLDivElement>(null);
+  const desktop = useDesktopLayout();
   const [width, setWidth] = useState(0);
   const animation = useMemo<PageAnimation>(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -37,7 +39,7 @@ export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
     setWidth(node.clientWidth);
     return () => observer.disconnect();
   }, []);
-  const { preview, progress, navigate } = usePageTransition({ page, width, onChange, animation });
+  const { preview, progress, navigate } = usePageTransition({ page, width: desktop ? 0 : width, onChange, animation });
   usePrimaryPageSwipe(page, navigate, progress);
   const onNext = useCallback(() => navigate('accounts'), [navigate]);
   const chatSwipe = useMemo(() => ({ ...progress, onNext }), [progress, onNext]);
@@ -46,14 +48,14 @@ export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
     <PagePreviewContext.Provider value={preview?.page}>
       <div className={`primary-page-viewport${primary ? ' is-primary' : ''}`}>
         <div ref={track} className={`primary-page-track${preview ? ' is-swiping' : ''}`}>
-          {PRIMARY_PAGES.map(key => {
+          {PRIMARY_PAGES.map((key, index) => {
             const active = key === page;
             const incoming = key === preview?.page;
             const visible = active || incoming;
-            const left = incoming ? (preview.direction === 'left' ? '100%' : '-100%') : undefined;
+            const position = { '--primary-page-left': `${index * 100}%` } as CSSProperties;
             return <div key={key} data-primary-page={key}
               className={`primary-page-pane${incoming ? ' is-preview' : ''}`} hidden={!visible}
-              aria-hidden={!active} {...(!active ? { inert: '' } : {})} style={{ left }}>
+              aria-hidden={!active} {...(!active ? { inert: '' } : {})} style={position}>
               {(visible || key === 'chat') && pages[key]}
             </div>;
           })}

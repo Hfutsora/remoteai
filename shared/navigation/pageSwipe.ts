@@ -13,6 +13,11 @@ export interface SwipeProgress {
   onEnd?: (direction?: SwipeDirection) => void;
 }
 
+/** Absolute track position; panes keep the same slot before and after a swipe commits. */
+export function pageTrackOffset(page: string, width: number) {
+  return 0 - Math.max(0, PRIMARY_PAGES.findIndex(item => item === page)) * width;
+}
+
 export function pageSwipeOffset(dx: number, direction: SwipeDirection, width: number) {
   return direction === 'left' ? Math.max(-width, Math.min(0, dx)) : Math.min(width, Math.max(0, dx));
 }

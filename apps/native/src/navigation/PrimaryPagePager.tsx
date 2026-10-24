@@ -22,26 +22,30 @@ export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
   const onNext = useCallback(() => { Keyboard.dismiss(); navigate('accounts'); }, [navigate]);
   const chatSwipe = useMemo(() => ({ ...progress, onNext }), [progress, onNext]);
   const displayedPage = page === 'token-summary' ? 'chat' : page;
+  const primary = PRIMARY_PAGES.some(key => key === displayedPage);
+  // Include every slot in the native bounds so Android can hit-test and expose the visible pane to accessibility.
+  const trackWidth = width * PRIMARY_PAGES.length;
   return <PageSwipeContext.Provider value={chatSwipe}>
     <PagePreviewContext.Provider value={preview?.page}>
       <View style={styles.viewport} onLayout={event => setWidth(event.nativeEvent.layout.width)} {...handlers}>
-        <Animated.View style={[styles.track, { transform: [{ translateX: offset }] }]}>
-          {PRIMARY_PAGES.map(key => {
+        <Animated.View style={[styles.track, { width: trackWidth, transform: [{ translateX: offset }] },
+          !primary && styles.hidden]}>
+          {PRIMARY_PAGES.map((key, index) => {
             const active = key === displayedPage;
             const incoming = key === preview?.page;
             const visible = active || incoming;
-            const left = incoming ? (preview.direction === 'left' ? width : -width) : 0;
+            const left = index * width;
             return <View key={key} testID={`primary-page-${key}`}
               pointerEvents={active ? 'auto' : 'none'} accessibilityElementsHidden={!active}
               importantForAccessibility={active ? 'auto' : 'no-hide-descendants'}
               style={[styles.pane, { backgroundColor: color(key === 'settings' ? '#fff' : '#ededed',
-                key === 'settings' ? 'surface' : 'canvas'), transform: [{ translateX: left }] },
+                key === 'settings' ? 'surface' : 'canvas'), left, width },
               !visible && styles.hidden]}>
               {(visible || key === 'chat') && pages[key]}
             </View>;
           })}
-          {children}
         </Animated.View>
+        {children}
       </View>
     </PagePreviewContext.Provider>
   </PageSwipeContext.Provider>;
@@ -50,6 +54,6 @@ export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
 const styles = StyleSheet.create({
   viewport: { flex: 1, overflow: 'hidden' },
   track: { flex: 1 },
-  pane: { ...StyleSheet.absoluteFillObject },
+  pane: { position: 'absolute', top: 0, bottom: 0 },
   hidden: { display: 'none' },
 });

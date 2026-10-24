@@ -22,7 +22,8 @@
   .primary-page-viewport.is-primary { position: relative; overflow: hidden; }
   .is-primary > .primary-page-track { position: absolute; inset: 0; }
   .is-primary > .primary-page-track > .primary-page-pane {
-    position: absolute; inset: 0; width: 100%; overflow: auto; overscroll-behavior-x: none;
+    position: absolute; inset: 0; left: var(--primary-page-left); width: 100%;
+    overflow: auto; overscroll-behavior-x: none;
     background: var(--app-canvas, #ededed);
   }
   .is-primary > .primary-page-track > [data-primary-page="chat"] { overflow: hidden; }

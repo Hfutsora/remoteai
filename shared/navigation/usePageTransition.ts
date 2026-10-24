@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { adjacentPage, pageSwipeOffset, type PrimaryPage, type SwipeDirection } from './pageSwipe';
+import { adjacentPage, pageSwipeOffset, pageTrackOffset, type PrimaryPage, type SwipeDirection } from './pageSwipe';
 
 export interface PageAnimation {
   setOffset: (offset: number) => void;
@@ -14,21 +14,24 @@ export interface PagePreview { page: PrimaryPage; direction: SwipeDirection }
 
 /** Keep the selected tab unchanged until the incoming page has finished settling. */
 export function usePageTransition({ page, width, onChange, animation }: Options) {
-  const [preview, setPreview] = useState<PagePreview | null>(null);
+  const [state, setState] = useState<{ preview: PagePreview | null }>({ preview: null });
   const current = useRef<PagePreview | null>(null);
   const settling = useRef(false);
   const revision = useRef(0);
   const change = useRef(onChange);
   change.current = onChange;
+  const origin = pageTrackOffset(page, width);
   useLayoutEffect(() => {
     revision.current++;
     animation.stop();
-    animation.setOffset(0);
+    animation.setOffset(origin);
     current.current = null;
     settling.current = false;
-    setPreview(null);
+    // Publish even an empty preview: RN's native setValue does not render the new value.
+    // The next render must synchronize Animated.View after a tab press, resize or subpage return.
+    setState({ preview: null });
     return () => { revision.current++; animation.stop(); };
-  }, [page, width, animation]);
+  }, [page, width, origin, animation]);
 
   const onMove = useCallback((dx: number, direction: SwipeDirection) => {
     if (settling.current || width <= 0) return;
@@ -36,25 +39,26 @@ export function usePageTransition({ page, width, onChange, animation }: Options)
     if (!destination) return;
     if (!current.current) {
       current.current = { page: destination, direction };
-      setPreview(current.current);
+      setState({ preview: current.current });
     }
-    animation.setOffset(pageSwipeOffset(dx, current.current.direction, width));
-  }, [page, width, animation]);
+    animation.setOffset(origin + pageSwipeOffset(dx, current.current.direction, width));
+  }, [page, width, origin, animation]);
 
   const settle = useCallback((destination?: PrimaryPage) => {
     if (!current.current || settling.current) return;
     settling.current = true;
     const version = revision.current;
-    const offset = destination ? (current.current.direction === 'left' ? -width : width) : 0;
+    const offset = destination ? pageTrackOffset(destination, width) : origin;
     animation.animate(offset, () => {
       if (revision.current !== version) return;
+      // Keep the incoming pane and final native offset until React commits the selected page.
+      // Rebasing either one here can briefly reveal the outgoing page on Android.
+      if (destination) { change.current(destination); return; }
       current.current = null;
       settling.current = false;
-      if (destination) change.current(destination);
-      setPreview(null);
-      animation.setOffset(0);
+      setState({ preview: null });
     });
-  }, [animation, width]);
+  }, [animation, width, origin]);
   const onEnd = useCallback((direction?: SwipeDirection) => {
     if (!direction) settle();
   }, [settle]);
@@ -62,5 +66,5 @@ export function usePageTransition({ page, width, onChange, animation }: Options)
     if (current.current?.page === destination) settle(destination);
   }, [settle]);
   const progress = useMemo(() => ({ onMove, onEnd }), [onMove, onEnd]);
-  return { preview, progress, navigate };
+  return { preview: state.preview, progress, navigate };
 }
