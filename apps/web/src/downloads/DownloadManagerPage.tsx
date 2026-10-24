@@ -6,11 +6,14 @@ import { downloadConnectionLabel } from '../../../../shared/remote-chat/download
 import { DownloadBrowser } from './DownloadBrowser';
 import { DownloadCard } from './DownloadCard';
 import { useDownloadTasks } from './useDownloadTasks';
+import { useDownloadSelection } from '../../../../shared/downloads/useDownloadSelection';
+import { DownloadBatchDelete } from './DownloadBatchDelete';
 import './styles.css';
 
 export function DownloadManagerPage({ owner, onBack }: { owner: string; onBack: () => void }) {
   useLanguage();
-  const { connection, tasks, error, busy, run } = useDownloadTasks(owner);
+  const { connection, tasks, error, busy, run, removeTasks } = useDownloadTasks(owner);
+  const { selected, toggle } = useDownloadSelection(tasks, owner);
   const [view, setView] = useState<'tasks' | 'project' | 'computer'>('tasks');
   if (view !== 'tasks' && connection) return <DownloadBrowser
     key={`${connection.deviceId}:${view}:${connection.threadId ?? connection.cwd ?? ''}`}
@@ -33,8 +36,12 @@ export function DownloadManagerPage({ owner, onBack }: { owner: string; onBack: 
         onClick={() => setView('computer')}><Monitor size={24} /><strong>{t("client.downloads.thisComputer")}</strong></button>
     </div>
     {error && <p role="alert" className="download-notice">{displayError(error)}</p>}
-    <h3>{t("client.downloads.downloads.ea215a")} <small>{tasks.length}</small></h3>
-    <div className="download-tasks">{tasks.map(task => <DownloadCard key={task.id} task={task} busy={busy === task.id}
+    <div className="download-section-heading"><h3>{t("client.downloads.downloads.ea215a")}</h3>
+      <DownloadBatchDelete count={selected.size} busy={!!busy} remove={() => { void removeTasks([...selected]); }} />
+      <small>{tasks.length}</small>
+    </div>
+    <div className="download-tasks">{tasks.map(task => <DownloadCard key={task.id} task={task} busy={!!busy}
+      selected={selected.has(task.id)} toggleSelection={() => toggle(task.id)}
       connected={!!connection?.ready && connection.deviceId === task.source.deviceId}
       action={() => { void run(task); }} open={() => { void run(task, 'open'); }}
       share={() => { void run(task, 'share'); }}

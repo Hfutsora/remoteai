@@ -128,6 +128,44 @@ test('disconnecting one computer pauses only its download and allows removing th
   await expect(office).toHaveCount(0);
 });
 
+test('desktop selects download cards and batch deletes with one confirmation', async ({ page }) => {
+  await page.goto('/e2e/download-manager-harness.html');
+  await page.evaluate(() => window.desktopDownloads.addLocal());
+  await enqueue(page);
+  await page.getByRole('button', { name: '切换电脑', exact: true }).click();
+  await enqueue(page);
+  await page.getByRole('navigation').getByRole('button', { name: '下载管理', exact: true }).click();
+  const batch = page.getByRole('button', { name: /^批量删除/ });
+  await expect(batch).toBeDisabled();
+  const office = page.getByRole('article', { name: 'office.msi' });
+  const home = page.getByRole('article', { name: 'home.msi' });
+  await office.locator('strong').click();
+  await home.getByRole('checkbox').check();
+  await expect(batch).toHaveText('批量删除（2）');
+  await page.getByRole('button', { name: '切换账号', exact: true }).click();
+  await expect(batch).toBeDisabled();
+  await page.getByRole('button', { name: '切换账号', exact: true }).click();
+  await expect(batch).toBeDisabled();
+  await office.getByRole('checkbox').check();
+  await home.locator('strong').click();
+  await batch.click();
+  await expect(page.getByRole('dialog')).toContainText('删除这 2 项下载？');
+  await page.getByRole('dialog').getByRole('button', { name: /^保\s*留$/ }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(office.getByRole('checkbox')).toBeChecked();
+  await page.screenshot({ path: '../../.codex-tmp/download-selection-pc.png' });
+  await batch.click();
+  await page.getByRole('dialog').getByRole('button', { name: /^删\s*除$/ }).click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(batch).toBeDisabled();
+  const local = page.getByRole('article', { name: 'local.patch' });
+  await expect(local).toContainText('此电脑');
+  await local.locator('strong').click();
+  await batch.click();
+  await page.getByRole('dialog').getByRole('button', { name: /^删\s*除$/ }).click();
+  await expect(page.getByRole('article')).toHaveCount(0);
+});
+
 test('PC relay downloads use raw binary IPC and stay responsive through pause, resume and navigation',
   async ({ page }) => {
     await page.goto('/e2e/download-manager-harness.html?nativeBulk');

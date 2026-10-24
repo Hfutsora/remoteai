@@ -12,9 +12,11 @@ export function formatBytes(value: number) {
 const STATUS = { queued: "client.downloads.queued", preparing: "client.downloads.preparingAndCheckingTheFile", downloading: "client.downloads.downloading.e2fc57", verifying: "client.downloads.verifying",
   ready: "client.downloads.readyToSave", saving: "client.downloads.saving", paused: "client.downloads.paused", completed: "client.chat.completed", failed: "client.downloads.downloadFailed" };
 
-export function DownloadCard({ task, busy, connected, action, open, share, remove, text = displayText }: {
+export function DownloadCard({ task, busy, connected, action, open, share, remove,
+  selected = false, toggleSelection, text = displayText }: {
   task: DownloadTask; busy: boolean; connected: boolean; action: () => void; remove: () => void;
   open: () => void; share?: () => void; text?: typeof displayText;
+  selected?: boolean; toggleSelection?: () => void;
 }) {
   const running = ['downloading', 'queued', 'preparing', 'verifying'].includes(task.status);
   const completed = ['completed', 'ready', 'saving'].includes(task.status);
@@ -27,8 +29,14 @@ export function DownloadCard({ task, busy, connected, action, open, share, remov
   const detail = preparation ? text("client.downloads.compressedFiles", {
     done: preparation.completedFiles, total: preparation.totalFiles,
   }) : `${formatBytes(task.received)} / ${formatBytes(task.size)}`;
-  return <article className="download-card" aria-label={task.name}>
-    <div className="download-task-heading"><strong>{task.name}</strong><span>{text(status)}
+  return <article className={`download-card${toggleSelection ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}`}
+    aria-label={task.name} onClick={event => {
+      if (!busy && !(event.target as HTMLElement).closest('button, input')) toggleSelection?.();
+    }}>
+    <div className="download-task-heading">
+      {toggleSelection && <input type="checkbox" className="download-selection" checked={selected} disabled={busy}
+        aria-label={text('client.downloads.selectTask', { name: task.name })} onChange={toggleSelection} />}
+      <strong>{task.name}</strong><span>{text(status)}
       {preparation?.phase === 'compressing' && ` · ${percent}%`}</span></div>
     <p className="download-path">{task.source.deviceName} · {task.source.path}</p>
     <progress max={100} value={percent} aria-label={text(

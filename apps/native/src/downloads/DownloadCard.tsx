@@ -7,9 +7,10 @@ import type { DownloadTask } from './types';
 import { downloadDetail, downloadPercent, downloadStatusLabel, formatBytes } from './presentation';
 import { colors, useStyles } from './styles';
 
-export function DownloadCard({ task, connected, busy, action, share, remove }: {
+export function DownloadCard({ task, connected, busy, action, share, remove, selected = false, toggleSelection }: {
   task: DownloadTask; connected: boolean; busy: boolean;
   action: () => void; share: () => void; remove: () => void;
+  selected?: boolean; toggleSelection?: () => void;
 }) {
   const styles = useStyles();
   const color = useThemeColor();
@@ -24,13 +25,21 @@ export function DownloadCard({ task, connected, busy, action, share, remove }: {
   const percent = downloadPercent(task);
   const indeterminate = task.status === 'preparing' && task.preparation?.phase !== 'compressing';
   const progressCaption = indeterminate ? '' : `${percent}%`;
-  return <View style={styles.card}>
+  return <Pressable accessible={false} disabled={busy} onPress={toggleSelection}
+    style={[styles.card, selected && styles.selectedCard]}>
     <View style={styles.cardHeader}>
       <View style={styles.fileIcon}><Ionicons name="document-text-outline" size={23} color={color(colors.green, 'accent')} /></View>
       <View style={styles.fileCopy}>
         <Text style={styles.title} numberOfLines={2}>{task.name}</Text>
         <Text style={styles.caption} numberOfLines={1}>{task.source.deviceName}</Text>
       </View>
+      {toggleSelection && <Pressable accessibilityRole="checkbox"
+        accessibilityLabel={t('client.downloads.selectTask', { name: task.name })}
+        accessibilityState={{ checked: selected, disabled: busy }} disabled={busy}
+        onPress={event => { event.stopPropagation(); toggleSelection(); }} style={styles.selection}>
+        <Ionicons name={selected ? 'checkbox' : 'square-outline'} size={22}
+          color={color(selected ? colors.green : colors.muted, selected ? 'accent' : 'muted')} />
+      </Pressable>}
     </View>
     <View style={styles.progressCopy}>
       <View style={styles.statusRow}>
@@ -52,24 +61,26 @@ export function DownloadCard({ task, connected, busy, action, share, remove }: {
     {!!task.message && <Text style={failed ? styles.error : styles.text}>{displayError(task.message)}</Text>}
     {!connected && !complete && !task.readyToSave && <Text style={styles.text}>{t("client.mobile.connectToThisComputerToContinue")}</Text>}
     <View style={[styles.toolbar, styles.cardActions]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("client.projectBrowser.deleted")} disabled={busy} onPress={remove}
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.projectBrowser.deleted")} disabled={busy}
+        onPress={event => { event.stopPropagation(); remove(); }}
         style={({ pressed }) => [styles.deleteButton, busy && styles.disabled, pressed && styles.pressed]}>
         <Ionicons name="trash-outline" size={16} color={color(colors.muted, 'muted')} />
         <Text style={styles.deleteText}>{t("client.projectBrowser.deleted")}</Text>
       </Pressable>
       {complete && <Pressable accessibilityRole="button" accessibilityLabel={t("client.downloads.share")}
-        accessibilityState={{ disabled: busy }} disabled={busy} onPress={share}
+        accessibilityState={{ disabled: busy }} disabled={busy}
+        onPress={event => { event.stopPropagation(); share(); }}
         style={({ pressed }) => [styles.shareButton, busy && styles.disabled, pressed && styles.pressed]}>
         <Ionicons name="share-social-outline" size={16} color={color(colors.green, 'accent')} />
         <Text style={styles.buttonText}>{t("client.downloads.share")}</Text>
       </Pressable>}
       <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }}
-        disabled={disabled} onPress={action}
+        disabled={disabled} onPress={event => { event.stopPropagation(); action(); }}
         style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}>
         {busy ? <ActivityIndicator size="small" color={color(colors.green, 'accent')} />
           : <Ionicons name={icon} size={16} color={color(colors.green, 'accent')} />}
         <Text style={styles.buttonText}>{label}</Text>
       </Pressable>
     </View>
-  </View>;
+  </Pressable>;
 }

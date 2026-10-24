@@ -1,4 +1,5 @@
-.page { min-width: 0; width: 100%; }
+.page { min-width: 0; width: 100%; --app-accent: var(--green); --app-danger: var(--danger);
+  --app-surface: var(--panel); --app-border: var(--line); }
 .header { align-items: center; border-bottom: 1px solid var(--line); }
 .total { color: var(--muted); font-size: 13px; }
 .content { max-width: 1080px; margin: 0 auto; padding: 24px var(--page-x, 24px) 40px; }
@@ -8,6 +9,7 @@
 .notice { max-width: 400px; color: var(--danger); font-size: 13px; overflow-wrap: anywhere; }
 .tasks { display: grid; gap: 14px;
   :global(.download-card) { background: var(--panel); border-color: var(--line); }
+  :global(.download-card.is-selected) { border-color: var(--green); }
   :global(.download-task-heading strong) { font-size: 14px; font-weight: 600; }
   :global(.download-task-heading span) { color: var(--green); }
   :global(.download-path) { margin-block: 7px; color: var(--muted); font-size: 12px; }

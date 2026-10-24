@@ -6,6 +6,8 @@ import { Modal, Segmented } from 'antd';
 import { DownloadCard } from '../../../../web/src/downloads/DownloadCard';
 import { downloadManager } from '../../../../web/src/downloads/manager';
 import { useDownloadTasks } from '../../../../web/src/downloads/useDownloadTasks';
+import { DownloadBatchDelete } from '../../../../web/src/downloads/DownloadBatchDelete';
+import { useDownloadSelection } from '../../../../../shared/downloads/useDownloadSelection';
 import { authenticatedDownloadOwner } from '../../downloads/useDesktopDownloads';
 import { openDesktopDownload } from '../../downloads/openDownload';
 import { LOCAL_DOWNLOAD_OWNER, useLocalGitDownloads } from '../../downloads/localGitDownloads';
@@ -18,9 +20,10 @@ import styles from './index.module.less';
 type Filter = 'all' | 'active' | 'ready';
 const READY_STATUSES = new Set(['ready', 'saving', 'completed']);
 
-function confirmRemove() {
+function confirmRemove(count?: number) {
   return new Promise<boolean>(resolve => {
-    Modal.confirm({ title: uiText("client.downloads.deleteDownload"), width: 400,
+    Modal.confirm({ title: count === undefined ? uiText("client.downloads.deleteDownload")
+      : uiText('client.downloads.deleteSelectedTitle', { count }), width: 400,
       content: uiText("client.downloads.removeThisTaskAndItsTemporaryFilesFilesYouHave"),
       okText: uiText("client.projectBrowser.deleted"), cancelText: uiText("client.downloads.keep"), okButtonProps: { danger: true },
       onOk: () => { resolve(true); }, onCancel: () => { resolve(false); },
@@ -32,11 +35,12 @@ export function DownloadsPage({ auth }: { auth: CloudAuthState }) {
   useGuiLanguage();
   useLocalGitDownloads();
   const owner = authenticatedDownloadOwner(auth);
-  const { tasks, busy, error, run } = useDownloadTasks(owner, {
+  const { tasks, busy, error, run, removeTasks } = useDownloadTasks(owner, {
     confirmRemove, openDownload: openDesktopDownload, additionalOwner: LOCAL_DOWNLOAD_OWNER });
   const [filter, setFilter] = useState<Filter>('all');
   const ready = tasks.filter(task => READY_STATUSES.has(task.status)).length;
   const visible = tasks.filter(task => filter === 'all' || READY_STATUSES.has(task.status) === (filter === 'ready'));
+  const { selected, toggle } = useDownloadSelection(visible, `${owner}:${filter}`);
   return <section className={styles.page} aria-label={uiText("client.downloads.downloads")}>
     <header className={`topbar ${styles.header}`} data-tauri-drag-region>
       <div><span className="eyebrow">DOWNLOADS</span><h1>{uiText("client.downloads.downloads")}</h1></div>
@@ -48,11 +52,14 @@ export function DownloadsPage({ auth }: { auth: CloudAuthState }) {
         { value: 'active', label: `${uiText("client.downloads.incomplete")} · ${tasks.length - ready}` },
         { value: 'ready', label: `${uiText("client.downloads.ready")} · ${ready}` },
       ]} />
+        <DownloadBatchDelete count={selected.size} busy={!!busy} text={displayText}
+          remove={() => { void removeTasks([...selected]); }} />
         <p>{uiText("client.downloads.openOrSaveFilesWhenReadyInterruptedDownloadsRetryAutomatically")}</p>
       </div>
       {error && <p role="alert" className={styles.notice}>{displayError(error)}</p>}
       <div className={styles.tasks}>{visible.map(task => <DownloadCard key={task.id} task={task}
-        busy={busy === task.id} connected={!!downloadManager.connectionForSource(task.source)?.ready}
+        busy={!!busy} connected={!!downloadManager.connectionForSource(task.source)?.ready}
+        selected={selected.has(task.id)} toggleSelection={() => toggle(task.id)}
         action={() => { void run(task); }} open={() => { void run(task, 'open'); }}
         remove={() => { void run(task, 'remove'); }} text={displayText} />)}</div>
       {!visible.length && <div className={styles.empty}><Download size={36} strokeWidth={1.5} />

@@ -17,6 +17,7 @@ import { ChatFilePreview } from '../../web/src/chat/ChatFilePreview';
 import { DEFAULT_CHAT_POLICY, setChatConnectionMode, setChatPolicy } from '../../../shared/remote-chat/policy';
 import { nativeBulkFixture, nativeBulkStats } from './native-bulk-fixture';
 import { nativeDirectBulkFixture, nativeDirectStats, NATIVE_DIRECT_FILE_BYTES } from './native-direct-bulk-fixture';
+import { LOCAL_DOWNLOAD_OWNER } from '../src/downloads/localGitDownloads';
 import 'antd/dist/reset.css';
 import '../src/styles.css';
 
@@ -32,6 +33,12 @@ setChatPolicy({ ...DEFAULT_CHAT_POLICY, fileDownloadMaxMb: nativeBulk ? 20 : 1,
 const identity = { baseUrl: 'https://fixture.test', userId: 'owner' };
 const auth = { ...identity, enabled: true, authenticated: true, sessionExpired: false };
 const fixture = { delay: 500, failDownload: false,
+  addLocal: async () => {
+    downloadManager.register({ owner: LOCAL_DOWNLOAD_OWNER, deviceId: 'fixture-local', deviceName: '此电脑',
+      ready: true, mode: 'direct', client: office.downloads, files: { ...office.files } });
+    await downloadManager.enqueue({ owner: LOCAL_DOWNLOAD_OWNER, deviceId: 'fixture-local', deviceName: '此电脑',
+      scope: 'project', cwd: 'C:/project', path: 'C:/project/local.patch' });
+  },
   offsets: [] as { device: string; offset: number }[], nativeBulkStats, nativeDirectStats };
 declare global { interface Window { desktopDownloads: typeof fixture } }
 window.desktopDownloads = fixture;

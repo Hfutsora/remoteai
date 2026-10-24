@@ -76,3 +76,58 @@ test('missing cached bytes cannot be opened or marked as saved', async ({ page }
   await expect(card(page).getByRole('button', { name: '打开', exact: true })).toHaveCount(0);
   await expect(card(page)).not.toContainText('已保存到设备');
 });
+
+test('selects cards, cancels confirmation and deletes only selected downloads offline', async ({ page }, info) => {
+  await page.getByRole('button', { name: '当前项目', exact: true }).click();
+  for (const name of ['sample.md', 'sample.bin', 'empty.txt']) {
+    await page.getByRole('button', { name: `下载：${name}`, exact: true }).click();
+  }
+  await page.getByRole('button', { name: '下载列表', exact: true }).click();
+  const batch = page.getByRole('button', { name: /^批量删除/ });
+  const first = card(page);
+  const second = page.getByRole('article', { name: 'sample.bin', exact: true });
+  await expect(batch).toBeDisabled();
+  await expect(first).toContainText('文件已就绪');
+  await first.locator('strong').click();
+  await expect(first.getByRole('checkbox')).toBeChecked();
+  await first.locator('strong').click();
+  await expect(batch).toBeDisabled();
+  await first.getByRole('checkbox').focus();
+  await page.keyboard.press('Space');
+  await second.locator('.download-path').click();
+  await expect(batch).toHaveText('批量删除（2）');
+  await first.getByRole('button', { name: '删除', exact: true }).click();
+  await page.getByRole('button', { name: '保留', exact: true }).click();
+  await expect(first.getByRole('checkbox')).toBeChecked();
+  await batch.click();
+  await expect(page.getByText('删除这 2 项下载？')).toBeVisible();
+  await page.getByRole('button', { name: '保留', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(3);
+  await page.getByRole('button', { name: '断开电脑', exact: true }).click();
+  await page.screenshot({ path: `../../.codex-tmp/download-selection-${info.project.name}.png`, fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await batch.click();
+  await page.getByRole('button', { name: '删除', exact: true }).last().click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(batch).toBeDisabled();
+  await page.reload();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(page.getByRole('article')).toHaveAttribute('aria-label', 'empty.txt');
+});
+
+test('keeps selection and wraps translated controls when switching languages offline', async ({ page }) => {
+  await enqueue(page);
+  await expect(card(page)).toContainText('文件已就绪');
+  await card(page).locator('strong').click();
+  await page.context().setOffline(true);
+  const cases = [
+    ['en', 'Delete selected (1)'], ['ru', 'Удалить выбранное (1)'],
+    ['ja', '選択した項目を削除（1）'], ['zh', '批量删除（1）'],
+  ] as const;
+  for (const [language, label] of cases) {
+    await page.evaluate(language => window.downloadFixture.setLanguage(language), language);
+    await expect(page.getByRole('button', { name: label, exact: true })).toBeEnabled();
+    await expect(card(page).getByRole('checkbox')).toBeChecked();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
