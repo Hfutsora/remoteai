@@ -7,7 +7,7 @@ export interface UsageSummary {
   providerEstimatedCost: { amountUsd: number; aggregated: boolean } | null;
 }
 
-export type ReadUsage = () => Promise<UsageSummary>;
+export type ReadUsage = () => Promise<unknown>;
 export const USAGE_REFRESH_INTERVAL_MS = 5_000;
 const MILLION = 1_000_000;
 const THOUSAND = 1_000;

@@ -42,7 +42,6 @@ import type { SshProfileStore } from '../../terminal/sshProfiles';
 import type { MappingSocket } from '../../port-mapping/socket';
 import { MAPPING_UPDATE_REQUIRED } from '../../port-mapping/errors';
 import { canSelectProject } from '../projects';
-import type { UsageSummary } from '../usage';
 import { CONVERSATION_METRICS_OPERATION, type ReadConversationMetrics } from '../conversationMetrics';
 import { TOKEN_SUMMARY_OPERATION, type ReadTokenSummary } from '../tokenSummary';
 import { decodeTokenSummary, QUOTA_HISTORY_FORMAT, type TokenSummaryResponse } from '../tokenSummaryCodec';
@@ -162,7 +161,7 @@ export class ChatController {
   setWorkspaceBusy = (workspaceBusy: boolean) => this.update({ workspaceBusy });
   suggestNextPrompt: import('../../chat/nextPromptSuggestion').RequestPromptSuggestion = target =>
     this.request({ operation: 'suggestNextPrompt', ...target });
-  readUsage = () => this.connection.request<UsageSummary>('request', { operation: 'usageSummary' });
+  readUsage = () => this.connection.request<unknown>('request', { operation: 'usageSummary' });
   readConversationMetrics: ReadConversationMetrics = (threadId) =>
     this.connection.request('request', { operation: CONVERSATION_METRICS_OPERATION, threadId });
   readonly contextSettings = createContextSettingsClient(<T>(body: unknown) =>
