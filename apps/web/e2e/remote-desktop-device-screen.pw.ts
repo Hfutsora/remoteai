@@ -19,12 +19,21 @@ test('screen off and restore stay in device management without opening a desktop
   await page.getByRole('menuitem', { name: '关闭电脑屏幕' }).click();
   await expect(page.getByText('暂时关闭电脑屏幕？')).toBeVisible();
   await expect(page.getByRole('menu')).not.toBeVisible();
-  const box = (await page.locator('.adm-dialog-body').boundingBox())!;
-  expect(box.width).toBeLessThanOrEqual(400);
-  expect(box.x).toBeGreaterThanOrEqual(16);
-  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width - 16);
+  const drawer = page.locator('.device-screen-sheet .ant-drawer-content');
+  await expect.poll(async () => {
+    const bounds = (await drawer.boundingBox())!;
+    return Math.abs(bounds.y + bounds.height - page.viewportSize()!.height);
+  }).toBeLessThan(2);
+  const box = (await drawer.boundingBox())!;
+  expect(box.width).toBeLessThanOrEqual(440);
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(Math.abs(box.y + box.height - page.viewportSize()!.height)).toBeLessThan(2);
+  expect((await page.locator('.device-screen-explanation').boundingBox())!.width).toBeLessThanOrEqual(400);
+  await expect(page.getByRole('button', { name: '取消', exact: true })).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('screen-confirmation.png'), animations: 'disabled' });
-  await page.getByRole('button', { name: '取消', exact: true }).click();
+  await page.locator('.device-screen-sheet .ant-drawer-close').click();
+  await expect(drawer).not.toBeVisible();
   expect(requests).toEqual([]);
   await openMenu(page);
   await page.getByRole('menuitem', { name: '关闭电脑屏幕' }).click();

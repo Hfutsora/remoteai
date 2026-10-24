@@ -2,7 +2,9 @@ import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { BottomSheet } from '../components/BottomSheet';
+import { SheetScrollView, SHEET_READABLE_WIDTH } from '../components/SheetScrollView';
 import { supportsScreenControl } from '../../../../shared/remote-desktop/screenControl';
 import type { RemoteDevice } from '../types';
 import { deviceColors, useStyles } from './styles';
@@ -28,32 +30,13 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
   if (!device) return null;
   const deleteDisabled = device.online || Boolean(deletingDeviceId);
   const authDisabled = !device.online || Boolean(switchingAuthDeviceId);
-  return <Modal transparent visible animationType="fade" onRequestClose={onClose}
-    supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
-    <View style={styles.overlay}>
-      <Pressable accessibilityLabel={t("client.git.closeMenu")} accessibilityRole="button"
-        style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View style={styles.menu} accessibilityViewIsModal>
-        <View style={styles.menuHeader}>
-          <Text style={styles.menuTitle}>{device.name}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={t("client.git.closeMenu")} onPress={onClose} style={styles.close}>
-            <Ionicons name="close" size={22} color={color(deviceColors.muted, 'muted')} />
-          </Pressable>
-        </View>
-        <ScrollView style={styles.menuContent} keyboardShouldPersistTaps="handled">
-        {confirmScreen ? <>
-          <Text style={styles.optionLabel}>{t('client.deviceScreen.confirmTitle')}</Text>
-          <Text style={styles.hintText}>{t('client.deviceScreen.confirmMessage')}</Text>
-          <Pressable accessibilityRole="button" style={styles.option} onPress={() => setConfirmScreen(false)}>
-            <Text style={styles.optionLabel}>{t('client.accounts.cancel')}</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" disabled={!device.online}
-            accessibilityState={{ disabled: !device.online }}
-            style={[styles.option, !device.online && styles.disabled]}
-            onPress={() => { onClose(); props.onScreenControl(device, true); }}>
-            <Text style={styles.optionLabel}>{t('client.deviceScreen.turnOff')}</Text>
-          </Pressable>
-        </> : <>
+  return <BottomSheet visible title={confirmScreen ? t('client.deviceScreen.confirmTitle') : device.name}
+    subtitle={confirmScreen ? device.name : undefined} onClose={onClose}
+    fullWidthContent dragFromHeaderOnly maxWidth={SHEET_READABLE_WIDTH}
+    actions={confirmScreen ? [{ label: t('client.deviceScreen.turnOff'), tone: 'primary', disabled: !device.online,
+      onPress: () => { onClose(); props.onScreenControl(device, true); } }] : []}>
+    <SheetScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.optionsContent}>
+      {confirmScreen ? <Text style={styles.screenExplanation}>{t('client.deviceScreen.confirmMessage')}</Text> : <>
         {supportsScreenControl(device) && <>
           <Pressable accessibilityRole="button" disabled={!device.online}
             accessibilityState={{ disabled: !device.online }} onPress={() => setConfirmScreen(true)}
@@ -91,8 +74,6 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
         </Pressable>
         {!device.online && <Text style={styles.hintText}>{t("client.mobile.connectTheDeviceToChangeItsProxySignInAccount")}</Text>}
         </>}
-        </ScrollView>
-      </View>
-    </View>
-  </Modal>;
+    </SheetScrollView>
+  </BottomSheet>;
 }

@@ -32,6 +32,7 @@ mod windows {
         core::w,
         Win32::{
             Foundation::{LPARAM, WPARAM},
+            System::Power::{SetThreadExecutionState, ES_DISPLAY_REQUIRED},
             UI::WindowsAndMessaging::{
                 FindWindowW, GetDesktopWindow, SendMessageTimeoutW, SC_MONITORPOWER,
                 SMTO_ABORTIFHUNG, SMTO_ERRORONEXIT, WM_SYSCOMMAND,
@@ -41,9 +42,29 @@ mod windows {
 
     const COMMAND_TIMEOUT_MS: u32 = 2_000;
     const MONITOR_OFF: isize = 2;
-    const MONITOR_ON: isize = -1;
 
     pub(super) fn set(action: Action) -> Result<(), Error> {
+        match action {
+            Action::Off => turn_off(),
+            Action::On => restore(),
+        }
+    }
+
+    fn restore() -> Result<(), Error> {
+        // SC_MONITORPOWER alone leaves the display idle timer expired, so Windows
+        // can immediately turn the monitor off again. A one-shot display request
+        // wakes it and resets that timer without overriding the user's power plan.
+        // SAFETY: This call takes only a documented flag and no pointers. Omitting
+        // ES_CONTINUOUS leaves no persistent requirement on the control worker.
+        let previous = unsafe { SetThreadExecutionState(ES_DISPLAY_REQUIRED) };
+        if previous.0 == 0 {
+            Err(Error::Unavailable)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn turn_off() -> Result<(), Error> {
         // SAFETY: HWNDs are obtained from Windows, the message carries only fixed integer
         // values, and SendMessageTimeout bounds waiting on the shell's message thread.
         let result = unsafe {
@@ -52,10 +73,7 @@ mod windows {
                 target,
                 WM_SYSCOMMAND,
                 WPARAM(SC_MONITORPOWER as usize),
-                LPARAM(match action {
-                    Action::Off => MONITOR_OFF,
-                    Action::On => MONITOR_ON,
-                }),
+                LPARAM(MONITOR_OFF),
                 SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT,
                 COMMAND_TIMEOUT_MS,
                 None,

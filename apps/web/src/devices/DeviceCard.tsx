@@ -2,7 +2,8 @@ import { getLocale, t, useLanguage } from '../i18n';
 import { Dropdown } from 'antd';
 import { Clock, ExternalLink, KeyRound, Laptop, Monitor, MoreVertical, Server, Sun, Trash2, UserRound } from 'lucide-react';
 import { supportsScreenControl } from '../../../../shared/remote-desktop/screenControl';
-import { useScreenControlPrompt } from './useScreenControlPrompt';
+import { useState } from 'react';
+import { DeviceScreenSheet } from './DeviceScreenSheet';
 import type { AccountSummary, RemoteDevice, RemoteProviderSummary } from '../types';
 import { remoteModelOptions, type RemoteModelTarget } from '../../../../shared/remote-chat/modelTarget';
 
@@ -80,15 +81,15 @@ function DeviceDetails({ device, accounts, providers }: Pick<DeviceCardProps, 'd
 
 export function DeviceCard(props: DeviceCardProps) {
   useLanguage();
-  const screenControl = useScreenControlPrompt(props.onScreenControl);
+  const [confirmScreen, setConfirmScreen] = useState(false);
   const { device, deletingDeviceId, switchingModelDeviceId, switchingAuthDeviceId } = props;
   const busy = switchingModelDeviceId === device.deviceId || deletingDeviceId === device.deviceId;
   const items = [
     ...(supportsScreenControl(device) ? [
       { key: 'screen-off', icon: <Monitor size={18} />, label: t('client.deviceScreen.turnOff'),
-        disabled: !device.online, onClick: () => void screenControl(device, true) },
+        disabled: !device.online, onClick: () => setConfirmScreen(true) },
       { key: 'screen-restore', icon: <Sun size={18} />, label: t('client.deviceScreen.restore'),
-        disabled: !device.online, onClick: () => void screenControl(device, false) },
+        disabled: !device.online, onClick: () => props.onScreenControl(device, false) },
     ] : []),
     { key: 'auth', icon: <ExternalLink size={18} />, label: t("client.app.proxySignInAccount"),
       disabled: !device.online || Boolean(switchingAuthDeviceId),
@@ -98,7 +99,7 @@ export function DeviceCard(props: DeviceCardProps) {
     { key: 'delete', icon: <Trash2 size={18} />, label: device.online ? t("client.app.cannotRemoveWhileOnline") : t("client.app.removeDevice"),
       danger: true, disabled: device.online || Boolean(deletingDeviceId), onClick: () => props.onDelete(device) },
   ];
-  return <article className={`device-card ${device.online ? 'online' : 'offline'}`}>
+  return <><article className={`device-card ${device.online ? 'online' : 'offline'}`}>
     <button type="button" className="device-card-main" disabled={!device.online || busy} aria-busy={busy}
       aria-label={`${device.name}，${device.online ? t("client.app.selectToSwitchModel") : t("client.chat.offline")}`}
       onClick={() => props.onSwitchModel(device.deviceId)}>
@@ -115,5 +116,12 @@ export function DeviceCard(props: DeviceCardProps) {
         <MoreVertical size={20} aria-hidden />
       </button>
     </Dropdown>
-  </article>;
+  </article>
+    <DeviceScreenSheet device={device} open={confirmScreen} onClose={() => setConfirmScreen(false)}
+      onConfirm={() => {
+        if (!confirmScreen || !device.online) return;
+        setConfirmScreen(false);
+        props.onScreenControl(device, true);
+      }} />
+  </>;
 }

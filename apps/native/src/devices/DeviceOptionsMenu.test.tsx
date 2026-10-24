@@ -13,8 +13,10 @@ vi.mock('react-native', () => ({ Modal: 'Modal', View: 'View', Text: 'Text', Pre
   Platform: { OS: 'android' },
   ActivityIndicator: 'ActivityIndicator', StyleSheet: { create: <T,>(value: T) => value, absoluteFill: {} } }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Icon' }));
+vi.mock('../components/BottomSheet', () => ({ BottomSheet: 'BottomSheet' }));
+vi.mock('../components/SheetScrollView', () => ({ SheetScrollView: 'SheetScrollView', SHEET_READABLE_WIDTH: 440 }));
 
-interface Props { children?: ReactNode; disabled?: boolean; onPress?: () => void; style?: { maxWidth?: number } }
+interface Props { children?: ReactNode; disabled?: boolean; onPress?: () => void }
 function nodes(tree: ReactNode): ReactElement<Props>[] {
   return Children.toArray(tree).flatMap(child => isValidElement<Props>(child)
     ? [child, ...nodes(child.props.children)] : []);
@@ -29,21 +31,30 @@ const props = { device, deletingDeviceId: null, switchingAuthDeviceId: null,
   onClose: vi.fn(), onDelete: vi.fn(), onRevokeService: vi.fn(), onSelectAuthAccount: vi.fn(), onScreenControl: vi.fn() };
 beforeEach(() => { vi.clearAllMocks(); runtime.confirming = false; vi.stubGlobal('React', React); });
 
-it('confirms screen shutdown in a compact panel and sends an explicit target for the chosen computer', () => {
+it('confirms shutdown in a drawer with one action and closes without sending a command', () => {
   const menu = DeviceOptionsMenu(props);
   button(menu, '关闭电脑屏幕')!.props.onPress!();
   expect(runtime.confirming).toBe(true);
   expect(props.onScreenControl).not.toHaveBeenCalled();
   const confirmation = DeviceOptionsMenu(props);
-  expect(nodes(confirmation).some(node => node.props.style?.maxWidth === 400)).toBe(true);
-  expect(nodes(confirmation).some(node => node.props.children === '暂时关闭电脑屏幕？')).toBe(true);
-  button(confirmation, '取消')!.props.onPress!();
-  expect(runtime.confirming).toBe(false);
+  expect(confirmation!.props.maxWidth).toBe(440);
+  expect(confirmation!.props.title).toBe('暂时关闭电脑屏幕？');
+  expect(confirmation!.props.subtitle).toBe(device.name);
+  expect(button(confirmation, '取消')).toBeUndefined();
+  expect(confirmation!.props.actions).toHaveLength(1);
+  confirmation!.props.onClose();
+  expect(props.onClose).toHaveBeenCalledOnce();
   expect(props.onScreenControl).not.toHaveBeenCalled();
+});
+
+it('confirms screen shutdown for the selected computer and disables confirmation when offline', () => {
   runtime.confirming = true;
-  button(DeviceOptionsMenu(props), '关闭电脑屏幕')!.props.onPress!();
+  const confirmation = DeviceOptionsMenu(props);
+  confirmation!.props.actions[0].onPress();
   expect(props.onClose).toHaveBeenCalledOnce();
   expect(props.onScreenControl).toHaveBeenCalledExactlyOnceWith(device, true);
+  const offline = DeviceOptionsMenu({ ...props, device: { ...device, online: false } });
+  expect(offline!.props.actions[0].disabled).toBe(true);
 });
 
 it('restores screens without a shutdown confirmation', () => {

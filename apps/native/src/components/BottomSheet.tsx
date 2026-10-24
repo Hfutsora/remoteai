@@ -1,5 +1,6 @@
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 import { t, useLanguage } from '../i18n';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
@@ -226,18 +227,16 @@ const useStyles = createThemedStyles((color) => ({
   heading: { flex: 1, minWidth: 0 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   actionTitle: { flexShrink: 1 },
-  title: { color: color('#10251d', 'ink'), fontSize: 21, lineHeight: 31, fontWeight: '800',
-    includeFontPadding: true, paddingVertical: 2 },
-  subtitle: { color: color('#708078', 'muted'), fontSize: 12, lineHeight: 18, marginTop: 4,
-    includeFontPadding: true, paddingVertical: 2 },
+  title: { ...textMetrics(21, 31), color: color('#10251d', 'ink'), fontWeight: '800' },
+  subtitle: { ...textMetrics(12, 18), color: color('#708078', 'muted'), marginTop: 4 },
   closeButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: color('#eef3f0', 'canvas'), alignItems: 'center', justifyContent: 'center' },
   closeText: { color: color('#52645b', 'ink'), fontSize: 25, lineHeight: 28, fontWeight: '400', marginTop: -2 },
   content: { marginTop: 19, flexShrink: 1 },
   compactHandle: { marginBottom: 8 },
   compactHeader: { alignItems: 'center' },
   compactHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  compactTitle: { fontSize: 18, lineHeight: 28, fontWeight: '700' },
-  compactSubtitle: { flexShrink: 1, marginTop: 0, fontSize: 11 },
+  compactTitle: { ...textMetrics(18, 28), fontWeight: '700' },
+  compactSubtitle: { ...textMetrics(11, 18), flexShrink: 1, marginTop: 0 },
   compactContent: { marginTop: 8 },
   actions: { flexDirection: 'row', gap: 10, paddingTop: 16, paddingBottom: 10 },
   action: {
@@ -246,8 +245,8 @@ const useStyles = createThemedStyles((color) => ({
   },
   actionPrimary: { backgroundColor: '#0b8065' },
   actionDanger: { backgroundColor: '#c84f47' },
-  actionText: { alignSelf: 'stretch', textAlign: 'center', color: color('#173128', 'ink'), fontSize: 15,
-    lineHeight: 22, includeFontPadding: true, fontWeight: '800' },
+  actionText: { ...textMetrics(15, 22), alignSelf: 'stretch', textAlign: 'center',
+    color: color('#173128', 'ink'), fontWeight: '800' },
   actionTextOnColor: { color: '#ffffff' },
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.55 },
