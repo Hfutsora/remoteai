@@ -5,12 +5,15 @@ import { editedImageMessage, imageEditorHtml } from './imageEditorHtml';
 import { IMAGE_EDITOR_ASSET } from './imageEditorAsset';
 import type { ConnectionMode } from '../remote-chat/protocol';
 import { darkColors, type ThemeMode } from '../theme/mode';
+import { useDocumentThemeMode } from '../theme/useDocumentThemeMode';
 import './imageEditor.css';
 
-export function ImageEditor({ dataUrl, save, close, translate: t, language, mode, themeMode = 'light' }: {
+export function ImageEditor({ dataUrl, save, close, translate: t, language, mode, themeMode: override }: {
   dataUrl: string; save: (dataUrl: string) => void; close: () => void;
   translate: (text: string) => string; language: string; mode?: ConnectionMode; themeMode?: ThemeMode;
 }) {
+  const hostTheme = useDocumentThemeMode();
+  const themeMode = override ?? hostTheme;
   const frame = useRef<HTMLIFrameElement>(null);
   const initialTheme = useRef(themeMode);
   const html = useMemo(() => imageEditorHtml(dataUrl, t, language, {
