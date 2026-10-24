@@ -7,7 +7,8 @@ const connectionDialog = (page: Page) => page.getByRole('dialog', { name: /^管�
 
 async function openProfile(page: Page, name: string) {
   await page.getByRole('button', { name: '终端连接选项' }).click();
-  await page.getByRole('menuitem', { name, exact: true }).click();
+  await page.getByRole('menuitem', { name: '管理 SSH 连接', exact: true }).click();
+  await page.getByRole('button', { name: new RegExp(name) }).click();
 }
 
 async function mockProfiles(page: Page) {

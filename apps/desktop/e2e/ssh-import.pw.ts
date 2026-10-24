@@ -42,8 +42,8 @@ for (const mode of ['local', 'remote', 'web']) {
     await expect(page.getByText('已导入：id_ed25519')).toBeHidden();
     await picker.setInputFiles({ name: 'id_ed25519', mimeType: 'text/plain', buffer: Buffer.from(privateKey) });
     await expect(page.getByLabel('私钥', { exact: true })).toHaveValue(privateKey);
-    await page.getByRole('button', { name: '新建 SSH 连接', exact: true }).click();
-    await page.getByText('私钥登录', { exact: true }).click();
+    await page.getByRole('button', { name: /^取\s*消$/ }).click();
+    await openKeyForm(page);
     await expect(page.getByLabel('私钥', { exact: true })).toHaveValue('');
     await expect(page.getByText('已导入：id_ed25519')).toBeHidden();
   });

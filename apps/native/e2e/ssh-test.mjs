@@ -78,8 +78,8 @@ async function launch(scale) {
   await adb('shell', 'settings', 'put', 'system', 'user_rotation', '0');
   await adb('shell', 'settings', 'put', 'system', 'font_scale', String(scale));
   await adb('shell', 'am', 'force-stop', packageName);
-  await adb('shell', 'am', 'start', '-n', `${packageName}/com.codexswitch.mobile.MainActivity`);
-  await wait('打开远程终端'); await tap('打开远程终端'); await wait('终端连接选项');
+  await adb('shell', 'am', 'start', '-W', '-n', `${packageName}/com.codexswitch.mobile.MainActivity`);
+  await wait('打开远程终端'); await pause(); await tap('打开远程终端'); await wait('终端连接选项');
 }
 async function verify(scale) {
   if (process.env.SSH_CLOUD_FIXTURE) {
@@ -93,9 +93,20 @@ async function verify(scale) {
   await launch(scale);
   await screenshot(`terminal-${scale}`);
   await tap('终端连接选项'); await wait('Saved on Office');
+  assert.equal(await find('IP 或主机名'), undefined, 'Saved connections appear before the connection form');
   await screenshot(`connections-${scale}`);
   await tap('Saved on Office');
-  await tap('连接并保存'); await wait('远程文件浏览');
+  await wait('远程文件浏览');
+  assert.equal(await find('IP 或主机名'), undefined, 'Saved connections open directly without editing');
+  await screenshot(`connected-${scale}`);
+  if (!process.env.SSH_CLOUD_FIXTURE) {
+    await tap('终端连接选项'); await wait('Password server'); await tap('Password server');
+    await wait('密码');
+    assert.equal(await find('IP 或主机名'), undefined, 'Authentication does not open the settings editor');
+    await screenshot(`login-${scale}`);
+    await input('密码', 'fixture-password'); await tap('连接'); await wait('远程文件浏览');
+    await wait('关闭终端 3'); await tap('关闭终端 3');
+  }
   await tap('远程文件浏览'); await wait('hello.txt');
   await screenshot(`files-${scale}`);
   await tap('中文目录'); await tap('打开文件夹'); await wait('没有匹配的文件');
@@ -109,7 +120,7 @@ async function verify(scale) {
   await input('用户名', 'fixture'); await tap('连接并保存'); await tap('信任并连接');
   await wait('远程文件浏览');
   await tap('终端连接选项'); await wait('Phone-added'); await screenshot(`saved-${scale}`);
-  await tap('关闭SSH 连接');
+  await tap('关闭已保存的连接');
   await tap('切换横屏'); await wait('切换竖屏');
   await tap('远程文件浏览'); await tap('hello.txt', true);
   await wait('下载'); await screenshot(`files-landscape-${scale}`);

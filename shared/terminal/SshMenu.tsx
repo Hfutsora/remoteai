@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dropdown, Tooltip } from 'antd';
 import { ChevronDown, Plus, Settings, Server } from 'lucide-react';
 import { SshConnectionDialog } from './SshConnectionDialog';
+import { SshQuickConnectDialog } from './SshQuickConnectDialog';
 import { sshLabel, type SshProfile } from './sshProfiles';
 import type { SshApi } from './ssh';
 import type { TerminalInfo } from './types';
@@ -32,7 +33,9 @@ export function SshMenu({ api, projectCwd, adopt, close, disabled, className }: 
         <button type="button" className={className} aria-label={t('client.ssh.menu')}><ChevronDown size={17} /></button>
       </Tooltip>
     </Dropdown>
-    {dialog && <SshConnectionDialog api={api} initial={dialog.profile} manage={dialog.manage} projectCwd={projectCwd}
+    {dialog?.profile && <SshQuickConnectDialog api={api} profile={dialog.profile} projectCwd={projectCwd}
+      close={() => { setDialog(undefined); void refresh(); }} connected={adopt} dispose={close} />}
+    {dialog && !dialog.profile && <SshConnectionDialog api={api} manage={dialog.manage} projectCwd={projectCwd}
       close={() => setDialog(undefined)} connected={adopt} dispose={close} changed={() => void refresh()} />}
   </>;
 }

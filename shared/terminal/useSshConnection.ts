@@ -56,7 +56,7 @@ export function useSshConnection(options: Options) {
     if (!lifetime.current) { await dispose(info.id); return; }
     const profile = sshProfileFromValues({ values, id: selected?.id ?? createId(), selected, fingerprint });
     let stored = true;
-    try { await saved.save(profile); }
+    try { if (!selected || !sameSshProfile(selected, profile)) await saved.save(profile); }
     catch (failure) { stored = false;
       if (lifetime.current) setError(sshError(failure, 'client.ssh.storageFailed')); }
     if (!lifetime.current) { await dispose(info.id); return; }

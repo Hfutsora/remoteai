@@ -56,7 +56,7 @@ test('phone web: saves SSH to the account and browses files above the terminal d
   await page.getByRole('button', { name: '终端连接选项' }).click();
   await expect(page.getByRole('menuitem', { name: 'WSL test' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'WSL test' }).click();
-  await expect(page.getByLabel('IP 或主机名')).toHaveValue(fixture.host);
+  await expect(page.getByLabel('IP 或主机名')).toHaveCount(0);
   await expect(page.getByLabel('密码', { exact: true })).toHaveValue('');
   await page.screenshot({ path: info.outputPath('ssh-phone-saved.png') });
   await page.getByRole('button', { name: /^取\s*消$/ }).click();

@@ -36,7 +36,8 @@ test('PC local, PC remote, web and phone share the Go server profile list', asyn
       [phone, 'web', 'phone']] as const) {
       await openConnections(page, mode);
       await expect(page.getByRole('menuitem', { name: 'Cloud server' })).toBeVisible();
-      await page.getByRole('menuitem', { name: 'Cloud server' }).click();
+      await page.getByRole('menuitem', { name: '管理 SSH 连接' }).click();
+      await page.getByRole('button', { name: /Cloud server/ }).click();
       await expect(page.getByLabel('IP 或主机名')).toHaveValue('cloud.test');
       await expect(page.getByLabel('密码', { exact: true })).toHaveValue('');
       await expect(page.getByLabel('连接名称（可选）')).toBeEnabled();
@@ -48,7 +49,8 @@ test('PC local, PC remote, web and phone share the Go server profile list', asyn
     await remote.getByRole('button', { name: '连接并保存' }).click();
     await expect(remote.getByText('此连接已在其他设备修改或移除，请重新选择后操作。')).toBeVisible();
     await phone.getByRole('button', { name: '终端连接选项' }).click();
-    await phone.getByRole('menuitem', { name: 'Edited on phone' }).click();
+    await phone.getByRole('menuitem', { name: '管理 SSH 连接' }).click();
+    await phone.getByRole('button', { name: /Edited on phone/ }).click();
     await phone.getByRole('button', { name: /^移\s*除$/ }).click();
     await phone.getByRole('tooltip').getByRole('button', { name: /^移\s*除$/ }).click();
     await expect.poll(async () => (await request.get(`${base}/sync/ssh-profiles`, { headers })).json())
@@ -58,7 +60,8 @@ test('PC local, PC remote, web and phone share the Go server profile list', asyn
     const stored = await (await request.get(`${base}/sync/ssh-profiles`, { headers })).text();
     expect(stored).not.toContain('never-store-this');
     await local.getByRole('button', { name: '终端连接选项' }).click();
-    await local.getByRole('menuitem', { name: 'Legacy PC' }).click();
+    await local.getByRole('menuitem', { name: '管理 SSH 连接' }).click();
+    await local.getByRole('button', { name: /Legacy PC/ }).click();
     await expect(local.getByLabel('连接名称（可选）')).toBeEnabled();
     await local.screenshot({ path: info.outputPath('ssh-cloud-pc-local.png'), animations: 'disabled' });
   } finally { await Promise.all(contexts.map(context => context.close())); }

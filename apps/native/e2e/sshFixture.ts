@@ -12,7 +12,9 @@ const cloud = process.env.EXPO_PUBLIC_SSH_CLOUD_FIXTURE === '1' ? createNativeSs
 const stores = new Map<string, SshProfile[]>();
 export function createSshFixture(computer: string, adopt: (info: TerminalInfo) => void): SshApi {
   if (!stores.has(computer)) stores.set(computer, [{ id: 'saved', name: `Saved on ${computer}`,
-    host: 'fixture.test', port: 22, username: 'fixture', auth: 'password', fingerprint: 'SHA256:fixture' }]);
+    host: 'fixture.test', port: 22, username: 'fixture', auth: 'password', fingerprint: 'SHA256:fixture' },
+  { id: 'password', name: 'Password server', host: 'password.test', port: 22, username: 'fixture',
+    auth: 'password', fingerprint: 'SHA256:fixture' }]);
   const entries: SshEntry[] = [
     { name: '中文目录', path: '/中文目录', directory: true, size: 0 },
     { name: 'hello.txt', path: '/hello.txt', directory: false, size: 5 },
@@ -33,6 +35,9 @@ export function createSshFixture(computer: string, adopt: (info: TerminalInfo) =
     probe: async () => 'SHA256:fixture',
     open: async (request, projectCwd) => {
       if (request.password === 'wrong') throw new Error('client.ssh.authenticationFailed');
+      if (request.endpoint.host === 'password.test' && request.password !== 'fixture-password') {
+        throw new Error('client.ssh.authenticationFailed');
+      }
       const info = { id: `ssh-${Date.now()}`, cwd: '', projectCwd, shell: 'SSH',
         ssh: { ...request.endpoint, username: request.username } };
       adopt(info); return info;

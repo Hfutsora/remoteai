@@ -8,7 +8,7 @@ import { sshLabel } from '../../../../../shared/terminal/sshProfiles';
 import { t, useLanguage } from '../../i18n';
 import { useThemeColor } from '../../theme/store';
 import { useTerminalStyles } from './styles';
-import { SshConnectionSheet } from './SshConnectionSheet';
+import { SshConnectionMenu } from './SshConnectionMenu';
 import { SshFilesSheet } from './SshFilesSheet';
 import { TerminalTabItem } from './TerminalTabItem';
 import { useTabOverflow } from './useTabOverflow';
@@ -74,7 +74,7 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
         choose={() => { panel.select(tab.id); setMore(false); }}
         close={() => panel.remove(tab.id)} />)}</ScrollView>
     </BottomSheet>}
-    {tool === 'ssh' && active && <SshConnectionSheet api={client.ssh} cwd={cwd} connected={panel.adopt}
+    {tool === 'ssh' && active && <SshConnectionMenu api={client.ssh} cwd={cwd} connected={panel.adopt}
       dispose={client.close} close={() => setTool(undefined)} />}
     {tool === 'files' && active && selected?.session.ssh && <SshFilesSheet key={selected.id} api={client.ssh}
       info={selected.session} connected={connected} close={() => setTool(undefined)} />}

@@ -46,6 +46,8 @@ mockIPC(async (command, body) => {
   if (command === 'codex_gui_ssh_command') return simulatedShell ? undefined
     : post('/rpc', { type: 'command', request: args.request });
   if (command === 'codex_gui_ssh_open') {
+    if (simulatedShell && (args.request.endpoint as SshRemote).host === 'password.test'
+      && args.request.password !== 'fixture-password') throw new Error('client.ssh.authenticationFailed');
     if (simulatedShell) return { id: `ssh-${crypto.randomUUID()}`, cwd: '/', shell: 'SSH',
       ssh: { ...(args.request.endpoint as object), username: args.request.username } };
     const info = await post<TerminalInfo>('/rpc', { type: 'open', request: args.request });
