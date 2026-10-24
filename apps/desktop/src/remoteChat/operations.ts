@@ -82,7 +82,7 @@ const READ_OPERATIONS = new Set([
   'suggestNextPrompt',
   PROJECT_LIST_OPERATION,
   'downloadOpen', 'downloadBrowse', 'previewOpen',
-  'guiCliStatus', 'guiCliRelease', 'guiTerminalRead', 'guiTerminalList',
+  'guiCliStatus', 'guiCliRelease', 'guiTerminalRead', 'guiTerminalList', 'guiTerminalSshProfiles',
   'guiGitChanges', 'guiGitDiff', 'guiGitHistory', 'guiGitRepository', 'guiGitCommitFiles',
   'fileOpen', 'fileRead', 'fileClose',
   CONTEXT_READ_OPERATION,
@@ -166,7 +166,7 @@ export class ChatOperations {
       // Range reads are repeatable; caching their payloads would retain an entire file in memory.
       if (operation === 'videoRead' || operation === 'fileRead' || operation === 'projectFileRead'
         || (operation === 'guiTerminalSshFiles' && ['read', 'list'].includes(String(object(object(request.body).request).type)))
-        || operation === 'guiTerminalSshProbe'
+        || operation === 'guiTerminalSshProbe' || operation === 'guiTerminalSshProfiles'
         || (operation === 'guiTerminalRead' && object(request.body).cursor !== undefined)) this.cache.delete(cacheKey);
     });
     return result;

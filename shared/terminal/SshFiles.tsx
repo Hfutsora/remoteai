@@ -6,6 +6,7 @@ import { displayText as t } from '../localization/messages';
 import type { TerminalInfo } from './types';
 import type { SshApi } from './ssh';
 import { sshChild, sshParent, useSshFiles, validSshName } from './useSshFiles';
+import { browserSshUpload } from './sshTransfers';
 import './ssh.css';
 
 export const sshFilesTabId = (id: string) => `ssh-files:${id}`;
@@ -32,9 +33,9 @@ export function SshFileBrowser({ api, id }: { api: SshApi; id: string }) {
   const confirm = async () => {
     if (!prompt || !validSshName(prompt.name)) return;
     const destination = sshChild(files.path, prompt.name);
-    await files.mutate(prompt.kind === 'rename' && selected
+    const done = await files.mutate(prompt.kind === 'rename' && selected
       ? { type: 'rename', path: selected.path, destination } : { type: 'createFolder', path: destination });
-    setPrompt(undefined);
+    if (done) setPrompt(undefined);
   };
   const entries = files.entries.filter(entry => (hidden || !entry.name.startsWith('.'))
     && entry.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
@@ -50,7 +51,7 @@ export function SshFileBrowser({ api, id }: { api: SshApi; id: string }) {
       {files.busy && <Spin size="small" />}
       <input hidden type="file" ref={input} onChange={event => {
         const file = event.currentTarget.files?.[0]; event.currentTarget.value = '';
-        if (file) void files.upload(file);
+        if (file) void files.upload(browserSshUpload(file));
       }} />
     </div>
     <form className="ssh-file-path" onSubmit={event => {

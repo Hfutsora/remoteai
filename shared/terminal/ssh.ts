@@ -13,6 +13,7 @@ export type SshFileAction = { type: 'list' | 'read' | 'createFolder' | 'delete';
 export type SshFileReply = { type: 'list'; path: string; entries: SshEntry[]; truncated: boolean }
   | { type: 'file'; data: string } | { type: 'done' };
 export interface SshApi {
+  profiles: import('./sshProfiles').SshProfileStore;
   probe: (endpoint: SshEndpoint) => Promise<string>;
   open: (request: SshConnect, projectCwd: string) => Promise<TerminalInfo>;
   files: (id: string, request: SshFileAction) => Promise<SshFileReply>;

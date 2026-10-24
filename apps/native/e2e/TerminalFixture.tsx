@@ -10,8 +10,7 @@ import { useFonts } from 'expo-font';
 import type { GuiToolsClient } from '../../../shared/remote-chat/guiTools';
 import type { TerminalEvent, TerminalInfo } from '../../../shared/terminal/types';
 import { ChatTerminal } from '../src/chat/ChatTerminal';
-
-const unsupportedSsh = async (): Promise<never> => { throw new Error('SSH is not simulated by this terminal fixture.'); };
+import { createSshFixture } from './sshFixture';
 
 function App() {
   const [fonts] = useFonts(Ionicons.font);
@@ -26,9 +25,14 @@ function App() {
     const sessions = new Map<string, { info: TerminalInfo; events: TerminalEvent[] }>();
     let sequence = 0;
     return {
-      ssh: { probe: unsupportedSsh, open: unsupportedSsh, files: unsupportedSsh },
+      ssh: createSshFixture(computer, info => {
+        sessions.set(info.id, { info, events: [{ type: 'output', data: Array.from('SSH ready\r\n$ ',
+          char => char.charCodeAt(0)) }] });
+        setOpened(value => value + 1);
+      }),
       link: async () => { throw new Error('Website connections are not simulated by this terminal fixture.'); },
-      list: async cwd => [...sessions.values()].filter(session => session.info.cwd === cwd).map(session => session.info),
+      list: async cwd => [...sessions.values()].filter(session => session.info.projectCwd === cwd)
+        .map(session => session.info),
       open: async cwd => {
         setOpened(value => value + 1);
         const history = Array.from({ length: 120 }, (_, index) => `History line ${index + 1}`).join('\r\n');

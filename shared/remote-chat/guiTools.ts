@@ -1,5 +1,6 @@
 import type { TerminalRead, TerminalInfo, TerminalSize } from '../terminal/types';
 import type { SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../terminal/ssh';
+import type { SshProfile } from '../terminal/sshProfiles';
 import { createProjectBrowserClient } from '../project-browser/protocol';
 import { projectDownloads } from '../project-browser/downloads';
 import { createGuiFilesClient } from './files';
@@ -28,6 +29,7 @@ export const GUI_TOOL_OPERATIONS = new Set([
   'guiTerminalList', 'guiTerminalOpen', 'guiTerminalRead', 'guiTerminalWrite', 'guiTerminalResize', 'guiTerminalClose',
   'guiTerminalLink',
   'guiTerminalSshProbe', 'guiTerminalSshOpen', 'guiTerminalSshFiles',
+  'guiTerminalSshProfiles', 'guiTerminalSshProfileSave', 'guiTerminalSshProfileRemove',
   'guiGitChanges', 'guiGitDiff', 'guiGitHistory', 'guiGitCommit', 'guiGitCommitFiles',
   'guiGitRepository', 'guiGitAction', 'guiGitFileAction', 'guiGitWorkspace', 'guiGitRevision',
   'guiGitGenerateMessage',
@@ -77,6 +79,11 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
     },
     terminal: {
       ssh: {
+        profiles: {
+          list: () => request<SshProfile[]>({ operation: 'guiTerminalSshProfiles' }),
+          save: (profile: SshProfile) => request<SshProfile[]>({ operation: 'guiTerminalSshProfileSave', profile }),
+          remove: (id: string) => request<SshProfile[]>({ operation: 'guiTerminalSshProfileRemove', id }),
+        },
         probe: (endpoint: SshEndpoint) => request<string>({ operation: 'guiTerminalSshProbe', endpoint }),
         open: (input: SshConnect, cwd: string) =>
           request<TerminalInfo>({ operation: 'guiTerminalSshOpen', request: input, cwd }),

@@ -22,6 +22,41 @@ async function connect(page: Page, fixture: Fixture, key = false) {
   await expect(page.getByRole('dialog', { name: 'SSH 连接' })).toBeHidden();
 }
 
+test('phone web: saves SSH on the PC and browses files above the terminal drawer', async ({ page, request }, info) => {
+  test.setTimeout(90_000);
+  const fixture = await (await request.get('http://127.0.0.1:1498/config')).json() as Fixture;
+  await request.post('http://127.0.0.1:1498/reset');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/e2e/ssh-harness.html?mode=web');
+  await page.getByRole('button', { name: '打开远程终端', exact: true }).click();
+  await connect(page, fixture);
+  await page.getByRole('button', { name: '远程文件浏览', exact: true }).click();
+  const files = page.getByRole('dialog', { name: '远程文件浏览', exact: true });
+  await expect(files).toBeVisible();
+  await files.getByRole('button', { name: /中文目录/ }).click();
+  await files.getByRole('button', { name: '打开文件夹', exact: true }).click();
+  await expect(files.getByRole('textbox', { name: '远程路径' })).toHaveValue('/中文目录');
+  await files.locator('input[type="file"]').setInputFiles({ name: 'phone.txt', mimeType: 'text/plain',
+    buffer: Buffer.from('phone upload') });
+  await files.getByRole('button', { name: /phone.txt/ }).click();
+  const download = page.waitForEvent('download');
+  await files.getByRole('button', { name: '下载', exact: true }).click();
+  expect((await download).suggestedFilename()).toBe('phone.txt');
+  await page.screenshot({ path: info.outputPath('ssh-phone-files.png') });
+  await expect(files.getByRole('button', { name: '返回终端' })).toBeInViewport({ ratio: 1 });
+  await files.getByRole('button', { name: '返回终端' }).click();
+  await expect(files).toBeHidden();
+  await expect(page.locator('.xterm-rows').getByText('wsl-ssh>', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '终端连接选项' }).click();
+  await expect(page.getByRole('menuitem', { name: 'WSL test' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'WSL test' }).click();
+  await expect(page.getByLabel('IP 或主机名')).toHaveValue(fixture.host);
+  await expect(page.getByLabel('密码', { exact: true })).toHaveValue('');
+  await page.screenshot({ path: info.outputPath('ssh-phone-saved.png') });
+  await page.getByRole('button', { name: /^取\s*消$/ }).click();
+  await page.getByRole('button', { name: '关闭终端 2' }).click();
+});
+
 for (const mode of ['local', 'remote', 'web']) {
   test(`${mode}: live WSL SSH terminal and SFTP drawer`, async ({ page, request }, testInfo) => {
     test.setTimeout(90_000);
