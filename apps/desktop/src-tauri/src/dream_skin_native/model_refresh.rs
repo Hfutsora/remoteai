@@ -158,8 +158,7 @@ fn codex_model_refresh_expression(
     let observer_patch_helpers = CODEX_MODEL_OBSERVER_PATCH_HELPERS;
     let service_tier = serde_json::to_string(crate::local_proxy::proxy_service_tier_name())
         .map_err(|error| format!("Failed to prepare the proxy service tier: {error}"))?;
-    let speed_selector_overlay =
-        CODEX_SPEED_SELECTOR_OVERLAY.replace("__CODEX_SWITCH_SERVICE_TIER__", &service_tier);
+    let speed_selector_overlay = speed_selector_overlay_expression(&service_tier);
     let composer_query_client = include_str!("composer_query_client.js");
     let composer_status_setup = include_str!("composer_status.js");
     let proxy_running = crate::local_proxy::is_running();
