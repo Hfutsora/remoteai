@@ -21,8 +21,10 @@ import { applyThemeMode } from '../src/utils/themeMode';
 import '../src/styles.css';
 import '../../web/src/chat/chat.css';
 import 'antd/dist/reset.css';
+import { cloudFixtureCommand, fixtureProfiles } from './ssh-cloud-fixture';
 
 const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
+const simulatedShell = new URLSearchParams(location.search).has('cloud');
 const timers = new Map<string, () => void>();
 const post = async <T,>(path: string, request: object): Promise<T> => {
   const response = await fetch(`http://127.0.0.1:1498${path}`, {
@@ -33,12 +35,17 @@ const post = async <T,>(path: string, request: object): Promise<T> => {
   return path === '/read' ? value as T : value.data as T;
 };
 mockIPC(async (command, body) => {
+  const cloud = cloudFixtureCommand(command, body);
+  if (cloud) return cloud;
   const args = body as { endpoint: SshRemote; request: Record<string, unknown>; id: string;
     onEvent: Channel<TerminalEvent> };
-  if (command === 'codex_gui_ssh_probe') return post('/rpc', { type: 'probe', endpoint: args.endpoint });
+  if (command === 'codex_gui_ssh_probe') return simulatedShell ? 'SHA256:fixture'
+    : post('/rpc', { type: 'probe', endpoint: args.endpoint });
   if (command === 'codex_gui_ssh_files') return post('/rpc', { type: 'files', id: args.id, request: args.request });
   if (command === 'codex_gui_ssh_command') return post('/rpc', { type: 'command', request: args.request });
   if (command === 'codex_gui_ssh_open') {
+    if (simulatedShell) return { id: crypto.randomUUID(), cwd: '/', shell: 'SSH',
+      ssh: { ...(args.request.endpoint as object), username: args.request.username } };
     const info = await post<TerminalInfo>('/rpc', { type: 'open', request: args.request });
     let cursor = 0; let active = true;
     const poll = async () => {
@@ -56,6 +63,7 @@ mockIPC(async (command, body) => {
 const terminals = new RemoteTerminals();
 const client = createGuiToolsClient(<T,>(body: object) =>
   terminals.request(body as Record<string, unknown>, 'fixture') as Promise<T>);
+client.terminal.ssh.profiles = fixtureProfiles(mode);
 const remoteApi = remoteTerminalApi(client.terminal);
 
 function Local() {

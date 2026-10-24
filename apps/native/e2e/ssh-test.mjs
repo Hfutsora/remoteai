@@ -82,6 +82,14 @@ async function launch(scale) {
   await wait('打开远程终端'); await tap('打开远程终端'); await wait('终端连接选项');
 }
 async function verify(scale) {
+  if (process.env.SSH_CLOUD_FIXTURE) {
+    const headers = { Authorization: 'Bearer ssh-fixture', 'Content-Type': 'application/json' };
+    assert.equal((await fetch('http://127.0.0.1:1499/fixture/reset', { method: 'POST', headers })).ok, true);
+    assert.equal((await fetch('http://127.0.0.1:1499/sync/ssh-profiles/saved', { method: 'PUT', headers,
+      body: JSON.stringify({ id: 'saved', name: 'Saved on Office', host: 'fixture.test', port: 22,
+        username: 'fixture', auth: 'password', fingerprint: 'SHA256:fixture' }),
+    })).ok, true);
+  }
   await launch(scale);
   await screenshot(`terminal-${scale}`);
   await tap('终端连接选项'); await wait('Saved on Office');
@@ -106,6 +114,26 @@ async function verify(scale) {
   await tap('远程文件浏览'); await tap('hello.txt', true);
   await wait('下载'); await screenshot(`files-landscape-${scale}`);
   await tap('返回上一层'); await tap('切换竖屏'); await wait('切换横屏');
+  if (process.env.SSH_CLOUD_FIXTURE) {
+    const profiles = await (await fetch('http://127.0.0.1:1499/sync/ssh-profiles', {
+      headers: { Authorization: 'Bearer ssh-fixture' },
+    })).json();
+    assert.ok(profiles.some(profile => profile.name === 'Phone-added' && profile.revision > 0));
+    assert.ok(profiles.every(profile => !('password' in profile) && !('privateKey' in profile)));
+  }
+  for (let index = 0; index < 5; index++) { await tap('新建终端'); await pause(); }
+  await wait('更多终端');
+  assert.equal(await find('关闭终端'), undefined, 'No shared delete button');
+  await screenshot(`tabs-overflow-${scale}`);
+  await tap('更多终端'); await wait('终端 1');
+  await screenshot(`tabs-menu-${scale}`);
+  await tap('关闭终端 1');
+  await tap('fixture@fixture.test:22');
+  await screenshot(`tabs-selected-${scale}`);
+  await tap('关闭终端 1');
+  await tap('切换横屏'); await wait('切换竖屏');
+  await screenshot(`tabs-landscape-${scale}`);
+  await tap('切换竖屏'); await wait('切换横屏');
   console.log(`PASS SSH native workflow at font scale ${scale}`);
 }
 await mkdir(output, { recursive: true });

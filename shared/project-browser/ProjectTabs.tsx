@@ -25,7 +25,7 @@ function ProjectTab({ tab, active, choose, close, menu, navigate, blocked, t }: 
   return <Tooltip title={tab.path} placement="bottomLeft"
     styles={{ root: { maxWidth: 'min(400px, calc(100vw - 16px))' },
       body: { overflowWrap: 'anywhere', whiteSpace: 'normal' } }}>
-    <div className="pf-tab" data-path={tab.path} data-active={active} {...gesture}>
+    <div className="pf-tab" data-overflow-tab data-path={tab.path} data-active={active} {...gesture}>
       <button ref={button} type="button" role="tab" aria-selected={active} aria-label={name}
         aria-haspopup="menu" tabIndex={active ? 0 : -1} onClick={choose} onKeyDown={event => {
           if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {

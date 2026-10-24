@@ -2,7 +2,7 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import type { SshApi, SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../../../../../../shared/terminal/ssh';
 import type { TerminalEvent, TerminalInfo } from '../../../../../../shared/terminal/types';
 import { TerminalOutput } from '../../../remoteChat/terminalOutput';
-import { localSshProfiles } from '../../../../../../shared/terminal/sshProfiles';
+import { desktopSshProfiles } from '../../../api/sshProfiles';
 
 interface Attachment { output: TerminalOutput; listener?: (event: TerminalEvent) => void }
 const attachments = new Map<string, Attachment>();
@@ -17,7 +17,7 @@ export const sshFiles = (id: string, request: SshFileAction) =>
   invoke<SshFileReply>('codex_gui_ssh_files', { id, request });
 
 export const sshApi: SshApi = {
-  profiles: localSshProfiles,
+  profiles: desktopSshProfiles,
   probe: probeSsh, files: sshFiles,
   async open(request, projectCwd) {
     const attachment: Attachment = { output: new TerminalOutput() };

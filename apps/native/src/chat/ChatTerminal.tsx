@@ -41,7 +41,7 @@ export function ChatTerminal({ client, cwd, active, connected, deviceName, launc
         : !!panel.error && <Text accessibilityRole="alert" style={styles.status}>{displayError(panel.error)}</Text>}
     </BottomSheet>}
     {selected && <TerminalSession client={client} session={selected.session} deviceName={deviceName}
-      visible={active && panel.open} hide={hide} close={() => panel.remove(selected.id)} notice={panel.error}
+      visible={active && panel.open} hide={hide} notice={panel.error}
       tabs={<TerminalTabs key={cwd} panel={panel} client={client} cwd={cwd} connected={connected}
         active={active && !!panel.open} />} />}
   </>;

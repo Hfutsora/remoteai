@@ -352,7 +352,7 @@ export function refreshSession(session: AuthSession): Promise<AuthSession> {
   return pending;
 }
 
-async function authorizedRequest(session: AuthSession, path: string, init: RequestInit = {}): Promise<Response> {
+export async function authorizedRequest(session: AuthSession, path: string, init: RequestInit = {}): Promise<Response> {
   const request = async (accessToken: string) => {
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${accessToken}`);

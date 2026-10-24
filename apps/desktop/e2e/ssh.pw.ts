@@ -1,8 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
 interface Fixture { host: string; port: number; username: string; password: string; privateKey: string }
-test.skip(!process.env.SSH_FIXTURE_CONFIG, 'Requires the disposable WSL SSH fixture and Rust bridge');
+test.skip(!process.env.SSH_FIXTURE_CONFIG, 'Requires the disposable WSL SSH fixture, Rust bridge and cloud fixture');
 test.use({ actionTimeout: 15_000, screenshot: 'only-on-failure' });
+
+test.beforeEach(async ({ request }) => {
+  const reset = await request.post('http://127.0.0.1:1499/fixture/reset', {
+    headers: { Authorization: 'Bearer ssh-fixture' },
+  });
+  expect(reset.ok()).toBe(true);
+});
 
 async function connect(page: Page, fixture: Fixture, key = false) {
   await page.getByRole('button', { name: '终端连接选项' }).click();
@@ -22,7 +29,7 @@ async function connect(page: Page, fixture: Fixture, key = false) {
   await expect(page.getByRole('dialog', { name: 'SSH 连接' })).toBeHidden();
 }
 
-test('phone web: saves SSH on the PC and browses files above the terminal drawer', async ({ page, request }, info) => {
+test('phone web: saves SSH to the account and browses files above the terminal drawer', async ({ page, request }, info) => {
   test.setTimeout(90_000);
   const fixture = await (await request.get('http://127.0.0.1:1498/config')).json() as Fixture;
   await request.post('http://127.0.0.1:1498/reset');
@@ -114,8 +121,13 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.getByRole('tooltip').getByRole('button', { name: /^删\s*除$/ }).click();
     await expect(page.getByRole('button', { name: new RegExp(`renamed-${fileName}`) })).toBeHidden();
     const stored = await page.evaluate(() => localStorage.getItem('remoteai.ssh.profiles.v1'));
-    expect(stored).toContain(fixture.host); expect(stored).not.toContain(fixture.password);
-    expect(stored).not.toContain('PRIVATE KEY');
+    expect(stored).toBeNull();
+    const cloud = await request.get('http://127.0.0.1:1499/sync/ssh-profiles', {
+      headers: { Authorization: 'Bearer ssh-fixture' },
+    });
+    const profiles = await cloud.text();
+    expect(profiles).toContain(fixture.host); expect(profiles).not.toContain(fixture.password);
+    expect(profiles).not.toContain('PRIVATE KEY');
     await page.getByRole('button', { name: '关闭终端 2' }).click();
     await expect(page.getByRole('tab', { name: `${fixture.host} 远程文件浏览` })).toBeHidden();
   });

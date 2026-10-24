@@ -38,6 +38,7 @@ import { AsyncAnswers } from './asyncAnswers';
 import { createGuiAccountsClient } from './guiAccounts';
 import { createContextSettingsClient } from './contextSettings';
 import { createGuiToolsClient } from '../guiTools';
+import type { SshProfileStore } from '../../terminal/sshProfiles';
 import type { MappingSocket } from '../../port-mapping/socket';
 import { MAPPING_UPDATE_REQUIRED } from '../../port-mapping/errors';
 import { canSelectProject } from '../projects';
@@ -132,7 +133,8 @@ export class ChatController {
   constructor(createConnection: (events: ConnectionEvents) => Pick<ChatConnection, 'request' | 'start' | 'stop'>
     & Partial<Pick<ChatConnection, 'confirmHostIdentity' | 'reportDiagnostic' | 'retryNow'
       | 'downloadsBulk' | 'setBulkSupport'>>,
-    private readonly offline?: OfflineHistoryStore, versions?: HistoryVersionSource) {
+    private readonly offline?: OfflineHistoryStore, versions?: HistoryVersionSource, sshProfiles?: SshProfileStore) {
+    if (sshProfiles) this.guiTools.terminal.ssh.profiles = sshProfiles;
     this.historyReader = new HistoryReader((body) => this.connection.request('request', body), versions);
     if (offline) this.offlineWriter = new OfflineWriter(offline, this.cacheFailure);
     this.connection = createConnection({

@@ -1,35 +1,50 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SshProfile, SshProfileStore } from './sshProfiles';
-import { sshError } from './ssh';
+import { sshProfileError } from './sshProfileResponse';
 
-/** Never fall back to this client's storage when the selected PC is unavailable. */
-export function useSshProfiles(store: SshProfileStore) {
+const REFRESH_MS = 15_000;
+
+/** Never present local-only writes as synchronized when the server is unavailable. */
+export function useSshProfiles(store: SshProfileStore, live = true) {
   const [profiles, setProfiles] = useState<SshProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const version = useRef(0);
-  const refresh = async () => {
+  const reading = useRef<symbol>();
+  const writing = useRef(new Set<symbol>());
+  const refresh = async (background = false) => {
+    if (reading.current || writing.current.size) return;
+    const request = Symbol(); reading.current = request;
     const current = ++version.current;
-    setLoading(true); setError('');
+    if (!background) setLoading(true);
     try {
       const values = await store.list();
-      if (current === version.current) setProfiles(values);
-    } catch {
-      if (current === version.current) setError('client.ssh.loadFailed');
-    } finally { if (current === version.current) setLoading(false); }
+      if (current === version.current) { setProfiles(values); setError(store.warning?.() ?? ''); }
+    } catch (failure) {
+      if (current === version.current) setError(sshProfileError(failure, 'client.ssh.loadFailed'));
+    } finally {
+      if (reading.current === request) reading.current = undefined;
+      if (current === version.current) setLoading(false);
+    }
   };
   useEffect(() => {
+    reading.current = undefined;
+    writing.current = new Set();
     setProfiles([]); void refresh();
-    return () => { version.current += 1; };
-  }, [store]);
+    const timer = live ? setInterval(() => { void refresh(true); }, REFRESH_MS) : undefined;
+    return () => { version.current += 1; clearInterval(timer); };
+  }, [store, live]);
   const mutate = async (action: () => Promise<SshProfile[]>) => {
     const current = ++version.current;
+    const writes = writing.current; const request = Symbol(); writes.add(request);
     try {
       const values = await action();
       if (current === version.current) { setProfiles(values); setError(''); }
-    } catch (failure) { throw new Error(sshError(failure, 'client.ssh.storageFailed')); }
+    } catch (failure) { throw new Error(sshProfileError(failure, 'client.ssh.storageFailed')); }
+    finally { writes.delete(request); if (current === version.current) setLoading(false); }
   };
-  return { profiles, loading, error, refresh,
+  return { profiles, loading, error, refresh: () => refresh(),
     save: (value: SshProfile) => mutate(() => store.save(value)),
-    remove: (id: string) => mutate(() => store.remove(id)) };
+    remove: (id: string, revision?: number, accountScope?: string) =>
+      mutate(() => store.remove(id, revision, accountScope)) };
 }

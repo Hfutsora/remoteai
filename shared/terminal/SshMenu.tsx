@@ -13,7 +13,7 @@ export function SshMenu({ api, projectCwd, adopt, close, disabled, className }: 
   api: SshApi; projectCwd: string; adopt: (info: TerminalInfo) => void;
   close: (id: string) => Promise<void>; disabled: boolean; className: string;
 }) {
-  const { profiles, refresh, loading, error } = useSshProfiles(api.profiles);
+  const { profiles, refresh, loading, error } = useSshProfiles(api.profiles, false);
   const [dialog, setDialog] = useState<{ profile?: SshProfile }>();
   useEffect(() => { setDialog(undefined); }, [api, projectCwd]);
   return <>

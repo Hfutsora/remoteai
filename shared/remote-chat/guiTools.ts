@@ -1,6 +1,6 @@
 import type { TerminalRead, TerminalInfo, TerminalSize } from '../terminal/types';
 import type { SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../terminal/ssh';
-import type { SshProfile } from '../terminal/sshProfiles';
+import type { SshProfileStore } from '../terminal/sshProfiles';
 import { createProjectBrowserClient } from '../project-browser/protocol';
 import { projectDownloads } from '../project-browser/downloads';
 import { createGuiFilesClient } from './files';
@@ -15,6 +15,11 @@ import type { GitActionRequest, GitChanges, GitCommitFile, GitCommitRequest, Git
   GitConflict, GitResolution } from './gitTypes';
 
 export interface CliRelease { version: string; size: number; ready?: boolean }
+const unavailableProfiles: SshProfileStore = {
+  list: async () => { throw new Error('client.ssh.updateRequired'); },
+  save: async () => { throw new Error('client.ssh.updateRequired'); },
+  remove: async () => { throw new Error('client.ssh.updateRequired'); },
+};
 export interface CliProgress { downloaded: number; total: number; phase: 'downloading' | 'installing' }
 export interface RemoteCliStatus {
   version: string | null;
@@ -79,11 +84,7 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
     },
     terminal: {
       ssh: {
-        profiles: {
-          list: () => request<SshProfile[]>({ operation: 'guiTerminalSshProfiles' }),
-          save: (profile: SshProfile) => request<SshProfile[]>({ operation: 'guiTerminalSshProfileSave', profile }),
-          remove: (id: string) => request<SshProfile[]>({ operation: 'guiTerminalSshProfileRemove', id }),
-        },
+        profiles: unavailableProfiles,
         probe: (endpoint: SshEndpoint) => request<string>({ operation: 'guiTerminalSshProbe', endpoint }),
         open: (input: SshConnect, cwd: string) =>
           request<TerminalInfo>({ operation: 'guiTerminalSshOpen', request: input, cwd }),

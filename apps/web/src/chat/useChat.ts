@@ -9,6 +9,7 @@ import { browserTrustStore, trustedHost, trustScope } from '../../../../shared/r
 import { createPreviewDownloads } from '../downloads/previews';
 import { downloadOwner } from '../downloads/manager';
 import { useActiveChatPolicy } from '../../../../shared/remote-chat/useActiveChatPolicy';
+import { createWebSshProfiles } from '../sshProfiles';
 
 const HISTORY_REFRESH_MS = 15_000;
 
@@ -33,7 +34,7 @@ function createController(session: AuthSession, deviceId: string) {
       return current;
     },
     createPeer: (options) => new RtcPeer(options, () => new RTCPeerConnection({ iceServers: options.iceServers })),
-  }));
+  }), undefined, undefined, createWebSshProfiles(session));
   controller.previewDownloads = createPreviewDownloads({ owner: downloadOwner(session), deviceId });
   return controller;
 }

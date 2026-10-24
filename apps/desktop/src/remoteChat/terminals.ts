@@ -4,7 +4,6 @@ import { terminalBelongsToProject } from '../../../../shared/remote-chat/termina
 import { invoke } from '../api/backend';
 import { openNativeSsh, probeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
 import type { SshConnect, SshEndpoint, SshFileAction } from '../../../../shared/terminal/ssh';
-import { localSshProfiles, parseSshProfile } from '../../../../shared/terminal/sshProfiles';
 
 const MAX_TERMINALS = 8;
 interface Session { info?: TerminalInfo; output: TerminalOutput; exited: boolean; legacyCursor: number }
@@ -14,16 +13,9 @@ export class RemoteTerminals {
   private readonly owners = new Map<string, Set<Session>>();
 
   async request(body: Record<string, unknown>, owner: string) {
-    if (body.operation === 'guiTerminalSshProfiles') return localSshProfiles.list();
-    if (body.operation === 'guiTerminalSshProfileSave') {
-      const profile = parseSshProfile(body.profile);
-      if (!profile) throw new Error('client.ssh.invalid');
-      return localSshProfiles.save(profile);
-    }
-    if (body.operation === 'guiTerminalSshProfileRemove') {
-      if (typeof body.id !== 'string') throw new Error('client.ssh.invalid');
-      return localSshProfiles.remove(body.id);
-    }
+    // Older clients must upgrade instead of writing an isolated PC copy after cloud migration.
+    if (['guiTerminalSshProfiles', 'guiTerminalSshProfileSave', 'guiTerminalSshProfileRemove'].includes(
+      String(body.operation))) throw new Error('client.ssh.updateRequired');
     if (body.operation === 'guiTerminalSshProbe') return probeSsh(body.endpoint as SshEndpoint);
     if (body.operation === 'guiTerminalList') {
       const cwd = body.cwd;

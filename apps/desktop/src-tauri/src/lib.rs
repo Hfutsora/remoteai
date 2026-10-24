@@ -427,6 +427,7 @@ pub fn run() {
             remote_chat::gui_remote_close,
             cloud::codex_gui_devices,
             cloud::sync_port_mappings,
+            cloud::cloud_ssh_profiles,
             cloud::remote_assistance,
             codex_gui::releases::codex_gui_cli_status,
             codex_gui::releases::codex_gui_cli_release,

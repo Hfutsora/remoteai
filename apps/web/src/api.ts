@@ -102,8 +102,9 @@ export async function refreshSession() {
   return refreshRequest;
 }
 
-async function authorizedFetch(path: string, init: RequestInit = {}) {
+export async function authorizedFetch(path: string, init: RequestInit = {}, guard?: (session: AuthSession) => void) {
   const request = async (session: AuthSession) => {
+    guard?.(session);
     const headers = new Headers(init.headers);
     headers.set("Authorization", `Bearer ${session.accessToken}`);
     if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");

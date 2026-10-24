@@ -15,9 +15,9 @@ import { useTerminalOrientation } from './useTerminalOrientation';
 import { TerminalKeys } from './TerminalKeys';
 import { useTerminalStyles as useStyles } from './styles';
 
-export function TerminalSession({ client, session, visible, deviceName, hide, close, tabs, notice }: {
+export function TerminalSession({ client, session, visible, deviceName, hide, tabs, notice }: {
   client: GuiToolsClient['terminal']; session: TerminalInfo; visible: boolean; deviceName?: string;
-  hide: () => void; close: () => void;
+  hide: () => void;
   tabs?: ReactNode; notice?: string;
 }) {
   const resolveThemeColor = useThemeColor();
@@ -85,8 +85,6 @@ export function TerminalSession({ client, session, visible, deviceName, hide, cl
             style={[styles.button, orientation.rotating && styles.disabled]} onPress={orientation.rotate}>
             <Ionicons name={orientation.landscape ? 'phone-portrait-outline' : 'phone-landscape-outline'}
               size={22} color={color("#17211b", 'ink')} /></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.closeTerminal")} style={styles.button} onPress={close}>
-            <Ionicons name="trash-outline" size={21} color={color("#718078", 'muted')} /></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.hideTerminal")} style={styles.button} onPress={hide}>
             <Ionicons name="chevron-down" size={24} color={color("#17211b", 'ink')} /></Pressable>
         </View>

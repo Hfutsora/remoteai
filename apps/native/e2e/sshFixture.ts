@@ -1,6 +1,12 @@
 import type { SshApi, SshEntry } from '../../../shared/terminal/ssh';
 import type { SshProfile } from '../../../shared/terminal/sshProfiles';
 import type { TerminalInfo } from '../../../shared/terminal/types';
+import { createNativeSshProfiles } from '../src/api/sshProfiles';
+
+const cloud = process.env.EXPO_PUBLIC_SSH_CLOUD_FIXTURE === '1' ? createNativeSshProfiles({
+  baseUrl: 'http://127.0.0.1:1499', accessToken: 'ssh-fixture', refreshToken: 'fixture-only',
+  email: 'ssh-fixture@example.test',
+}) : undefined;
 
 /** A separate PC store for each fixture computer; credentials are never recorded. */
 const stores = new Map<string, SshProfile[]>();
@@ -12,7 +18,7 @@ export function createSshFixture(computer: string, adopt: (info: TerminalInfo) =
     { name: 'hello.txt', path: '/hello.txt', directory: false, size: 5 },
   ];
   return {
-    profiles: {
+    profiles: cloud ?? {
       list: async () => stores.get(computer) ?? [],
       save: async value => {
         const next = [...(stores.get(computer) ?? []).filter(item => item.id !== value.id), value];
