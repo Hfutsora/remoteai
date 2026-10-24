@@ -1,9 +1,11 @@
 import { NativeModules, Platform } from 'react-native';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
+import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
 import type { PacketCipherFactory } from '../../../../shared/remote-chat/packetCipher';
 
 interface NativePacketCipher {
   available: boolean;
+  binaryPackets?: boolean;
+  decryptPacketHex?(handle: string, packet: string): string | null;
   create(key: string, context: string): string | null;
   encrypt(handle: string, input: { text: string } | { utf8Hex: string }, nonce: string): string | null;
   decrypt(handle: string, packet: string): { text: string } | null;
@@ -27,6 +29,10 @@ export const createNativePacketCipher: PacketCipherFactory = ({ key, context }) 
     encrypt: (text, nonce) => authenticated(native.encrypt(handle,
       text.includes('\0') ? { utf8Hex: bytesToHex(utf8ToBytes(text)) } : { text }, nonce)),
     decrypt: (packet) => authenticated(native.decrypt(handle, packet)?.text ?? null),
+    encryptBytes: native.binaryPackets && native.decryptPacketHex ? (bytes, nonce) =>
+      authenticated(native.encrypt(handle, { utf8Hex: bytesToHex(bytes) }, nonce)) : undefined,
+    decryptBytes: native.binaryPackets && native.decryptPacketHex ? packet =>
+      hexToBytes(authenticated(native.decryptPacketHex!(handle, packet))) : undefined,
     destroy: () => { native.destroy(handle); },
   };
 };

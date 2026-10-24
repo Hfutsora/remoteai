@@ -2,6 +2,8 @@
 export interface PacketCipher {
   encrypt(text: string, nonceHex: string): string;
   decrypt(payload: string): string;
+  encryptBytes?(bytes: Uint8Array, nonceHex: string): string;
+  decryptBytes?(payload: string): Uint8Array;
   destroy(): void;
 }
 

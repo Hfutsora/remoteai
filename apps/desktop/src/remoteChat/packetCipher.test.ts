@@ -24,6 +24,39 @@ const platformCipher: PacketCipherFactory = ({ key, context }) => {
   };
 };
 
+const binaryPlatformCipher: PacketCipherFactory = material => {
+  const cipher = platformCipher(material)!;
+  const key = Buffer.from(material.key);
+  return { ...cipher,
+    encryptBytes(bytes, nonceHex) {
+      const native = createCipheriv('chacha20-poly1305', key, Buffer.from(nonceHex, 'hex'));
+      native.setAAD(material.context, { plaintextLength: bytes.length });
+      return nonceHex + Buffer.concat([native.update(bytes), native.final(), native.getAuthTag()]).toString('hex');
+    },
+    decryptBytes(payload) {
+      const bytes = Buffer.from(payload, 'hex');
+      const native = createDecipheriv('chacha20-poly1305', key, bytes.subarray(0, 12));
+      native.setAuthTag(bytes.subarray(-16));
+      native.setAAD(material.context, { plaintextLength: bytes.length - 28 });
+      return Buffer.concat([native.update(bytes.subarray(12, -16)), native.final()]);
+    },
+    destroy() { key.fill(0); cipher.destroy(); },
+  };
+};
+
+it('preserves arbitrary compressed bytes through native crypto and retains old native capability fallback', () => {
+  const old = pair(platformCipher);
+  expect(old.receiver.supportsBinaryPlaintext).toBe(false);
+  expect(() => old.receiver.encryptCompressed(Uint8Array.of(0, 255))).toThrow();
+  old.sender.destroy(); old.receiver.destroy(); old.other.destroy();
+  const { sender, receiver, other } = pair(binaryPlatformCipher);
+  const bytes = Uint8Array.from({ length: 1024 }, (_, index) => index % 256);
+  expect(receiver.supportsBinaryPlaintext).toBe(true);
+  expect(receiver.decryptCompressed(sender.encryptCompressed(bytes))).toEqual(Buffer.from(bytes));
+  expect(sender.decryptCompressed(receiver.encryptCompressed(bytes))).toEqual(bytes);
+  sender.destroy(); receiver.destroy(); other.destroy();
+});
+
 function pair(factory?: PacketCipherFactory) {
   const a = keyPair((size) => crypto.getRandomValues(new Uint8Array(size)));
   const b = keyPair((size) => crypto.getRandomValues(new Uint8Array(size)));

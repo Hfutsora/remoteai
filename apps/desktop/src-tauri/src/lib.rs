@@ -393,6 +393,7 @@ pub fn run() {
             gui_terminal::links::resources::codex_gui_resource_link,
             remote_chat::remote_chat_attach,
             remote_chat::remote_chat_send,
+            remote_chat::packet_codec::remote_chat_packet_codec,
             remote_chat::bulk::remote_chat_bulk_send,
             remote_chat::identity::remote_chat_identity,
             remote_chat::host_health::remote_chat_host_alive,

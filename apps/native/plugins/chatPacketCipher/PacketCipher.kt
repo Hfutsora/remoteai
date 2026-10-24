@@ -51,12 +51,22 @@ internal class PacketCipher(private val key: ByteArray, private val context: Byt
 
   @Synchronized
   fun decrypt(payload: String): String {
+    val plain = decryptPacket(payload)
+    try { return String(plain, Charsets.UTF_8) } finally { plain.fill(0) }
+  }
+
+  @Synchronized
+  fun decryptPacketHex(payload: String): String {
+    val plain = decryptPacket(payload)
+    try { return toHex(plain) } finally { plain.fill(0) }
+  }
+
+  private fun decryptPacket(payload: String): ByteArray {
     check(!closed)
     require(payload.length in (NONCE_BYTES + TAG_BYTES) * 2..MAX_PACKET_HEX)
     val packet = fromHex(payload)
     val nonce = packet.copyOfRange(0, NONCE_BYTES)
-    val plain = cipher(Cipher.DECRYPT_MODE, nonce).doFinal(packet, NONCE_BYTES, packet.size - NONCE_BYTES)
-    try { return String(plain, Charsets.UTF_8) } finally { plain.fill(0) }
+    return cipher(Cipher.DECRYPT_MODE, nonce).doFinal(packet, NONCE_BYTES, packet.size - NONCE_BYTES)
   }
 
   private fun cipher(mode: Int, nonce: ByteArray): Cipher = Cipher.getInstance(TRANSFORMATION).apply {

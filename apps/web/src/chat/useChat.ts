@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { apiJson, getActiveSession, refreshSession } from '../api';
 import type { AuthSession } from '../types';
 import { ChatConnection } from '../../../../shared/remote-chat/client/connection';
+import { createBrowserPacketCompression } from '../../../../shared/remote-chat/browserPacketCompression';
 import { ChatController } from '../../../../shared/remote-chat/client/controller';
 import { RtcPeer } from '../../../../shared/remote-chat/rtcPeer';
 import { browserTrustStore, trustedHost, trustScope } from '../../../../shared/remote-chat/trustedHost';
@@ -13,6 +14,7 @@ const HISTORY_REFRESH_MS = 15_000;
 
 function createController(session: AuthSession, deviceId: string) {
   const controller = new ChatController((events) => new ChatConnection({ ...events, deviceId, managePolicyMode: false,
+    createPacketCompression: createBrowserPacketCompression,
     verifyHostKey: trustedHost(browserTrustStore, trustScope(session.baseUrl, deviceId)),
     randomBytes: (length) => crypto.getRandomValues(new Uint8Array(length)),
     renewAuthorization: async () => {

@@ -15,6 +15,7 @@ export interface LinkOptions {
   createNativePath?: import('./nativePath').NativePathFactory;
   createPeer: PeerFactory;
   createPacketCipher?: PacketCipherFactory;
+  createPacketCompression?: import('./packetCompression').PacketCompressionFactory;
   signal: (message: object) => void;
   relayBuffered: () => number;
   message: (message: RpcMessage) => void;

@@ -14,6 +14,7 @@ mod framing;
 mod lease;
 mod media;
 mod network;
+pub mod packet_codec;
 mod route;
 #[cfg(test)]
 mod tests;

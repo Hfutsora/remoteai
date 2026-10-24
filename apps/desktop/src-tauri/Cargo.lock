@@ -1760,6 +1760,7 @@ dependencies = [
  "easytier",
  "easytier-core",
  "easytier-proto",
+ "flate2",
  "hickory-proto",
  "jni 0.21.1",
  "netdev",

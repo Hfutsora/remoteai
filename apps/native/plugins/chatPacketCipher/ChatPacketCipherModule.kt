@@ -15,7 +15,7 @@ class ChatPacketCipherModule(context: ReactApplicationContext) : ReactContextBas
   private val available = runCatching { Cipher.getInstance(PacketCipher.TRANSFORMATION) }.isSuccess
 
   override fun getName() = "ChatPacketCipher"
-  override fun getConstants(): Map<String, Any> = mapOf("available" to available)
+  override fun getConstants(): Map<String, Any> = mapOf("available" to available, "binaryPackets" to true)
 
   // These calls do no I/O: each packet is at most 20 KB, with one synchronous bridge crossing.
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -49,6 +49,10 @@ class ChatPacketCipherModule(context: ReactApplicationContext) : ReactContextBas
     // RN's scalar return conversion truncates NULs; its native map return conversion preserves them.
     Arguments.createMap().apply { putString("text", text) }
   }.getOrNull()
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun decryptPacketHex(handle: String, payload: String): String? =
+    runCatching { session(handle)?.decryptPacketHex(payload) }.getOrNull()
 
   @Synchronized
   private fun session(handle: String): PacketCipher? = sessions[handle]

@@ -4,6 +4,7 @@ import { keyPair } from '../../../../shared/remote-chat/cipher';
 import { ChatLink } from '../../../../shared/remote-chat/link';
 import { createDesktopPeer } from './peer';
 import { createDesktopNativePath } from './nativePath';
+import { createDesktopPacketCompression } from './packetCompression';
 import { parseMessage, type ConnectionMode, type IceServer, type Signal }
   from '../../../../shared/remote-chat/protocol';
 import { ChatOperations } from './operations';
@@ -183,6 +184,7 @@ export class ChatHost {
     const keys = keyPair((size) => crypto.getRandomValues(new Uint8Array(size)));
     const link = new ChatLink({
       binaryBulk: true,
+      createPacketCompression: createDesktopPacketCompression,
       bulkRelay: { available: () => this.bulkRelayAvailable && this.transport.ready,
         send: bytes => this.transport.sendBulk(sessionId, [bytes]),
         sendBatch: records => this.transport.sendBulk(sessionId, records) },

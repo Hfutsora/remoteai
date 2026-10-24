@@ -6,6 +6,7 @@ import { browserTrustStore, trustedHost, trustScope } from '../../../../shared/r
 import { desktopClient } from '../../../../shared/remote-desktop/protocol';
 import { createDesktopPeer } from '../remoteChat/peer';
 import { createDesktopNativePath } from '../remoteChat/nativePath';
+import { createDesktopPacketCompression } from '../remoteChat/packetCompression';
 import { NativeGuiSocket } from '../pages/codexGui/remote/nativeSocket';
 import type { GuiCloudIdentity } from '../pages/codexGui/remote/types';
 import { localDesktopClipboard } from '../remoteDesktop/localClipboard';
@@ -28,6 +29,7 @@ export function AssistanceViewer({ invitation, identity, close }: {
     authorize: async () => ({ baseUrl: identity.baseUrl, accessToken: '' }),
     createSocket: () => new NativeGuiSocket(identity, invitation.id),
     createPeer: createDesktopPeer, createNativePath: createDesktopNativePath,
+    createPacketCompression: createDesktopPacketCompression,
     mode: mode => { if (mode === 'offline' || mode === 'connecting') setReady(false); },
     ready: () => { setReady(true); setError(''); },
     event: () => {}, error: setError,

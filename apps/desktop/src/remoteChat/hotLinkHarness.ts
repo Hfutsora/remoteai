@@ -1,4 +1,7 @@
 import { vi } from 'vitest';
+import { inflateRawSync } from 'node:zlib';
+import { isCompressedPacket } from '../../../../shared/remote-chat/compressedPackets';
+import { compressedPacketBody, type PacketCompressionFactory } from '../../../../shared/remote-chat/packetCompression';
 import { HotLink } from '../../../../shared/remote-chat/hotLink';
 import { keyPair, SessionCipher } from '../../../../shared/remote-chat/cipher';
 import { directPackets } from '../../../../shared/remote-chat/directPackets';
@@ -13,6 +16,7 @@ export function hotLinkHarness(options: {
   relayDelay?: number; endpoints?: Partial<Record<Side, ConnectionEndpoints>>;
   wrapDirectChannel?: (channel: Channel) => Channel;
   onMessage?: (side: Side, message: RpcMessage) => void;
+  compression?: Partial<Record<Side, PacketCompressionFactory>>;
 } = {}) {
   const keys = { phone: keyPair((size) => crypto.getRandomValues(new Uint8Array(size))),
     pc: keyPair((size) => crypto.getRandomValues(new Uint8Array(size))) };
@@ -37,7 +41,10 @@ export function hotLinkHarness(options: {
   };
   const send = (side: Side, path: Path, payload: string) => {
     for (const part of path === 'direct' ? directPackets(payload) : [payload]) {
-      const frame = JSON.parse(inspectors[side].decrypt(part)!) as Record<string, unknown>;
+      const compressed = isCompressedPacket(part) ? inspectors[side].decryptCompressed(part) : undefined;
+      const text = compressed ? inflateRawSync(compressedPacketBody(compressed).bytes).toString('utf8')
+        : inspectors[side].decrypt(part)!;
+      const frame = JSON.parse(text) as Record<string, unknown>;
       const packet = { side, path, payload: part, frame };
       packets.push(packet);
       if (paths[path] && filter(packet)) {
@@ -51,6 +58,7 @@ export function hotLinkHarness(options: {
     inspectors[side] = new SessionCipher({ sessionId: 'session', desktop: side !== 'pc',
       secret: keys[other].secret, publicKey: keys[side].publicKey });
     links[side] = new HotLink({ sessionId: 'session', desktop: side === 'pc',
+      createPacketCompression: options.compression?.[side],
       secret: keys[side].secret, publicKey: keys[other].publicKey, iceServers: [],
       createPeer: (options) => {
         peers[side] = options;
