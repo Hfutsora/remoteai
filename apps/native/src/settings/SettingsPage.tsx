@@ -54,9 +54,6 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
   return <View style={styles.page}>
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.group}>
-        <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon="contrast-outline"
-          color={color(settingsColors.blue, 'info')} background="#e7f3ff" divider onPress={() => setPanel('theme')} />
-        <LanguageSettingsRow />
         <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.viewUserDetails", { value1: username })}
           onPress={() => setPanel('profile')} style={({ pressed }) => [styles.profile, pressed && styles.pressed]}>
           <View style={styles.avatar}><View style={styles.avatarCenter}>
@@ -69,6 +66,9 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
           <Ionicons name="chevron-forward" size={19} color={color(settingsColors.muted, 'muted')} />
         </Pressable>
         <View style={styles.profileDivider} />
+        <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon="contrast-outline"
+          color={color(settingsColors.blue, 'info')} background="#e7f3ff" divider onPress={() => setPanel('theme')} />
+        <LanguageSettingsRow />
         <SettingsRow label={t("client.settings.profile")} value={username} icon="person-outline" color={color(settingsColors.blue, 'info')}
           background="#f0faff" divider onPress={() => setPanel('profile')} />
         <SettingsRow label={t("client.settings.roleDetails")} value={role} icon="id-card-outline" color={color(settingsColors.blue, 'info')}

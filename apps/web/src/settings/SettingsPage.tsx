@@ -52,16 +52,16 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
         <button type="button" className="settings-profile" onClick={() => setPanel('profile')} aria-label={t("client.settings.viewProfile")}>
           <span className="settings-avatar">{email.slice(0, 2).toUpperCase()}</span>
           <span><strong>{email}</strong><small>{t("client.settings.remoteAiCloudAccount")}</small></span><ChevronRight size={20} /></button>
+        <ThemeSettingsRow onOpen={() => setPanel('theme')} />
+        <LanguageSettingsRow />
         <SettingsRow label={t("client.settings.profile")} value={email} icon={UserRound} tone="blue" onClick={() => setPanel('profile')} />
         <SettingsRow label={t("client.settings.roleDetails")} value={role} icon={IdCard} tone="blue" onClick={() => setPanel('identity')} />
       </section>
       <div className="settings-preferences">
         <section className="settings-group">
-          <ThemeSettingsRow onOpen={() => setPanel('theme')} />
           <SettingsRow label={t('client.appearance.globalFontSize')} value={`${fontSize}px`} icon={Type}
             onClick={() => setPanel('font')} />
           <SettingsRow label={t("client.projectBrowser.autoSaveFiles")} icon={RefreshCw} onClick={() => setPanel('files')} />
-          <LanguageSettingsRow />
           <SettingsRow label={t("client.settings.autoRefreshUsage")} value={t("client.settings.minutes", { value1: minutes })} icon={RefreshCw}
             onClick={() => setPanel('refresh')} />
           <SettingsRow label={t("client.app.2faKeys")} value={totpManager.cloudSyncEnabled ? t("client.settings.on") : t("client.settings.off")} icon={ShieldCheck}
