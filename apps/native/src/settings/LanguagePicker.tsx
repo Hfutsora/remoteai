@@ -101,7 +101,7 @@ export function LanguageSettingsRow() {
   return <View style={styles.row}>
     <View style={[styles.icon, localStyles.icon]}><Ionicons name="language-outline" size={22}
       style={localStyles.iconText} /></View>
-    <View style={[styles.rowContent, styles.divider]}>
+    <View style={styles.rowContent}>
       <Text style={styles.label}>{t('client.settings.language')}</Text>
       <View style={styles.spacer} />
       <LanguagePicker />

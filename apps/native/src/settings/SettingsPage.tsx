@@ -29,7 +29,7 @@ interface SettingsPageProps {
   totpManager: TotpManagerState;
 }
 
-type SettingsPanel = 'profile' | 'identity' | 'refresh' | 'totp' | 'password' | 'logout'
+type SettingsPanel = 'profile' | 'refresh' | 'totp' | 'password' | 'logout'
   | 'desktop' | 'theme' | 'files' | null;
 
 function identityLabel(profile?: UserProfile | null) {
@@ -65,14 +65,11 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
           </View>
           <Ionicons name="chevron-forward" size={19} color={color(settingsColors.muted, 'muted')} />
         </Pressable>
-        <View style={styles.profileDivider} />
+      </View>
+      <View style={styles.group}>
         <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon="contrast-outline"
           color={color(settingsColors.blue, 'info')} background="#e7f3ff" divider onPress={() => setPanel('theme')} />
         <LanguageSettingsRow />
-        <SettingsRow label={t("client.settings.profile")} value={username} icon="person-outline" color={color(settingsColors.blue, 'info')}
-          background="#f0faff" divider onPress={() => setPanel('profile')} />
-        <SettingsRow label={t("client.settings.roleDetails")} value={role} icon="id-card-outline" color={color(settingsColors.blue, 'info')}
-          background="#f4f4ff" onPress={() => setPanel('identity')} />
       </View>
       <View style={styles.group}>
         <SettingsRow label={t("client.projectBrowser.autoSaveFiles")} icon="save-outline"
@@ -105,8 +102,7 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
         </Pressable>
       </View>
     </ScrollView>
-    <BottomSheet visible={panel === 'profile' || panel === 'identity'}
-      title={panel === 'identity' ? t("client.settings.roleDetails") : t("client.settings.profile")} onClose={close}>
+    <BottomSheet visible={panel === 'profile'} title={t("client.settings.profile")} onClose={close}>
       <View style={styles.sheetBody}>
         <Text style={styles.detailLabel}>{t("client.app.email")}</Text>
         <Text selectable style={styles.detailValue}>{username}</Text>

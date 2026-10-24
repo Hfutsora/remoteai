@@ -31,7 +31,6 @@ export const useStyles = createThemedStyles((color) => ({
     gap: 10, paddingRight: 22, paddingVertical: 14,
   },
   divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color(settingsColors.border, 'border') },
-  profileDivider: { height: StyleSheet.hairlineWidth, backgroundColor: color(settingsColors.border, 'border'), marginLeft: 96 },
   label: {
     ...textMetrics(16, 24), color: color(settingsColors.ink, 'ink'), flexShrink: 1, maxWidth: '65%',
   },

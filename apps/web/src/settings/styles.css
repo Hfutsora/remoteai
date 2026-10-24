@@ -2,7 +2,7 @@
 .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; }
 .settings-group { overflow: hidden; margin-bottom: 18px; border: 1px solid var(--app-border, #edf0f3);
   border-radius: 16px; background: var(--app-surface, #fff); }
-.settings-profile-group { align-self: start; }
+.settings-profile-group { min-width: 0; align-self: start; }
 .settings-profile { display: flex; align-items: center; gap: 14px; width: 100%; padding: 24px 18px;
   border: 0; background: transparent; text-align: left; cursor: pointer; }
 .settings-avatar { display: grid; place-items: center; width: 58px; height: 58px; flex-shrink: 0;
