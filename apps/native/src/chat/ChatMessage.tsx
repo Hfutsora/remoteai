@@ -137,7 +137,7 @@ function MessageBody({ item, onOpen, running = false, process = false }: Message
 
 const useMessageStyles = createThemedStyles(() => ({
   actions: { alignSelf: 'flex-start', marginLeft: -8 },
-  activity: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 5 },
+  activity: { flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 36, paddingVertical: 3 },
   user: { alignItems: 'flex-end' },
   bubble: { borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 19, paddingVertical: 15, gap: 10 },
   imageBubble: { gap: 8 },

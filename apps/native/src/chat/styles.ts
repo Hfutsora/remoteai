@@ -40,6 +40,7 @@ export const useStyles = createThemedStyles((color) => ({
   // Separators keep spacing inside FlatList's measured cells; container gaps can leave a blank render window.
   messages: { padding: 16 },
   messageSeparator: { height: 20 },
+  processSeparator: { height: 6 },
   messageHeader: { marginBottom: 20 },
   messageFooter: { paddingTop: 20, gap: 12 },
   messageListLoading: { opacity: 0 },

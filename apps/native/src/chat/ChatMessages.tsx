@@ -39,6 +39,8 @@ function MessageSeparator({ previous, next }: { previous?: Entry; next?: Entry }
   useLanguage();
   if (!previous) return null;
   if (next && hasCompactTimelineGap(previous, next)) {
+    const processItems = [previous, next].every(entry => entry.kind === 'process' || entry.kind === 'activities');
+    if (processItems) return <View style={styles.processSeparator} />;
     // The copy action already reserves a full touch target below the reply.
     if (hasReplyActions(previous)) return <View style={RESPONSE_ACTIONS_SEPARATOR_STYLE} />;
     // Text already includes its paragraph top margin; only add the remaining response spacing.

@@ -39,6 +39,14 @@
   .chat-message-content > [data-response-continuation] { margin-top: -10px; }
   .chat-message-content > :is(.chat-entry-message, .chat-entry-process):has(.chat-message-actions)
     + [data-response-continuation] { margin-top: -18px; }
+  /* Process paragraphs have no outer margins; one 6px gap separates commentary and tools. */
+  .chat-message-content > :is(.chat-entry-process, .chat-entry-activities)
+    + :is(.chat-entry-process, .chat-entry-activities)[data-response-continuation] { margin-top: -16px; }
+  .chat-activity { min-height: 36px; padding-block: 3px; }
+  .chat-activity .chat-activity-text {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    white-space: normal; overflow-wrap: anywhere; line-height: 20px;
+  }
   .chat-message-content .chat-user-message { padding: 15px; }
   .chat-message-content .chat-markdown > :is(p, ul, ol) { margin-block: 12px; }
   .chat-message-content .chat-markdown > :is(p, ul, ol):first-child { margin-top: 0; }
