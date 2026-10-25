@@ -11,7 +11,7 @@ import { setLanguage } from '../../../web/src/i18n';
 vi.mock('../api/conversationMetrics', () => ({ loadConversationMetrics: vi.fn() }));
 const metrics = { totalOutputTokens: 300, totalOutputTimeMs: 2_000, outputRequestCount: 1,
   totalFirstTokenTimeMs: 2_500, firstTokenRequestCount: 2,
-  successfulCommandCount: 3, completedCommandCount: 4 };
+  successfulCommandCount: 3, completedCommandCount: 4, estimatedCostUsd: 1.23 };
 const turns = [{ id: 'turn', items: [0, 0, 0, 1].map((exitCode, index) => ({
   id: String(index), type: 'commandExecution', status: 'completed', exitCode,
 })) }];
@@ -36,15 +36,21 @@ it('places local GUI TSR, TPS and TTFT before tokens and clears them when discon
   expect(container.textContent).toBe('');
 });
 
-it('shows remote TPS and TTFT to the right of tokens independently of daily usage', async () => {
+it('shows remote conversation cost and puts performance on the final row', async () => {
   const read = vi.fn().mockResolvedValue(metrics);
   await act(async () => root.render(<ChatUsage read={() => new Promise<never>(() => {})}
     active ready tokenUsage={{ total: { totalTokens: 2_500 }, last: { totalTokens: 500 } }}
     threadId="remote-thread" readConversationMetrics={read} />));
   const thread = container.querySelector('.chat-usage-thread');
-  expect(thread?.textContent).toBe('当前对话 2.50K Token · 75.0% TSR · 150.0 TPS · 1.25 TTFT');
+  expect(thread?.textContent).toBe('当前 2.50K Token · 1.23USD');
+  const performance = container.querySelector('.chat-usage-performance');
+  expect(performance?.textContent).toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT');
+  expect(performance).toBe(container.querySelector('.chat-usage')?.lastElementChild);
   expect(read).toHaveBeenCalledWith('remote-thread');
   expect(read).toHaveBeenCalledTimes(1);
+  await act(async () => root.render(<ChatUsage read={() => new Promise<never>(() => {})}
+    active ready threadId="old-host" readConversationMetrics={async () => ({ ...metrics, estimatedCostUsd: undefined })} />));
+  expect(container.querySelector('.chat-usage-thread')?.textContent).toBe('当前 — Token · —USD');
 });
 
 it('stops remote TPS reads when the page is hidden and refreshes when visible again', async () => {

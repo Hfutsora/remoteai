@@ -4,12 +4,11 @@ import { CONVERSATION_TSR_DESCRIPTION, formatConversationTsr } from '../../../..
 import { t, useLanguage } from '../i18n';
 import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 import { CONVERSATION_TPS_DESCRIPTION, CONVERSATION_TTFT_DESCRIPTION, formatConversationTps, formatConversationTtft,
-  type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
+  type ConversationMetrics, type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
 
 export function ConversationPerformance({ read, threadId, active }: {
   read: ReadConversationMetrics; threadId: string | null; active: boolean;
 }) {
-  useLanguage();
   const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden');
   useEffect(() => {
     const update = () => setVisible(document.visibilityState !== 'hidden');
@@ -17,6 +16,11 @@ export function ConversationPerformance({ read, threadId, active }: {
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   const metrics = useConversationMetrics(read, threadId, active && visible);
+  return <ConversationPerformanceValues metrics={metrics} />;
+}
+
+export function ConversationPerformanceValues({ metrics }: { metrics: ConversationMetrics | null }) {
+  useLanguage();
   const success = `${formatConversationTsr(metrics)} TSR`;
   const speed = `${formatConversationTps(metrics)} TPS`;
   const firstToken = `${formatConversationTtft(metrics)} TTFT`;

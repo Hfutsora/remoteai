@@ -9,8 +9,9 @@ import { formatCost, formatThreadTokens, formatTokens, usageTrailing,
 import './chatUsage.css';
 import { contextUsageLabel } from './formatters';
 import type { ThreadTokenUsage } from './types';
-import type { ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
-import { ConversationPerformance } from './ConversationPerformance';
+import { formatConversationCost, type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
+import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
+import { ConversationPerformanceValues } from './ConversationPerformance';
 import { QuotaProgress } from '../../../../shared/chat/QuotaProgress';
 
 export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, inline = false, contextControl,
@@ -29,6 +30,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   const { usage, error } = useChatUsage(read, active && ready && visible);
+  const metrics = useConversationMetrics(readConversationMetrics, threadId ?? null, active && ready && visible && !inline);
   const trailing = usageTrailing(usage, displayText, formatCost, { compactQuota: quotaProgress && !inline });
   const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   if (inline) return <InlineUsage usage={usage} notice={notice} contextControl={contextControl} />;
@@ -36,17 +38,19 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     <span className="chat-usage-context chat-row"><span className="chat-grow">{contextUsageLabel(tokenUsage)}</span>
       {onContextSettings && <button type="button" className="chat-back" aria-label={t("client.chat.conversationContext")}
         disabled={!ready || !active} onClick={onContextSettings}><Settings size={18} /></button>}</span>
+    {usage && trailing && <QuotaLine trailing={trailing}
+      remaining={quotaProgress ? usage.primaryRemainingPercent ?? undefined : undefined} />}
+    <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
+      <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
+      {' · '}<strong className="chat-usage-cost">{formatConversationCost(metrics)}</strong>
+    </span>
     {usage ? <>
       <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
       <span>{t("client.chat.estimated")} <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
-      {trailing && <QuotaLine trailing={trailing}
-        remaining={quotaProgress ? usage.primaryRemainingPercent ?? undefined : undefined} />}
     </> : <span>{notice}</span>}
-    <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
-      <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
-      {readConversationMetrics && <> · <ConversationPerformance read={readConversationMetrics} threadId={threadId ?? null}
-        active={active && ready && visible} /></>}
-    </span>
+    {readConversationMetrics && <span className="chat-usage-performance">
+      <ConversationPerformanceValues metrics={metrics} />
+    </span>}
   </div>;
 }
 

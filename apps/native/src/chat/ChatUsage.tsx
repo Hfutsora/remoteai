@@ -12,8 +12,9 @@ import { formatCost, formatThreadTokens, formatTokens, usageTrailing,
 import { palette } from './styles';
 import { contextUsageLabel } from '../../../../shared/remote-chat/contextUsage';
 import type { ThreadTokenUsage } from './types';
-import type { ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
-import { ConversationPerformance } from './ConversationPerformance';
+import { formatConversationCost, type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
+import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
+import { ConversationPerformanceValues } from './ConversationPerformance';
 import { ChatQuotaProgress } from './ChatQuotaProgress';
 
 export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, readConversationMetrics, threadId }: {
@@ -25,6 +26,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
   const color = useThemeColor();
   const language = useLanguage();
   const { usage, error } = useChatUsage(read, active && ready);
+  const metrics = useConversationMetrics(readConversationMetrics, threadId, active && ready);
   const trailing = usageTrailing(usage, displayText, formatCost, { compactQuota: true });
   const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   return <View style={styles.container}>
@@ -37,6 +39,11 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
         <Feather name="settings" size={16} color={color(palette.muted, 'muted')} />
       </Pressable>
     </View>
+    {trailing && <ChatQuotaProgress trailing={trailing} remaining={usage?.primaryRemainingPercent ?? 0} />}
+    <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
+      <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
+      {' · '}<Text style={styles.cost}>{formatConversationCost(metrics)}</Text>
+    </Text>
     {usage ? <Text style={styles.row} accessibilityLabel={[
       t("client.mobile.todaySTokenUsage", { value1: usage.totalTokens.toLocaleString('en-US') }),
       t("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }),
@@ -44,11 +51,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
       {t("client.chat.today")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
       {t("client.mobile.estimated")}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
     </Text> : <Text style={styles.row}>{notice}</Text>}
-    {trailing && <ChatQuotaProgress trailing={trailing} remaining={usage?.primaryRemainingPercent ?? 0} />}
-    <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
-      <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
-      {' · '}<ConversationPerformance read={readConversationMetrics} threadId={threadId} active={active && ready} />
-    </Text>
+    <Text style={styles.row}><ConversationPerformanceValues metrics={metrics} /></Text>
   </View>;
 }
 
