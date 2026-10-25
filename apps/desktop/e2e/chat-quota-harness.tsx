@@ -24,7 +24,8 @@ function Harness() {
       <section data-testid="remote"><h2>PC remote / Web</h2><div className="chat-composer-status">
         <ChatUsage read={read} active ready inline={window.matchMedia('(min-width: 861px)').matches} />
       </div></section>
-      <section data-testid="settings"><h2>Web settings</h2><ChatUsage read={read} active ready /></section>
+      <section data-testid="settings"><h2>Web settings</h2><ChatUsage read={read} active ready
+        quotaProgress={!window.matchMedia('(min-width: 861px)').matches} /></section>
     </>}
   </main></ConfigProvider>;
 }

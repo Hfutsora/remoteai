@@ -11,11 +11,14 @@ import { contextUsageLabel } from './formatters';
 import type { ThreadTokenUsage } from './types';
 import type { ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
 import { ConversationPerformance } from './ConversationPerformance';
+import { QuotaProgress } from '../../../../shared/chat/QuotaProgress';
 
 export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, inline = false, contextControl,
+  quotaProgress = false,
   readConversationMetrics, threadId }: {
   read: ReadUsage; active: boolean; ready: boolean; tokenUsage?: ThreadTokenUsage;
   onContextSettings?: () => void; inline?: boolean; contextControl?: ReactNode;
+  quotaProgress?: boolean;
   readConversationMetrics?: ReadConversationMetrics; threadId?: string | null;
 }) {
   useLanguage();
@@ -26,7 +29,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   const { usage, error } = useChatUsage(read, active && ready && visible);
-  const trailing = usageTrailing(usage, displayText);
+  const trailing = usageTrailing(usage, displayText, formatCost, { compactQuota: quotaProgress && !inline });
   const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   if (inline) return <InlineUsage usage={usage} notice={notice} contextControl={contextControl} />;
   return <div className="chat-usage" role="group" aria-label={t("client.chat.todaySUsage")}>
@@ -36,7 +39,8 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     {usage ? <>
       <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
       <span>{t("client.chat.estimated")} <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
-      {trailing && <QuotaLine trailing={trailing} />}
+      {trailing && <QuotaLine trailing={trailing}
+        remaining={quotaProgress ? usage.primaryRemainingPercent ?? undefined : undefined} />}
     </> : <span>{notice}</span>}
     <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
       <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
@@ -48,15 +52,19 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
 
 const USAGE_TOOLTIP_STYLES = { root: { maxWidth: 400 }, body: { fontSize: 12, overflowWrap: 'anywhere' } } as const;
 
-function QuotaLine({ trailing }: { trailing: NonNullable<ReturnType<typeof usageTrailing>> }) {
-  return <span className="chat-usage-quota-line">
+function QuotaLine({ trailing, remaining }: {
+  trailing: NonNullable<ReturnType<typeof usageTrailing>>; remaining?: number;
+}) {
+  const content = <>
     <Tooltip title={trailing.description} styles={USAGE_TOOLTIP_STYLES}>
       <strong className={`chat-usage-${trailing.tone}`} tabIndex={0}>{trailing.text}</strong>
     </Tooltip>
     {trailing.quota && <Tooltip title={trailing.quota.description} styles={USAGE_TOOLTIP_STYLES}>
       <span tabIndex={0}> · {trailing.quota.remaining} · {trailing.quota.total}</span>
     </Tooltip>}
-  </span>;
+  </>;
+  return <span className="chat-usage-quota-line">{remaining === undefined ? content
+    : <QuotaProgress trailing={trailing} remaining={remaining}>{content}</QuotaProgress>}</span>;
 }
 
 function InlineUsage({ usage, notice, contextControl }: {
