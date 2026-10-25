@@ -292,3 +292,60 @@ it.each([true, false])('keeps the shortcut hidden while following growing conten
   scroll.onScroll(scrollEvent(FINAL_CONTENT_HEIGHT));
   expect(render().showScrollToBottom).toBe(false);
 });
+
+it.each(['onScrollEndDrag', 'onMomentumScrollEnd'] as const)(
+  'keeps a small upward scroll paused after %s and subsequent layout updates', (finish) => {
+    hooks.attached.current = false;
+    const scroll = render();
+    const scrollToOffset = vi.fn();
+    scroll.list.current = { scrollToOffset } as unknown as NonNullable<typeof scroll.list.current>;
+    layout(scroll, FIRST_CONTENT_HEIGHT);
+    scroll.onScroll(scrollEvent(FIRST_CONTENT_HEIGHT));
+    flushFrames();
+    scrollToOffset.mockClear();
+    scroll.onScrollBeginDrag();
+    scroll.onScroll(scrollEvent(FIRST_CONTENT_HEIGHT, 50));
+    scroll[finish](scrollEvent(FIRST_CONTENT_HEIGHT, 50));
+    scroll.onContentSizeChange(393, FINAL_CONTENT_HEIGHT);
+    flushFrames();
+    expect(scrollToOffset).not.toHaveBeenCalled();
+  },
+);
+
+it('uses an upward final offset when the last drag event was dropped', () => {
+  hooks.attached.current = false;
+  const scroll = render();
+  const scrollToOffset = vi.fn();
+  scroll.list.current = { scrollToOffset } as unknown as NonNullable<typeof scroll.list.current>;
+  layout(scroll, FIRST_CONTENT_HEIGHT);
+  scroll.onScroll(scrollEvent(FIRST_CONTENT_HEIGHT));
+  flushFrames();
+  scrollToOffset.mockClear();
+  scroll.onScrollBeginDrag();
+  scroll.onScrollEndDrag(scrollEvent(FIRST_CONTENT_HEIGHT, 50));
+  scroll.onMomentumScrollBegin();
+  scroll.onMomentumScrollEnd(scrollEvent(FIRST_CONTENT_HEIGHT, 50));
+  scroll.onContentSizeChange(393, FINAL_CONTENT_HEIGHT);
+  flushFrames();
+  expect(scrollToOffset).not.toHaveBeenCalled();
+});
+
+it('resumes following when the reader scrolls downward near the bottom', () => {
+  hooks.attached.current = false;
+  const scroll = render();
+  const scrollToOffset = vi.fn();
+  scroll.list.current = { scrollToOffset } as unknown as NonNullable<typeof scroll.list.current>;
+  layout(scroll, FIRST_CONTENT_HEIGHT);
+  scroll.onScroll(scrollEvent(FIRST_CONTENT_HEIGHT));
+  flushFrames();
+  scrollToOffset.mockClear();
+  scroll.onScrollBeginDrag();
+  scroll.onScroll(scrollEvent(FIRST_CONTENT_HEIGHT, 80));
+  scroll.onScrollEndDrag(scrollEvent(FIRST_CONTENT_HEIGHT, 80));
+  scroll.onScrollBeginDrag();
+  scroll.onScroll(scrollEvent(FIRST_CONTENT_HEIGHT, 30));
+  scroll.onScrollEndDrag(scrollEvent(FIRST_CONTENT_HEIGHT, 30));
+  scroll.onContentSizeChange(393, FINAL_CONTENT_HEIGHT);
+  flushFrames();
+  expect(scrollToOffset).toHaveBeenCalledWith({ offset: FINAL_CONTENT_HEIGHT - VIEWPORT_HEIGHT, animated: false });
+});

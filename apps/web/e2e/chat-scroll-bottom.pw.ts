@@ -67,3 +67,20 @@ test('rechecks the threshold when the visible chat area changes height', async (
   await expect(button).toHaveCount(0);
   expect(await viewport.evaluate(node => node.scrollTop)).toBe(position);
 });
+
+test('keeps a small upward scroll paused until the reader moves down again', async ({ page }, info) => {
+  const viewport = await open(page);
+  await leaveRemaining(viewport, 50);
+  const position = await viewport.evaluate(node => node.scrollTop);
+  const content = viewport.locator('.chat-message-content');
+  const padding = await content.evaluate(node => parseFloat(getComputedStyle(node).paddingBottom));
+  await content.evaluate((node, value) => { (node as HTMLElement).style.paddingBottom = `${value}px`; }, padding + 30);
+  await expect.poll(() => viewport.evaluate(node => node.scrollHeight - node.clientHeight - node.scrollTop))
+    .toBeGreaterThan(70);
+  expect(await viewport.evaluate(node => node.scrollTop)).toBe(position);
+  await page.screenshot({ path: info.outputPath('small-upward-scroll.png') });
+  await leaveRemaining(viewport, 30);
+  await content.evaluate((node, value) => { (node as HTMLElement).style.paddingBottom = `${value}px`; }, padding + 60);
+  await expect.poll(() => viewport.evaluate(node => node.scrollHeight - node.clientHeight - node.scrollTop))
+    .toBeLessThan(2);
+});
