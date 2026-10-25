@@ -111,8 +111,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.screenshot({ path: testInfo.outputPath(`ssh-${mode}.png`) });
     if (mode !== 'web') {
       await page.getByRole('button', { name: '切换主题' }).click();
-      await expect(page.getByRole('textbox', { name: '远程路径' }))
-        .toHaveCSS('background-color', 'rgb(20, 20, 20)');
+      await expect(page.locator('.ssh-file-path')).toHaveCSS('border-color', 'rgb(43, 47, 51)');
       await page.screenshot({ path: testInfo.outputPath(`ssh-${mode}-dark.png`) });
     }
     await page.setViewportSize({ width: 900, height: 700 });

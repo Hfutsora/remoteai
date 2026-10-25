@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Feather from '@expo/vector-icons/Feather';
 import type { SshApi, SshEntry } from '../../../../../shared/terminal/ssh';
 import { sshError } from '../../../../../shared/terminal/ssh';
 import type { TerminalInfo } from '../../../../../shared/terminal/types';
-import { sshParent, useSshFiles } from '../../../../../shared/terminal/useSshFiles';
+import { useSshFiles } from '../../../../../shared/terminal/useSshFiles';
 import { useSshFileActions } from '../../../../../shared/terminal/useSshFileActions';
 import { useSshFileEditor } from '../../../../../shared/terminal/useSshFileEditor';
 import { BottomSheet } from '../../components/BottomSheet';
+import { SheetFlatList } from '../../components/SheetScrollView';
 import { t, displayError, useLanguage } from '../../i18n';
 import { useThemeColor } from '../../theme/store';
-import { SshButton } from './SshControls';
+import { SshFileIconButton, SshFileToolbar } from './SshFileToolbar';
+import { useSshFileStyles } from './sshFileStyles';
 import { useSshStyles } from './sshStyles';
 import { nativeSshDownload, pickSshUpload } from './sshTransfers';
 import { SshFileActionsSheet } from './SshFileActionsSheet';
@@ -23,6 +26,7 @@ export function SshFilesSheet({ api, info, connected, close }: {
 }) {
   useLanguage();
   const styles = useSshStyles();
+  const fileStyles = useSshFileStyles();
   const color = useThemeColor();
   const { height } = useWindowDimensions();
   const files = useSshFiles(api, info.id, nativeSshDownload);
@@ -54,28 +58,27 @@ export function SshFilesSheet({ api, info, connected, close }: {
   const entries = files.entries.filter(entry => (hidden || !entry.name.startsWith('.'))
     && entry.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
   return <BottomSheet visible title={t('client.ssh.files')} subtitle={info.ssh?.host} onClose={close}
-    onBack={close} tall compactHeader dragFromHeaderOnly>
+    onBack={close} tall compactHeader dragFromHeaderOnly fullWidthContent>
     <View style={[styles.files, { height: height * .7 }]}>
-      <FlatList style={styles.fileList} data={entries} keyExtractor={entry => entry.path}
+      <SheetFlatList style={styles.fileList} contentContainerStyle={fileStyles.content}
+        data={entries} keyExtractor={entry => entry.path}
         ListHeaderComponent={<View style={styles.content}>
-          <View style={styles.row}>
-            <SshButton label={t('client.ssh.home')} disabled={disabled} onPress={() => load('.')} />
-            <SshButton label={t('client.ssh.parent')} disabled={disabled || files.path === '/'}
-              onPress={() => load(sshParent(files.path))} />
-            <SshButton label={t('client.ssh.refresh')} disabled={disabled} onPress={() => load(files.path)} />
-            <SshButton label={t('client.ssh.newFolder')} disabled={disabled}
-              onPress={() => actions.create('createFolder')} />
-            <SshButton label={t('client.ssh.upload')} disabled={disabled} onPress={() => void upload()} />
-          </View>
-          <View style={styles.row}>
-            <TextInput style={[styles.input, styles.address]} accessibilityLabel={t('client.ssh.path')}
+          <SshFileToolbar path={files.path} disabled={disabled} navigate={load} refresh={() => load(files.path)}
+            createFolder={() => actions.create('createFolder')} upload={() => void upload()} />
+          <View style={fileStyles.path}>
+            <Feather name="folder" size={16} color={color('#718078', 'muted')} accessible={false} />
+            <TextInput style={fileStyles.pathInput} accessibilityLabel={t('client.ssh.path')}
               autoCapitalize="none" autoCorrect={false} value={address ?? files.path} onChangeText={setAddress}
-              editable={!disabled} onSubmitEditing={() => load(address ?? files.path)} />
-            <SshButton label={t('client.ssh.go')} disabled={disabled} onPress={() => load(address ?? files.path)} />
+              editable={!disabled} returnKeyType="go" onSubmitEditing={() => load(address ?? files.path)} />
+            <SshFileIconButton icon="arrow-right" label={t('client.ssh.go')} disabled={disabled}
+              onPress={() => load(address ?? files.path)} />
           </View>
-          <TextInput style={styles.input} accessibilityLabel={t('client.ssh.filter')}
-            placeholder={t('client.ssh.filter')}
-            placeholderTextColor={color('#718078', 'muted')} value={filter} onChangeText={setFilter} />
+          <View style={fileStyles.search}>
+            <Feather name="search" size={17} color={color('#718078', 'muted')} accessible={false} />
+            <TextInput style={fileStyles.searchInput} accessibilityLabel={t('client.ssh.filter')}
+              placeholder={t('client.ssh.filter')} autoCapitalize="none" autoCorrect={false}
+              placeholderTextColor={color('#718078', 'muted')} value={filter} onChangeText={setFilter} />
+          </View>
           <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: hidden }}
             style={styles.row} onPress={() => setHidden(value => !value)}>
             <Ionicons name={hidden ? 'checkbox-outline' : 'square-outline'} size={22}

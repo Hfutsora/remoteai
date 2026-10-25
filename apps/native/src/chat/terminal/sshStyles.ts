@@ -21,7 +21,6 @@ export const useSshStyles = createThemedStyles(color => ({
   file: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10,
     paddingHorizontal: 8, minHeight: 48, borderRadius: 10 },
   fileName: { ...textMetrics(14, 22), flex: 1, color: color('#17211b', 'ink') },
-  address: { flex: 1, minWidth: 100 },
   editor: { flexShrink: 1, minHeight: 0, gap: 10 },
   editorInput: { flex: 1, minHeight: 100, textAlignVertical: 'top' },
 }));

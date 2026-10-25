@@ -33,17 +33,17 @@ async function contextAction(page: Page, name: string, action: string) {
 }
 
 async function createWorkspace(page: Page, name: string) {
-  const { path, home, parent } = await page.locator('.ssh-file-path').evaluate(form => {
-    const buttons = form.querySelectorAll('button');
+  const { path, home, parent } = await page.locator('.ssh-file-controls').evaluate(controls => {
+    const buttons = controls.querySelectorAll('.ssh-file-navigation button');
     const box = (element: Element) => {
       const { x, y, width, height } = element.getBoundingClientRect();
       return { x, y, width, height };
     };
-    return { path: box(form.querySelector('input')!), home: box(buttons[0]), parent: box(buttons[1]) };
+    return { path: box(controls.querySelector('.ssh-file-path')!), home: box(buttons[0]), parent: box(buttons[1]) };
   });
-  expect(home!.x + home!.width).toBeLessThan(parent!.x);
-  expect(parent!.x + parent!.width).toBeLessThan(path!.x);
-  expect(Math.abs(home!.y - path!.y)).toBeLessThan(3);
+  expect(home!.x + home!.width).toBeLessThanOrEqual(parent!.x);
+  expect(Math.abs(home!.y - parent!.y)).toBeLessThan(3);
+  expect(home!.y + home!.height).toBeLessThan(path!.y);
   await contextAction(page, 'hello.txt', '新建文件夹');
   await page.getByLabel('文件名').fill(name); await confirm(page).click();
   await entry(page, name).click();

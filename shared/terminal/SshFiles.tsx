@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Button, Checkbox, Input, Progress, Spin, Tooltip } from 'antd';
-import { ArrowUp, FilePlus, Folder, FolderPlus, Home, RefreshCw, Upload } from 'lucide-react';
+import { ArrowRight, ArrowUp, FilePlus, Folder, FolderPlus, Home, RefreshCw, Search, Upload } from 'lucide-react';
 import { WorkspaceDrawerTab } from '../chat/WorkspaceDrawerTab';
 import { displayText as t } from '../localization/messages';
 import { remoteErrorText } from '../localization/errors';
@@ -59,18 +59,26 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
   const open = (path: string) => { setAddress(undefined); void files.navigate(path); };
   const action = (key: string, icon: ReactNode, invoke: () => void, disabled = false) =>
     <Tooltip title={t(key)} styles={{ root: { maxWidth: 400 } }}><Button icon={icon} aria-label={t(key)}
+      type={key === 'client.ssh.upload' ? 'primary' : 'text'}
       disabled={files.busy || disabled} onClick={invoke} /></Tooltip>;
   const entries = files.entries.filter(entry => (hidden || !entry.name.startsWith('.'))
     && entry.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
   return <SshDropTarget id={id} path={files.path} active={active} disabled={files.busy || !files.loaded}
     native={nativeDrop} upload={upload} report={files.reportError}>
     <div className="ssh-files" aria-busy={files.busy}>
+    <div className="ssh-file-controls">
     <div className="ssh-file-toolbar">
-      {action('client.ssh.refresh', <RefreshCw size={16} />, () => void files.load())}
-      {action('client.ssh.newFile', <FilePlus size={16} />, () => actions.create('createFile'))}
-      {action('client.ssh.newFolder', <FolderPlus size={16} />, () => actions.create('createFolder'))}
-      {action('client.ssh.upload', <Upload size={16} />, () => input.current?.click())}
-      {files.busy && <Spin size="small" />}
+      <div className="ssh-file-navigation">
+        {action('client.ssh.home', <Home size={19} />, () => open('.'))}
+        {action('client.ssh.parent', <ArrowUp size={19} />, () => open(sshParent(files.path)), files.path === '/')}
+        {action('client.ssh.refresh', files.busy ? <Spin size="small" /> : <RefreshCw size={19} />,
+          () => void files.load())}
+      </div>
+      <div className="ssh-file-tools">
+        {action('client.ssh.newFile', <FilePlus size={19} />, () => actions.create('createFile'))}
+        {action('client.ssh.newFolder', <FolderPlus size={19} />, () => actions.create('createFolder'))}
+        {action('client.ssh.upload', <Upload size={19} />, () => input.current?.click())}
+      </div>
       <input hidden type="file" multiple ref={input} onChange={event => {
         const selected = event.currentTarget.files;
         if (selected?.length) void actions.upload(selected);
@@ -80,13 +88,16 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
     <form className="ssh-file-path" onSubmit={event => {
       event.preventDefault(); open(address ?? files.path);
     }}>
-      {action('client.ssh.home', <Home size={16} />, () => open('.'))}
-      {action('client.ssh.parent', <ArrowUp size={16} />, () => open(sshParent(files.path)), files.path === '/')}
-      <Input value={address ?? files.path} aria-label={t('client.ssh.path')}
+      <Folder size={16} aria-hidden="true" />
+      <Input value={address ?? files.path} aria-label={t('client.ssh.path')} variant="borderless"
         onChange={event => setAddress(event.target.value)} disabled={files.busy} />
-      <Button htmlType="submit" disabled={files.busy}>{t('client.ssh.go')}</Button>
+      <Tooltip title={t('client.ssh.go')} styles={{ root: { maxWidth: 400 } }}>
+        <Button htmlType="submit" type="text" icon={<ArrowRight size={19} />}
+          aria-label={t('client.ssh.go')} disabled={files.busy} />
+      </Tooltip>
     </form>
-    <Input value={filter} onChange={event => setFilter(event.target.value)} allowClear
+    <Input className="ssh-file-search" prefix={<Search size={17} aria-hidden="true" />}
+      value={filter} onChange={event => setFilter(event.target.value)} allowClear
       placeholder={t('client.ssh.filter')} aria-label={t('client.ssh.filter')} />
     <Checkbox checked={hidden} onChange={event => setHidden(event.target.checked)}>{t('client.ssh.hidden')}</Checkbox>
     {files.error && <Alert type="error" role="alert" message={remoteErrorText(files.error)} />}
@@ -100,6 +111,7 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
         size="small" />
       <Button size="small" onClick={files.cancelUpload}>{t('client.ssh.cancelUpload')}</Button>
     </div>}
+    </div>
     <SshFileList files={files} actions={actions} entries={entries}
       open={entry => entry.directory ? open(entry.path) : void editor.open(entry)}
       upload={() => input.current?.click()} />
