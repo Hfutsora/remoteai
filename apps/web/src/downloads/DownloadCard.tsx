@@ -47,9 +47,7 @@ export function DownloadCard({ task, busy, connected, action, open, share, remov
       {task.status === 'preparing' && preparation?.phase !== 'compressing' ? text(status) : detail}</span>
       {task.status === 'downloading' && !!task.bytesPerSecond && <span>{formatBytes(task.bytesPerSecond)}/s</span>}
     </div>
-    {completion && <div className="download-completion">
-      <p>{completion.completedAt}</p><p>{completion.duration}</p>
-    </div>}
+    {completion?.summary && <p className="download-completion">{completion.summary}</p>}
     {task.message && task.status !== 'completed' && <p role="status" className="download-notice">
       {displayError(task.message)}</p>}
     {!connected && !completed && <p className="download-notice">{text("client.downloads.reconnectToTheOriginalComputerToResume")}</p>}

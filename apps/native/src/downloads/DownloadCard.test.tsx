@@ -7,7 +7,8 @@ import type { DownloadTask } from './types';
 vi.mock('react', async original => ({ ...await original<typeof React>(),
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot() }));
 vi.mock('react-native', () => ({ ActivityIndicator: 'ActivityIndicator', Pressable: 'Pressable', Text: 'Text',
-  View: 'View', StyleSheet: { create: <T,>(styles: T) => styles, hairlineWidth: 1 } }));
+  View: 'View', ScrollView: 'ScrollView',
+  StyleSheet: { create: <T,>(styles: T) => styles, hairlineWidth: 1 } }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Ionicons' }));
 vi.mock('../theme/store', () => ({ useThemeColor: () => (value: string) => value }));
 vi.mock('./styles', () => ({ colors: { green: '#087f69', muted: '#7c8b86' },
@@ -37,13 +38,12 @@ afterEach(() => { setInterfaceLanguage('zh'); vi.unstubAllGlobals(); });
 it('replaces the completed save notice with localized completion details', () => {
   const completed = { ...task, createdAt: new Date(2026, 9, 25, 14, 0, 0).getTime(),
     completedAt: new Date(2026, 9, 25, 14, 1, 2).getTime() };
-  expect(render(completed)).toContain('完成时间：2026/10/25 14:01:02');
-  expect(render(completed)).toContain('总用时：1分2秒');
+  expect(render(completed)).toContain('2026/10/25 14:01:02 · 用时1分2秒');
   expect(render(completed)).not.toContain('已保存到相册');
   setInterfaceLanguage('en');
-  expect(render(completed)).toContain('Total time: 1 min 2 sec');
+  expect(render(completed).some(text => text.endsWith(' · 1 min 2 sec total'))).toBe(true);
   expect(render(completed)).not.toContain('Saved to photos');
-  expect(render(task)).toContain('Completed: Not recorded');
+  expect(render(task).some(text => /Not recorded|total/.test(text))).toBe(false);
 });
 
 it('keeps translated errors visible on unfinished downloads', () => {

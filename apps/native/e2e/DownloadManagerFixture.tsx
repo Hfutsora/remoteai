@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
 import { useEffect, useState } from 'react';
-import { Button, View } from 'react-native';
+import { Button, DeviceEventEmitter, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { DownloadManagerPage } from '../src/downloads/DownloadManagerPage';
 import { downloadManager, downloadOwner } from '../src/downloads/manager';
@@ -27,6 +27,11 @@ const files = { open: async () => client.open({ scope: 'computer', path: filenam
 
 function DownloadManagerFixture() {
   const [visible, setVisible] = useState(false);
+  const showLegacyDownloads = () => {
+    const tasks = downloadManager.snapshot().map(task => ({ ...task, completedAt: undefined }));
+    DeviceEventEmitter.emit('downloadTasksChanged', JSON.stringify(tasks));
+    setVisible(true);
+  };
   useEffect(() => {
     downloadManager.bind({ owner, deviceId: 'fixture-pc', deviceName: 'ZH', ready: true, mode: 'direct',
       windowSize: 2, cwd: 'C:/project', client, files });
@@ -40,7 +45,8 @@ function DownloadManagerFixture() {
   }, []);
   return <SafeAreaProvider><SafeAreaView style={{ flex: 1 }}>
     {visible ? <DownloadManagerPage session={session} onBack={() => setVisible(false)} />
-      : <View><Button title="下载管理" onPress={() => setVisible(true)} /></View>}
+      : <View><Button title="下载管理" onPress={() => setVisible(true)} />
+        <Button title="旧记录" onPress={showLegacyDownloads} /></View>}
   </SafeAreaView></SafeAreaProvider>;
 }
 

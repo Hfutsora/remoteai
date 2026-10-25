@@ -21,13 +21,15 @@ it('formats elapsed time across subsecond, minute, hour and day boundaries', () 
 
 it('does not invent timing for legacy records or invalid clocks', () => {
   expect(downloadCompletionDetails({ createdAt })).toEqual({
-    completedAt: '完成时间：未记录', duration: '总用时：未记录',
+    completedAt: '', duration: '', summary: '',
   });
   for (const completedAt of [NaN, Infinity, Number.MAX_VALUE]) {
-    expect(downloadCompletionDetails({ createdAt, completedAt }).completedAt).toBe('完成时间：未记录');
+    expect(downloadCompletionDetails({ createdAt, completedAt }).summary).toBe('');
   }
-  expect(duration(-1)).toBe('总用时：未记录');
-  expect(downloadCompletionDetails({ createdAt: NaN, completedAt: createdAt }).duration).toBe('总用时：未记录');
+  expect(duration(-1)).toBe('');
+  expect(downloadCompletionDetails({ createdAt: NaN, completedAt: createdAt })).toEqual({
+    completedAt: '完成时间：2026/10/25 14:00:00', duration: '', summary: '2026/10/25 14:00:00',
+  });
 });
 
 it('follows language changes with the offline client resources', () => {

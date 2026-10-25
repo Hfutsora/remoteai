@@ -50,17 +50,16 @@ async function screenshot(name) {
 async function completionTiming() {
   for (let attempt = 0; attempt < 8; attempt++) {
     const labels = (await nodes()).map(node => node.text);
-    const completedAt = labels.find(label => label.startsWith('完成时间：'));
-    const duration = labels.find(label => label.startsWith('总用时：'));
-    if (completedAt && duration) {
-      assert.ok(!completedAt.includes('未记录'), completedAt);
-      assert.ok(!duration.includes('未记录'), duration);
+    const summary = labels.find(label => /^\d{4}\/\d{2}\/\d{2} .* · 用时/.test(label));
+    if (summary) {
+      assert.ok(!summary.includes('\n'), summary);
+      assert.ok(!labels.some(label => label.includes('未记录')));
       assert.ok(!labels.includes('已保存到下载文件夹'));
-      return { completedAt, duration };
+      return summary;
     }
     await delay(500);
   }
-  assert.fail('Missing download completion time or total duration');
+  assert.fail('Missing single-line download completion summary');
 }
 
 async function checkTimingPersistence(scale) {
@@ -71,6 +70,16 @@ async function checkTimingPersistence(scale) {
   await tap('下载管理');
   assert.deepEqual(await completionTiming(), timing);
   console.log(`PASS: completion time and total duration persist at font scale ${scale}`);
+}
+
+async function checkLegacyTiming(scale) {
+  await tap('旧记录');
+  await find('RemoteAI-2.0.12-android.apk');
+  const labels = (await nodes()).map(node => node.text);
+  assert.ok(!labels.some(label => /未记录|用时|完成时间/.test(label)));
+  await screenshot(`legacy-${scale}`);
+  await tap('返回发现');
+  console.log(`PASS: missing timing is hidden at font scale ${scale}`);
 }
 
 async function checkSelection(scale) {
@@ -118,6 +127,7 @@ try {
     await adb('shell', 'pm', 'clear', app);
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await checkSelection(scale);
+    await checkLegacyTiming(scale);
   }
 } finally {
   if (originalScale === 'null') await adb('shell', 'settings', 'delete', 'system', 'font_scale');

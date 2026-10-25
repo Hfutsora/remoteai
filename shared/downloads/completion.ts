@@ -32,16 +32,16 @@ export function downloadCompletionDetails(task: DownloadTiming, text = displayTe
   const completedAt = task.completedAt;
   const validCompletion = completedAt !== undefined && Number.isFinite(completedAt)
     && !Number.isNaN(new Date(completedAt).getTime());
-  const elapsed = validCompletion ? completedAt - task.createdAt : NaN;
+  if (!validCompletion) return { completedAt: '', duration: '', summary: '' };
+  const time = formatDate(getInterfaceLanguage(), completedAt, {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  });
+  const elapsed = completedAt - task.createdAt;
+  const duration = Number.isFinite(elapsed) && elapsed >= 0 ? formatDuration(elapsed, text) : '';
   return {
-    completedAt: validCompletion ? text('client.downloads.completedAt', {
-      time: formatDate(getInterfaceLanguage(), completedAt, {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
-      }),
-    }) : text('client.downloads.completedAtUnavailable'),
-    duration: Number.isFinite(elapsed) && elapsed >= 0 ? text('client.downloads.totalDuration', {
-      duration: formatDuration(elapsed, text),
-    }) : text('client.downloads.totalDurationUnavailable'),
+    completedAt: text('client.downloads.completedAt', { time }),
+    duration: duration ? text('client.downloads.totalDuration', { duration }) : '',
+    summary: duration ? text('client.downloads.completionSummary', { time, duration }) : time,
   };
 }

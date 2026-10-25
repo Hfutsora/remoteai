@@ -2,7 +2,7 @@ import { displayError } from '../i18n/index';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { DownloadTask } from './types';
 import { downloadDetail, downloadPercent, downloadStatusLabel, formatBytes } from './presentation';
 import { colors, useStyles } from './styles';
@@ -60,10 +60,9 @@ export function DownloadCard({ task, connected, busy, action, share, remove, sel
         <Text style={styles.caption}>{downloadDetail(task)}</Text>
       </>}
     </View>
-    {completion && <View>
-      <Text style={styles.text}>{completion.completedAt}</Text>
-      <Text style={styles.text}>{completion.duration}</Text>
-    </View>}
+    {completion?.summary && <ScrollView horizontal style={styles.completion}>
+      <Text style={styles.completionText}>{completion.summary}</Text>
+    </ScrollView>}
     {!complete && !!task.message && <Text style={failed ? styles.error : styles.text}>
       {displayError(task.message)}</Text>}
     {!connected && !complete && !task.readyToSave && <Text style={styles.text}>{t("client.mobile.connectToThisComputerToContinue")}</Text>}

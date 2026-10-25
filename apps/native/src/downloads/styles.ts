@@ -89,6 +89,8 @@ export const useStyles = createThemedStyles((color) => ({
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.65 },
   text: { ...textMetrics(13, 20), color: color(colors.muted, 'muted'), maxWidth: 400 },
+  completion: { flexGrow: 0 },
+  completionText: { ...textMetrics(13, 20), color: color(colors.muted, 'muted'), flexShrink: 0 },
   message: { fontSize: 13, lineHeight: 20, color: color(colors.green, 'accent'), maxWidth: 400, marginVertical: 8 },
   error: { ...textMetrics(13, 20), color: color(colors.danger, 'danger'), maxWidth: 400, marginVertical: 8 },
   browserHeader: { gap: 12, marginBottom: 20 },
