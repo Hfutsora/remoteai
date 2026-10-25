@@ -67,6 +67,18 @@ async function input(label, text) {
   await adb('shell', 'input', 'text', text);
   await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
 }
+async function closeThirdTerminal() {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (await find('关闭终端 3')) { await tap('关闭终端 3'); return; }
+    const view = (await nodes()).find(node => node.class === 'android.widget.HorizontalScrollView');
+    assert.ok(view, 'Terminal tab strip');
+    const [left, top, right, bottom] = view.rect;
+    await adb('shell', 'input', 'swipe', String(right - 10), String((top + bottom) >> 1),
+      String(left + 10), String((top + bottom) >> 1), '300');
+    await pause();
+  }
+  throw new Error('Third terminal close button was not reachable');
+}
 async function screenshot(name) {
   const { stdout } = await exec('adb', ['-s', serial, 'exec-out', 'screencap', '-p'], {
     encoding: 'buffer', maxBuffer: 16 * 1024 * 1024, windowsHide: true,
@@ -85,10 +97,18 @@ async function verify(scale) {
   if (process.env.SSH_CLOUD_FIXTURE) {
     const headers = { Authorization: 'Bearer ssh-fixture', 'Content-Type': 'application/json' };
     assert.equal((await fetch('http://127.0.0.1:1499/fixture/reset', { method: 'POST', headers })).ok, true);
-    assert.equal((await fetch('http://127.0.0.1:1499/sync/ssh-profiles/saved', { method: 'PUT', headers,
-      body: JSON.stringify({ id: 'saved', name: 'Saved on Office', host: 'fixture.test', port: 22,
-        username: 'fixture', auth: 'password', fingerprint: 'SHA256:fixture' }),
-    })).ok, true);
+    const profiles = [
+      { id: 'saved', name: 'Saved on Office', host: 'fixture.test', auth: 'password',
+        credentials: { password: 'fixture-password' } },
+      { id: 'key', name: 'Key server', host: 'key.test', auth: 'key',
+        credentials: { privateKey: 'fixture-private-key', passphrase: 'fixture-passphrase' } },
+      { id: 'password', name: 'Password server', host: 'password.test', auth: 'password' },
+    ];
+    for (const profile of profiles) {
+      assert.equal((await fetch(`http://127.0.0.1:1499/sync/ssh-profiles/${profile.id}`, { method: 'PUT', headers,
+        body: JSON.stringify({ ...profile, port: 22, username: 'fixture', fingerprint: 'SHA256:fixture' }),
+      })).ok, true);
+    }
   }
   await launch(scale);
   await screenshot(`terminal-${scale}`);
@@ -99,13 +119,32 @@ async function verify(scale) {
   await wait('远程文件浏览');
   assert.equal(await find('IP 或主机名'), undefined, 'Saved connections open directly without editing');
   await screenshot(`connected-${scale}`);
-  if (!process.env.SSH_CLOUD_FIXTURE) {
+  {
+    await tap('终端连接选项'); await wait('Key server'); await tap('Key server');
+    await wait('远程文件浏览');
+    assert.equal(await find('私钥'), undefined, 'Synced private keys and passphrases connect without re-entry');
+    await screenshot(`key-connected-${scale}`);
+    await closeThirdTerminal();
     await tap('终端连接选项'); await wait('Password server'); await tap('Password server');
     await wait('密码');
+    await wait('请补填登录信息。连接成功后会加密保存，下次无需重复输入。');
     assert.equal(await find('IP 或主机名'), undefined, 'Authentication does not open the settings editor');
     await screenshot(`login-${scale}`);
     await input('密码', 'fixture-password'); await tap('连接'); await wait('远程文件浏览');
-    await wait('关闭终端 3'); await tap('关闭终端 3');
+    await closeThirdTerminal();
+    await tap('终端连接选项'); await wait('Password server'); await tap('Password server');
+    await wait('远程文件浏览');
+    assert.equal(await find('密码'), undefined, 'Saved credentials are reused on the next connection');
+    await closeThirdTerminal();
+  }
+  if (process.env.SSH_CREDENTIALS_ONLY) {
+    await tap('终端连接选项'); await tap('新建 SSH 连接…');
+    await wait('IP 或主机名');
+    await screenshot(`settings-${scale}`);
+    await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
+    await wait('远程文件浏览');
+    console.log(`PASS SSH native credential sync and copy at font scale ${scale}`);
+    return;
   }
   await tap('远程文件浏览'); await wait('hello.txt');
   await screenshot(`files-${scale}`);

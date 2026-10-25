@@ -16,6 +16,9 @@ async function mockProfiles(page: Page) {
     username: 'user', auth: 'key', revision: 1 };
   const writes: SshProfile[] = [];
   await page.route('http://127.0.0.1:1499/sync/ssh-profiles**', async route => {
+    if (route.request().url().endsWith('/credentials')) {
+      await route.fulfill({ json: { credentials: null } }); return;
+    }
     if (route.request().method() === 'PUT') {
       const value = route.request().postDataJSON() as SshProfile;
       writes.push(value); profile = { ...value, revision: (profile.revision ?? 0) + 1 };
@@ -52,7 +55,8 @@ for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
     await openProfile(page, 'Saved server');
     await expect(page.getByLabel('私钥', { exact: true })).toHaveValue('');
     await page.getByRole('button', { name: '测试连接', exact: true }).click();
-    await expect(page.getByText('测试或连接时，请填写私钥。')).toBeVisible();
+    await page.getByRole('button', { name: '信任并测试', exact: true }).click();
+    await expect(page.getByText('尚未保存登录信息，请填写密码或私钥。')).toBeVisible();
     await page.getByLabel('连接名称（可选）').fill('Renamed server');
     await saveButton(page).click();
     await expect(connectionDialog(page)).toBeHidden();
@@ -74,7 +78,6 @@ for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
     await saveButton(page).click();
     await expect(connectionDialog(page)).toBeHidden();
     expect(writes[1]).toEqual({ id: 'saved', name: 'Renamed server', host: 'saved.test', port: 22,
-      username: 'another-user', auth: 'key', revision: 2 });
-    expect(JSON.stringify(writes)).not.toContain('PRIVATE KEY');
+      username: 'another-user', auth: 'key', revision: 2, credentials: { privateKey, passphrase: '' } });
   });
 }

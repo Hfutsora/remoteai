@@ -4,7 +4,7 @@ import { randomUUID } from 'expo-crypto';
 import type { SshApi } from '../../../../../shared/terminal/ssh';
 import type { TerminalInfo } from '../../../../../shared/terminal/types';
 import { sshLabel, type SshProfile } from '../../../../../shared/terminal/sshProfiles';
-import { newSshValues, useSshConnection, validSshValues } from '../../../../../shared/terminal/useSshConnection';
+import { newSshValues, useSshConnection } from '../../../../../shared/terminal/useSshConnection';
 import { BottomSheet } from '../../components/BottomSheet';
 import { t, displayError, useLanguage } from '../../i18n';
 import { useSshStyles } from './sshStyles';
@@ -30,7 +30,7 @@ export function SshConnectionSheet({ api, cwd, connected, dispose, close }: {
     tall maxWidth={400} dragFromHeaderOnly actions={finished ? [] : [{
       label: t(connection.trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connect'),
       onPress: () => connection.submit(values), loading: busy,
-      disabled: disabled || !validSshValues(values),
+      disabled: disabled || !connection.canConnect(values),
     }]}>
     <ScrollView showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SshProfile, SshProfileStore } from './sshProfiles';
 import { sshProfileError } from './sshProfileResponse';
+import type { SshCredentials } from './sshCredentials';
 
 const REFRESH_MS = 15_000;
 
@@ -44,7 +45,8 @@ export function useSshProfiles(store: SshProfileStore, live = true) {
     finally { writes.delete(request); if (current === version.current) setLoading(false); }
   };
   return { profiles, loading, error, refresh: () => refresh(),
-    save: (value: SshProfile) => mutate(() => store.save(value)),
+    save: (value: SshProfile, credentials?: SshCredentials) =>
+      mutate(() => credentials ? store.save(value, credentials) : store.save(value)),
     remove: (id: string, revision?: number, accountScope?: string) =>
       mutate(() => store.remove(id, revision, accountScope)) };
 }

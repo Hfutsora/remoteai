@@ -21,7 +21,7 @@ export function SshQuickConnectSheet({ api, profile, cwd, connected, dispose, cl
   return <BottomSheet visible title={t('client.ssh.connection')} onClose={close} dismissible={!busy}
     maxWidth={400} dragFromHeaderOnly actions={finished ? [] : [{
       label: t(trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connectAction'),
-      onPress: connection.connect, loading: busy, disabled: disabled || !validSshValues(values),
+      onPress: connection.connect, loading: busy, disabled: disabled || (needsCredentials && !validSshValues(values)),
     }]}>
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.content}>

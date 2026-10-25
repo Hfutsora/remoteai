@@ -30,7 +30,7 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
   }, [trust, error, tested]);
   const authenticate = (operation: 'test' | 'submit') => {
     void form.validateFields().then(values => {
-      if (values.auth === 'key' && !values.privateKey?.trim()) {
+      if (values.auth === 'key' && !connection.canConnect(values)) {
         form.setFields([{ name: 'privateKey', errors: [t('client.ssh.keyRequiredForConnection')] }]);
         form.scrollToField('privateKey', { block: 'center' }); return;
       }

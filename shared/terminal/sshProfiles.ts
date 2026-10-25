@@ -1,4 +1,5 @@
 import type { SshRemote } from './ssh';
+import type { SshCredentials } from './sshCredentials';
 
 export interface SshProfile extends SshRemote {
   id: string; name: string; auth: 'password' | 'key'; fingerprint?: string; revision?: number;
@@ -7,7 +8,8 @@ export interface SshProfile extends SshRemote {
 }
 export interface SshProfileStore {
   list: () => Promise<SshProfile[]>;
-  save: (value: SshProfile) => Promise<SshProfile[]>;
+  save: (value: SshProfile, credentials?: SshCredentials) => Promise<SshProfile[]>;
+  credentials?: (profile: SshProfile) => Promise<SshCredentials | undefined>;
   remove: (id: string, revision?: number, accountScope?: string) => Promise<SshProfile[]>;
   warning?: () => string;
 }

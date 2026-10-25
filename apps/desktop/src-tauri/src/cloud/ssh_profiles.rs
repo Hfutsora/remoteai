@@ -1,4 +1,6 @@
 use super::*;
+mod credentials;
+use credentials::{SshCredentialReply, SshCredentials};
 
 #[derive(Debug, thiserror::Error)]
 enum ProfileError {
@@ -12,6 +14,10 @@ enum ProfileError {
     Limit,
     #[error("client.ssh.syncFailed")]
     Unavailable,
+    #[error("client.ssh.credentialsUnavailable")]
+    CredentialsUnavailable,
+    #[error("client.ssh.updateRequired")]
+    UpdateRequired,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -36,14 +42,34 @@ enum Authentication {
     Key,
 }
 
-/// A bounded, feature-specific command; neither URLs nor credentials come from the webview.
+/// A bounded, account-scoped command; credential material is never stored in desktop settings.
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) enum SshProfileRequest {
     List,
-    Save { profile: SshProfile },
-    Remove { id: String, revision: u64 },
-    Import { profiles: Vec<SshProfile> },
+    Save {
+        profile: SshProfile,
+        credentials: Option<SshCredentials>,
+    },
+    Credentials {
+        id: String,
+        revision: u64,
+    },
+    Remove {
+        id: String,
+        revision: u64,
+    },
+    Import {
+        profiles: Vec<SshProfile>,
+    },
+}
+
+/// Keep the existing metadata response compatible with older clients.
+#[derive(Serialize)]
+#[serde(untagged)]
+pub(crate) enum SshProfileReply {
+    Profiles(Vec<SshProfile>),
+    Credentials(SshCredentialReply),
 }
 
 fn valid_id(id: &str) -> bool {
@@ -77,11 +103,30 @@ fn request_parts(
     let path = "/sync/ssh-profiles";
     match request {
         SshProfileRequest::List => Ok((Method::GET, path.into(), None)),
-        SshProfileRequest::Save { profile } if valid_profile(&profile) => Ok((
-            Method::PUT,
-            format!("{path}/{}", profile.id),
-            Some(json!(profile)),
-        )),
+        SshProfileRequest::Save {
+            profile,
+            credentials,
+        } if valid_profile(&profile)
+            && credentials
+                .as_ref()
+                .is_none_or(|secret| secret.matches_auth(&profile.auth)) =>
+        {
+            let target = format!("{path}/{}", profile.id);
+            let mut body = json!(profile);
+            if let Some(secret) = credentials {
+                body["credentials"] = json!(secret);
+            }
+            Ok((Method::PUT, target, Some(body)))
+        }
+        SshProfileRequest::Credentials { id, revision }
+            if valid_id(&id) && revision > 0 && revision <= 9_007_199_254_740_990 =>
+        {
+            Ok((
+                Method::POST,
+                format!("{path}/{id}/credentials"),
+                Some(json!({ "revision": revision })),
+            ))
+        }
         SshProfileRequest::Remove { id, revision } if valid_id(&id) && revision > 0 => Ok((
             Method::DELETE,
             format!("{path}/{id}"),
@@ -104,7 +149,8 @@ fn exchange<R: Runtime>(
     app: &tauri::AppHandle<R>,
     identity: GuiCloudIdentity,
     request: SshProfileRequest,
-) -> Result<Vec<SshProfile>, ProfileError> {
+) -> Result<SshProfileReply, ProfileError> {
+    let fetch_credentials = matches!(&request, SshProfileRequest::Credentials { .. });
     let (method, path, body) = request_parts(request)?;
     let _guard = lock_cloud_credentials().map_err(|_| ProfileError::Unavailable)?;
     let mut settings = read_app_settings(app).map_err(|_| ProfileError::Unavailable)?;
@@ -132,20 +178,45 @@ fn exchange<R: Runtime>(
     ) {
         return Err(ProfileError::Authentication);
     }
+    read_response(response, fetch_credentials)
+}
+
+fn read_response(
+    response: reqwest::blocking::Response,
+    fetch_credentials: bool,
+) -> Result<SshProfileReply, ProfileError> {
+    if matches!(
+        response.status(),
+        StatusCode::NOT_FOUND | StatusCode::METHOD_NOT_ALLOWED
+    ) {
+        return Err(ProfileError::UpdateRequired);
+    }
     if !response.status().is_success() {
         let error: Value = response.json().unwrap_or(Value::Null);
         return Err(match error["message"].as_str() {
             Some("client.ssh.profileChanged") => ProfileError::Conflict,
             Some("client.ssh.profileLimit") => ProfileError::Limit,
             Some("client.ssh.invalid") => ProfileError::Invalid,
+            Some("client.ssh.credentialsUnavailable") => ProfileError::CredentialsUnavailable,
             _ => ProfileError::Unavailable,
         });
+    }
+    if fetch_credentials {
+        let reply: SshCredentialReply = response.json().map_err(|_| ProfileError::Unavailable)?;
+        if reply
+            .credentials
+            .as_ref()
+            .is_some_and(|secret| !secret.valid())
+        {
+            return Err(ProfileError::Unavailable);
+        }
+        return Ok(SshProfileReply::Credentials(reply));
     }
     let profiles: Vec<SshProfile> = response.json().map_err(|_| ProfileError::Unavailable)?;
     if profiles.len() > 64 || !profiles.iter().all(valid_profile) {
         return Err(ProfileError::Unavailable);
     }
-    Ok(profiles)
+    Ok(SshProfileReply::Profiles(profiles))
 }
 
 /// All credential locking, filesystem access and HTTP work run outside the UI thread.
@@ -154,7 +225,7 @@ pub(crate) async fn cloud_ssh_profiles(
     app: tauri::AppHandle,
     identity: GuiCloudIdentity,
     request: SshProfileRequest,
-) -> Result<Vec<SshProfile>, String> {
+) -> Result<SshProfileReply, String> {
     tauri::async_runtime::spawn_blocking(move || exchange(&app, identity, request))
         .await
         .map_err(|_| ProfileError::Unavailable.to_string())?
@@ -186,5 +257,36 @@ mod tests {
             revision: 1
         })
         .is_err());
+    }
+
+    #[test]
+    fn credential_requests_use_separate_bounded_payloads() {
+        let input = json!({"type":"save", "profile":{"id":"one", "name":"test", "host":"::1",
+            "port":22, "username":"me", "auth":"key"},
+            "credentials":{"privateKey":"test-key", "passphrase":"test-phrase"}});
+        let request: SshProfileRequest = serde_json::from_value(input.clone()).unwrap();
+        let (method, path, body) = request_parts(request).unwrap();
+        assert_eq!(method, Method::PUT);
+        assert_eq!(path, "/sync/ssh-profiles/one");
+        assert_eq!(body.unwrap()["credentials"], input["credentials"]);
+        let mut invalid = input;
+        invalid["credentials"] = json!({"password":"wrong-auth"});
+        assert!(request_parts(serde_json::from_value(invalid).unwrap()).is_err());
+
+        let request = SshProfileRequest::Credentials {
+            id: "one".into(),
+            revision: 7,
+        };
+        let (method, path, body) = request_parts(request).unwrap();
+        assert_eq!(method, Method::POST);
+        assert_eq!(path, "/sync/ssh-profiles/one/credentials");
+        assert_eq!(body, Some(json!({"revision":7})));
+        for (id, revision) in [("../other", 1), ("one", 0), ("one", u64::MAX)] {
+            assert!(request_parts(SshProfileRequest::Credentials {
+                id: id.into(),
+                revision
+            })
+            .is_err());
+        }
     }
 }

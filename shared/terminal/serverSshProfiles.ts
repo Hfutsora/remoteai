@@ -1,6 +1,8 @@
 import { parseSshProfile, type SshProfile, type SshProfileStore } from './sshProfiles';
+import { parseSshCredentials, type SshCredentials } from './sshCredentials';
 
-export type SshProfileRequest = { type: 'list' } | { type: 'save'; profile: SshProfile }
+export type SshProfileRequest = { type: 'list' } | { type: 'save'; profile: SshProfile; credentials?: SshCredentials }
+  | { type: 'credentials'; id: string; revision: number }
   | { type: 'remove'; id: string; revision: number } | { type: 'import'; profiles: SshProfile[] };
 export type SshProfileExchange = (request: SshProfileRequest, accountScope?: string) => Promise<unknown>;
 export type SshProfileJson = (path: string, init: RequestInit) => Promise<unknown>;
@@ -18,7 +20,10 @@ export function sshProfileHttpExchange(json: SshProfileJson): SshProfileExchange
         case 'import': return await json(`${PATH}/import`, { ...init, method: 'POST',
           body: JSON.stringify({ profiles: request.profiles }) });
         case 'save': return await json(`${PATH}/${encodeURIComponent(request.profile.id)}`, { ...init,
-          method: 'PUT', body: JSON.stringify(request.profile) });
+          method: 'PUT', body: JSON.stringify({ ...request.profile,
+            ...(request.credentials ? { credentials: request.credentials } : {}) }) });
+        case 'credentials': return await json(`${PATH}/${encodeURIComponent(request.id)}/credentials`, { ...init,
+          method: 'POST', body: JSON.stringify({ revision: request.revision }) });
         case 'remove': return await json(`${PATH}/${encodeURIComponent(request.id)}`, { ...init,
           method: 'DELETE', body: JSON.stringify({ revision: request.revision }) });
       }
@@ -42,22 +47,38 @@ export function createServerSshProfiles(exchange: SshProfileExchange, scope?: ()
   const send = async (request: SshProfileRequest, origin?: string) => {
     const accountScope = await scope?.();
     if (origin && origin !== accountScope) throw new Error('client.ssh.signIn');
-    const result = parseServerSshProfiles(await exchange(request, accountScope));
+    const result = await exchange(request, accountScope);
     if (accountScope !== await scope?.()) throw new Error('client.ssh.signIn');
-    return accountScope ? result.map(profile => ({ ...profile, accountScope })) : result;
+    return { result, accountScope };
+  };
+  const profiles = async (request: SshProfileRequest, origin?: string) => {
+    const { result, accountScope } = await send(request, origin);
+    const values = parseServerSshProfiles(result);
+    return accountScope ? values.map(profile => ({ ...profile, accountScope })) : values;
   };
   return {
-    list: () => send({ type: 'list' }),
-    async save(value) {
+    list: () => profiles({ type: 'list' }),
+    async save(value, credentials) {
       const profile = parseSshProfile(value);
       if (!profile) throw new Error('client.ssh.invalid');
-      return send({ type: 'save', profile }, value.accountScope);
+      const secret = credentials ? parseSshCredentials(credentials) : undefined;
+      return profiles({ type: 'save', profile, ...(secret ? { credentials: secret } : {}) }, value.accountScope);
+    },
+    async credentials(value) {
+      const profile = parseSshProfile(value);
+      if (!profile?.revision) throw new Error('client.ssh.profileChanged');
+      const { result } = await send({ type: 'credentials', id: profile.id, revision: profile.revision },
+        value.accountScope);
+      if (!result || typeof result !== 'object' || !('credentials' in result)) {
+        throw new Error('client.ssh.updateRequired');
+      }
+      return parseSshCredentials(result.credentials);
     },
     async remove(id, revision, accountScope) {
       if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id) || !Number.isSafeInteger(revision) || !revision) {
         throw new Error('client.ssh.profileChanged');
       }
-      return send({ type: 'remove', id, revision }, accountScope);
+      return profiles({ type: 'remove', id, revision }, accountScope);
     },
   };
 }

@@ -50,7 +50,7 @@ export function SshQuickConnectDialog({ api, profile, projectCwd, connected, dis
       <div className="ssh-quick-actions">
         <Button disabled={busy} onClick={close}>{t('client.ssh.cancel')}</Button>
         {!finished && <Button type="primary" htmlType="submit" loading={busy} aria-label={connectLabel}
-          disabled={disabled || !validSshValues(values)}>
+          disabled={disabled || (needsCredentials && !validSshValues(values))}>
           {connectLabel}
         </Button>}
       </div>

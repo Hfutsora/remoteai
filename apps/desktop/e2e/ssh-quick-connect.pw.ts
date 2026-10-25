@@ -15,6 +15,10 @@ for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
   test(`${scenario}: saved entries connect while management remains an explicit action`, async ({ page }, info) => {
     const writes: unknown[] = [];
     await page.route('http://127.0.0.1:1499/sync/ssh-profiles**', async route => {
+      if (route.request().url().endsWith('/credentials')) {
+        const credentials = route.request().url().includes('/saved/') ? { password: 'saved-password' } : null;
+        await route.fulfill({ json: { credentials } }); return;
+      }
       if (route.request().method() === 'PUT') writes.push(route.request().postDataJSON());
       await route.fulfill({ json: profiles });
     });
@@ -50,6 +54,7 @@ for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
     await choose(page, '管理 SSH 连接');
     await page.getByRole('button', { name: /Desktop server/ }).click();
     await expect(page.getByLabel('IP 或主机名')).toHaveValue('saved.test');
-    expect(writes).toHaveLength(0);
+    expect(writes).toEqual([expect.objectContaining({ id: 'password',
+      credentials: { password: 'fixture-password' } })]);
   });
 }

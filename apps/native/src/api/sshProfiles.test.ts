@@ -31,3 +31,19 @@ it('reports version conflicts and hides unexpected server details', async () => 
   vi.mocked(authorizedRequest).mockResolvedValue(new Response('{}', { status: 401 }));
   await expect(store.list()).rejects.toThrow('client.ssh.signIn');
 });
+
+it('loads login credentials from the phone account without putting them into the profile list', async () => {
+  const credentials = { privateKey: 'PRIVATE KEY fixture', passphrase: 'test-passphrase' };
+  vi.mocked(authorizedRequest).mockImplementation(async (_session, path) =>
+    new Response(JSON.stringify(path.endsWith('/credentials') ? { credentials } : [profile])));
+  const store = createNativeSshProfiles(session);
+  await store.save(profile, credentials);
+  expect(authorizedRequest).toHaveBeenLastCalledWith(session, '/sync/ssh-profiles/one',
+    expect.objectContaining({ method: 'PUT' }));
+  expect(JSON.parse(vi.mocked(authorizedRequest).mock.lastCall![2]!.body as string))
+    .toEqual({ ...profile, credentials });
+  expect(await store.credentials!(profile)).toEqual(credentials);
+  expect(authorizedRequest).toHaveBeenLastCalledWith(session, '/sync/ssh-profiles/one/credentials',
+    expect.objectContaining({ method: 'POST', body: '{"revision":1}' }));
+  expect(await store.list()).toEqual([profile]);
+});

@@ -27,7 +27,7 @@ async function fixture(initial?: SshProfile) {
   return { api, connected, dispose, close, state: () => state, stop: () => act(async () => root.unmount()) };
 }
 
-it('requires host confirmation, saves metadata on the PC and adopts the opened shell once', async () => {
+it('requires host confirmation, saves metadata and credentials separately, and adopts the shell once', async () => {
   const f = await fixture();
   try {
     await act(async () => f.state().submit(values));
@@ -36,7 +36,7 @@ it('requires host confirmation, saves metadata on the PC and adopts the opened s
     await act(async () => Promise.all([f.state().submit(values), f.state().submit(values)]));
     expect(f.api.open).toHaveBeenCalledTimes(1);
     expect(f.api.profiles.save).toHaveBeenCalledWith({ id: 'saved', name: 'Server', host: 'test', port: 22,
-      username: 'user', auth: 'password', fingerprint: 'SHA256:first' });
+      username: 'user', auth: 'password', fingerprint: 'SHA256:first' }, { password: 'secret' });
     expect(f.connected).toHaveBeenCalledWith(info);
     expect(f.close).toHaveBeenCalledOnce();
   } finally { await f.stop(); }
@@ -77,7 +77,7 @@ it('does not write an unchanged profile', async () => {
 it('saves a new key profile without testing or including credentials', async () => {
   const f = await fixture();
   try {
-    await act(async () => f.state().saveSettings({ ...values, auth: 'key', passphrase: 'secret' }));
+    await act(async () => f.state().saveSettings({ ...values, auth: 'key' }));
     expect(f.api.profiles.save).toHaveBeenCalledWith({ id: 'saved', name: 'Server', host: 'test', port: 22,
       username: 'user', auth: 'key', fingerprint: undefined });
     expect(f.api.open).not.toHaveBeenCalled(); expect(f.api.probe).not.toHaveBeenCalled();
@@ -96,7 +96,8 @@ it('tests authentication once, closes the test session and keeps the form open w
     expect(f.api.profiles.save).not.toHaveBeenCalled(); expect(f.connected).not.toHaveBeenCalled();
     expect(f.close).not.toHaveBeenCalled(); expect(f.state().finished).toBe(false);
     await act(async () => f.state().saveSettings(values));
-    expect(f.api.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ fingerprint: 'SHA256:first' }));
+    expect(f.api.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ fingerprint: 'SHA256:first' }),
+      { password: 'secret' });
   } finally { await f.stop(); }
 });
 
