@@ -11,6 +11,41 @@ async function choose(page: Page, name: string) {
   await page.getByRole('menuitem', { name, exact: true }).click();
 }
 
+const longFingerprint = 'SHA256:tNakyMCpeFh2x7RehitF9R4Kvmf6C6BJQvGmfgPffS8';
+for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
+  test(`${scenario}: a full host fingerprint wraps inside the compact trust dialog`, async ({ page }, info) => {
+    const profile = { ...saved, fingerprint: undefined };
+    await page.route('http://127.0.0.1:1499/sync/ssh-profiles**', route => route.fulfill({ json: [profile] }));
+    const mode = scenario === 'web-phone' ? 'web' : scenario;
+    await page.setViewportSize({ width: scenario === 'web-phone' ? 390 : 1440, height: 844 });
+    await page.goto(`/e2e/ssh-harness.html?mode=${mode}&cloud=1&fingerprint=${encodeURIComponent(longFingerprint)}`);
+    await page.getByRole('button', { name: mode === 'web' ? '打开远程终端' : '打开终端', exact: true }).click();
+    await choose(page, saved.name);
+    const dialog = page.locator('.ssh-quick-connect');
+    await expect(dialog.locator('code')).toHaveText(longFingerprint);
+    await expect(dialog).not.toHaveClass(/ant-zoom-(enter|appear)/);
+    const dimensions = await dialog.evaluate(element => {
+      const body = element.querySelector('.ant-modal-body')!;
+      const alert = body.querySelector('.ant-alert')!;
+      const code = alert.querySelector('code')!;
+      const bounds = (value: Element) => {
+        const rect = value.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, width: rect.width, height: rect.height };
+      };
+      return { body: bounds(body), alert: bounds(alert), code: bounds(code),
+        overflowing: element.scrollWidth > element.clientWidth,
+        codeLineHeight: parseFloat(getComputedStyle(code).lineHeight) };
+    });
+    expect(dimensions.alert.width).toBeLessThanOrEqual(400);
+    expect(dimensions.alert.left).toBeGreaterThanOrEqual(dimensions.body.left);
+    expect(dimensions.alert.right).toBeLessThanOrEqual(dimensions.body.right + 1);
+    expect(dimensions.code.right).toBeLessThanOrEqual(dimensions.alert.right);
+    expect(dimensions.code.height).toBeGreaterThan(dimensions.codeLineHeight);
+    expect(dimensions.overflowing).toBe(false);
+    await page.screenshot({ path: info.outputPath(`${scenario}-trust-fingerprint.png`), animations: 'disabled' });
+  });
+}
+
 for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
   test(`${scenario}: saved entries connect while management remains an explicit action`, async ({ page }, info) => {
     const writes: unknown[] = [];

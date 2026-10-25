@@ -25,6 +25,7 @@ import { cloudFixtureCommand, fixtureProfiles } from './ssh-cloud-fixture';
 
 const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
 const simulatedShell = new URLSearchParams(location.search).has('cloud');
+const probeFingerprint = new URLSearchParams(location.search).get('fingerprint') ?? 'SHA256:fixture';
 const bridgePort = Number(new URLSearchParams(location.search).get('bridge') ?? 1498);
 const timers = new Map<string, () => void>();
 const post = async <T,>(path: string, request: object): Promise<T> => {
@@ -40,7 +41,7 @@ mockIPC(async (command, body) => {
   if (cloud) return cloud;
   const args = body as { endpoint: SshRemote; request: Record<string, unknown>; id: string;
     onEvent: Channel<TerminalEvent> };
-  if (command === 'codex_gui_ssh_probe') return simulatedShell ? 'SHA256:fixture'
+  if (command === 'codex_gui_ssh_probe') return simulatedShell ? probeFingerprint
     : post('/rpc', { type: 'probe', endpoint: args.endpoint });
   if (command === 'codex_gui_ssh_files') return post('/rpc', { type: 'files', id: args.id, request: args.request });
   if (command === 'codex_gui_ssh_command') return simulatedShell ? undefined
