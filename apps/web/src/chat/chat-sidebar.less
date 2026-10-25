@@ -16,13 +16,15 @@
 .chat-thread-controls > .chat-back { flex-shrink: 0; }
 
 // The gesture owns both dragging and settling, so Ant's enter motion must not restart it on release.
-.chat-drawer-motion .ant-drawer-content-wrapper {
-  transform: translate3d(calc(var(--chat-drawer-offset, 0px) - 100%), 0, 0) !important;
+.chat-drawer-motion.ant-drawer .ant-drawer-content-wrapper {
+  transform: translate3d(calc(var(--chat-drawer-offset, 0px) - 100%), 0, 0);
+  will-change: transform;
   transition: none !important;
   animation: none !important;
 }
-.chat-drawer-motion .ant-drawer-mask {
-  opacity: var(--chat-drawer-progress, 0) !important;
+.chat-drawer-motion.ant-drawer .ant-drawer-mask {
+  opacity: var(--chat-drawer-progress, 0);
+  will-change: opacity;
   transition: none !important;
   animation: none !important;
 }

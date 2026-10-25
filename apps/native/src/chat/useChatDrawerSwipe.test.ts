@@ -9,27 +9,25 @@ vi.mock('react', () => ({ useRef: (current: unknown) => ({ current }),
 vi.mock('react-native', () => ({ PanResponder: { create: vi.fn(() => ({ panHandlers: {} })) } }));
 
 const event = {} as GestureResponderEvent;
-const gesture = (dx: number, dy = 0) => ({ dx, dy, numberActiveTouches: 1 } as PanResponderGestureState);
+const gesture = (dx: number, dy = 0) => ({ dx: -dx, dy, numberActiveTouches: 1 } as PanResponderGestureState);
 function setup(enabled = true) {
   const open = vi.fn();
-  const drawer = { current: { openDrawer: open, closeDrawer: vi.fn(), moveDrawer: vi.fn(), cancelDrawer: vi.fn() } };
-  useChatDrawerSwipe(enabled, open, undefined, drawer);
+  useChatDrawerSwipe(enabled, open);
   const handlers = vi.mocked(PanResponder.create).mock.calls.at(-1)![0];
   handlers.onStartShouldSetPanResponderCapture!(event, gesture(0));
-  return { open, handlers, drawer: drawer.current };
+  return { open, handlers };
 }
 beforeEach(() => { vi.clearAllMocks(); vi.useFakeTimers(); });
 afterEach(() => vi.useRealTimers());
 
-it('previews the drawer before release and returns a cancelled drag without opening', () => {
-  const { open, handlers, drawer } = setup();
+it('leaves right drags to the native drawer and cancels left page drags without navigation', () => {
+  const { open, handlers } = setup();
+  expect(handlers.onMoveShouldSetPanResponderCapture!(event, gesture(-30))).toBe(false);
+  handlers.onStartShouldSetPanResponderCapture!(event, gesture(0));
   expect(handlers.onMoveShouldSetPanResponderCapture!(event, gesture(30))).toBe(true);
-  expect(drawer.moveDrawer).toHaveBeenLastCalledWith(30);
   handlers.onPanResponderMove!(event, gesture(120));
-  expect(drawer.moveDrawer).toHaveBeenLastCalledWith(120);
   expect(open).not.toHaveBeenCalled();
   handlers.onPanResponderTerminate!(event, gesture(120));
-  expect(drawer.cancelDrawer).toHaveBeenCalledOnce();
   expect(open).not.toHaveBeenCalled();
 });
 
@@ -41,7 +39,7 @@ it('keeps long-press text selection instead of claiming its horizontal drag', ()
   expect(open).not.toHaveBeenCalled();
 });
 
-it('opens for an immediate swipe even when the finger is released slowly', () => {
+it('navigates for an immediate left swipe even when the finger is released slowly', () => {
   const { open, handlers } = setup();
   vi.advanceTimersByTime(100);
   expect(handlers.onMoveShouldSetPanResponderCapture!(event, gesture(30))).toBe(true);

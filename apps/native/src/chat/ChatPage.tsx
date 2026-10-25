@@ -31,6 +31,7 @@ import { ChatProfileMenu } from './ChatProfileMenu';
 import { TokenSummaryPage } from '../tokenSummary/TokenSummaryPage';
 import { ChatSearch } from './ChatSearch';
 import { ChatDrawer, type ChatDrawerMethods } from './ChatDrawer';
+import { ChatDrawerSurface } from './ChatDrawerSurface';
 import { ChatDevices } from './ChatDevices';
 import { ChatConnectionInfo } from './ChatConnectionInfo';
 import { ChatTaskStatus } from './ChatTaskStatus';
@@ -44,7 +45,6 @@ import { useDownloadConnection } from '../downloads/useDownloadConnection';
 import { useChatDevice } from './useChatDevice';
 import { useOfflineDevices } from './offline/devices';
 import { useChatDrawerSwipe } from './useChatDrawerSwipe';
-import { SwipeGestureContext } from '../navigation/SwipeGestureBoundary';
 import { useChatBackground } from './useChatBackground';
 import { useChatCompletionNotifications, useOpenChatNotification } from './useChatNotifications';
 import { notificationId, type ChatNotificationTarget } from './notificationTarget';
@@ -125,7 +125,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
   const running = Boolean(runningTurn);
   const openDrawer = useCallback(() => { Keyboard.dismiss(); setDrawer(true); drawerRef.current?.openDrawer(); }, []);
   const drawerSwipe = useChatDrawerSwipe(active && !drawer && !pickingDevice && !searching,
-    openDrawer, openAccounts, drawerRef);
+    openAccounts);
   const closeDrawer = (action?: () => void) => { afterClose.current = action; drawerRef.current?.closeDrawer(); };
   const closed = useCallback(() => {
     setDrawer(false);
@@ -198,8 +198,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
     {state.desktopOnly && <Text style={[styles.subtitle, { maxWidth: 400, paddingHorizontal: 16 }]}>
       {t("client.remoteDesktop.theDesktopIsReadyOpenRemoteDesktopAndSignIn")}</Text>}
-    <SwipeGestureContext.Provider value={drawerSwipe.cancel}>
-    <View style={styles.fill} {...drawerSwipe.panHandlers}>
+    <ChatDrawerSurface enabled={active && !pickingDevice && !searching} {...drawerSwipe}>
     <ChatImageContext.Provider value={{ threadId: state.selected?.id ?? null, ready, offline: true,
       load: controller.imagePreview, save: controller.managedPreviews ? controller.savePreviewImage : undefined }}>
       <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived
@@ -219,8 +218,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
       </ChatFileProvider>
       </ChatImagePreviewProvider></ImageAiContext.Provider>
     </ChatImageContext.Provider>
-    </View>
-    </SwipeGestureContext.Provider>
+    </ChatDrawerSurface>
     {ready && state.approvals.some((event) => event.params.threadId === state.selected?.id) &&
       <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={styles.padded} keyboardShouldPersistTaps="handled">
         {state.approvals.filter((event) => event.params.threadId === state.selected?.id).map((event) =>

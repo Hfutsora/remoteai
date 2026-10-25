@@ -85,16 +85,14 @@ it('keeps a vertical-first gesture and a long press from later becoming a page s
   }
 });
 
-it('opens accounts on a left chat swipe and the conversation drawer on a right swipe', () => {
-  const open = vi.fn();
+it('opens accounts on a left chat swipe and leaves right swipes to the native drawer', () => {
   const next = vi.fn();
-  useChatDrawerSwipe(true, open, next);
+  useChatDrawerSwipe(true, next);
   const handlers = vi.mocked(PanResponder.create).mock.calls.at(-1)![0];
   for (const dx of [-100, 100]) {
     handlers.onStartShouldSetPanResponderCapture!(event, gesture(0));
-    expect(handlers.onMoveShouldSetPanResponderCapture!(event, gesture(dx))).toBe(true);
+    expect(handlers.onMoveShouldSetPanResponderCapture!(event, gesture(dx))).toBe(dx < 0);
     handlers.onPanResponderRelease!(event, gesture(dx));
   }
-  expect(open).toHaveBeenCalledOnce();
   expect(next).toHaveBeenCalledOnce();
 });

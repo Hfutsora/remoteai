@@ -256,6 +256,31 @@ test('drawer follows held drags and settles or cancels without jumping or changi
     } finally { await session.detach(); }
   });
 
+test('settles the drawer with compositor transform and opacity animations', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The desktop sidebar does not slide over the conversation.');
+  const session = await page.context().newCDPSession(page);
+  try {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 90, y: 300 }] });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 190, y: 300 }] });
+    // Observe animation creation, so even a slow test runner can inspect a completed transition.
+    await page.locator('.chat-drawer').evaluate(root => {
+      root.querySelectorAll<HTMLElement>('.ant-drawer-content-wrapper, .ant-drawer-mask').forEach(element => {
+        const animate = element.animate.bind(element);
+        element.animate = (...args) => {
+          element.dataset.animatedProperties = JSON.stringify(args[0]);
+          return animate(...args);
+        };
+      });
+    });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(page.locator('.chat-drawer .ant-drawer-content-wrapper'))
+      .toHaveAttribute('data-animated-properties', /transform/);
+    await expect(page.locator('.chat-drawer .ant-drawer-mask'))
+      .toHaveAttribute('data-animated-properties', /opacity/);
+    await expect.poll(async () => (await drawer(page).boundingBox())?.x).toBeCloseTo(0, 0);
+  } finally { await session.detach(); }
+});
+
 test('ignores short, vertical-first, cancelled, selected-text and multitouch gestures',
   async ({ page, isMobile }) => {
     test.skip(!isMobile, 'Touch gestures are exercised by the mobile browser project.');

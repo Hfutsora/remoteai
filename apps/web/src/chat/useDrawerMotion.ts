@@ -1,35 +1,11 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { chatDrawerWidth, createDrawerMotion } from '../../../../shared/navigation/drawerMotion';
-import { SWIPE_SETTLE_MS } from '../../../../shared/navigation/pageSwipe';
-import type { PageAnimation } from '../../../../shared/navigation/usePageTransition';
+import { createDrawerAnimation } from './drawerAnimation';
 
 export interface DrawerMotionView {
   visible: boolean;
   rootClassName: string;
   rootStyle: CSSProperties;
-}
-
-function createAnimation(selector: string, offset: { current: number }): PageAnimation {
-  let frame = 0;
-  const setOffset = (value: number) => {
-    offset.current = value;
-    const root = document.querySelector<HTMLElement>(selector);
-    root?.style.setProperty('--chat-drawer-offset', `${value}px`);
-    root?.style.setProperty('--chat-drawer-progress', String(value / chatDrawerWidth(window.innerWidth)));
-  };
-  const stop = () => { cancelAnimationFrame(frame); };
-  return { stop, setOffset, animate: (target, complete) => {
-    stop();
-    const start = offset.current;
-    const started = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - started) / SWIPE_SETTLE_MS);
-      setOffset(start + (target - start) * (1 - (1 - progress) ** 3));
-      if (progress < 1) frame = requestAnimationFrame(tick);
-      else complete();
-    };
-    frame = requestAnimationFrame(tick);
-  } };
 }
 
 export function useDrawerMotion({ open, onOpenChange }: {
@@ -43,7 +19,7 @@ export function useDrawerMotion({ open, onOpenChange }: {
   const offset = useRef(open ? width : 0);
   const change = useRef(onOpenChange);
   change.current = onOpenChange;
-  const animation = useMemo(() => createAnimation(`.${rootClassName}`, offset), [rootClassName]);
+  const animation = useMemo(() => createDrawerAnimation(`.${rootClassName}`, offset, width), [rootClassName, width]);
   const motion = useMemo(() => createDrawerMotion({ width, initiallyOpen: committed.current, animation,
     onStart: () => setVisible(true),
     onSettled: next => { committed.current = next; setVisible(next); change.current(next); },
