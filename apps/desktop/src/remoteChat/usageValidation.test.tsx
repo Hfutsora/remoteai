@@ -23,7 +23,7 @@ vi.mock('../../../native/src/i18n', async () => ({
   useLanguage: () => 'zh',
 }));
 vi.mock('../../../native/src/chat/styles', () => ({ palette: {} }));
-vi.mock('../../../native/src/chat/ConversationPerformance', () => ({ ConversationPerformance: () => null }));
+vi.mock('../../../native/src/chat/ConversationPerformance', () => ({ ConversationPerformanceValues: () => null }));
 
 const usage = { totalTokens: 1_520, estimatedCostUsd: 2.5, primaryRemainingPercent: null,
   primaryRemainingAggregated: false, providerEstimatedCost: null };
@@ -33,8 +33,6 @@ const views = [
     readConversationMetrics={vi.fn()} /> },
   { name: 'web mobile settings', remainingLabel: '剩余',
     render: (read: ReadUsage) => <WebChatUsage read={read} active ready quotaProgress /> },
-  { name: 'web and desktop remote composer', remainingLabel: '剩余额度', render: (read: ReadUsage) =>
-    <WebChatUsage read={read} active ready inline /> },
 ];
 let container: HTMLDivElement;
 let root: Root;
@@ -73,7 +71,7 @@ it('preserves the native accessibility summary for valid usage', async () => {
   expect(container.querySelector('[aria-label*="1,520"]')?.getAttribute('aria-label')).toContain('2.5USD');
 });
 
-it.each(views)('$name separates quota from today’s usage and displays the PC estimates', async ({ render, remainingLabel }) => {
+it.each(views)('$name displays quota in its intended location', async ({ render, remainingLabel }) => {
   const read = vi.fn().mockResolvedValue({ ...usage, primaryRemainingPercent: 20,
     estimatedQuota: { remainingUsd: 25, capacityUsd: 125 } });
   await act(async () => root.render(render(read)));

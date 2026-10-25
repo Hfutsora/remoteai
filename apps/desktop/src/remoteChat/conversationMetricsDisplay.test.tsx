@@ -26,14 +26,19 @@ afterEach(async () => {
   await act(async () => root.unmount()); setLanguage('zh'); vi.clearAllMocks(); vi.unstubAllGlobals();
 });
 
-it('places local GUI TSR, TPS and TTFT before tokens and clears them when disconnected', async () => {
-  await act(async () => root.render(<ConversationTokenStatus threadId="local-thread" tokens={2_500} turns={turns} active />));
-  expect(container.textContent).toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT · 2.50k tokens');
-  expect(loadConversationMetrics).toHaveBeenCalledWith('local-thread');
-  await act(async () => root.render(<ConversationTokenStatus threadId="local-thread" tokens={2_500} active={false} />));
-  expect(container.textContent).toBe('— TSR · — TPS · — TTFT · 2.50k tokens');
-  await act(async () => root.render(<ConversationTokenStatus threadId={null} tokens={0} active />));
-  expect(container.textContent).toBe('');
+it('places daily usage after performance and percentage last, without another metrics request', async () => {
+  const usage = { totalTokens: 476730000, estimatedCostUsd: 696.49, primaryRemainingPercent: 74,
+    primaryRemainingAggregated: false, providerEstimatedCost: null,
+    estimatedQuota: { remainingUsd: 1193.78, capacityUsd: 1613.21 } };
+  await act(async () => root.render(<ConversationTokenStatus threadId="local-thread" usage={usage}
+    metrics={metrics} turns={turns} active />));
+  expect(container.textContent)
+    .toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT · 476.73 M · 696.49 USD · 74% (1193.78/1613.21USD)');
+  expect(loadConversationMetrics).not.toHaveBeenCalled();
+  await act(async () => root.render(<ConversationTokenStatus threadId="local-thread" active={false} />));
+  expect(container.textContent).toBe('— TSR · — TPS · — TTFT · — · — USD');
+  await act(async () => root.render(<ConversationTokenStatus threadId={null} active />));
+  expect(container.textContent).toBe('— · — USD');
 });
 
 it('shows remote conversation cost and puts performance on the final row', async () => {

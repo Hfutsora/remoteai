@@ -14,7 +14,7 @@ export async function composerLayout(page: Page) {
     await expect(page.locator('.chat-composer')).not.toHaveClass(/is-compact/);
     expect((await input.boundingBox())!.height).toBeGreaterThanOrEqual(83);
     await expect(page.locator('.chat-composer-hint')).toContainText('Codex');
-    await expect(page.locator('.chat-conversation-metrics')).toContainText('tokens');
+    await expect(page.locator('.chat-conversation-metrics .cs-usage-today')).toContainText('USD');
   } else await expect(page.locator('.chat-composer')).toHaveClass(/is-compact/);
   await expect(send).toHaveCSS('border-radius', '50%');
   for (const text of ['一行消息', '第一行\n第二行\n第三行', '多行消息\n'.repeat(60)]) {
@@ -78,7 +78,7 @@ export async function desktopComposer(page: Page, request: APIRequestContext, in
   await request.post(`${fixtureUrl}/test/composer`, { data: { speed: 'normal' } });
   await expect(speed).toHaveAttribute('data-speed', 'normal');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('group', { name: '今日用量' })).toContainText('USD');
+  await expect(page.getByRole('group', { name: '当前对话用量' })).toContainText('USD');
   await input.fill('电脑输入第一行');
   await input.press('Shift+Enter');
   await input.pressSequentially('second line slow');
