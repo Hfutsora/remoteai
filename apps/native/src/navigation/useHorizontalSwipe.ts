@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
-import { PanResponder } from 'react-native';
+import { PanResponder, type GestureResponderEvent } from 'react-native';
 import {
   horizontalDirection, verticalSwipe, SWIPE_COMPLETE_DISTANCE, SWIPE_LONG_PRESS_MS,
   type SwipeDirection, type SwipeProgress,
 } from '../../../../shared/navigation/pageSwipe';
 
-interface Options extends SwipeProgress { enabled: boolean; onLeft?: () => void; onRight?: () => void }
+interface Options extends SwipeProgress {
+  enabled: boolean; onLeft?: () => void; onRight?: () => void;
+  shouldStart?: (event: GestureResponderEvent) => boolean;
+}
 
-export function useHorizontalSwipe({ enabled, onLeft, onRight, onMove, onEnd }: Options) {
+export function useHorizontalSwipe({ enabled, onLeft, onRight, onMove, onEnd, shouldStart }: Options) {
   return useMemo(() => {
     let ignored = true;
     let started = 0;
@@ -18,8 +21,8 @@ export function useHorizontalSwipe({ enabled, onLeft, onRight, onMove, onEnd }: 
       ignored = true; claimed = undefined;
     };
     const responder = PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => {
-        ignored = !enabled;
+      onStartShouldSetPanResponderCapture: event => {
+        ignored = !enabled || (shouldStart !== undefined && !shouldStart(event));
         claimed = undefined;
         started = Date.now();
         return false;
@@ -51,5 +54,5 @@ export function useHorizontalSwipe({ enabled, onLeft, onRight, onMove, onEnd }: 
       onPanResponderTerminate: cancel,
     });
     return { panHandlers: responder.panHandlers, cancel };
-  }, [enabled, onLeft, onRight, onMove, onEnd]);
+  }, [enabled, onLeft, onRight, onMove, onEnd, shouldStart]);
 }

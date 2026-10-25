@@ -4,6 +4,7 @@ import { usePrimaryPageSwipe } from './usePrimaryPageSwipe';
 import { useChatDrawerSwipe } from '../chat/useChatDrawerSwipe';
 
 vi.mock('react', () => ({ useCallback: (callback: unknown) => callback,
+  useRef: (current: unknown) => ({ current }),
   createContext: () => ({}), useContext: () => undefined,
   useMemo: (factory: () => unknown) => factory() }));
 vi.mock('react-native', () => ({ Keyboard: { dismiss: vi.fn() },

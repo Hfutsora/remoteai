@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { connect, fixtureUrl, login, screenshot, send, settled } from './chat-helpers';
 
 type Point = { x: number; y: number };
@@ -26,6 +26,19 @@ async function trackSettling(page: Page, key: string) {
       positions.push(node.getBoundingClientRect().x);
       if (performance.now() - started < 650) requestAnimationFrame(sample);
       else resolve(positions);
+    };
+    sample();
+  }));
+}
+
+function trackDrawerSettling(panel: Locator) {
+  return panel.evaluate(node => new Promise<number[]>(resolve => {
+    const samples: number[] = [];
+    const until = performance.now() + 500;
+    const sample = () => {
+      samples.push(node.getBoundingClientRect().x);
+      if (performance.now() < until) requestAnimationFrame(sample);
+      else resolve(samples);
     };
     sample();
   }));
@@ -198,6 +211,49 @@ test('swipes right across the conversation to open and left across a row or mask
     await expect(drawer(page)).toBeVisible();
     await swipe(page, [{ x: 380, y: 300 }, { x: 350, y: 300 }, { x: 290, y: 300 }]);
     await expect(drawer(page)).toHaveCount(0);
+  });
+
+test('drawer follows held drags and settles or cancels without jumping or changing tabs',
+  async ({ page, isMobile }, info) => {
+    test.skip(!isMobile, 'The drawer gesture belongs to the phone layout.');
+    const session = await page.context().newCDPSession(page);
+    const panel = page.locator('.chat-drawer .ant-drawer-content-wrapper');
+    const touch = (type: string, x?: number) => session.send('Input.dispatchTouchEvent', {
+      type, touchPoints: x === undefined ? [] : [{ x, y: 300 }],
+    });
+    const exposedWidth = async () => { const box = (await panel.boundingBox())!; return box.x + box.width; };
+    const tabs = await page.locator('.mobile-tabbar').boundingBox();
+    try {
+      await touch('touchStart', 90);
+      await touch('touchMove', 190);
+      await expect.poll(exposedWidth).toBeCloseTo(100, 0);
+      await expect(activeTab(page)).toHaveText('聊天');
+      expect(await page.locator('.mobile-tabbar').boundingBox()).toEqual(tabs);
+      await screenshot(page, info, 'drawer-held-open');
+      await touch('touchMove', 230);
+      await expect.poll(exposedWidth).toBeCloseTo(140, 0);
+      const positions = trackDrawerSettling(panel);
+      await touch('touchEnd');
+      await expect.poll(async () => (await panel.boundingBox())?.x).toBeCloseTo(0, 0);
+      const samples = await positions;
+      for (let index = 1; index < samples.length; index++) {
+        expect(samples[index]).toBeGreaterThanOrEqual(samples[index - 1] - 1);
+      }
+      await touch('touchStart', 250);
+      await touch('touchMove', 150);
+      await expect.poll(async () => (await panel.boundingBox())?.x).toBeCloseTo(-100, 0);
+      await screenshot(page, info, 'drawer-held-close');
+      await touch('touchCancel');
+      await expect.poll(async () => (await panel.boundingBox())?.x).toBeCloseTo(0, 0);
+      await swipe(page, left);
+      await expect(drawer(page)).toHaveCount(0);
+      await touch('touchStart', 90);
+      await touch('touchMove', 190);
+      await expect.poll(exposedWidth).toBeCloseTo(100, 0);
+      await touch('touchCancel');
+      await expect(drawer(page)).toHaveCount(0);
+      await expect(activeTab(page)).toHaveText('聊天');
+    } finally { await session.detach(); }
   });
 
 test('ignores short, vertical-first, cancelled, selected-text and multitouch gestures',

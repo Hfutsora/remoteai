@@ -109,6 +109,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
   useOpenChatNotification({ controller, target: notification?.deviceId === device?.deviceId ? notification : null,
     ready: state.ready, sending: state.sending, handled: notificationHandled });
   const [drawer, setDrawer] = useState(false);
+  const [drawerMoving, setDrawerMoving] = useState(false);
   const drawerRef = useRef<ChatDrawerMethods>(null);
   const afterClose = useRef<(() => void) | undefined>(undefined);
   const [pickingDevice, setPickingDevice] = useState(false);
@@ -124,31 +125,32 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
   const running = Boolean(runningTurn);
   const openDrawer = useCallback(() => { Keyboard.dismiss(); setDrawer(true); drawerRef.current?.openDrawer(); }, []);
   const drawerSwipe = useChatDrawerSwipe(active && !drawer && !pickingDevice && !searching,
-    openDrawer, openAccounts);
+    openDrawer, openAccounts, drawerRef);
   const closeDrawer = (action?: () => void) => { afterClose.current = action; drawerRef.current?.closeDrawer(); };
   const closed = useCallback(() => {
     setDrawer(false);
+    setDrawerMoving(false);
     const action = afterClose.current;
     afterClose.current = undefined;
     action?.();
   }, []);
   const newChat = (project?: ChatProject) => { if (!state.sending) closeDrawer(() => controller.back(project)); };
-  useEffect(() => { controller.setViewing(active && foreground && !drawer && !pickingDevice && !searching); },
-    [active, foreground, drawer, pickingDevice, searching, controller]);
+  useEffect(() => { controller.setViewing(active && foreground && !drawer && !drawerMoving && !pickingDevice && !searching); },
+    [active, foreground, drawer, drawerMoving, pickingDevice, searching, controller]);
   useEffect(() => {
     if (active) return;
     afterClose.current = undefined;
     drawerRef.current?.closeDrawer(); setPickingDevice(false); setSearching(false);
   }, [active]);
   useEffect(() => {
-    if (!active || pickingDevice || (!drawer && !state.selected)) return;
+    if (!active || pickingDevice || (!drawer && !drawerMoving && !state.selected)) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (drawer) closeDrawer();
+      if (drawer || drawerMoving) closeDrawer();
       else if (!state.sending) controller.back();
       return true;
     });
     return () => subscription.remove();
-  }, [active, drawer, pickingDevice, state.selected?.id, state.sending, controller]);
+  }, [active, drawer, drawerMoving, pickingDevice, state.selected?.id, state.sending, controller]);
   return <>
   {tokenSummary && pageActive && <TokenSummaryPage read={controller.readTokenSummary} ready={ready}
     scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])}
@@ -158,7 +160,8 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
   <ChatQuotesProvider active={active} scope={state.selected?.id ?? null}
     enabled={active && !state.selectedArchived}>
   <ChatDrawer ref={drawerRef} enabled={active && !pickingDevice}
-    onOpen={() => setDrawer(true)} onMoving={() => setDrawer(true)} onClose={closed}
+    onOpen={() => { setDrawer(true); setDrawerMoving(false); }}
+    onMoving={() => setDrawerMoving(true)} onClose={closed}
     navigation={<ChatThreads state={state} controller={controller} newChat={newChat} active={active}
       openSearch={() => setSearching(true)}
       profileMenu={<ChatProfileMenu client={controller.guiAccounts} deviceName={device?.name} email={session.email}

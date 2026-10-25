@@ -3,12 +3,14 @@ import { useEffect, type ReactNode } from 'react';
 import { Drawer } from 'antd';
 import { X } from 'lucide-react';
 import { ResizableThreadSidebar } from '../../../../shared/chat/ResizableThreadSidebar';
+import type { DrawerMotionView } from './useDrawerMotion';
 import './chat-sidebar.less';
 
-export function ChatSidebar({ desktop, open, onClose, children, customHeading = false, headingExtra }: {
+export function ChatSidebar({ desktop, open, onClose, children, customHeading = false, headingExtra, motion }: {
   desktop: boolean; open: boolean; onClose: () => void; children: ReactNode;
   customHeading?: boolean;
   headingExtra?: ReactNode;
+  motion?: DrawerMotionView;
 }) {
   useLanguage();
   useEffect(() => {
@@ -29,7 +31,8 @@ export function ChatSidebar({ desktop, open, onClose, children, customHeading = 
     <header className="chat-sidebar-heading"><strong>{t("client.app.chat")}</strong>{headingExtra}</header>
     {children}
   </ResizableThreadSidebar>;
-  return <Drawer open={open} placement="left" width="min(360px, 88vw)" rootClassName="chat-drawer"
+  return <Drawer open={motion?.visible ?? open} placement="left" width="min(360px, 88vw)"
+    rootClassName={`chat-drawer ${motion?.rootClassName ?? ''}`} rootStyle={motion?.rootStyle}
     title={<div className="chat-drawer-heading"><strong>{t("client.app.chat")}</strong>{headingExtra}</div>}
     destroyOnClose onClose={onClose} closeIcon={<X size={20} aria-label={t("client.chat.collapseChatList")} />}>
     {children}

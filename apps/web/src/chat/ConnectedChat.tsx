@@ -83,14 +83,14 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
   const [drawer, setDrawer] = useState(false);
   const desktop = useDesktopLayout();
   const [sidebar, setSidebar] = usePanelVisibility('chat-list');
-  const listOpen = desktop ? sidebar : drawer;
-  const ListToggleIcon = listOpen ? PanelLeftClose : PanelLeftOpen;
-  const closeList = () => { if (desktop) setSidebar(false); else setDrawer(false); };
-  const selectedFromList = () => { if (!desktop) setDrawer(false); };
   const [pickingDevice, setPickingDevice] = useState(false);
   const [searching, setSearching] = useState(false);
-  useChatDrawerSwipe({ enabled: active && !desktop && !pickingDevice && !searching,
+  const drawerMotion = useChatDrawerSwipe({ enabled: active && !desktop && !pickingDevice && !searching,
     open: drawer, onOpenChange: setDrawer, onNext: openAccounts });
+  const listOpen = desktop ? sidebar : drawerMotion.visible;
+  const ListToggleIcon = listOpen ? PanelLeftClose : PanelLeftOpen;
+  const closeList = () => { if (desktop) setSidebar(false); else drawerMotion.closeDrawer(); };
+  const selectedFromList = () => { if (!desktop) drawerMotion.closeDrawer(); };
   const ready = state.ready;
   const installer = useRemoteCliInstaller(controller.guiTools,
     cliVersion === undefined && desktop && active && foreground && ready);
@@ -100,13 +100,15 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
   const runningTurn = currentRunningTurn(state.selected?.turns);
   const running = Boolean(runningTurn);
   const approvals = state.approvals.filter((event) => event.params.threadId === state.selected?.id);
-  const newChat = (project?: ChatProject) => { if (!state.sending) { controller.back(project); setDrawer(false); } };
+  const newChat = (project?: ChatProject) => {
+    if (!state.sending) { controller.back(project); drawerMotion.closeDrawer(); }
+  };
   useEffect(() => {
-    controller.setViewing(active && foreground && (desktop || !drawer) && !pickingDevice && !searching);
-  }, [active, foreground, desktop, drawer, pickingDevice, searching, controller]);
+    controller.setViewing(active && foreground && (desktop || !drawerMotion.visible) && !pickingDevice && !searching);
+  }, [active, foreground, desktop, drawerMotion.visible, pickingDevice, searching, controller]);
   useEffect(() => {
-    if (!active) { setDrawer(false); setPickingDevice(false); setSearching(false); }
-  }, [active]);
+    if (!active) { drawerMotion.closeDrawer(); setPickingDevice(false); setSearching(false); }
+  }, [active, drawerMotion.closeDrawer]);
   const showDesktopDiffs = desktopDiffs ?? desktop;
   const composer = <>
     {!!approvals.length && <div className="chat-approvals chat-scroll">
@@ -165,14 +167,14 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
         aria-expanded={listOpen} onClick={() => setSidebar(!sidebar)}>
         <ListToggleIcon size={21} />
       </button> : <ChatListButton client={controller.guiAccounts} active={active && foreground} ready={ready}
-        expanded={listOpen} onClick={() => setDrawer(!drawer)} />}
+        expanded={listOpen} onClick={listOpen ? drawerMotion.closeDrawer : drawerMotion.openDrawer} />}
       <div className="chat-grow" data-tauri-drag-region={draggableHeader || undefined}>
         <h2 data-tauri-drag-region={draggableHeader || undefined}>
           {state.selected ? threadPresentation(state.selected, state.sidebar, displayText).title : t("client.chat.newChat")}</h2>
         {headerConnectionActions}</div>
       {state.selected && state.selectedArchived && <button type="button" className="chat-button"
         disabled={!ready || running}
-        onClick={() => { void controller.archive().then(() => setDrawer(true)); }}>
+        onClick={() => { void controller.archive().then(drawerMotion.openDrawer); }}>
         {t("client.chat.restore")}</button>}
       {headerActions}
       {showDesktopDiffs && <ConversationChangesButton
@@ -199,6 +201,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     {conversationFooter}
     </ChatTerminalLayout>
     <ChatSidebar desktop={desktop} open={listOpen} onClose={closeList} customHeading={Boolean(renderSidebar)}
+      motion={drawerMotion}
       headingExtra={!renderSidebar && <ChatThreadFilter state={state} controller={controller} />}>
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}
@@ -206,10 +209,10 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
           deviceName={device?.name ?? t("client.settings.chooseAComputer")} email={email} ready={ready}
           guiTools={controller.guiTools} active={active && foreground && !searching}
           running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
-          chooseDevice={() => { setDrawer(false); setPickingDevice(true); }} />} />}
+          chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />} />}
     </ChatSidebar>
     {searching && <ChatSearch state={state} controller={controller} onClose={() => setSearching(false)}
-      select={thread => { setSearching(false); setDrawer(false); void controller.select(thread); }} />}
+      select={thread => { setSearching(false); drawerMotion.closeDrawer(); void controller.select(thread); }} />}
     {pickingDevice && <ChatDevices chooseLocal={chooseLocal} devices={devices} onClose={() => setPickingDevice(false)}
       refresh={deviceRefresh} choose={(id) => { chooseDevice(id); setPickingDevice(false); }} />}
   </ChatQuotesProvider></ChatFileReferencesProvider></ChatDetailsWorkspace>

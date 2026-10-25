@@ -1,47 +1,65 @@
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
-import { forwardRef, type ReactNode } from 'react';
-import {  useWindowDimensions, View } from 'react-native';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, type ReactNode } from 'react';
+import { Animated, Pressable, useWindowDimensions, View, type GestureResponderEvent } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import DrawerLayout, { DrawerKeyboardDismissMode, DrawerLockMode, DrawerPosition, DrawerState, DrawerType,
-  type DrawerLayoutMethods } from 'react-native-gesture-handler/ReanimatedDrawerLayout';
-import { nativeTextSelection } from './nativeTextSelection';
+import { chatDrawerWidth } from '../../../../shared/navigation/drawerMotion';
+import type { SwipeDirection } from '../../../../shared/navigation/pageSwipe';
+import { useHorizontalSwipe } from '../navigation/useHorizontalSwipe';
+import { useDrawerMotion } from './useDrawerMotion';
 
-export type ChatDrawerMethods = DrawerLayoutMethods;
+export interface ChatDrawerMethods {
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  moveDrawer: (dx: number) => void;
+  cancelDrawer: () => void;
+}
 interface Props {
   children: ReactNode; navigation: ReactNode; enabled: boolean;
   onOpen: () => void; onClose: () => void; onMoving: () => void;
 }
 // Leave room to start just inside Android's system back-gesture strip.
 const EDGE_WIDTH = 48;
-const MIN_SWIPE_DISTANCE = 10;
 
-/** Keep the list mounted and let the native UI thread drive both dragging and settling. */
+/** Keep the same mounted list visible during both edge and conversation-surface drags. */
 export const ChatDrawer = forwardRef<ChatDrawerMethods, Props>(function ChatDrawer(
   { children, navigation, enabled, onOpen, onClose, onMoving }, ref,
 ) {
   const drawerStyles = useDrawerStyles();
   const color = useThemeColor();
-  const width = Math.min(useWindowDimensions().width * 0.88, 360);
+  const width = chatDrawerWidth(useWindowDimensions().width);
+  const { motion, offset, open, visible } = useDrawerMotion({ width, onOpen, onClose, onMoving });
+  const fromEdge = useCallback((event: GestureResponderEvent) => event.nativeEvent.pageX <= EDGE_WIDTH, []);
+  const end = useCallback((direction?: SwipeDirection) => { if (!direction) motion.cancel(); }, [motion]);
+  const edge = useHorizontalSwipe({ enabled: enabled && !open, shouldStart: fromEdge,
+    onRight: motion.open, onMove: motion.move, onEnd: end });
+  const close = useHorizontalSwipe({ enabled: enabled && visible,
+    onLeft: motion.close, onMove: motion.move, onEnd: end });
+  useImperativeHandle(ref, () => ({ openDrawer: motion.open, closeDrawer: motion.close,
+    moveDrawer: motion.move, cancelDrawer: motion.cancel }), [motion]);
+  useEffect(() => { if (!enabled) motion.close(); }, [enabled, motion]);
   return <GestureHandlerRootView style={drawerStyles.root}>
-    <DrawerLayout ref={ref} drawerWidth={width} drawerPosition={DrawerPosition.LEFT} drawerType={DrawerType.FRONT}
-      drawerBackgroundColor={color('#fff', 'surface')}
-      edgeWidth={EDGE_WIDTH} minSwipeDistance={MIN_SWIPE_DISTANCE}
-      drawerLockMode={enabled ? DrawerLockMode.UNLOCKED : DrawerLockMode.LOCKED_CLOSED}
-      keyboardDismissMode={DrawerKeyboardDismissMode.ON_DRAG} overlayColor="rgba(6, 20, 15, 0.45)"
-      drawerContainerStyle={drawerStyles.panel} onDrawerOpen={() => { nativeTextSelection?.dismiss(); onOpen(); }}
-      onDrawerClose={onClose} onDrawerStateChanged={(state) => {
-        if (state === DrawerState.IDLE) return;
-        nativeTextSelection?.dismiss();
-        onMoving();
-      }}
-      renderNavigationView={() => <View style={drawerStyles.root}>{navigation}</View>}>
+    <View style={drawerStyles.root} {...edge.panHandlers}
+      accessibilityElementsHidden={visible} importantForAccessibility={visible ? 'no-hide-descendants' : 'auto'}>
       {children}
-    </DrawerLayout>
+    </View>
+    <Animated.View pointerEvents={visible ? 'auto' : 'none'} style={[drawerStyles.overlay,
+      { opacity: offset.interpolate({ inputRange: [0, width], outputRange: [0, 1], extrapolate: 'clamp' }) }]}>
+      <Pressable style={drawerStyles.root} onPress={motion.close} accessible={false} {...close.panHandlers} />
+    </Animated.View>
+    <Animated.View pointerEvents={visible ? 'auto' : 'none'} accessibilityViewIsModal={visible}
+      accessibilityElementsHidden={!visible} importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
+      style={[drawerStyles.panel, { width, backgroundColor: color('#fff', 'surface'),
+        transform: [{ translateX: Animated.subtract(offset, width) }] }]} {...close.panHandlers}>
+      {navigation}
+    </Animated.View>
   </GestureHandlerRootView>;
 });
 
 const useDrawerStyles = createThemedStyles(() => ({
-  root: { flex: 1 },
-  panel: { borderTopRightRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
+  root: { flex: 1, overflow: 'hidden' },
+  overlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(6, 20, 15, 0.45)' },
+  panel: { position: 'absolute', top: 0, bottom: 0, left: 0,
+    borderTopRightRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
 }));
