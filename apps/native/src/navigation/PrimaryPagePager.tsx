@@ -1,19 +1,19 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Animated, Keyboard, StyleSheet, View } from 'react-native';
+import { Animated, Keyboard, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { PRIMARY_PAGES, type PrimaryPage } from '../../../../shared/navigation/pageSwipe';
 import { PagePreviewContext, PageSwipeContext } from '../../../../shared/navigation/PageSwipeContext';
 import { usePageTransition } from '../../../../shared/navigation/usePageTransition';
-import { useThemeColor } from '../theme/store';
 import { usePrimaryPageSwipe } from './usePrimaryPageSwipe';
 import { createPageAnimation } from './pageAnimation';
 
 interface Props {
   page: string; onChange: (page: PrimaryPage) => void;
   pages: Record<PrimaryPage, ReactNode>; children?: ReactNode;
+  pageStyles: Record<PrimaryPage, StyleProp<ViewStyle>>;
 }
 
-export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
-  const color = useThemeColor();
+export function PrimaryPagePager({ page, onChange, pages, pageStyles, children }: Props) {
   const [width, setWidth] = useState(0);
   const offset = useRef(new Animated.Value(0)).current;
   const animation = useMemo(() => createPageAnimation(offset), [offset]);
@@ -35,17 +35,16 @@ export function PrimaryPagePager({ page, onChange, pages, children }: Props) {
             const incoming = key === preview?.page;
             const visible = active || incoming;
             const left = index * width;
-            return <View key={key} testID={`primary-page-${key}`}
+            // Move the status-bar backdrop with its page, including while a swipe is cancelled.
+            return <SafeAreaView key={key} testID={`primary-page-${key}`} edges={['top']}
               pointerEvents={active ? 'auto' : 'none'} accessibilityElementsHidden={!active}
               importantForAccessibility={active ? 'auto' : 'no-hide-descendants'}
-              style={[styles.pane, { backgroundColor: color(key === 'settings' ? '#fff' : '#ededed',
-                key === 'settings' ? 'surface' : 'canvas'), left, width },
-              !visible && styles.hidden]}>
+              style={[styles.pane, pageStyles[key], { left, width }, !visible && styles.hidden]}>
               {(visible || key === 'chat') && pages[key]}
-            </View>;
+            </SafeAreaView>;
           })}
         </Animated.View>
-        {children}
+        {!primary && <SafeAreaView edges={['top']} style={styles.track}>{children}</SafeAreaView>}
       </View>
     </PagePreviewContext.Provider>
   </PageSwipeContext.Provider>;

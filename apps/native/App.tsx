@@ -1255,14 +1255,17 @@ function AppContent() {
   if (!session) return <View style={styles.app}>
     <ThemeStatusBar /><LoginScreen initialBaseUrl={DEFAULT_CLOUD_BASE_URL} onLoggedIn={handleLogin} />
   </View>;
-  return <SafeAreaView edges={showBottomNavigation ? ['top', 'left', 'right'] : undefined}
+  return <SafeAreaView edges={showBottomNavigation ? ['left', 'right'] : ['left', 'right', 'bottom']}
     style={[styles.app, activePage === 'totp' && totpPageStyles.page,
     activePage === 'accounts' && accountStyles.page,
     activePage === 'discover' && styles.discoveryCanvas,
     activePage === 'chat' && styles.chatCanvas,
     (activePage === 'settings' || activePage === 'about' || activePage === 'downloads') && styles.settingsCanvas]}>
     <ThemeStatusBar />
-    <PrimaryPagePager page={activePage} onChange={setActivePage} pages={{
+    <PrimaryPagePager page={activePage} onChange={setActivePage} pageStyles={{
+      chat: activePage === 'token-summary' ? styles.app : styles.chatCanvas,
+      accounts: accountStyles.page, discover: styles.discoveryCanvas, settings: styles.settingsCanvas,
+    }} pages={{
     chat: <ChatPage session={session} devices={devices} active={activePage === 'chat' || activePage === 'token-summary'}
       openAccounts={openAccounts}
       devicesLoaded={devicesLoaded}
