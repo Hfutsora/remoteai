@@ -126,6 +126,8 @@ export function ChatMessages({ thread, loading, loadingMore, hasMore, loadOlder,
     keyboardShouldPersistTaps="handled" initialNumToRender={10}
     // Keep message views attached while the keyboard changes the native clipping bounds.
     removeClippedSubviews={false}
+    // Android's edge stretch resamples every glyph and flashes when the list springs back.
+    overScrollMode="never"
     alwaysBounceVertical
     // FlatList accounts for the list header itself, including in one-message conversations.
     maintainVisibleContentPosition={preservePosition ? { minIndexForVisible: firstMessageIndex } : undefined}
