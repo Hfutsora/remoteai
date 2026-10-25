@@ -70,3 +70,15 @@ it('preserves the native accessibility summary for valid usage', async () => {
   await act(async () => root.render(views[0].render(vi.fn().mockResolvedValue(usage))));
   expect(container.querySelector('[aria-label*="1,520"]')?.getAttribute('aria-label')).toContain('2.5USD');
 });
+
+it.each(views)('$name separates quota from today’s usage and displays the PC estimates', async ({ render }) => {
+  const read = vi.fn().mockResolvedValue({ ...usage, primaryRemainingPercent: 20,
+    estimatedQuota: { remainingUsd: 25, capacityUsd: 125 } });
+  await act(async () => root.render(render(read)));
+  expect(container.textContent).toContain('20% · 25USD 剩余额度 · 125USD 总额度');
+  expect(container.textContent).toContain('2.5USD');
+  read.mockResolvedValue({ ...usage, primaryRemainingPercent: 20 });
+  await act(async () => vi.advanceTimersByTimeAsync(USAGE_REFRESH_INTERVAL_MS));
+  expect(container.textContent).toContain('20% · — 剩余额度 · — 总额度');
+  expect(container.textContent).not.toContain('25USD');
+});

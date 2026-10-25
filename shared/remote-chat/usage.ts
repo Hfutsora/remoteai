@@ -5,6 +5,7 @@ export interface UsageSummary {
   primaryRemainingPercent: number | null;
   primaryRemainingAggregated: boolean;
   providerEstimatedCost: { amountUsd: number; aggregated: boolean } | null;
+  estimatedQuota?: { remainingUsd: number; capacityUsd: number | null };
 }
 
 export type ReadUsage = () => Promise<unknown>;
@@ -52,11 +53,20 @@ export function usageTrailing(usage: UsageSummary | null, translate = defaultTex
       label: translate(usage?.primaryRemainingAggregated ? "client.shared.totalRemaining" : "client.accounts.remaining"),
       description: `${translate(label)}：${remaining.toLocaleString('en-US', { maximumFractionDigits: 2 })}%`,
       tone: remaining <= LOW_QUOTA_PERCENT ? 'low' : remaining <= WARNING_QUOTA_PERCENT ? 'cost' : 'quota',
+      quota: {
+        remaining: translate('client.chatQuota.estimatedRemaining', {
+          amount: usage?.estimatedQuota ? cost(usage.estimatedQuota.remainingUsd) : '—',
+        }),
+        total: translate('client.chatQuota.estimatedTotal', {
+          amount: usage?.estimatedQuota?.capacityUsd == null ? '—' : cost(usage.estimatedQuota.capacityUsd),
+        }),
+        description: translate('client.chatQuota.estimateDescription'),
+      },
     } as const;
   }
   const estimate = usage?.providerEstimatedCost;
   if (!estimate) return null;
   const label = estimate.aggregated ? "client.shared.estimatedCombinedApiCostToday" : "client.shared.estimatedApiCostToday";
   return { text: `API ${cost(estimate.amountUsd)}`, label: '',
-    description: `${translate(label)}：${cost(estimate.amountUsd)}`, tone: 'cost' } as const;
+    description: `${translate(label)}：${cost(estimate.amountUsd)}`, tone: 'cost', quota: null } as const;
 }

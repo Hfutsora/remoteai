@@ -68,10 +68,13 @@ export function UsageStatus({ active, threadId, tokenUsage }: {
       <UsageValue className={styles.cost} text={usage ? formatCost(usage.estimatedCostUsd) : "—"}
         open={active && hint === "cost"} onOpenChange={(open) => changeHint("cost", open)}
         description={usage ? uiText("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }) : pendingDescription} />
-      {trailing && <><span>·</span>
+      {trailing && <span className={styles.quotaLine}>
         <UsageValue className={styles[trailing.tone]} text={trailing.text} description={trailing.description}
           open={active && hint === "remaining"} onOpenChange={(open) => changeHint("remaining", open)} />
-      </>}
+        {trailing.quota && <Tooltip title={trailing.quota.description} styles={TOOLTIP_STYLES}>
+          <span tabIndex={0}> · {trailing.quota.remaining} · {trailing.quota.total}</span>
+        </Tooltip>}
+      </span>}
     </span>
     {active && settingsThread && settingsThread === threadId && <ContextSettingsDialog key={settingsThread}
       threadId={settingsThread} onClose={() => setSettingsThread(null)} />}

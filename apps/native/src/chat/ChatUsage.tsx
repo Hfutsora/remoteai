@@ -38,13 +38,17 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     </View>
     {usage ? <Text style={styles.row} accessibilityLabel={[
       t("client.mobile.todaySTokenUsage", { value1: usage.totalTokens.toLocaleString('en-US') }),
-      t("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }), trailing?.description,
+      t("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }),
     ].filter(Boolean).join('，')}>
       {t("client.chat.today")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
       {t("client.mobile.estimated")}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
-      {trailing && <Text>{' · '}{trailing.label}
-        <Text style={styles[trailing.tone]}>{trailing.text}</Text></Text>}
     </Text> : <Text style={styles.row}>{notice}</Text>}
+    {trailing && <Text style={styles.row} accessibilityLabel={[
+      trailing.description, trailing.quota?.remaining, trailing.quota?.total, trailing.quota?.description,
+    ].filter(Boolean).join('，')}>
+      <Text style={styles[trailing.tone]}>{trailing.text}</Text>
+      {trailing.quota && <Text>{' · '}{trailing.quota.remaining}{' · '}{trailing.quota.total}</Text>}
+    </Text>}
     <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
       <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
       {' · '}<ConversationPerformance read={readConversationMetrics} threadId={threadId} active={active && ready} />

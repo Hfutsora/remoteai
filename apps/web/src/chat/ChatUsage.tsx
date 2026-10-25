@@ -36,8 +36,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     {usage ? <>
       <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
       <span>{t("client.chat.estimated")} <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
-      {trailing && <span aria-label={trailing.description}>· {displayText(trailing.label)}
-        <strong className={`chat-usage-${trailing.tone}`}>{trailing.text}</strong></span>}
+      {trailing && <QuotaLine trailing={trailing} />}
     </> : <span>{notice}</span>}
     <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
       <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
@@ -48,6 +47,17 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
 }
 
 const USAGE_TOOLTIP_STYLES = { root: { maxWidth: 400 }, body: { fontSize: 12, overflowWrap: 'anywhere' } } as const;
+
+function QuotaLine({ trailing }: { trailing: NonNullable<ReturnType<typeof usageTrailing>> }) {
+  return <span className="chat-usage-quota-line">
+    <Tooltip title={trailing.description} styles={USAGE_TOOLTIP_STYLES}>
+      <strong className={`chat-usage-${trailing.tone}`} tabIndex={0}>{trailing.text}</strong>
+    </Tooltip>
+    {trailing.quota && <Tooltip title={trailing.quota.description} styles={USAGE_TOOLTIP_STYLES}>
+      <span tabIndex={0}> · {trailing.quota.remaining} · {trailing.quota.total}</span>
+    </Tooltip>}
+  </span>;
+}
 
 function InlineUsage({ usage, notice, contextControl }: {
   usage: ReturnType<typeof useChatUsage>['usage']; notice: string; contextControl?: ReactNode;
@@ -63,8 +73,6 @@ function InlineUsage({ usage, notice, contextControl }: {
     <Tooltip title={usage ? t("client.chat.estimatedCost") : notice} styles={USAGE_TOOLTIP_STYLES}>
       <strong className="chat-usage-cost" tabIndex={0}>{usage ? formatCost(usage.estimatedCostUsd) : '—'}</strong>
     </Tooltip>
-    {trailing && <><span>·</span><Tooltip title={trailing.description} styles={USAGE_TOOLTIP_STYLES}>
-      <strong className={`chat-usage-${trailing.tone}`} tabIndex={0}>{trailing.text}</strong>
-    </Tooltip></>}
+    {trailing && <QuotaLine trailing={trailing} />}
   </div>;
 }
