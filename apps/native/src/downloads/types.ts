@@ -19,6 +19,7 @@ export interface DownloadTask {
   size: number;
   bytesPerSecond?: number;
   createdAt: number;
+  completedAt?: number;
   message: string;
   uri?: string;
   cacheUri?: string;

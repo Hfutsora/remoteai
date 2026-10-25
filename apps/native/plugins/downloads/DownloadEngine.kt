@@ -271,6 +271,8 @@ internal class DownloadEngine(
     require(name.isNotEmpty() && name !in listOf(".", "..") && name.length <= 255)
     require(name.none { it == '/' || it == '\\' || it.code < 32 || it.code == 127 })
     task.status = "downloading"
+    task.data.remove("completedAt")
+    task.data.put("readyToSave", false)
     task.data.remove("preparation")
     if (info.has("bulk")) {
       task.data.put("size", size).put("name", name).put("mimeType", info.getString("mimeType"))
@@ -341,6 +343,8 @@ internal class DownloadEngine(
       worker.submit {
         check(!cancelled.get())
         downloadMeasurement(task, "verifyMs", (System.nanoTime() - verifying) / 1_000_000.0)
+        // Retrying publication must retain the original transfer time, including unknown legacy times.
+        if (!task.data.optBoolean("readyToSave")) task.data.put("completedAt", System.currentTimeMillis())
         task.status = "saving"; task.data.put("readyToSave", true); changed()
       }.get()
       val publishing = System.nanoTime()

@@ -47,8 +47,35 @@ async function screenshot(name) {
   await adb('pull', '/sdcard/download-selection-result.png', path.join(output, `${name}.png`));
 }
 
+async function completionTiming() {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const labels = (await nodes()).map(node => node.text);
+    const completedAt = labels.find(label => label.startsWith('完成时间：'));
+    const duration = labels.find(label => label.startsWith('总用时：'));
+    if (completedAt && duration) {
+      assert.ok(!completedAt.includes('未记录'), completedAt);
+      assert.ok(!duration.includes('未记录'), duration);
+      assert.ok(!labels.includes('已保存到下载文件夹'));
+      return { completedAt, duration };
+    }
+    await delay(500);
+  }
+  assert.fail('Missing download completion time or total duration');
+}
+
+async function checkTimingPersistence(scale) {
+  const timing = await completionTiming();
+  await screenshot(`completion-${scale}`);
+  await adb('shell', 'am', 'force-stop', app);
+  await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+  await tap('下载管理');
+  assert.deepEqual(await completionTiming(), timing);
+  console.log(`PASS: completion time and total duration persist at font scale ${scale}`);
+}
+
 async function checkSelection(scale) {
   await tap('下载管理');
+  await checkTimingPersistence(scale);
   assert.equal((await find('批量删除')).enabled, 'false');
   await screenshot(`default-${scale}`);
   await tap('安装说明.txt');

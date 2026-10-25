@@ -3,6 +3,7 @@ import { displayText, displayError } from '../i18n';
 import type { DownloadTask } from './types';
 import { archivePercent, archiveStatus } from '../../../../shared/remote-chat/archiveDownload';
 import { canShareDownload } from './shareDownload';
+import { downloadCompletionDetails } from '../../../../shared/downloads/completion';
 
 export function formatBytes(value: number) {
   if (value < 1024) return `${value} B`;
@@ -20,6 +21,7 @@ export function DownloadCard({ task, busy, connected, action, open, share, remov
 }) {
   const running = ['downloading', 'queued', 'preparing', 'verifying'].includes(task.status);
   const completed = ['completed', 'ready', 'saving'].includes(task.status);
+  const completion = completed ? downloadCompletionDetails(task, text) : undefined;
   const label = completed ? "client.downloads.saveToDevice" : running ? "client.downloads.pause" : "client.downloads.resumeDownload";
   const Icon = completed ? Download : running ? Pause : Play;
   const preparation = task.status === 'preparing' ? task.preparation : undefined;
@@ -45,7 +47,11 @@ export function DownloadCard({ task, busy, connected, action, open, share, remov
       {task.status === 'preparing' && preparation?.phase !== 'compressing' ? text(status) : detail}</span>
       {task.status === 'downloading' && !!task.bytesPerSecond && <span>{formatBytes(task.bytesPerSecond)}/s</span>}
     </div>
-    {task.message && <p role="status" className="download-notice">{displayError(task.message)}</p>}
+    {completion && <div className="download-completion">
+      <p>{completion.completedAt}</p><p>{completion.duration}</p>
+    </div>}
+    {task.message && task.status !== 'completed' && <p role="status" className="download-notice">
+      {displayError(task.message)}</p>}
     {!connected && !completed && <p className="download-notice">{text("client.downloads.reconnectToTheOriginalComputerToResume")}</p>}
     <div className="download-actions">
       {completed && <button type="button" className="download-button" onClick={open}

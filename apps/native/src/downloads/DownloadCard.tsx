@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import type { DownloadTask } from './types';
 import { downloadDetail, downloadPercent, downloadStatusLabel, formatBytes } from './presentation';
 import { colors, useStyles } from './styles';
+import { downloadCompletionDetails } from '../../../../shared/downloads/completion';
 
 export function DownloadCard({ task, connected, busy, action, share, remove, selected = false, toggleSelection }: {
   task: DownloadTask; connected: boolean; busy: boolean;
@@ -17,6 +18,7 @@ export function DownloadCard({ task, connected, busy, action, share, remove, sel
   useLanguage();
   const active = ['downloading', 'queued', 'preparing', 'verifying', 'saving'].includes(task.status);
   const complete = task.status === 'completed';
+  const completion = complete ? downloadCompletionDetails(task) : undefined;
   const paused = task.status === 'paused';
   const failed = task.status === 'failed';
   const disabled = busy || (!connected && !active && !complete && !task.readyToSave);
@@ -58,7 +60,12 @@ export function DownloadCard({ task, connected, busy, action, share, remove, sel
         <Text style={styles.caption}>{downloadDetail(task)}</Text>
       </>}
     </View>
-    {!!task.message && <Text style={failed ? styles.error : styles.text}>{displayError(task.message)}</Text>}
+    {completion && <View>
+      <Text style={styles.text}>{completion.completedAt}</Text>
+      <Text style={styles.text}>{completion.duration}</Text>
+    </View>}
+    {!complete && !!task.message && <Text style={failed ? styles.error : styles.text}>
+      {displayError(task.message)}</Text>}
     {!connected && !complete && !task.readyToSave && <Text style={styles.text}>{t("client.mobile.connectToThisComputerToContinue")}</Text>}
     <View style={[styles.toolbar, styles.cardActions]}>
       <Pressable accessibilityRole="button" accessibilityLabel={t("client.projectBrowser.deleted")} disabled={busy}

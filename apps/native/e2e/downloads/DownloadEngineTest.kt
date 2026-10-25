@@ -185,12 +185,17 @@ class DownloadEngineTest : InstrumentationTestCase() {
   }
 
   fun testPublishesExactHashWithReorderedChunksAndPartialFinalBlock() {
+    val startedAt = System.currentTimeMillis()
     val size = CHUNK_BYTES * 5 + 17
     open(size.toLong())
     for (index in listOf(4, 3, 2, 1, 0)) accept(requests()[index])
     accept(requests()[5])
     val completed = completed()
     assertEquals("completed", completed.getString("status"))
+    val completedAt = completed.getLong("completedAt")
+    assertTrue(completedAt in startedAt..System.currentTimeMillis())
+    assertTrue(completedAt >= completed.getLong("createdAt"))
+    assertEquals(completedAt, storage.load().getValue(taskId).data.getLong("completedAt"))
     val uri = Uri.parse(completed.getString("uri"))
     val actual = instrumentation.targetContext.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
     val hash = MessageDigest.getInstance("SHA-256")

@@ -11,7 +11,7 @@ export interface DownloadTask {
   id: string; source: DownloadSource; name: string;
   status: 'queued' | 'preparing' | 'downloading' | 'verifying' | 'ready' | 'saving'
     | 'paused' | 'completed' | 'failed';
-  received: number; size: number; createdAt: number; message: string;
+  received: number; size: number; createdAt: number; completedAt?: number; message: string;
   revision?: string; mimeType?: string; bytesPerSecond?: number;
   protocol?: 'bulk' | 'legacy';
   manifest?: import('../../../../shared/remote-chat/downloadManifest').DownloadManifest;

@@ -136,7 +136,8 @@ export class WebDownloadManager {
     if (!task || !['completed', 'ready'].includes(task.status)) return;
     // Invoke the picker in the click stack before an IndexedDB await consumes user activation.
     const saving = saveDownload(task, () => undefined);
-    this.update({ ...task, status: 'saving', exported: true });
+    this.update({ ...task, status: 'saving', exported: true,
+      message: task.status === 'completed' ? '' : task.message });
     try {
       const confirmed = await saving;
       await this.persist({ ...task, exported: true, status: confirmed ? 'completed' : 'ready',
@@ -181,12 +182,14 @@ export class WebDownloadManager {
   }
   private async run(task: DownloadTask, connection: DownloadConnection, signal: AbortSignal) {
     try {
-      await this.persist({ ...task, status: 'preparing', preparation: undefined });
+      task = { ...task, status: 'preparing', preparation: undefined, completedAt: undefined };
+      await this.persist(task);
       await transferDownload({ task, client: connection.client, signal,
         mode: () => this.connectionForSource(task.source)?.mode ?? 'offline',
         update: value => { task = value; this.update(value); } });
       this.clearRetry(task.id);
-      await this.persist({ ...task, status: 'ready', bytesPerSecond: undefined });
+      await this.persist({ ...task, status: 'ready', bytesPerSecond: undefined,
+        completedAt: Date.now() });
     } catch (error) {
       error = normalizeFileError(error);
       const paused = signal.aborted || error instanceof DownloadCancelled

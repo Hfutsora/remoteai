@@ -37,6 +37,9 @@
 .download-connection-dot.is-offline { background: var(--app-muted, #74847b); }
 .downloads-page > h3 { margin: 14px 0 10px; }
 .download-notice { max-width: 400px; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.download-completion { margin-top: 12px; color: var(--app-muted, var(--muted, #74847b)); font-size: 13px;
+  line-height: 1.7; overflow-wrap: anywhere; }
+.download-completion p { margin: 0; }
 .download-task-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 .download-task-heading strong { min-width: 0; flex: 1; overflow-wrap: anywhere; }
 .download-task-heading span { color: var(--app-accent, #14806f); font-size: 13px; }

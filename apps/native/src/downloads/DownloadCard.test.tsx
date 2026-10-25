@@ -34,14 +34,23 @@ const render = (value: DownloadTask) => texts(DownloadCard({ task: value, connec
 beforeEach(() => vi.stubGlobal('React', React));
 afterEach(() => { setInterfaceLanguage('zh'); vi.unstubAllGlobals(); });
 
-it('translates the native download message when it is rendered', () => {
-  expect(render(task)).toContain('已保存到相册');
+it('replaces the completed save notice with localized completion details', () => {
+  const completed = { ...task, createdAt: new Date(2026, 9, 25, 14, 0, 0).getTime(),
+    completedAt: new Date(2026, 9, 25, 14, 1, 2).getTime() };
+  expect(render(completed)).toContain('完成时间：2026/10/25 14:01:02');
+  expect(render(completed)).toContain('总用时：1分2秒');
+  expect(render(completed)).not.toContain('已保存到相册');
   setInterfaceLanguage('en');
-  expect(render(task)).toContain('Saved to photos');
+  expect(render(completed)).toContain('Total time: 1 min 2 sec');
+  expect(render(completed)).not.toContain('Saved to photos');
+  expect(render(task)).toContain('Completed: Not recorded');
+});
+
+it('keeps translated errors visible on unfinished downloads', () => {
   setInterfaceLanguage('ru');
-  expect(render(task)).toContain('Сохранено в галерее');
   expect(render({ ...task, status: 'failed', message: '文件校验失败，请重试。' }))
     .toContain('Проверка файла не пройдена. Повторите попытку.');
+  expect(render({ ...task, status: 'downloading', message: '' }).join(' ')).not.toContain('Общее время');
 });
 
 it('keeps messages without a dictionary entry verbatim', () => {

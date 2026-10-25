@@ -113,6 +113,30 @@ test('desktop navigation exposes background downloads above diagnostics and save
   await expect(page.getByRole('article')).toHaveCount(2);
 });
 
+test('local and remote download cards show completion timing and keep it stable after navigation', async ({ page }) => {
+  await page.goto('/e2e/download-manager-harness.html');
+  await page.evaluate(() => { window.desktopDownloads.delay = 50; });
+  await enqueue(page);
+  await page.evaluate(() => window.desktopDownloads.addLocal());
+  const navigation = page.getByRole('navigation');
+  await navigation.getByRole('button', { name: '下载管理', exact: true }).click();
+  const cards = ['office.msi', 'local.patch'].map(name => page.getByRole('article', { name, exact: true }));
+  for (const item of cards) {
+    await expect(item).toContainText('文件已就绪');
+    await expect(item.locator('.download-completion')).toContainText('完成时间：');
+    await expect(item.locator('.download-completion')).toContainText('总用时：');
+    await expect(item.locator('.download-completion')).not.toContainText('未记录');
+  }
+  const before = await cards[0].locator('.download-completion p').allTextContents();
+  await navigation.getByRole('button', { name: '日志诊断', exact: true }).click();
+  await navigation.getByRole('button', { name: '下载管理', exact: true }).click();
+  await expect(cards[0].locator('.download-completion p')).toHaveText(before);
+  await page.screenshot({ path: '../../.codex-tmp/desktop-download-completion.png', fullPage: true });
+  await page.evaluate(() => document.documentElement.style.setProperty('--app-font-scale', '1.3'));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '../../.codex-tmp/desktop-download-completion-large-font.png', fullPage: true });
+});
+
 test('disconnecting one computer pauses only its download and allows removing the task', async ({ page }) => {
   await page.goto('/e2e/download-manager-harness.html');
   await page.evaluate(() => { window.desktopDownloads.delay = 1200; });

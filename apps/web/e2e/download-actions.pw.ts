@@ -59,8 +59,12 @@ test('a blocked popup leaves the file ready and shows an actionable message', as
 });
 
 test('missing cached bytes cannot be opened or marked as saved', async ({ page }) => {
+  const firstCompletion = Date.UTC(2026, 9, 25, 6, 0, 0);
+  await page.clock.setFixedTime(firstCompletion);
+  await page.evaluate(() => { window.downloadFixture.bulk = true; });
   await enqueue(page);
   await expect(card(page)).toContainText('文件已就绪');
+  expect((await page.evaluate(async () => (await window.downloadFixture.saved())[0])).completedAt).toBe(firstCompletion);
   await page.evaluate(() => new Promise<void>((resolve, reject) => {
     const request = indexedDB.open('codex-switch.web.downloads.v1', 2);
     request.onerror = () => reject(request.error);
@@ -75,6 +79,13 @@ test('missing cached bytes cannot be opened or marked as saved', async ({ page }
   await expect(card(page)).toContainText('下载失败');
   await expect(card(page).getByRole('button', { name: '打开', exact: true })).toHaveCount(0);
   await expect(card(page)).not.toContainText('已保存到设备');
+  await expect(card(page).locator('.download-completion')).toHaveCount(0);
+  const recoveredAt = firstCompletion + 65_000;
+  await page.clock.setFixedTime(recoveredAt);
+  await card(page).getByRole('button', { name: '继续下载', exact: true }).click();
+  await expect(card(page)).toContainText('文件已就绪');
+  expect((await page.evaluate(async () => (await window.downloadFixture.saved())[0])).completedAt).toBe(recoveredAt);
+  await expect(card(page).locator('.download-completion')).toContainText('总用时：1分5秒');
 });
 
 test('selects cards, cancels confirmation and deletes only selected downloads offline', async ({ page }, info) => {
@@ -130,4 +141,87 @@ test('keeps selection and wraps translated controls when switching languages off
     await expect(card(page).getByRole('checkbox')).toBeChecked();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+});
+
+test('retains completion time and total elapsed duration through pauses, reloads and repeated saves',
+  async ({ page }, info) => {
+    const startedAt = Date.UTC(2026, 9, 25, 6, 0, 0);
+    const completedAt = startedAt + 65_000;
+    await page.clock.setFixedTime(startedAt);
+    await page.evaluate(() => { window.downloadFixture.delay = 1000; });
+    await enqueue(page);
+    await expect(card(page)).toContainText('下载中');
+    await expect(card(page).locator('.download-completion')).toHaveCount(0);
+    await card(page).getByRole('button', { name: '暂停', exact: true }).click();
+    await expect(card(page)).toContainText('已暂停');
+    await page.clock.setFixedTime(completedAt);
+    await card(page).getByRole('button', { name: '继续下载', exact: true }).click();
+    await expect(card(page)).toContainText('文件已就绪');
+    const details = card(page).locator('.download-completion');
+    await expect(details).toContainText('完成时间：');
+    await expect(details).toContainText('总用时：1分5秒');
+    const saved = await page.evaluate(async () => (await window.downloadFixture.saved())[0]);
+    expect(saved).toMatchObject({ createdAt: startedAt, completedAt });
+    const before = await details.locator('p').allTextContents();
+    await page.reload();
+    await expect(details.locator('p')).toHaveText(before);
+    await page.evaluate(() => Object.defineProperty(window, 'showSaveFilePicker', {
+      configurable: true, value: async () => ({ createWritable: async () => ({
+        write: async () => {}, close: async () => {}, abort: async () => {},
+      }) }),
+    }));
+    for (const elapsed of [60_000, 120_000]) {
+      await page.clock.setFixedTime(completedAt + elapsed);
+      await card(page).getByRole('button', { name: '保存到设备', exact: true }).click();
+      await expect(card(page)).toContainText('已完成');
+      await expect(card(page)).not.toContainText('已保存到设备');
+      expect((await page.evaluate(async () => (await window.downloadFixture.saved())[0])).completedAt).toBe(completedAt);
+      await expect(details.locator('p')).toHaveText(before);
+    }
+    await page.screenshot({ path: info.outputPath('download-completion.png'), fullPage: true });
+    await page.evaluate(() => document.documentElement.style.setProperty('--app-font-scale', '1.3'));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath('download-completion-large-font.png'), fullPage: true });
+  });
+
+test('keeps save warnings visible alongside download completion details', async ({ page }) => {
+  await enqueue(page);
+  await expect(card(page)).toContainText('文件已就绪');
+  const download = page.waitForEvent('download');
+  await card(page).getByRole('button', { name: '保存到设备', exact: true }).click();
+  await download;
+  await expect(card(page)).toContainText('已开始保存，请在浏览器下载列表中确认。');
+  await expect(card(page).locator('.download-completion')).toContainText('完成时间：');
+  await page.evaluate(() => Object.defineProperty(window, 'showSaveFilePicker', {
+    configurable: true, value: async () => { throw new DOMException('Denied', 'NotAllowedError'); },
+  }));
+  await card(page).getByRole('button', { name: '保存到设备', exact: true }).click();
+  await expect(card(page)).toContainText('保存未完成，文件仍已就绪，可再次保存。');
+  await expect(card(page).locator('.download-completion')).toContainText('总用时：');
+});
+
+test('shows unknown timing for old completed records without inventing timestamps', async ({ page }) => {
+  await enqueue(page);
+  await expect(card(page)).toContainText('文件已就绪');
+  await page.evaluate(async () => {
+    const [task] = await window.downloadFixture.saved();
+    delete task.completedAt;
+    task.status = 'completed';
+    task.message = '已保存到设备';
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('codex-switch.web.downloads.v1', 2);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const transaction = request.result.transaction('tasks', 'readwrite');
+        transaction.objectStore('tasks').put(task);
+        transaction.oncomplete = () => { request.result.close(); resolve(); };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+  });
+  await page.reload();
+  await expect(card(page).locator('.download-completion')).toContainText('完成时间：未记录');
+  await expect(card(page).locator('.download-completion')).toContainText('总用时：未记录');
+  await expect(card(page)).not.toContainText('已保存到设备');
+  expect((await page.evaluate(async () => (await window.downloadFixture.saved())[0])).completedAt).toBeUndefined();
 });
