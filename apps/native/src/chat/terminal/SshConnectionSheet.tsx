@@ -1,5 +1,6 @@
+import { SheetGestureScrollView as ScrollView } from '../../components/SheetScrollGesture';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { SshApi } from '../../../../../shared/terminal/ssh';
 import type { TerminalInfo } from '../../../../../shared/terminal/types';
@@ -27,7 +28,7 @@ export function SshConnectionSheet({ api, cwd, connected, dispose, close }: {
   };
   useEffect(() => { if (finished) setValues(newSshValues()); }, [finished]);
   return <BottomSheet visible title={t('client.ssh.connection')} onClose={close} dismissible={!busy}
-    tall maxWidth={400} dragFromHeaderOnly actions={finished ? [] : [{
+    tall maxWidth={400} actions={finished ? [] : [{
       label: t(connection.trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connect'),
       onPress: () => connection.submit(values), loading: busy,
       disabled: disabled || !connection.canConnect(values),

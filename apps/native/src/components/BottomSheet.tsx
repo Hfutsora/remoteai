@@ -2,13 +2,12 @@ import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
 import { textMetrics } from '../theme/text';
 import { t, useLanguage } from '../i18n';
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Animated,
   KeyboardAvoidingView,
   Modal,
-  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -17,10 +16,11 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SHEET_HORIZONTAL_PADDING } from './SheetScrollView';
+import { useBottomSheetDrag } from './useBottomSheetDrag';
+import { SheetScrollGestureContext } from './SheetScrollGesture';
+import { SheetLayerContext, useSheetLayers } from './useSheetLayers';
 
 const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView);
-const DRAG_DISMISS_DISTANCE = 80;
-const DRAG_DISMISS_VELOCITY = 0.9;
 const SHEET_ELEVATION = 24;
 
 export interface BottomSheetAction {
@@ -46,11 +46,11 @@ interface BottomSheetProps {
   actions?: BottomSheetAction[];
   dismissible?: boolean;
   tall?: boolean;
-  dragFromHeaderOnly?: boolean;
   fullWidthContent?: boolean;
   horizontalPadding?: number;
   maxWidth?: number;
   compactHeader?: boolean;
+  hideHeader?: boolean;
 }
 
 export function BottomSheet({
@@ -67,11 +67,11 @@ export function BottomSheet({
   actions = [],
   dismissible = true,
   tall = false,
-  dragFromHeaderOnly = false,
   fullWidthContent = false,
   horizontalPadding = SHEET_HORIZONTAL_PADDING,
   maxWidth,
   compactHeader = false,
+  hideHeader = false,
 }: BottomSheetProps) {
   const resolveThemeColor = useThemeColor();
   const styles = useStyles();
@@ -81,53 +81,14 @@ export function BottomSheet({
     importantForAccessibility: overlay ? 'no-hide-descendants' as const : 'auto' as const,
   };
   useLanguage();
-  const translateY = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!visible) return;
-    translateY.stopAnimation();
-    translateY.setValue(0);
-  }, [translateY, visible]);
+  const layer = useSheetLayers(visible);
+  const { translateY, scrollGesture, panHandlers, handleHandlers } = useBottomSheetDrag({
+    visible, enabled: dismissible && !overlay && !layer.covered, onClose,
+  });
 
   const close = () => {
     if (dismissible) onClose();
   };
-
-  const resetDrag = useCallback(() => {
-    Animated.spring(translateY, {
-      toValue: 0,
-      damping: 22,
-      stiffness: 240,
-      mass: 0.8,
-      useNativeDriver: true,
-    }).start();
-  }, [translateY]);
-
-  const dragResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_event, gesture) => (
-      dismissible
-      && gesture.dy > 6
-      && Math.abs(gesture.dy) > Math.abs(gesture.dx)
-    ),
-    onPanResponderGrant: () => {
-      translateY.stopAnimation();
-    },
-    onPanResponderMove: (_event, gesture) => {
-      translateY.setValue(Math.max(0, gesture.dy));
-    },
-    onPanResponderRelease: (_event, gesture) => {
-      const draggedFarEnough = gesture.dy >= DRAG_DISMISS_DISTANCE;
-      const flickedDown = gesture.dy > 12 && gesture.vy >= DRAG_DISMISS_VELOCITY;
-      if (draggedFarEnough || flickedDown) {
-        // Closing may open a confirmation instead; restore the sheet if it remains visible.
-        resetDrag();
-        onClose();
-        return;
-      }
-      resetDrag();
-    },
-    onPanResponderTerminate: resetDrag,
-  }), [dismissible, onClose, resetDrag, translateY]);
 
   const headingTitle = <Text style={[styles.title, compactHeader && styles.compactTitle,
     titleAction ? styles.actionTitle : undefined]}
@@ -157,12 +118,18 @@ export function BottomSheet({
           tall && styles.sheetTall,
           { transform: [{ translateY }] },
         ]}
-        {...(!dragFromHeaderOnly ? dragResponder.panHandlers : {})}
       >
-        <View style={insetStyle} {...sheetAccessibility}
-          {...(dragFromHeaderOnly ? dragResponder.panHandlers : {})}>
-          <View style={[styles.handle, compactHeader && styles.compactHandle]} />
-          <View style={[styles.header, compactHeader && styles.compactHeader]}>
+        <SheetLayerContext.Provider value={layer.register}>
+        <SheetScrollGestureContext.Provider value={scrollGesture}>
+        <View collapsable={false} style={styles.gestureSurface} {...panHandlers}>
+        <View style={insetStyle} {...sheetAccessibility}>
+          <View testID="bottom-sheet-handle" collapsable={false} {...handleHandlers}
+            style={[styles.handleArea, compactHeader && styles.compactHandle]}
+            accessible={dismissible} accessibilityRole="button"
+            accessibilityLabel={t('client.sheet.dragToClose')} onAccessibilityTap={close}>
+            <View pointerEvents="none" style={styles.handle} />
+          </View>
+          {!hideHeader && <View style={[styles.header, compactHeader && styles.compactHeader]}>
             {onBack && <Pressable accessibilityRole="button" accessibilityLabel={t("client.app.goBackOneLevel")}
               hitSlop={8} onPress={onBack} style={styles.closeButton}>
               <Text style={styles.closeText}>‹</Text>
@@ -182,9 +149,10 @@ export function BottomSheet({
             >
               <Text style={styles.closeText}>×</Text>
             </Pressable> : null}
-          </View>
+          </View>}
         </View>
         {children ? <View {...sheetAccessibility} style={[styles.content, compactHeader && styles.compactContent,
+          hideHeader && styles.headerlessContent,
           !fullWidthContent && insetStyle]}>{children}</View> : null}
         {actions.length ? <View {...sheetAccessibility} style={[styles.actions, insetStyle]}>
           {actions.map((action) => {
@@ -212,6 +180,9 @@ export function BottomSheet({
             </Pressable>;
           })}
         </View> : null}
+        </View>
+        </SheetScrollGestureContext.Provider>
+        </SheetLayerContext.Provider>
       </AnimatedSafeAreaView>
       {overlay ? <View pointerEvents="box-none" style={styles.overlay}>{overlay}</View> : null}
     </KeyboardAvoidingView>
@@ -228,7 +199,6 @@ const useStyles = createThemedStyles((color) => ({
     backgroundColor: color('#ffffff', 'surface'),
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: 9,
     shadowColor: '#06140f',
     shadowOpacity: 0.24,
     shadowRadius: 24,
@@ -236,7 +206,9 @@ const useStyles = createThemedStyles((color) => ({
     elevation: SHEET_ELEVATION,
   },
   sheetTall: { maxHeight: '92%' },
-  handle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', backgroundColor: color('#d5dfd9', 'elevated'), marginBottom: 17 },
+  gestureSurface: { flexShrink: 1 },
+  handleArea: { minHeight: 32, paddingTop: 9, paddingBottom: 17, alignItems: 'center' },
+  handle: { width: 44, height: 5, borderRadius: 3, backgroundColor: color('#d5dfd9', 'elevated') },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   heading: { flex: 1, minWidth: 0 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -246,12 +218,13 @@ const useStyles = createThemedStyles((color) => ({
   closeButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: color('#eef3f0', 'canvas'), alignItems: 'center', justifyContent: 'center' },
   closeText: { color: color('#52645b', 'ink'), fontSize: 25, lineHeight: 28, fontWeight: '400', marginTop: -2 },
   content: { marginTop: 19, flexShrink: 1 },
-  compactHandle: { marginBottom: 8 },
+  compactHandle: { paddingBottom: 8 },
   compactHeader: { alignItems: 'center' },
   compactHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   compactTitle: { ...textMetrics(18, 28), fontWeight: '700' },
   compactSubtitle: { ...textMetrics(11, 18), flexShrink: 1, marginTop: 0 },
   compactContent: { marginTop: 8 },
+  headerlessContent: { marginTop: 0 },
   actions: { flexDirection: 'row', gap: 10, paddingTop: 16, paddingBottom: 10 },
   action: {
     flex: 1, minHeight: 48, borderRadius: 14, backgroundColor: color('#eef3f0', 'canvas'),

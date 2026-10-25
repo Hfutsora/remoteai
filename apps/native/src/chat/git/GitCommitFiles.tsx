@@ -1,7 +1,8 @@
+import { SheetGestureScrollView as ScrollView } from '../../components/SheetScrollGesture';
 import { displayError } from '../../i18n/index';
 import { useThemeColor } from '../../theme/store';
 import { t, useLanguage } from '../../i18n';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { GitCommit, GitCommitFile } from '../../../../../shared/remote-chat/gitTypes';
 import type { CommitFilesState } from '../../../../../shared/remote-chat/useGitCommitFiles';

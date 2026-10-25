@@ -18,6 +18,7 @@ import type { ContextSettingsApi } from '../../../../shared/remote-chat/contextS
 import { ChatContextSettings } from './ChatContextSettings';
 import { ChatProfileMenu, type ChatConnectionProps } from './ChatProfileMenu';
 import { ModelRefreshButton } from './ModelRefreshButton';
+import { ChatSettingSegments } from './ChatSettingSegments';
 
 interface Props {
   connection: ChatConnectionProps;
@@ -47,19 +48,25 @@ export function ChatSettings({ models, selection, saving, ready, error, updateSe
   const nestedOpen = field !== null || contextOpen;
   useEffect(() => { setContextOpen(false); }, [threadId, ready]);
   const notice = settingsNotice({ saving, ready, error });
+  const selectInline = (field: SettingField, value: string) => {
+    if (value !== selection[field] || error) void updateSettings({ [field]: value });
+  };
   const choose = async (value: string) => {
     if (!field) return;
     if (value !== selection[field] || error) await updateSettings({ [field]: value });
     setField((current) => current === field ? null : current);
   };
-  return <BottomSheet visible fullWidthContent title={t("client.chat.chatSettings.1e06eb")} onClose={onClose}>
+  return <BottomSheet visible fullWidthContent hideHeader title={t("client.chat.chatSettings.1e06eb")} onClose={onClose}>
     <SheetScrollView contentContainerStyle={[styles.settings, menuStyles.content]}
       accessibilityElementsHidden={nestedOpen} importantForAccessibility={nestedOpen ? 'no-hide-descendants' : 'auto'}>
       <ChatProfileMenu {...connection} variant="settings" ready={ready} active={usageActive} />
-      {visibleSettingsFields(selection).map((entry) => <Pressable key={entry.field} accessibilityRole="button"
+      {visibleSettingsFields(selection).map((entry) => entry.field !== 'model'
+        ? <ChatSettingSegments key={entry.field} label={displayText(entry.label)} value={selection[entry.field] ?? ''}
+          options={settingOptions(entry.field, models, selection)} onChange={value => selectInline(entry.field, value)} />
+        : <Pressable key={entry.field} accessibilityRole="button"
         accessibilityLabel={t("client.chat.set", { value1: displayText(entry.label) })}
         onPress={() => setField(entry.field)} style={menuStyles.entry}>
-        <Text style={[styles.title, { flexShrink: 1 }]}>{displayText(entry.label)}</Text>
+        <Text style={menuStyles.title}>{displayText(entry.label)}</Text>
         <Text numberOfLines={1} style={menuStyles.value}>
           {settingValue(entry.field, models, selection, displayText)}</Text>
         <Text style={menuStyles.arrow}>›</Text>
@@ -98,6 +105,7 @@ export function ChatSettings({ models, selection, saving, ready, error, updateSe
 const useMenuStyles = createThemedStyles((color) => ({
   content: { paddingBottom: 18 },
   options: { maxWidth: SHEET_READABLE_WIDTH },
+  title: { flexShrink: 1, ...textMetrics(16, 24), color: color(palette.ink, 'ink'), fontWeight: '700' },
   entry: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, padding: 14,
     borderWidth: 1, borderColor: color(palette.border, 'border'), borderRadius: 12 },
   value: { flex: 1, textAlign: 'right', color: color(palette.green, 'accent'), ...textMetrics(13, 20) },

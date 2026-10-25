@@ -10,7 +10,6 @@
   overflow-wrap: anywhere;
 }
 .chat-usage-tokens { color: var(--app-accent, #0b8065); }
-.chat-usage-context { flex-basis: 100%; }
 .chat-usage-thread, .chat-usage-performance { flex-basis: 100%; }
 .chat-usage-quota-line { flex-basis: 100%; min-width: 0; line-height: 20px; overflow-wrap: anywhere; }
 .chat-conversation-tsr, .chat-conversation-tps, .chat-conversation-ttft { white-space: nowrap; }

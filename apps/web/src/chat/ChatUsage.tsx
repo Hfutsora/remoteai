@@ -1,18 +1,17 @@
 import { displayError, displayText } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Settings } from 'lucide-react';
 import { Tooltip } from 'antd';
 import { useChatUsage } from '../../../../shared/remote-chat/client/useChatUsage';
 import { formatCost, formatThreadTokens, formatTokens, usageTrailing,
   type ReadUsage } from '../../../../shared/remote-chat/usage';
 import './chatUsage.css';
-import { contextUsageLabel } from './formatters';
 import type { ThreadTokenUsage } from './types';
 import { formatConversationCost, type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
 import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 import { ConversationPerformanceValues } from './ConversationPerformance';
 import { QuotaProgress } from '../../../../shared/chat/QuotaProgress';
+import { ChatContextProgress } from './ChatContextProgress';
 
 export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, inline = false, contextControl,
   quotaProgress = false,
@@ -35,9 +34,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
   const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   if (inline) return <InlineUsage usage={usage} notice={notice} contextControl={contextControl} />;
   return <div className="chat-usage" role="group" aria-label={t("client.chat.todaySUsage")}>
-    <span className="chat-usage-context chat-row"><span className="chat-grow">{contextUsageLabel(tokenUsage)}</span>
-      {onContextSettings && <button type="button" className="chat-back" aria-label={t("client.chat.conversationContext")}
-        disabled={!ready || !active} onClick={onContextSettings}><Settings size={18} /></button>}</span>
+    <ChatContextProgress usage={tokenUsage} onSettings={onContextSettings} disabled={!ready || !active} />
     {usage && trailing && <QuotaLine trailing={trailing}
       remaining={quotaProgress ? usage.primaryRemainingPercent ?? undefined : undefined} />}
     <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
@@ -46,7 +43,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
     </span>
     {usage ? <>
       <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
-      <span>{t("client.chat.estimated")} <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
+      <span>· <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
     </> : <span>{notice}</span>}
     {readConversationMetrics && <span className="chat-usage-performance">
       <ConversationPerformanceValues metrics={metrics} />

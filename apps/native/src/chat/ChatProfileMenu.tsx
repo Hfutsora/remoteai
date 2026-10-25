@@ -81,7 +81,7 @@ export function ChatProfileMenu(props: Props) {
     <BottomSheet fullWidthContent visible={panel !== null && panel !== 'update' && active}
       title={panel === 'accounts' ? t("client.chat.switchAccount") : t("client.chat.accountAndComputer")}
       subtitle={panel === 'accounts' ? t("client.chat.useTheSameChatAccountAsYourComputer") : undefined}
-      onClose={() => setPanel(null)} dismissible={!accounts.saving} dragFromHeaderOnly
+      onClose={() => setPanel(null)} dismissible={!accounts.saving}
       onBack={panel === 'accounts' && !accounts.saving ? () => setPanel(settings ? null : 'profile') : undefined}>
       {panel === 'profile' && props.variant !== 'settings'
         ? <SheetInset style={[pickerStyles.panel, pickerStyles.readable]}>

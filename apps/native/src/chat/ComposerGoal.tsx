@@ -41,7 +41,7 @@ export function ComposerGoal({ goal, draft, disabled, remove }: Props) {
         <Feather name="x" size={16} color={color(palette.ink, 'ink')} />
       </Pressable>
     </View>
-    {open && <BottomSheet visible title={title} maxWidth={400} dragFromHeaderOnly
+    {open && <BottomSheet visible title={title} maxWidth={400}
       onClose={() => setOpen(false)}>
       <SheetScrollView contentContainerStyle={styles.details}>
         {goal && <Text style={styles.label}>{displayText(GOAL_STATUS[goal.status])}</Text>}

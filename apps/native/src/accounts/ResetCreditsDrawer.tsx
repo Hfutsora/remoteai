@@ -1,8 +1,9 @@
+import { SheetGestureScrollView as ScrollView } from '../components/SheetScrollGesture';
 import { createThemedStyles } from '../theme/styles';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { consumeResetCredit } from '../api/client';
 import { BottomSheet } from '../components/BottomSheet';
 import { Toast } from '../components/AppToast';
@@ -65,7 +66,6 @@ export function ResetCreditsDrawer({ account, visible, privateMode, credits: cre
     onClose={onClose}
     onBack={onClose}
     dismissible={!consuming}
-    dragFromHeaderOnly
     actions={[
       { label: t("client.projectBrowser.close"), onPress: onClose, disabled: consuming },
       {

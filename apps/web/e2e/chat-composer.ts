@@ -1,5 +1,6 @@
 import { expect, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
 import { connect, operationCount, screenshot, state, fixtureUrl } from './chat-helpers';
+import { closeChatSettings } from './chat-settings';
 
 export async function composerLayout(page: Page) {
   await connect(page);
@@ -42,8 +43,8 @@ export async function composerLayout(page: Page) {
     await expect(page.getByRole('slider', { name: '推理强度' })).toBeVisible();
     await page.keyboard.press('Escape');
   } else {
-    await expect(page.getByRole('button', { name: '设置推理强度' })).toBeVisible();
-    await page.getByRole('button', { name: '关闭', exact: true }).last().click();
+    await expect(page.getByRole('radiogroup', { name: '推理强度' })).toBeVisible();
+    await closeChatSettings(page);
   }
   await page.evaluate(() => {
     Reflect.deleteProperty(window.visualViewport!, 'height');

@@ -14,7 +14,7 @@ export function ChatProjectPicker(props: ProjectPickerProps) {
   const color = useThemeColor();
   useLanguage();
   const { result, loading, error, browse, retry } = useProjectDirectories(props);
-  return <BottomSheet fullWidthContent visible title={props.title ?? t("client.chat.chooseProject")} onClose={props.close} dragFromHeaderOnly
+  return <BottomSheet fullWidthContent visible title={props.title ?? t("client.chat.chooseProject")} onClose={props.close}
     actions={[{ label: t("client.chat.chooseThisFolder"), tone: 'primary', disabled: loading || !result?.directory,
       onPress: () => { if (result?.directory) props.choose(directoryProject(result.directory)); } }]}>
     <View style={pickerStyles.root}>

@@ -1,4 +1,5 @@
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { SheetGestureScrollView as ScrollView } from '../../components/SheetScrollGesture';
+import { ActivityIndicator, Text, View } from 'react-native';
 import type { SshApi } from '../../../../../shared/terminal/ssh';
 import { sshLabel, type SshProfile } from '../../../../../shared/terminal/sshProfiles';
 import type { TerminalInfo } from '../../../../../shared/terminal/types';
@@ -19,7 +20,7 @@ export function SshQuickConnectSheet({ api, profile, cwd, connected, dispose, cl
   const { busy, loading, finished, error, trust, values, needsCredentials, setCredential } = connection;
   const disabled = busy || loading || finished;
   return <BottomSheet visible title={t('client.ssh.connection')} onClose={close} dismissible={!busy}
-    maxWidth={400} dragFromHeaderOnly actions={finished ? [] : [{
+    maxWidth={400} actions={finished ? [] : [{
       label: t(trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connectAction'),
       onPress: connection.connect, loading: busy, disabled: disabled || (needsCredentials && !validSshValues(values)),
     }]}>

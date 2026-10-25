@@ -20,7 +20,7 @@ export function SshFileEditorSheet({ editor, connected }: {
     else editor.close();
   };
   const save = async () => { setSaved(await editor.save()); };
-  return <BottomSheet visible tall compactHeader dragFromHeaderOnly title={file.entry.name}
+  return <BottomSheet visible tall compactHeader title={file.entry.name}
     subtitle={file.entry.path} onBack={close} onClose={close} dismissible={!editor.busy}
     actions={[{ label: t('client.ssh.closeFile'), disabled: editor.busy, onPress: close },
       { label: t('client.ssh.saveFile'), tone: 'primary', loading: editor.busy,

@@ -62,7 +62,7 @@ export function ChatDiff({ files, copy, onComment }: {
       </Pressable>)}
     </View>)}
     {selected && <BottomSheet fullWidthContent visible tall title={t("client.mobile.fileDiff")} subtitle={selected.path}
-      onClose={() => setSelectedKey(null)} onBack={() => setSelectedKey(null)} dragFromHeaderOnly>
+      onClose={() => setSelectedKey(null)} onBack={() => setSelectedKey(null)}>
       <ChatDiffContent key={selectedKey} file={selected} onComment={onComment ? line => {
         setSelectedKey(null); onComment(selected, line);
       } : undefined} />
