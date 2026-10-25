@@ -89,7 +89,18 @@ async function checkSelection(scale) {
   await screenshot(`default-${scale}`);
   await tap('安装说明.txt');
   await find('批量删除（1）');
+  await tap('全选');
+  await find('批量删除（3）');
+  await screenshot(`all-selected-${scale}`);
+  await tap('取消全选');
+  assert.equal((await find('批量删除')).enabled, 'false');
+  await tap('全选');
   await tap('安装说明.txt');
+  await find('全选');
+  await find('批量删除（2）');
+  await tap('全选');
+  await find('批量删除（3）');
+  await tap('取消全选');
   assert.equal((await find('批量删除')).enabled, 'false');
   await tap('选择下载：安装说明.txt');
   await tap('选择下载：项目资料.zip');

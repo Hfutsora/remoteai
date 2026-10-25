@@ -78,3 +78,39 @@ it('clears selections when the account, filter or available tasks change', async
   await render({ owner: 'other', filter: 'paused' });
   expect(current.selected.size).toBe(0);
 });
+
+it('selects every visible local and remote task, and clears a complete selection', async () => {
+  await act(async () => current.toggle('local'));
+  expect(current.allSelected).toBe(false);
+  await act(async () => current.toggleAll());
+  expect([...current.selected].sort()).toEqual(['local', 'remote']);
+  expect(current.allSelected).toBe(true);
+  await act(async () => current.toggleAll());
+  expect(current.selected.size).toBe(0);
+  expect(current.allSelected).toBe(false);
+  await render({ filter: 'ready' });
+  await act(async () => current.toggleAll());
+  expect(current.selected.size).toBe(0);
+  expect(current.allSelected).toBe(false);
+  mocks.tasks = mocks.tasks.map(task => task.id === 'local' ? { ...task, status: 'ready' } : task);
+  await render({ filter: 'ready' });
+  await act(async () => current.toggleAll());
+  expect([...current.selected]).toEqual(['local']);
+  expect(current.allSelected).toBe(true);
+});
+
+it('does not auto-select new tasks and updates all-selected after individual changes', async () => {
+  await act(async () => current.toggleAll());
+  mocks.tasks = [...mocks.tasks, { ...mocks.tasks[0], id: 'new' }];
+  await render();
+  expect(current.selected.has('new')).toBe(false);
+  expect(current.allSelected).toBe(false);
+  await act(async () => current.toggleAll());
+  expect(current.selected.size).toBe(3);
+  expect(current.allSelected).toBe(true);
+  await act(async () => current.toggle('new'));
+  expect(current.allSelected).toBe(false);
+  mocks.tasks = mocks.tasks.filter(task => task.id !== 'new');
+  await render();
+  expect(current.allSelected).toBe(true);
+});

@@ -6,7 +6,7 @@ import { Modal, Segmented } from 'antd';
 import { DownloadCard } from '../../../../web/src/downloads/DownloadCard';
 import { downloadManager } from '../../../../web/src/downloads/manager';
 import { useDownloadTasks } from '../../../../web/src/downloads/useDownloadTasks';
-import { DownloadBatchDelete } from '../../../../web/src/downloads/DownloadBatchDelete';
+import { DownloadBatchActions } from '../../../../web/src/downloads/DownloadBatchActions';
 import { useDownloadSelection } from '../../../../../shared/downloads/useDownloadSelection';
 import { authenticatedDownloadOwner } from '../../downloads/useDesktopDownloads';
 import { openDesktopDownload } from '../../downloads/openDownload';
@@ -40,7 +40,7 @@ export function DownloadsPage({ auth }: { auth: CloudAuthState }) {
   const [filter, setFilter] = useState<Filter>('all');
   const ready = tasks.filter(task => READY_STATUSES.has(task.status)).length;
   const visible = tasks.filter(task => filter === 'all' || READY_STATUSES.has(task.status) === (filter === 'ready'));
-  const { selected, toggle } = useDownloadSelection(visible, `${owner}:${filter}`);
+  const { selected, toggle, allSelected, toggleAll } = useDownloadSelection(visible, `${owner}:${filter}`);
   return <section className={styles.page} aria-label={uiText("client.downloads.downloads")}>
     <header className={`topbar ${styles.header}`} data-tauri-drag-region>
       <div><span className="eyebrow">DOWNLOADS</span><h1>{uiText("client.downloads.downloads")}</h1></div>
@@ -52,7 +52,8 @@ export function DownloadsPage({ auth }: { auth: CloudAuthState }) {
         { value: 'active', label: `${uiText("client.downloads.incomplete")} · ${tasks.length - ready}` },
         { value: 'ready', label: `${uiText("client.downloads.ready")} · ${ready}` },
       ]} />
-        <DownloadBatchDelete count={selected.size} busy={!!busy} text={displayText}
+        <DownloadBatchActions count={selected.size} total={visible.length} allSelected={allSelected}
+          busy={!!busy} text={displayText} toggleAll={toggleAll}
           remove={() => { void removeTasks([...selected]); }} />
         <p>{uiText("client.downloads.openOrSaveFilesWhenReadyInterruptedDownloadsRetryAutomatically")}</p>
       </div>

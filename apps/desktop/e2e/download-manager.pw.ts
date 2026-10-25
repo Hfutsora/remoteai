@@ -167,6 +167,12 @@ test('desktop selects download cards and batch deletes with one confirmation', a
   await page.getByRole('navigation').getByRole('button', { name: '下载管理', exact: true }).click();
   const batch = page.getByRole('button', { name: /^批量删除/ });
   await expect(batch).toBeDisabled();
+  await page.getByRole('button', { name: '全选', exact: true }).click();
+  await expect(batch).toHaveText('批量删除（3）');
+  await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(3);
+  await page.screenshot({ path: '../../.codex-tmp/desktop-download-select-all.png', fullPage: true });
+  await page.getByRole('button', { name: '取消全选', exact: true }).click();
+  await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(0);
   const office = page.getByRole('article', { name: 'office.msi' });
   const home = page.getByRole('article', { name: 'home.msi' });
   await office.locator('strong').click();

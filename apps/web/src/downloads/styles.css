@@ -15,11 +15,14 @@
   accent-color: var(--app-accent, #14806f); cursor: pointer; }
 .download-selection:focus-visible { outline: 2px solid var(--app-accent, #14806f); outline-offset: 3px; }
 .download-section-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 10px; }
-.download-section-heading h3 { flex: 1; margin: 0; line-height: 1.6; }
+.download-section-heading h3 { flex-grow: 1; margin: 0; line-height: 1.6; }
 .download-section-heading small { color: var(--app-muted, #74847b); }
-.download-batch-delete { max-width: 100%; font-size: 13px; line-height: 1.6; }
-.download-batch-delete svg { flex-shrink: 0; }
-.download-batch-delete:disabled { opacity: .45; cursor: default; }
+.download-batch-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; }
+.download-text-action { min-height: 44px; max-width: 100%; padding: 8px 4px; border: 0; background: transparent;
+  color: var(--app-accent, #14806f); font: inherit; font-size: 13px; line-height: 1.6; cursor: pointer;
+  overflow-wrap: anywhere; }
+.download-text-action:disabled { opacity: .45; cursor: default; }
+.download-text-action:focus-visible { outline: 2px solid var(--app-accent, #14806f); outline-offset: 2px; }
 .download-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .download-sources button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px;
   text-align: left; color: var(--app-accent, #14806f); font: inherit; cursor: pointer; }

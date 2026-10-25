@@ -20,7 +20,7 @@ export function DownloadManagerPage({ session, onBack }: { session: AuthSession;
   const state = useDownloadTasks(session);
   const [view, setView] = useState<'tasks' | 'project' | 'computer'>('tasks');
   const { tasks, connection, busy, deleting, error, run, setDeleting, removeTasks, owner } = state;
-  const { selected, toggle } = useDownloadSelection(tasks, owner);
+  const { selected, toggle, allSelected, toggleAll } = useDownloadSelection(tasks, owner);
   const browsing = view !== 'tasks' && !!connection;
   useEffect(() => {
     if (browsing) return;
@@ -40,6 +40,7 @@ export function DownloadManagerPage({ session, onBack }: { session: AuthSession;
         <DownloadSources connection={connection} browse={setView} />
         {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
         <DownloadTaskHeading count={tasks.length} selected={selected.size} busy={!!busy}
+          allSelected={allSelected} toggleAll={toggleAll}
           remove={() => setDeleting(tasks.filter(task => selected.has(task.id)))} />
       </>}
       renderItem={({ item }) => <DownloadCard task={item} busy={!!busy}

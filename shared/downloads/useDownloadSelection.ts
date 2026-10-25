@@ -23,5 +23,12 @@ export function useDownloadSelection(tasks: readonly { id: string }[], scope: st
       return { scope, ids };
     });
   };
-  return { selected, toggle };
+  const allSelected = available.size > 0 && selected.size === available.size;
+  const toggleAll = () => {
+    setSelection(previous => {
+      const hasAll = previous.scope === scope && [...available].every(id => previous.ids.has(id));
+      return { scope, ids: hasAll ? new Set<string>() : new Set(available) };
+    });
+  };
+  return { selected, toggle, allSelected, toggleAll };
 }

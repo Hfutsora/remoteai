@@ -101,6 +101,12 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await expect(first).toContainText('文件已就绪');
   await first.locator('strong').click();
   await expect(first.getByRole('checkbox')).toBeChecked();
+  await page.getByRole('button', { name: '全选', exact: true }).click();
+  await expect(batch).toHaveText('批量删除（3）');
+  await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(3);
+  await page.getByRole('button', { name: '取消全选', exact: true }).click();
+  await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(0);
+  await first.locator('strong').click();
   await first.locator('strong').click();
   await expect(batch).toBeDisabled();
   await first.getByRole('checkbox').focus();
@@ -124,6 +130,11 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await page.reload();
   await expect(page.getByRole('article')).toHaveCount(1);
   await expect(page.getByRole('article')).toHaveAttribute('aria-label', 'empty.txt');
+  await page.getByRole('button', { name: '全选', exact: true }).click();
+  await batch.click();
+  await page.getByRole('button', { name: '删除', exact: true }).last().click();
+  await expect(page.getByRole('article')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '全选', exact: true })).toBeDisabled();
 });
 
 test('keeps selection and wraps translated controls when switching languages offline', async ({ page }) => {
@@ -132,12 +143,18 @@ test('keeps selection and wraps translated controls when switching languages off
   await card(page).locator('strong').click();
   await page.context().setOffline(true);
   const cases = [
-    ['en', 'Delete selected (1)'], ['ru', 'Удалить выбранное (1)'],
-    ['ja', '選択した項目を削除（1）'], ['zh', '批量删除（1）'],
+    ['en', 'Delete selected (1)', 'Select all', 'Deselect all'],
+    ['ru', 'Удалить выбранное (1)', 'Выбрать всё', 'Снять выделение'],
+    ['ja', '選択した項目を削除（1）', 'すべて選択', '選択を解除'],
+    ['zh', '批量删除（1）', '全选', '取消全选'],
   ] as const;
-  for (const [language, label] of cases) {
+  for (const [language, label, selectAll, deselectAll] of cases) {
     await page.evaluate(language => window.downloadFixture.setLanguage(language), language);
     await expect(page.getByRole('button', { name: label, exact: true })).toBeEnabled();
+    await expect(card(page).getByRole('checkbox')).toBeChecked();
+    await page.getByRole('button', { name: deselectAll, exact: true }).click();
+    await expect(card(page).getByRole('checkbox')).not.toBeChecked();
+    await page.getByRole('button', { name: selectAll, exact: true }).click();
     await expect(card(page).getByRole('checkbox')).toBeChecked();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
