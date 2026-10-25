@@ -56,8 +56,8 @@ export function DiscoveryBackButton({ onBack }: { onBack: () => void }) {
 
 const useStyles = createThemedStyles(color => ({
   page: { flex: 1, backgroundColor: color('#ededed', 'canvas') },
-  header: { minHeight: 56, alignItems: 'center', justifyContent: 'center', padding: 12 },
-  title: { ...textMetrics(20, 32), fontWeight: '600', color: color('#181818', 'ink') },
+  header: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 6 },
+  title: { ...textMetrics(18, 28), fontWeight: '600', color: color('#181818', 'ink') },
   content: { paddingBottom: 20 },
   row: {
     flexDirection: 'row', alignItems: 'center', minHeight: 58, gap: 18,
