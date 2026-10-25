@@ -25,6 +25,7 @@ import { currentRunningTurn } from '../../../../shared/chat/runningTurn';
 import { ChatImageContext } from './ChatImage';
 import { ChatImagePreviewProvider } from './ChatImagePreview';
 import { ChatFileProvider } from './ChatFilePreview';
+import { ChatAttachmentMetadata } from '../../../../shared/chat/RemoteAttachmentMetadata';
 import { ChatThreads } from './ChatThreads';
 import { ChatListButton } from './ChatListButton';
 import { ChatProfileMenu } from './ChatProfileMenu';
@@ -207,6 +208,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
       <ChatImagePreviewProvider key={state.selected?.id ?? 'new'} active={active}>
       <ChatFileProvider key={state.selected?.id ?? 'new'} threadId={state.selected?.id ?? null}
         active={active} ready={ready} load={controller.textPreview} videos={controller.videos} files={controller.files}>
+      <ChatAttachmentMetadata controller={controller} ready={ready} threadId={state.selected?.id ?? null}>
       <TaskReviewProvider controller={controller} state={state} active={active && foreground}>
       <ChatRetryProvider controller={controller} state={state}>
       <ChatMessages key={state.selected?.id ?? 'new'} thread={state.selected} offline={!ready}
@@ -215,6 +217,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
         processing={runningTurn && <ChatProcessing key={runningTurn.id} turn={runningTurn}
           processing={state.processing} active={active && ready && foreground} />} />
       </ChatRetryProvider></TaskReviewProvider>
+      </ChatAttachmentMetadata>
       </ChatFileProvider>
       </ChatImagePreviewProvider></ImageAiContext.Provider>
     </ChatImageContext.Provider>

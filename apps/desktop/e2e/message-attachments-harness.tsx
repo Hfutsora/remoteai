@@ -4,6 +4,7 @@ import { ConfigProvider, theme } from 'antd';
 import { UserMessage } from '../src/pages/codexGui/UserMessage';
 import { RemoteUserMessage } from '../src/pages/codexGui/remote/RemoteUserMessage';
 import { ChatMessage } from '../../web/src/chat/ChatMessage';
+import { useDesktopLayout } from '../../web/src/useDesktopLayout';
 import { ChatController } from '../../../shared/remote-chat/client/controller';
 import { initialChatState, type Item } from '../../../shared/remote-chat/client/types';
 import { setLanguage, useLanguage } from '../../web/src/i18n';
@@ -31,6 +32,7 @@ const controller = new ChatController(() => ({
 
 function Harness() {
   useLanguage();
+  const desktop = useDesktopLayout();
   const [item, setItem] = useState<Item>();
   const [dark, setDark] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentReference[]>([]);
@@ -45,7 +47,7 @@ function Harness() {
   const turn = { id: 'turn', status: 'completed', items: item ? [item] : [] };
   const thread = { id: 'thread', cwd: '', preview: '', updatedAt: 1, turns: [turn] };
   const state = { ...initialChatState(), ready: true, selected: thread };
-  const message = item && (mode === 'web' ? <ChatMessage item={item} desktop onOpen={() => {}} />
+  const message = item && (mode === 'web' ? <ChatMessage item={item} desktop={desktop} onOpen={() => {}} />
     : mode === 'remote' ? <RemoteUserMessage item={item} turn={turn} state={state} controller={controller} active />
       : <UserMessage item={item} onEdit={async () => true} />);
   return <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,

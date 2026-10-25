@@ -11,7 +11,7 @@ import { ChatActivityLabel } from './ChatActivityLabel';
 import { QuoteSourceContext } from './ChatQuotes';
 import { UserMessageText } from './UserMessageText';
 import { CopyTextButton } from './CopyTextButton';
-import { ChatMessageReferences } from './ChatMessageReferences';
+import { messageReferences } from '../../../../shared/chat/messageReferences';
 import { questionMessageText } from '../../../../shared/remote-chat/client/asyncQuestions';
 import { messageContent, messageLabel } from '../../../../shared/chat/messageDetails';
 import { itemImageSources } from '../../../../shared/chat/imageSources';
@@ -119,8 +119,7 @@ function MessageBody({ item, onOpen, running = false, process = false }: Message
   if (item.type === 'userMessage') return <View style={messageStyles.user}>
     <View
       style={[styles.userMessage, messageStyles.bubble, images.length > 0 && messageStyles.imageBubble]}>
-      <ChatMessageReferences item={item} />
-      {!!text && <UserMessageText text={text} compact={images.length > 0} />}
+      <UserMessageText text={text} references={messageReferences(item)} compact={images.length > 0} />
       {images.length > 0 && <View style={messageStyles.images}>
         {images.map((source, index) => <ChatImage key={index} source={source} sent />)}
       </View>}

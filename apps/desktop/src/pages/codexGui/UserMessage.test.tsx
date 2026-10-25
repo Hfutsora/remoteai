@@ -49,11 +49,10 @@ it.each(["C:\\images\\copied.jpg", "D:/截图.png"])(
       source: path, variant: "thumbnail" });
     expect(container.querySelector("img")?.getAttribute("src")).toBe(thumbnail);
     expect(container.textContent).toContain("看看这张图片");
+    expect(guiApi.request).toHaveBeenCalledTimes(1);
     await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="放大查看：图片附件 1"]')?.click());
     expect(container.querySelector("dialog")?.open).toBe(true);
-    expect(container.querySelector("dialog img")?.getAttribute("src")).toBe(thumbnail);
-    expect(guiApi.request).toHaveBeenCalledTimes(1);
-    await act(async () => container.querySelector<HTMLButtonElement>('.cs-image-original')!.click());
+    expect(guiApi.request).toHaveBeenCalledTimes(2);
     expect(guiApi.request).toHaveBeenLastCalledWith({ operation: "imagePreview", threadId: "task",
       source: path, variant: "original" });
     expect(container.querySelector("dialog img")?.getAttribute("src")).toBe(original);
