@@ -43,6 +43,8 @@
   .chat-message-content .chat-markdown > :is(p, ul, ol) { margin-block: 12px; }
   .chat-message-content .chat-markdown > :is(p, ul, ol):first-child { margin-top: 0; }
   .chat-message-content .chat-markdown > :is(p, ul, ol):last-child { margin-bottom: 0; }
+  .chat-message-content .chat-markdown > p:has(+ p) { margin-bottom: 6px; }
+  .chat-message-content .chat-markdown > p + p { margin-top: 6px; }
   .chat-message-content .chat-markdown li + li { margin-top: 4px; }
   .chat-message-content .chat-markdown li > p { margin-block: 12px; }
   .chat-message-content .chat-markdown li > p:first-child { margin-top: 0; }

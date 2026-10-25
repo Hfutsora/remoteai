@@ -138,8 +138,11 @@ export const ChatMarkdown = memo(function ChatMarkdown({
         copy={index === content.length - 1 ? copy : undefined} />;
       // The user bubble already supplies spacing around its outer paragraphs.
       const userParagraph = user && entry.node.token.type === 'paragraph_open';
+      const previous = content[index - 1];
+      const followsParagraph = entry.node.token.type === 'paragraph_open'
+        && previous?.type === 'block' && previous.node.token.type === 'paragraph_open';
       return <Block key={index} node={entry.node} context={childContext({ tone, copy, compact,
-        flushTop: userParagraph && index === 0,
+        flushTop: followsParagraph || (userParagraph && index === 0),
         flushBottom: userParagraph && index === content.length - 1 }, index, content.length)} />;
     }} /></View>;
 });
