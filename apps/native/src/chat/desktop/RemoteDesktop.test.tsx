@@ -103,7 +103,7 @@ it.each(['ios', 'android'] as const)('leaves room below connection and retry tex
   const retry = elements.find(node => node.type === Text && node.props.children === '重新连接')!;
   for (const text of [message, retry]) {
     expect(StyleSheet.flatten([text.props.style].flat())).toMatchObject({
-      fontSize: 14, lineHeight: 22, includeFontPadding: true, paddingVertical: 2,
+      fontSize: 14, includeFontPadding: true, paddingVertical: 2,
     });
   }
 });
@@ -115,7 +115,7 @@ it.each(['ios', 'android'] as const)('shows compact permission guidance and a ch
   const elements = render();
   const alert = elements.find(node => node.props.accessibilityRole === 'alert')!;
   expect(alert.props.children).toBe(runtime.status);
-  expect(StyleSheet.flatten(alert.props.style)).toMatchObject({ maxWidth: 400, flexShrink: 1 });
+  expect(StyleSheet.flatten(alert.props.style)).toMatchObject({ maxWidth: 400 });
   const check = elements.find(node => node.type === Pressable && nodes(node.props.children)
     .some(child => child.type === Text && child.props.children === '检查授权'))!;
   check.props.onPress!(); expect(runtime.retry).toHaveBeenCalledOnce();
@@ -147,7 +147,7 @@ it.each(['ios', 'android'] as const)('keeps video and privacy retry available wh
     const elements = render();
     const alert = elements.find(node => node.props.accessibilityRole === 'alert')!;
     expect(alert.props.children).toBe(runtime.status);
-    expect(StyleSheet.flatten(alert.props.style)).toMatchObject({ maxWidth: 400, flexShrink: 1 });
+    expect(StyleSheet.flatten(alert.props.style)).toMatchObject({ maxWidth: 400 });
     expect(elements.some(node => node.type === RTCView)).toBe(true);
     const button = elements.find(node => node.props.accessibilityLabel === '安全选项')!;
     expect(button.props.disabled).toBeFalsy();

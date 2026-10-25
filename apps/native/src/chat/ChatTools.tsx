@@ -1,4 +1,5 @@
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useRef, useState } from 'react';
@@ -97,5 +98,5 @@ const useMenuStyles = createThemedStyles((color) => ({
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44,
     borderRadius: 8, padding: 12 },
   pressed: { backgroundColor: color('#eef4f1', 'canvas') },
-  label: { color: color(palette.ink, 'ink'), fontSize: 14, lineHeight: 20, flexShrink: 1 },
+  label: { color: color(palette.ink, 'ink'), ...textMetrics(14, 20), flexShrink: 1 },
 }));
