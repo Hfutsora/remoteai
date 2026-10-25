@@ -5,6 +5,7 @@ import { historyDelta } from '../../../shared/remote-chat/historySync';
 import type { Thread } from '../src/chat/types';
 import { ChatThreads } from '../src/chat/ChatThreads';
 import { ChatSidebar } from '../src/chat/ChatSidebar';
+import { ChatThreadFilter } from '../src/chat/ChatThreadFilter';
 import '../src/styles.css';
 import '../src/chat/chat.css';
 
@@ -34,7 +35,8 @@ function Harness() {
   return <main className="chat-page" style={{ height: '100dvh' }}>
     <output data-testid="selected">{state.selected?.id ?? 'none'}</output>
     <button type="button" onClick={() => setOpen(true)}>打开列表</button>
-    <ChatSidebar desktop={window.innerWidth > 860} open={open} onClose={() => setOpen(false)}>
+    <ChatSidebar desktop={window.innerWidth > 860} open={open} onClose={() => setOpen(false)}
+      headingExtra={<ChatThreadFilter state={state} controller={controller} />}>
       <ChatThreads state={state} controller={controller} newChat={() => {}} onClose={() => {}}
         openSearch={() => {}} profile={null} />
     </ChatSidebar>

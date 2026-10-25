@@ -29,19 +29,16 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
   const ready = state.ready;
   const actions = useThreadActions(state, controller);
   return <>
-    <div className="chat-padded chat-thread-controls">
+    <div className="chat-row chat-thread-controls">
       {desktop ? <SidebarSearchInput value={query} onChange={setQuery} label={t("client.chat.searchChats")}
         clearLabel={t("client.projectBrowser.clearSearch")} onSubmit={search.reload} />
         : <button type="button" className="chat-search-trigger" aria-label={t("client.chat.searchChats")} onClick={openSearch}>
           <Search size={18} />{t("client.chat.searchChats")}</button>}
-      <div className="chat-row">
-        <button className="chat-button chat-grow" type="button" disabled={!ready || state.loading}
-          onClick={() => { void controller.list({ archived: !state.archived }); }}>
-          {state.archived ? t("client.chat.archived") : t("client.chat.recentChats")}</button>
-        <button className="chat-back" type="button" aria-label={t("client.chat.refreshChats")} disabled={!ready || state.listRefreshing}
-          onClick={() => { if (searching) search.reload(); else void controller.list(); }}>
-          <RefreshCw size={17} className={state.listRefreshing || search.loading ? 'chat-spinner' : undefined} /></button>
-      </div>
+      <button className="chat-back" type="button" aria-label={t("client.chat.refreshChats")}
+        disabled={!ready || state.listRefreshing}
+        onClick={() => { if (searching) search.reload(); else void controller.list(); }}>
+        <RefreshCw size={17} className={state.listRefreshing || search.loading ? 'chat-spinner' : undefined} />
+      </button>
     </div>
     <div ref={pagination.list} className="chat-scroll chat-thread-list"
       aria-busy={searching ? search.loading : state.loading}>

@@ -5,9 +5,10 @@ import { X } from 'lucide-react';
 import { ResizableThreadSidebar } from '../../../../shared/chat/ResizableThreadSidebar';
 import './chat-sidebar.less';
 
-export function ChatSidebar({ desktop, open, onClose, children, customHeading = false }: {
+export function ChatSidebar({ desktop, open, onClose, children, customHeading = false, headingExtra }: {
   desktop: boolean; open: boolean; onClose: () => void; children: ReactNode;
   customHeading?: boolean;
+  headingExtra?: ReactNode;
 }) {
   useLanguage();
   useEffect(() => {
@@ -25,11 +26,12 @@ export function ChatSidebar({ desktop, open, onClose, children, customHeading = 
   </aside>;
   if (desktop) return <ResizableThreadSidebar className="chat-sidebar chat-sidebar-resizable"
     layoutSelector=".chat-diff-layout, .chat-page" label={t("client.chat.chatList")} resizeLabel={t("client.chat.resizeChatList")}>
-    <header className="chat-sidebar-heading"><strong>{t("client.app.chat")}</strong></header>
+    <header className="chat-sidebar-heading"><strong>{t("client.app.chat")}</strong>{headingExtra}</header>
     {children}
   </ResizableThreadSidebar>;
   return <Drawer open={open} placement="left" width="min(360px, 88vw)" rootClassName="chat-drawer"
-    title={t("client.app.chat")} destroyOnClose onClose={onClose} closeIcon={<X size={20} aria-label={t("client.chat.collapseChatList")} />}>
+    title={<div className="chat-drawer-heading"><strong>{t("client.app.chat")}</strong>{headingExtra}</div>}
+    destroyOnClose onClose={onClose} closeIcon={<X size={20} aria-label={t("client.chat.collapseChatList")} />}>
     {children}
   </Drawer>;
 }

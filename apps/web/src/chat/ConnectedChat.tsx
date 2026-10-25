@@ -21,6 +21,7 @@ import { ChatImageContext } from './ChatImage';
 import { ChatFileContext } from './ChatFileLink';
 import { ChatAttachmentMetadata } from './ChatAttachmentMetadata';
 import { ChatThreads } from './ChatThreads';
+import { ChatThreadFilter } from './ChatThreadFilter';
 import { ChatListButton } from './ChatListButton';
 import { ChatSidebar } from './ChatSidebar';
 import { useDesktopLayout, usePanelVisibility } from '../useDesktopLayout';
@@ -197,7 +198,8 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     {!scrollableComposer && composer}
     {conversationFooter}
     </ChatTerminalLayout>
-    <ChatSidebar desktop={desktop} open={listOpen} onClose={closeList} customHeading={Boolean(renderSidebar)}>
+    <ChatSidebar desktop={desktop} open={listOpen} onClose={closeList} customHeading={Boolean(renderSidebar)}
+      headingExtra={!renderSidebar && <ChatThreadFilter state={state} controller={controller} />}>
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}
         openSearch={() => setSearching(true)} accountPicker={accountPicker} profile={!accountPicker && <ChatProfileMenu client={controller.guiAccounts}

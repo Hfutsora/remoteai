@@ -1,5 +1,6 @@
 import { createThemedStyles } from '../theme/styles';
 import { useThemeColor } from '../theme/store';
+import { textMetrics } from '../theme/text';
 import { t, useLanguage } from '../i18n';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -25,16 +26,16 @@ export function ChatThreads({ state, controller, newChat, openSearch, select, pr
   const [footerHeight, setFooterHeight] = useState(0);
   const actions = useThreadActions(state, controller);
   return <View style={styles.fill}>
-    <View style={styles.padded}>
-      <View style={styles.row}>
-        <Text style={[styles.heading, styles.fill]}>{t("client.app.chat")}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.searchChats")} onPress={openSearch}
-          style={listStyles.search}><Feather name="search" size={23} color={color(palette.ink, 'ink')} /></Pressable>
-      </View>
+    <View style={listStyles.header}>
+      <Text style={listStyles.heading}>{t("client.app.chat")}</Text>
       <Pressable accessibilityRole="button" style={listStyles.filter} disabled={state.loading}
         onPress={() => { void controller.list({ archived: !state.archived }); }}>
-        <Text style={styles.subtitle}>{state.archived ? t("client.chat.archived") : t("client.chat.recentChats")}</Text>
+        <Text style={listStyles.filterText}>
+          {state.archived ? t("client.chat.archived") : t("client.chat.recentChats")}
+        </Text>
       </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.searchChats")} onPress={openSearch}
+        style={listStyles.search}><Feather name="search" size={23} color={color(palette.ink, 'ink')} /></Pressable>
     </View>
     <ChatThreadList state={state} controller={controller} newChat={newChat} select={select}
       openActions={actions.open} bottomInset={footerHeight} />
@@ -51,12 +52,17 @@ export function ChatThreads({ state, controller, newChat, openSearch, select, pr
 }
 
 const useListStyles = createThemedStyles((color) => ({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 },
+  heading: { ...textMetrics(27, 36), color: color(palette.ink, 'ink'), fontWeight: '800', flexShrink: 0 },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 },
-  search: { width: 48, height: 48, borderRadius: 24, backgroundColor: color(palette.background, 'canvas'),
+  search: { width: 48, height: 48, flexShrink: 0, borderRadius: 24,
+    backgroundColor: color(palette.background, 'canvas'),
     alignItems: 'center', justifyContent: 'center' },
-  filter: { minHeight: 36, justifyContent: 'center' },
+  filter: { flex: 1, minWidth: 0, minHeight: 44, justifyContent: 'center' },
+  filterText: { ...textMetrics(13, 20), color: color(palette.muted, 'muted'), flexShrink: 1 },
   newChat: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     minHeight: 52, paddingHorizontal: 24, borderRadius: 26, backgroundColor: palette.green },
   newChatText: { color: '#fff', fontSize: 16, fontWeight: '600' },
