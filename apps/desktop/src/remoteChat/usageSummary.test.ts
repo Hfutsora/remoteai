@@ -48,3 +48,26 @@ it('preserves aggregate quotas above 100 percent and zero cost estimates', () =>
     primaryRemainingAggregated: false, providerEstimatedCost: { amountUsd: 2, aggregated: false },
   });
 });
+
+it('passes through the PC quota estimate without deriving it from today’s cost or percentage', () => {
+  const usage = decodeUsageSummary({ ...totals, primaryRemainingPercent: 80,
+    estimatedQuota: { remainingUsd: 20, capacityUsd: 200 } });
+  expect(usage.estimatedQuota).toEqual({ remainingUsd: 20, capacityUsd: 200 });
+  expect(usageTrailing(usage)?.quota).toMatchObject({ remaining: '20USD 剩余额度', total: '200USD 总额度' });
+  const empty = decodeUsageSummary({ ...totals, primaryRemainingPercent: 0,
+    estimatedQuota: { remainingUsd: 0, capacityUsd: null } });
+  expect(usageTrailing(empty)?.quota).toMatchObject({ remaining: '0USD 剩余额度', total: '— 总额度' });
+});
+
+it.each([null, {}, { remainingUsd: -1 }, { remainingUsd: Infinity }, { remainingUsd: '20' }])(
+  'leaves malformed estimates unavailable: %j', estimatedQuota => {
+    expect(decodeUsageSummary({ ...totals, estimatedQuota }).estimatedQuota).toBeUndefined();
+  },
+);
+
+it('does not present invalid or smaller total capacities as known estimates', () => {
+  for (const capacityUsd of [NaN, -1, 10, '100']) {
+    expect(decodeUsageSummary({ ...totals, estimatedQuota: { remainingUsd: 20, capacityUsd } }).estimatedQuota)
+      .toEqual({ remainingUsd: 20, capacityUsd: null });
+  }
+});
