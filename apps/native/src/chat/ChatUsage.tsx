@@ -29,23 +29,26 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
   return <View style={styles.container}>
     <ChatContextProgress usage={tokenUsage} onSettings={onContextSettings} />
     {trailing && <ChatQuotaProgress trailing={trailing} remaining={usage?.primaryRemainingPercent ?? 0} />}
-    <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
-      <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
-      {' · '}<Text style={styles.cost}>{formatConversationCost(metrics)}</Text>
-    </Text>
-    {usage ? <Text style={styles.row} accessibilityLabel={[
-      t("client.mobile.todaySTokenUsage", { value1: usage.totalTokens.toLocaleString('en-US') }),
-      t("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }),
-    ].filter(Boolean).join('，')}>
-      {t("client.chat.today")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
-      {' · '}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
-    </Text> : <Text style={styles.row}>{notice}</Text>}
-    <Text style={styles.row}><ConversationPerformanceValues metrics={metrics} /></Text>
+    <View style={styles.summary}>
+      <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
+        <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
+        {' · '}<Text style={styles.cost}>{formatConversationCost(metrics)}</Text>
+      </Text>
+      {usage ? <Text style={styles.row} accessibilityLabel={[
+        t("client.mobile.todaySTokenUsage", { value1: usage.totalTokens.toLocaleString('en-US') }),
+        t("client.mobile.todaySEstimatedCost", { value1: formatCost(usage.estimatedCostUsd) }),
+      ].filter(Boolean).join('，')}>
+        {t("client.chat.today")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
+        {' · '}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
+      </Text> : <Text style={styles.row}>{notice}</Text>}
+      <Text style={styles.row}><ConversationPerformanceValues metrics={metrics} /></Text>
+    </View>
   </View>;
 }
 
 const useStyles = createThemedStyles((color) => ({
   container: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color(palette.border, 'border'), paddingTop: 14, gap: 4 },
+  summary: { marginTop: 8, padding: 12, gap: 4, borderRadius: 12, backgroundColor: color('#eef3f0', 'canvas') },
   row: { color: color(palette.muted, 'muted'), ...textMetrics(12, 20), flexShrink: 1 },
   tokens: { color: color(palette.green, 'accent'), fontWeight: '600' },
   cost: { color: color('#b45d00', 'warning'), fontWeight: '600' },

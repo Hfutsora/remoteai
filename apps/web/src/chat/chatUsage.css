@@ -18,3 +18,17 @@
 .chat-usage-cost { color: var(--app-warning, #b45d00); }
 .chat-usage-quota { color: var(--app-accent, #16874e); }
 .chat-usage-low { color: var(--app-danger, #c74e47); }
+.chat-usage-summary { display: contents; }
+@media (max-width: 860px) {
+  .chat-settings .chat-usage-summary {
+    display: flex;
+    flex-wrap: wrap;
+    flex-basis: 100%;
+    min-width: 0;
+    gap: 4px;
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--app-canvas, #eef3f0);
+  }
+}

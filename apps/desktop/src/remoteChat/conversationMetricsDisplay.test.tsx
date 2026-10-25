@@ -50,7 +50,7 @@ it('shows remote conversation cost and puts performance on the final row', async
   expect(thread?.textContent).toBe('当前 2.50K Token · 1.23USD');
   const performance = container.querySelector('.chat-usage-performance');
   expect(performance?.textContent).toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT');
-  expect(performance).toBe(container.querySelector('.chat-usage')?.lastElementChild);
+  expect(performance).toBe(container.querySelector('.chat-usage-summary')?.lastElementChild);
   expect(read).toHaveBeenCalledWith('remote-thread');
   expect(read).toHaveBeenCalledTimes(1);
   await act(async () => root.render(<ChatUsage read={() => new Promise<never>(() => {})}

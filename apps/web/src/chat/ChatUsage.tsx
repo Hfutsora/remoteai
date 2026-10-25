@@ -29,17 +29,19 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings,
     <ChatContextProgress usage={tokenUsage} onSettings={onContextSettings} disabled={!ready || !active} />
     {usage && trailing && <QuotaLine trailing={trailing}
       remaining={quotaProgress ? usage.primaryRemainingPercent ?? undefined : undefined} />}
-    <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
-      <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
-      {' · '}<strong className="chat-usage-cost">{formatConversationCost(metrics)}</strong>
-    </span>
-    {usage ? <>
-      <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
-      <span>· <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
-    </> : <span>{notice}</span>}
-    {readConversationMetrics && <span className="chat-usage-performance">
-      <ConversationPerformanceValues metrics={metrics} />
-    </span>}
+    <div className="chat-usage-summary">
+      <span className="chat-usage-thread">{t("client.shared.currentChat")}{' '}
+        <strong className="chat-usage-tokens">{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</strong>
+        {' · '}<strong className="chat-usage-cost">{formatConversationCost(metrics)}</strong>
+      </span>
+      {usage ? <>
+        <span>{t("client.chat.today")} <strong className="chat-usage-tokens">{formatTokens(usage.totalTokens)} Token</strong></span>
+        <span>· <strong className="chat-usage-cost">{formatCost(usage.estimatedCostUsd)}</strong></span>
+      </> : <span>{notice}</span>}
+      {readConversationMetrics && <span className="chat-usage-performance">
+        <ConversationPerformanceValues metrics={metrics} />
+      </span>}
+    </div>
   </div>;
 }
 
