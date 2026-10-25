@@ -39,6 +39,7 @@ internal class DownloadEngine(
   ))
   private val stallTimer = worker.scheduleWithFixedDelay({
     bulk.stalled()
+    jobs().values.filter { it.status == "downloading" }.forEach { recordProgress(it, 0) }
     if (retries.releaseReady(clock())) pump()
     if (uncheckpointedBytes > 0 && clock() - lastCheckpoint >= CHECKPOINT_INTERVAL_MS) checkpoint()
   }, 1, 1, TimeUnit.SECONDS)
@@ -278,7 +279,7 @@ internal class DownloadEngine(
       task.data.put("size", size).put("name", name).put("mimeType", info.getString("mimeType"))
         .put("protocol", "bulk").put("message", "")
       bulk.open(task, info.getJSONObject("bulk"))
-      task.lastProgress = clock(); task.sampledBytes = task.received
+      task.lastProgress = clock(); task.speed = DownloadSpeed(task.received, task.lastProgress)
       changed(); return
     }
     if (task.data.optString("protocol") == "bulk") {
@@ -294,7 +295,7 @@ internal class DownloadEngine(
     task.received = minOf(task.received, storage.part(task).length(), size)
     task.data.put("size", size).put("name", name).put("revision", revision)
       .put("mimeType", info.getString("mimeType"))
-    task.lastProgress = clock(); task.sampledBytes = task.received
+    task.lastProgress = clock(); task.speed = DownloadSpeed(task.received, task.lastProgress)
     task.nextOffset = task.received
     storage.prepare(task); changed()
   }
@@ -319,12 +320,13 @@ internal class DownloadEngine(
   private fun recordProgress(task: DownloadTask, bytes: Long) {
     uncheckpointedBytes += bytes
     val now = clock()
+    val speed = task.speed?.sample(task.received, now) ?: 0.0
     if (uncheckpointedBytes > 0 && (now - lastCheckpoint >= CHECKPOINT_INTERVAL_MS
         || uncheckpointedBytes >= CHECKPOINT_BYTES)) checkpoint()
     val elapsed = now - task.lastProgress
     if (elapsed >= PROGRESS_INTERVAL_MS) {
-      task.data.put("bytesPerSecond", (task.received - task.sampledBytes) * 1000 / elapsed)
-      task.lastProgress = now; task.sampledBytes = task.received; changed(false)
+      task.data.put("bytesPerSecond", speed)
+      task.lastProgress = now; changed(false)
     }
   }
 
@@ -396,6 +398,7 @@ internal class DownloadEngine(
         .put("source", task.source).toString())
     }
     task.data.put("bytesPerSecond", 0)
+    task.speed = null
     task.pending.values.forEach { it.timeout?.cancel(false) }
     task.pending.clear(); task.buffered.clear()
     if (task.remoteId.isNotEmpty()) {

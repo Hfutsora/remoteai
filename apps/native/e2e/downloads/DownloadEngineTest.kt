@@ -95,11 +95,14 @@ class DownloadEngineTest : InstrumentationTestCase() {
     assertFalse(snapshot().has("preparation"))
   }
 
-  private fun accept(packet: JSONObject, corrupt: Boolean = false): Boolean {
+  private fun accept(packet: JSONObject, corrupt: Boolean = false, advanceMs: Long = 0): Boolean {
     val offset = packet.getLong("offset")
     val data = Base64.encodeToString(bytes(offset, packet.getInt("length")), Base64.NO_WRAP)
     val chunk = JSONObject().put("offset", if (corrupt) offset + 1 else offset).put("data", data)
-    return run { engine.accept(packet.getString("requestId"), chunk.toString(), false) } as Boolean
+    return run {
+      tick += advanceMs
+      engine.accept(packet.getString("requestId"), chunk.toString(), false)
+    } as Boolean
   }
 
   fun testSlidesBeforeOtherResponsesArriveAndBoundsReorderedReplies() {
@@ -182,6 +185,31 @@ class DownloadEngineTest : InstrumentationTestCase() {
     open(CHUNK_BYTES * 8L, "second")
     assertEquals(0L, requests().takeLast(5).first().getLong("offset"))
     assertEquals(0L, snapshot().getLong("received"))
+  }
+
+  fun testSpeedUsesTwoSecondsAndRestartsAfterPause() {
+    open(CHUNK_BYTES * 20L)
+    accept(requests()[0], advanceMs = 1_000)
+    assertEquals(CHUNK_BYTES.toDouble(), snapshot().getDouble("bytesPerSecond"))
+    accept(requests()[1], advanceMs = 500)
+    assertEquals(CHUNK_BYTES * 2.0 / 1.5, snapshot().getDouble("bytesPerSecond"), 0.001)
+    accept(requests()[2], advanceMs = 1_500)
+    assertEquals(CHUNK_BYTES.toDouble(), snapshot().getDouble("bytesPerSecond"))
+    run { engine.pause(taskId); tick += 30_000; engine.resume(taskId) }
+    open(CHUNK_BYTES * 20L)
+    accept(requests().takeLast(5).first(), advanceMs = 1_000)
+    assertEquals(CHUNK_BYTES.toDouble(), snapshot().getDouble("bytesPerSecond"))
+  }
+
+  fun testSpeedExpiresWithoutReceivingAnotherChunk() {
+    open(CHUNK_BYTES * 20L)
+    accept(requests()[0], advanceMs = 1_000)
+    assertTrue(snapshot().getDouble("bytesPerSecond") > 0)
+    run { tick += 2_000 }
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
+    while (snapshot().getDouble("bytesPerSecond") > 0 && System.nanoTime() < deadline) Thread.sleep(10)
+    assertEquals("downloading", snapshot().getString("status"))
+    assertEquals(0.0, snapshot().getDouble("bytesPerSecond"))
   }
 
   fun testPublishesExactHashWithReorderedChunksAndPartialFinalBlock() {

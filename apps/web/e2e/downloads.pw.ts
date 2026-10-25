@@ -18,6 +18,25 @@ async function save(page: Page, name = 'sample.bin') {
   return readFile((await download.path())!);
 }
 
+test('download speed expires after two seconds without newly stored data', async ({ page }, info) => {
+  await open(page);
+  await expect(page.getByRole('button', { name: '当前项目', exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    window.downloadFixture.size = 64 * 1024 * 1024;
+    window.downloadFixture.delay = 300;
+    window.downloadFixture.windowSize(1);
+  });
+  await enqueue(page);
+  const speed = card(page).locator('.download-task-meta span').filter({ hasText: /\/s$/ });
+  await expect(speed).toBeVisible();
+  await page.evaluate(() => { window.downloadFixture.delay = 4_000; });
+  await expect(speed).toHaveCount(0, { timeout: 4_000 });
+  await expect(card(page)).toContainText('下载中');
+  await page.screenshot({ path: `../../.codex-tmp/download-speed-stalled-${info.project.name}.png` });
+  await card(page).getByRole('button', { name: '暂停', exact: true }).click();
+  await expect(card(page)).toContainText('已暂停');
+});
+
 test('shows compression progress, cancels preparation, then saves all archive bytes', async ({ page }, info) => {
   await open(page);
   await page.getByRole('button', { name: '压缩下载文件夹', exact: true }).click();

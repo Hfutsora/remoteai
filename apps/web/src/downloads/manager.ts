@@ -9,6 +9,7 @@ import { shareBrowserDownload } from './shareDownload';
 import type { AuthSession } from '../types';
 import { deleteDownload, listDownloads, storeDownload } from './storage';
 import { transferDownload } from './transfer';
+import { monitorDownloadSpeed } from './downloadSpeed';
 import type { DownloadConnection, DownloadSource, DownloadTask } from './types';
 
 const MAX_ACTIVE_DOWNLOADS = 2;
@@ -181,16 +182,19 @@ export class WebDownloadManager {
     }
   }
   private async run(task: DownloadTask, connection: DownloadConnection, signal: AbortSignal) {
+    const speed = monitorDownloadSpeed(value => { task = value; this.update(value); });
     try {
       task = { ...task, status: 'preparing', preparation: undefined, completedAt: undefined };
       await this.persist(task);
       await transferDownload({ task, client: connection.client, signal,
         mode: () => this.connectionForSource(task.source)?.mode ?? 'offline',
-        update: value => { task = value; this.update(value); } });
+        update: speed.update });
+      speed.stop();
       this.clearRetry(task.id);
       await this.persist({ ...task, status: 'ready', bytesPerSecond: undefined,
         completedAt: Date.now() });
     } catch (error) {
+      speed.stop();
       error = normalizeFileError(error);
       const paused = signal.aborted || error instanceof DownloadCancelled
         || (error instanceof BulkError && error.code === 'CANCELLED');
@@ -204,6 +208,8 @@ export class WebDownloadManager {
       await storeDownload(task).catch(() => {
         this.clearRetry(task.id); this.update({ ...task, status: 'failed' }); this.storageFailed();
       });
+    } finally {
+      speed.stop();
     }
   }
   private deferRetry(task: DownloadTask) {

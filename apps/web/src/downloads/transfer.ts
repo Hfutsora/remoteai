@@ -43,12 +43,9 @@ export async function transferDownload({ task, client, signal, update, mode }: O
       manifest: undefined, checkpoint: undefined, verified: false };
     if (!resume) await resetDownload(task);
     update(task);
-    const startedAt = performance.now();
-    const startingOffset = task.received;
     await transferFileChunks({ client, threadId: task.id, info, signal, offset: task.received, mode,
       write: async (chunk, received) => {
-        const next = { ...task, received,
-          bytesPerSecond: (received - startingOffset) * 1000 / Math.max(1, performance.now() - startedAt) };
+        const next = { ...task, received };
         await storeChunk(next, chunk.offset, chunk.data);
         task = next;
         update(task);
