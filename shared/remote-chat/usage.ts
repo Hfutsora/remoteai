@@ -44,7 +44,8 @@ export function formatCost(value: number) {
   return `${value.toLocaleString('en-US', { maximumFractionDigits: value > 0 && value < 0.01 ? 4 : 2 })}USD`;
 }
 
-export function usageTrailing(usage: UsageSummary | null, translate = defaultText, cost = formatCost) {
+export function usageTrailing(usage: UsageSummary | null, translate = defaultText, cost = formatCost,
+  options: { compactQuota?: boolean } = {}) {
   const remaining = usage?.primaryRemainingPercent;
   if (typeof remaining === 'number' && Number.isFinite(remaining)) {
     const label = usage?.primaryRemainingAggregated ? "client.shared.combinedAccountQuotaRemaining" : "client.shared.currentAccountQuotaRemaining";
@@ -54,7 +55,8 @@ export function usageTrailing(usage: UsageSummary | null, translate = defaultTex
       description: `${translate(label)}：${remaining.toLocaleString('en-US', { maximumFractionDigits: 2 })}%`,
       tone: remaining <= LOW_QUOTA_PERCENT ? 'low' : remaining <= WARNING_QUOTA_PERCENT ? 'cost' : 'quota',
       quota: {
-        remaining: translate('client.chatQuota.estimatedRemaining', {
+        remaining: translate(options.compactQuota
+          ? 'client.chatQuota.remainingCompact' : 'client.chatQuota.estimatedRemaining', {
           amount: usage?.estimatedQuota ? cost(usage.estimatedQuota.remainingUsd) : '—',
         }),
         total: translate('client.chatQuota.estimatedTotal', {

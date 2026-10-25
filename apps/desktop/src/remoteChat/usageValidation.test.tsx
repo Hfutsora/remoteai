@@ -28,10 +28,12 @@ vi.mock('../../../native/src/chat/ConversationPerformance', () => ({ Conversatio
 const usage = { totalTokens: 1_520, estimatedCostUsd: 2.5, primaryRemainingPercent: null,
   primaryRemainingAggregated: false, providerEstimatedCost: null };
 const views = [
-  { name: 'native settings', render: (read: ReadUsage) => <NativeChatUsage read={read} active ready threadId={null}
+  { name: 'native settings', remainingLabel: '剩余',
+    render: (read: ReadUsage) => <NativeChatUsage read={read} active ready threadId={null}
     readConversationMetrics={vi.fn()} /> },
-  { name: 'web mobile settings', render: (read: ReadUsage) => <WebChatUsage read={read} active ready /> },
-  { name: 'web and desktop remote composer', render: (read: ReadUsage) =>
+  { name: 'web mobile settings', remainingLabel: '剩余',
+    render: (read: ReadUsage) => <WebChatUsage read={read} active ready quotaProgress /> },
+  { name: 'web and desktop remote composer', remainingLabel: '剩余额度', render: (read: ReadUsage) =>
     <WebChatUsage read={read} active ready inline /> },
 ];
 let container: HTMLDivElement;
@@ -71,14 +73,14 @@ it('preserves the native accessibility summary for valid usage', async () => {
   expect(container.querySelector('[aria-label*="1,520"]')?.getAttribute('aria-label')).toContain('2.5USD');
 });
 
-it.each(views)('$name separates quota from today’s usage and displays the PC estimates', async ({ render }) => {
+it.each(views)('$name separates quota from today’s usage and displays the PC estimates', async ({ render, remainingLabel }) => {
   const read = vi.fn().mockResolvedValue({ ...usage, primaryRemainingPercent: 20,
     estimatedQuota: { remainingUsd: 25, capacityUsd: 125 } });
   await act(async () => root.render(render(read)));
-  expect(container.textContent).toContain('20% · 25USD 剩余额度 · 125USD 总额度');
+  expect(container.textContent).toContain(`20% · 25USD ${remainingLabel} · 125USD 总额度`);
   expect(container.textContent).toContain('2.5USD');
   read.mockResolvedValue({ ...usage, primaryRemainingPercent: 20 });
   await act(async () => vi.advanceTimersByTimeAsync(USAGE_REFRESH_INTERVAL_MS));
-  expect(container.textContent).toContain('20% · — 剩余额度 · — 总额度');
+  expect(container.textContent).toContain(`20% · — ${remainingLabel} · — 总额度`);
   expect(container.textContent).not.toContain('25USD');
 });

@@ -10,9 +10,11 @@ import { applyHistoryDelta, historyVersion, type HistoryDelta } from '../../../.
 import { ChatOperations } from './operations';
 import { guiApi } from '../pages/codexGui/api';
 import { ChatSettings } from '../../../web/src/chat/ChatSettings';
+import { useDesktopLayout } from '../../../web/src/useDesktopLayout';
 
 vi.mock('../pages/codexGui/api', () => ({ guiApi: { request: vi.fn() } }));
 vi.mock('../api/backend', () => ({ invoke: vi.fn(), hasLocalBackend: false }));
+vi.mock('../../../web/src/useDesktopLayout', () => ({ useDesktopLayout: vi.fn(() => false) }));
 vi.mock('../../../web/src/components/AdaptiveSheet', () => ({
   AdaptiveSheet: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
@@ -90,7 +92,7 @@ it('shows and updates context in settings even while daily usage is still loadin
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const container = document.createElement('div');
   const root = createRoot(container);
-  const readUsage = vi.fn(() => new Promise<never>(() => {}));
+  const readUsage = vi.fn<() => Promise<unknown>>(() => new Promise<never>(() => {}));
   const readConversationMetrics = vi.fn().mockResolvedValue({
     totalOutputTokens: 0, totalOutputTimeMs: 0, outputRequestCount: 0,
   });
@@ -115,5 +117,16 @@ it('shows and updates context in settings even while daily usage is still loadin
     expect(container.textContent).toContain('暂无上下文用量');
     expect(container.textContent).not.toContain('10% 已用');
     expect(readUsage).toHaveBeenCalledTimes(1);
+    readUsage.mockResolvedValue({ totalTokens: 123, estimatedCostUsd: 2,
+      primaryRemainingPercent: 20, estimatedQuota: { remainingUsd: 25, capacityUsd: 125 } });
+    // Reopen the drawer so the read belongs to its new active subscription.
+    await act(async () => root.render(null));
+    await render();
+    expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
+    expect(container.textContent).toContain('25USD 剩余 · 125USD 总额度');
+    vi.mocked(useDesktopLayout).mockReturnValue(true);
+    await render();
+    expect(container.querySelector('[role="progressbar"]')).toBeNull();
+    expect(container.textContent).toContain('25USD 剩余额度 · 125USD 总额度');
   } finally { await act(async () => root.unmount()); }
 });

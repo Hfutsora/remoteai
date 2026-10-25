@@ -1,6 +1,7 @@
 import { displayText, displayError } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { useState } from 'react';
+import { useDesktopLayout } from '../useDesktopLayout';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import { ChatUsage } from './ChatUsage';
 import { ChatContextSettings } from './ChatContextSettings';
@@ -34,6 +35,7 @@ interface Props {
 export function ChatSettings({ models, selection, saving, ready, error, updateSettings, refreshModels, onClose,
   readUsage, readConversationMetrics, tokenUsage, threadId, contextSettings, connection }: Props) {
   useLanguage();
+  const desktop = useDesktopLayout();
   const [field, setField] = useState<SettingField | null>(null);
   const [contextOpen, setContextOpen] = useState(false);
   const notice = settingsNotice({ saving, ready, error });
@@ -56,6 +58,7 @@ export function ChatSettings({ models, selection, saving, ready, error, updateSe
       {!!error && <button type="button" className="chat-button" onClick={() => { void updateSettings(selection); }}>
         {t("client.chat.saveAgain")}</button>}
       <ChatUsage read={readUsage} active={!field && !contextOpen} ready={ready} tokenUsage={tokenUsage}
+        quotaProgress={!desktop}
         readConversationMetrics={readConversationMetrics} threadId={threadId}
         onContextSettings={threadId ? () => setContextOpen(true) : undefined} />
     </div>

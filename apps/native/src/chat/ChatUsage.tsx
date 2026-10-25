@@ -14,6 +14,7 @@ import { contextUsageLabel } from '../../../../shared/remote-chat/contextUsage';
 import type { ThreadTokenUsage } from './types';
 import type { ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
 import { ConversationPerformance } from './ConversationPerformance';
+import { ChatQuotaProgress } from './ChatQuotaProgress';
 
 export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, readConversationMetrics, threadId }: {
   read: ReadUsage; active: boolean; ready: boolean; tokenUsage?: ThreadTokenUsage;
@@ -24,7 +25,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
   const color = useThemeColor();
   const language = useLanguage();
   const { usage, error } = useChatUsage(read, active && ready);
-  const trailing = usageTrailing(usage, displayText);
+  const trailing = usageTrailing(usage, displayText, formatCost, { compactQuota: true });
   const notice = ready ? (error ? displayError(error) : t("client.chat.loadingTodaySUsage")) : t("client.chat.connectToViewTodaySUsage");
   return <View style={styles.container}>
     <View style={styles.context}>
@@ -43,12 +44,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
       {t("client.chat.today")}{' '}<Text style={styles.tokens}>{formatTokens(usage.totalTokens)} Token</Text>
       {t("client.mobile.estimated")}<Text style={styles.cost}>{formatCost(usage.estimatedCostUsd)}</Text>
     </Text> : <Text style={styles.row}>{notice}</Text>}
-    {trailing && <Text style={styles.row} accessibilityLabel={[
-      trailing.description, trailing.quota?.remaining, trailing.quota?.total, trailing.quota?.description,
-    ].filter(Boolean).join('，')}>
-      <Text style={styles[trailing.tone]}>{trailing.text}</Text>
-      {trailing.quota && <Text>{' · '}{trailing.quota.remaining}{' · '}{trailing.quota.total}</Text>}
-    </Text>}
+    {trailing && <ChatQuotaProgress trailing={trailing} remaining={usage?.primaryRemainingPercent ?? 0} />}
     <Text style={styles.row}>{t("client.shared.currentChat")}{' '}
       <Text style={styles.tokens}>{formatThreadTokens(tokenUsage?.total.totalTokens)} Token</Text>
       {' · '}<ConversationPerformance read={readConversationMetrics} threadId={threadId} active={active && ready} />
@@ -66,6 +62,4 @@ const useStyles = createThemedStyles((color) => ({
   row: { color: color(palette.muted, 'muted'), ...textMetrics(12, 20), flexShrink: 1 },
   tokens: { color: color(palette.green, 'accent'), fontWeight: '600' },
   cost: { color: color('#b45d00', 'warning'), fontWeight: '600' },
-  quota: { color: color('#16874e', 'accent'), fontWeight: '600' },
-  low: { color: color(palette.danger, 'danger'), fontWeight: '600' },
 }));
