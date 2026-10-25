@@ -1,4 +1,4 @@
-import { uiText } from "../../../i18n/uiText";
+import { displayText, uiText } from "../../../i18n/uiText";
 import type { ReactNode } from 'react';
 import { Button, Segmented } from 'antd';
 import { ChevronRight, Folder, RefreshCw, Search, SquarePen } from 'lucide-react';
@@ -21,7 +21,10 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
   state: ChatState; controller: ChatController; actions: ChatSidebarActions;
   accountPicker: ReactNode; focusMode: GuiFocusMode;
 }) {
-  const { groups, toggle, toggleCollapse } = useThreadGroups(state);
+  const { groups: projectGroups, toggle, toggleCollapse } = useThreadGroups(state);
+  const groups = projectGroups.map(group => ({
+    ...group, label: group.cwd ? group.label : uiText("client.chat.recent"),
+  }));
   const threadActions = useThreadActions(state, controller);
   const pagination = useThreadScrollPagination({
     enabled: state.ready,
@@ -67,7 +70,7 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
         </div>
         <div className={groupsStyle.content} hidden={group.collapsed}>
           {group.data.map(thread => {
-            const view = threadPresentation(thread, state.sidebar);
+            const view = threadPresentation(thread, state.sidebar, displayText);
             const selected = state.selected?.id === thread.id;
             return <RemoteThreadMenu key={thread.id} thread={thread} state={state} controller={controller}
               actions={threadActions} onClose={actions.onClose}>

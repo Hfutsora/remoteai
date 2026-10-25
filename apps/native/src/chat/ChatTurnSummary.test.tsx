@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ChatTurnSummary } from './ChatTurnSummary';
 import type { Turn } from './types';
 import { MODEL_CAPACITY_MESSAGE } from '../../../desktop/src/pages/codexGui/requestError';
+import { t } from '../i18n';
 
 const reviewContext = vi.hoisted(() => ({ value: {} as object | null }));
 vi.mock('react', async original => ({ ...await original<typeof import('react')>(),
@@ -11,6 +12,7 @@ vi.mock('react', async original => ({ ...await original<typeof import('react')>(
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));
 vi.mock('react-native', () => ({ Pressable: 'Pressable', Text: 'Text', View: 'View',
+  Platform: { OS: 'android' },
   StyleSheet: { create: <T,>(styles: T) => styles },
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: 'Icon' }));
@@ -111,7 +113,7 @@ it.each([
   const onOpen = vi.fn();
   reviewContext.value = { turnId: 'turn', disabled: false, pending: false, retry };
   const tree = ChatTurnSummary({ turn: { ...turn, status: 'failed', ...error }, onOpen });
-  expect(content(tree)).toContain(MODEL_CAPACITY_MESSAGE);
+  expect(content(tree)).toContain(t('client.chat.modelAtCapacity'));
   expect(content(tree)).not.toContain('本次回复遇到问题，已中断。');
   expect(content(tree)).not.toContain('查看报错详情');
   const button = descendants(tree).find(node => node.type === 'Pressable' && content(node.props.children) === '重试');
@@ -125,10 +127,10 @@ it('shows retrying capacity errors and preserves older failures without a retry 
   reviewContext.value = { turnId: 'turn', disabled: true, pending: true, retry: vi.fn() };
   const capacityTurn = { ...turn, error: null, retryError: { message: MODEL_CAPACITY_MESSAGE } };
   const tree = ChatTurnSummary({ turn: capacityTurn, onOpen: vi.fn() });
-  expect(content(tree)).toContain(MODEL_CAPACITY_MESSAGE);
+  expect(content(tree)).toContain(t('client.chat.modelAtCapacity'));
   const button = descendants(tree).find(node => node.type === 'Pressable' && content(node.props.children) === '正在重试…');
   expect(button?.props.disabled).toBe(true);
   const previous = ChatTurnSummary({ turn: { ...capacityTurn, id: 'old', status: 'failed' }, onOpen: vi.fn() });
-  expect(content(previous)).toContain(MODEL_CAPACITY_MESSAGE);
+  expect(content(previous)).toContain(t('client.chat.modelAtCapacity'));
   expect(content(previous)).not.toContain('正在重试…');
 });

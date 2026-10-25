@@ -1,4 +1,4 @@
-import { defaultText } from '../../../../../shared/localization/messages';
+import { displayText } from '../../../../../shared/localization/messages';
 import { uiText } from "../../i18n/uiText";
 import type { Item } from "./types";
 
@@ -27,7 +27,7 @@ export function collaborationStatus(status?: string): string {
   return STATUS_LABELS[status ?? ""] ?? uiText("client.shared.awaitingStatus");
 }
 
-export function collaborationSummary(item: Item, translate = defaultText): string {
+export function collaborationSummary(item: Item, translate = displayText): string {
   if (item.type === "subAgentActivity") {
     const label = translate(ACTIVITY_LABELS[item.kind ?? ""] ?? uiText("client.shared.collaborationUpdate"));
     return uiText("client.interface.message.7c639b", { value1: label, value2: item.agentPath ? collaborationTaskName(item) : translate("client.chat.collaboration") });

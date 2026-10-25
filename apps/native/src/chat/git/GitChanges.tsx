@@ -58,13 +58,14 @@ export function GitRow({ row, panel, connected, flat, onToggle, onMenu }: {
   const disabled = panel.busy || !row.files.some(file => !file.conflict);
   return <View style={[styles.file, area && styles.areaRow,
     !area && checked === true && { backgroundColor: tone.background }]}>
-    <Pressable accessibilityRole="checkbox" accessibilityLabel={t("client.mobile.select", { value1: row.path })}
+    <Pressable accessibilityRole="checkbox"
+      accessibilityLabel={t("client.mobile.select", { value1: area ? t(row.area.label) : row.path })}
       accessibilityState={{ checked, disabled }} disabled={disabled}
       onPress={() => panel.selectFiles(row.files)} style={styles.checkButton}>
       <GitSelectionMark checked={checked} disabled={disabled} /></Pressable>
     {area ? <View style={styles.areaHeading}>
       <View style={[styles.areaDot, { backgroundColor: tone.color }]} />
-      <Text style={[styles.areaTitle, color]}>{row.name}</Text>
+      <Text style={[styles.areaTitle, color]}>{t(row.area.label)}</Text>
       <Text style={[styles.areaCount, color, { backgroundColor: tone.background }]}>{row.files.length}</Text>
     </View>
       : <Pressable accessibilityRole="button" accessibilityLabel={`${folder ? t("client.mobile.expandOrCollapse") : t("client.mobile.view.db8db0")} ${row.path}`}

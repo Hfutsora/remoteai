@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const CAPACITY_MESSAGE = 'Selected model is at capacity. Please try a different model.';
+const CAPACITY_MESSAGE = '当前模型繁忙，请换个模型重试。';
 const surfaces = [
   { name: 'local', query: '' },
   { name: 'remote', query: '&remote&desktop' },

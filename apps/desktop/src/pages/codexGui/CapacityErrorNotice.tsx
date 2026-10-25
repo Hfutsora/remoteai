@@ -2,7 +2,6 @@ import { uiText } from "../../i18n/uiText";
 import { CircleAlert, X } from "lucide-react";
 import type { ReactNode } from 'react';
 import type { CapacityRetryState } from "./capacityRetry";
-import { MODEL_CAPACITY_MESSAGE } from "./requestError";
 import styles from "./RequestErrorNotice.module.less";
 
 export interface CapacityRetryControl {
@@ -14,7 +13,7 @@ export function CapacityErrorNotice({ retry, onCancelRetry, action }: CapacityRe
   return <div className={styles.capacityNotice}>
     <div className={styles.capacityContent}>
       <CircleAlert size={20} aria-hidden="true" />
-      <span className={styles.capacityMessage}>{MODEL_CAPACITY_MESSAGE}</span>
+      <span className={styles.capacityMessage}>{uiText('client.chat.modelAtCapacity')}</span>
     </div>
     {action && <div className={styles.capacityAction}>{action}</div>}
     {retry && <div className={styles.countdown}>

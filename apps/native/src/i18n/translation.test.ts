@@ -14,7 +14,8 @@ import { getInterfaceLanguage, setInterfaceLanguage, subscribeInterfaceLanguage 
   "../../../../shared/localization/interfaceLanguage";
 import { systemLanguage } from "../../../../shared/localization/language";
 import { composerPatch, composerLabel } from '../../../../shared/remote-chat/composer';
-import { settingOptions } from '../../../../shared/remote-chat/settingsMenu';
+import { settingOptions, settingValue } from '../../../../shared/remote-chat/settingsMenu';
+import { collaborationSummary } from '../../../desktop/src/pages/codexGui/collaborationActivity';
 
 const placeholders = (text: string) => [...text.matchAll(/\{\w+\}/g)].map(match => match[0]).sort();
 const dictionaries: Readonly<Record<string, string>>[] = [english, russian, clientResources.ja];
@@ -64,6 +65,15 @@ it('switches display language without changing model, permissions or request val
     expect(composerPatch(selection)).toEqual(selection);
     expect(settingOptions('model', [model], selection)[0]).toEqual({ value: '取消', label: '取消' });
     expect(composerLabel([model], selection, source => displayText(source, {}, language))).toMatch(/^取消 · /);
+    expect(settingValue('model', [], { ...selection, model: '' }, displayText))
+      .toBe(translateMessage(language, 'client.app.syncing'));
+    const literalModel = { ...model, model: 'client.git.staged', displayName: 'client.git.staged' };
+    expect(settingValue('model', [literalModel], { ...selection, model: literalModel.model }, displayText))
+      .toBe(literalModel.displayName);
+    expect(collaborationSummary({ id: 'activity', type: 'subAgentActivity', kind: 'started' }))
+      .toContain(translateMessage(language, 'client.chat.collaboration'));
+    expect(collaborationSummary({ id: 'tool', type: 'collabAgentToolCall', receiverThreadIds: ['worker'] }))
+      .toContain(translateMessage(language, 'client.shared.tasks'));
   }
 });
 

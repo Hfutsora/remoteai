@@ -1,5 +1,6 @@
 import { displayText, displayError } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -59,8 +60,8 @@ export function ChatSettings({ models, selection, saving, ready, error, updateSe
         accessibilityLabel={t("client.chat.set", { value1: displayText(entry.label) })}
         onPress={() => setField(entry.field)} style={menuStyles.entry}>
         <Text style={[styles.title, { flexShrink: 1 }]}>{displayText(entry.label)}</Text>
-        <Text numberOfLines={1} style={menuStyles.value}>{entry.field === 'model'
-          ? settingValue(entry.field, models, selection) : displayText(settingValue(entry.field, models, selection))}</Text>
+        <Text numberOfLines={1} style={menuStyles.value}>
+          {settingValue(entry.field, models, selection, displayText)}</Text>
         <Text style={menuStyles.arrow}>›</Text>
       </Pressable>)}
       {!!notice && <Text accessibilityRole={error ? 'alert' : undefined}
@@ -99,6 +100,6 @@ const useMenuStyles = createThemedStyles((color) => ({
   options: { maxWidth: SHEET_READABLE_WIDTH },
   entry: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, padding: 14,
     borderWidth: 1, borderColor: color(palette.border, 'border'), borderRadius: 12 },
-  value: { flex: 1, textAlign: 'right', color: color(palette.green, 'accent'), fontSize: 13, lineHeight: 20 },
+  value: { flex: 1, textAlign: 'right', color: color(palette.green, 'accent'), ...textMetrics(13, 20) },
   arrow: { color: color(palette.muted, 'muted'), fontSize: 22 },
 }));

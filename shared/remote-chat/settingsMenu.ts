@@ -31,9 +31,12 @@ export function visibleSettingsFields(selection: ComposerSettings) {
   return SETTINGS_FIELDS.filter(({ field }) => field !== 'speed' || selection.speed !== undefined);
 }
 
-export function settingValue(field: SettingField, models: Model[], selection: ComposerSettings) {
-  return settingOptions(field, models, selection).find((option) => option.value === selection[field])?.label
-    || selection[field] || "client.app.syncing";
+export function settingValue(field: SettingField, models: Model[], selection: ComposerSettings,
+  translate = (value: string) => value) {
+  const label = settingOptions(field, models, selection).find((option) => option.value === selection[field])?.label
+    || selection[field];
+  if (!label) return translate("client.app.syncing");
+  return field === 'model' ? label : translate(label);
 }
 
 export function settingsNotice({ saving, ready, error }: { saving: boolean; ready: boolean; error: string }) {

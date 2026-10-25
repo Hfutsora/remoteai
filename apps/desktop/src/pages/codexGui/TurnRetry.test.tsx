@@ -8,6 +8,7 @@ import { ChatTurnSummary } from '../../../../web/src/chat/ChatTurnSummary';
 import { TurnMessage } from './TurnMessage';
 import { restoreRequestErrors } from './turnRequestErrors';
 import { MODEL_CAPACITY_MESSAGE } from './requestError';
+import { uiText } from '../../i18n/uiText';
 import type { Turn } from './types';
 
 let root: Root;
@@ -77,7 +78,7 @@ for (const surface of ['desktop', 'web']) {
   ])(`${surface}: shows capacity failures directly and keeps retry available (%j)`, async error => {
     const send = vi.fn().mockResolvedValue(false);
     await render([{ ...failed, ...error }], send);
-    expect(container.textContent).toContain(MODEL_CAPACITY_MESSAGE);
+    expect(container.textContent).toContain(uiText('client.chat.modelAtCapacity'));
     expect(container.textContent).not.toContain('本次回复遇到问题，已中断。');
     expect(container.querySelector('[aria-label="查看报错详情"]')).toBeNull();
     expect(retryButton()?.disabled).toBe(false);
@@ -88,7 +89,7 @@ for (const surface of ['desktop', 'web']) {
   it(`${surface}: shows capacity failures during automatic retries without offering a manual retry`, async () => {
     await render([{ ...failed, status: 'inProgress', error: null,
       retryError: { message: MODEL_CAPACITY_MESSAGE } }], vi.fn());
-    expect(container.textContent).toContain(MODEL_CAPACITY_MESSAGE);
+    expect(container.textContent).toContain(uiText('client.chat.modelAtCapacity'));
     expect(container.querySelector('[aria-label="查看报错详情"]')).toBeNull();
     expect(retryButton()).toBeUndefined();
   });

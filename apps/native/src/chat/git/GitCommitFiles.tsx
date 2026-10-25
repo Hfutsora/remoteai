@@ -59,7 +59,7 @@ function CommitFile({ file, disabled, onPress }: { file: GitCommitFile; disabled
       {file.originalPath && <Text style={styles.meta}>{file.originalPath} → {file.path}</Text>}
     </View>
     <Text style={[styles.commitStatus, { color: textColor, backgroundColor: background }]}>
-      {status.label}</Text>
+      {t(status.label)}</Text>
     <Ionicons name="chevron-forward" size={14} color={color(palette.muted, 'muted')} />
   </Pressable>;
 }

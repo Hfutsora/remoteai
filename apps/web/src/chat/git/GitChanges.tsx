@@ -1,4 +1,3 @@
-import { displayText } from '../../i18n/index';
 import { Checkbox } from 'antd';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import fileIcon from '../../../../../shared/remote-chat/assets/git-icons/file-v2.png';
@@ -45,11 +44,11 @@ function GitRow({ row, panel, connected, onToggle, flat }: {
   return <GitFileMenu row={row} panel={panel} connected={connected}>
     <div className={`git-file git-file-${row.kind}`} data-area={row.area.id}
     style={{ color: colors.color, background: !area && checked === true ? colors.background : undefined }}>
-    <Checkbox aria-label={t("client.git.select", { path: row.path })} checked={checked === true}
+    <Checkbox aria-label={t("client.git.select", { path: area ? t(row.area.label) : row.path })} checked={checked === true}
       indeterminate={checked === 'mixed'} disabled={panel.busy || !row.files.some(file => !file.conflict)}
       onChange={() => panel.selectFiles(row.files)} />
     {area ? <strong><i className="git-area-dot" style={{ background: colors.color }} />
-      {displayText(row.name)} <small style={{ background: colors.background }}>{row.files.length}</small></strong>
+      {t(row.area.label)} <small style={{ background: colors.background }}>{row.files.length}</small></strong>
       : <button type="button" aria-label={folder ? t("client.git.expandOrCollapse", { path: row.path })
         : t("client.git.view", { path: row.path })} aria-expanded={folder ? !row.collapsed : undefined}
         disabled={panel.busy || (!folder && !connected)} title={row.path}
