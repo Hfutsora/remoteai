@@ -30,6 +30,28 @@ pub enum Error {
     Conflict,
     #[error("client.ssh.limit")]
     Limit,
+    #[error("client.ssh.x11InvalidDisplay")]
+    X11Display,
+    #[error("client.ssh.x11Unavailable")]
+    X11Unavailable,
+    #[error("client.ssh.x11Rejected")]
+    X11Rejected,
+}
+
+/// Forward to the X server on the computer that owns this SSH connection.
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct X11 {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display: Option<String>,
+}
+impl X11 {
+    pub fn validate(&self) -> Result<()> {
+        if let Some(display) = self.display.as_deref().filter(|value| !value.is_empty()) {
+            crate::x11::validate_display(display)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Deserialize)]
@@ -65,11 +87,15 @@ pub struct Connect {
     pub private_key: Option<String>,
     pub passphrase: Option<String>,
     pub size: Size,
+    pub x11: Option<X11>,
 }
 impl Connect {
     pub fn validate(&self) -> Result<()> {
         self.endpoint.validate()?;
         self.size.validate()?;
+        if let Some(x11) = &self.x11 {
+            x11.validate()?;
+        }
         if self.username.is_empty()
             || self.username.len() > 256
             || self.username.chars().any(char::is_control)

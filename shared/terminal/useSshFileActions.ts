@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SshEntry } from './ssh';
 import { browserSshUpload } from './sshTransfers';
+import type { SshUpload } from './sshTransfers';
 import { sshChild, validSshName, type useSshFiles } from './useSshFiles';
 import type { SshConflictChoice } from './sshUpload';
 
@@ -27,16 +28,13 @@ export function useSshFileActions(files: SshFilesState) {
     const done = await files.mutate(promptRequest(prompt, sshChild(files.path, prompt.name)));
     if (done) setPrompt(undefined);
   };
-  const upload = async (selected: FileList) => {
-    for (const file of Array.from(selected)) {
-      if (!await files.upload(browserSshUpload(file), resolveConflict)) break;
-    }
-  };
+  const uploadSources = (selected: SshUpload[], directory?: string) => files.uploadMany(selected, resolveConflict, directory);
+  const upload = (selected: FileList) => uploadSources(Array.from(selected).map(browserSshUpload));
   const copyPath = async (path: string) => {
     try { await navigator.clipboard.writeText(path); setCopyStatus('client.ssh.pathCopied'); }
     catch { setCopyStatus('client.ssh.copyFailed'); }
   };
-  return { prompt, setPrompt, confirm, upload, conflict, chooseConflict, copyPath, copyStatus,
+  return { prompt, setPrompt, confirm, upload, uploadSources, conflict, chooseConflict, copyPath, copyStatus,
     create: (kind: 'createFolder' | 'createFile') => setPrompt({ kind, name: '' }),
     rename: (entry: SshEntry) => setPrompt({ kind: 'rename', name: entry.name, entry }),
     remove: (entry: SshEntry) => setPrompt({ kind: 'delete', name: entry.name, entry }) };

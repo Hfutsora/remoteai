@@ -2,9 +2,11 @@ import type { TerminalInfo, TerminalSize } from './types';
 
 export interface SshEndpoint { host: string; port: number }
 export interface SshRemote extends SshEndpoint { username: string }
+export interface SshX11 { display?: string }
 export interface SshConnect {
   endpoint: SshEndpoint; username: string; fingerprint: string; size: TerminalSize;
   password?: string; privateKey?: string; passphrase?: string;
+  x11?: SshX11;
 }
 export interface SshEntry { name: string; path: string; directory: boolean; size: number }
 export type SshUploadMode = 'reject' | 'overwrite' | 'rename';

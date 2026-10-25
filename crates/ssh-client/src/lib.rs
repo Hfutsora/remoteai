@@ -3,9 +3,11 @@ mod connection;
 mod file_mutations;
 mod files;
 mod sessions;
+mod shell_integration;
 mod types;
 mod upload_destination;
 mod uploads;
+mod x11;
 
 pub use connection::probe;
 pub use sessions::Client;

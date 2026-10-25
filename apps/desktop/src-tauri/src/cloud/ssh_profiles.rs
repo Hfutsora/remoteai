@@ -33,6 +33,8 @@ pub(crate) struct SshProfile {
     fingerprint: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     revision: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    x11: Option<csw_ssh_client::X11>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -48,7 +50,7 @@ enum Authentication {
 pub(crate) enum SshProfileRequest {
     List,
     Save {
-        profile: SshProfile,
+        profile: Box<SshProfile>,
         credentials: Option<SshCredentials>,
     },
     Credentials {
@@ -95,6 +97,10 @@ fn valid_profile(value: &SshProfile) -> bool {
         && !value.username.chars().any(char::is_control)
         && value.fingerprint.as_ref().is_none_or(|v| v.len() <= 256)
         && value.revision.is_none_or(|v| v <= 9_007_199_254_740_990)
+        && value
+            .x11
+            .as_ref()
+            .is_none_or(|options| options.validate().is_ok())
 }
 
 fn request_parts(
@@ -235,6 +241,24 @@ pub(crate) async fn cloud_ssh_profiles(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retains_only_valid_x11_settings() {
+        let mut input = json!({"id":"one", "name":"test", "host":"localhost", "port":22,
+            "username":"me", "auth":"password", "x11":{"display":":0.1"}});
+        let profile: SshProfile = serde_json::from_value(input.clone()).unwrap();
+        assert!(valid_profile(&profile));
+        assert_eq!(serde_json::to_value(profile).unwrap(), input);
+        input["x11"] = json!({});
+        let profile: SshProfile = serde_json::from_value(input.clone()).unwrap();
+        assert!(valid_profile(&profile));
+        assert_eq!(serde_json::to_value(profile).unwrap(), input);
+        input["x11"]["display"] = "remote.test:0".into();
+        let profile: SshProfile = serde_json::from_value(input.clone()).unwrap();
+        assert!(!valid_profile(&profile));
+        input["x11"]["cookie"] = "secret".into();
+        assert!(serde_json::from_value::<SshProfile>(input).is_err());
+    }
 
     #[test]
     fn rejects_credentials_paths_and_out_of_range_targets() {

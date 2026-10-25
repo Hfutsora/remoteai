@@ -3,6 +3,8 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { RemoteTerminals } from './terminals';
 import { openNativeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
 import type { TerminalEvent } from '../../../../shared/terminal/types';
+import { createGuiToolsClient } from '../../../../shared/remote-chat/guiTools';
+import { remoteTerminalApi } from '../../../../shared/remote-chat/terminalApi';
 
 vi.mock('../pages/codexGui/terminal/sshApi', () => ({
   openNativeSsh: vi.fn(), sshFiles: vi.fn(), probeSsh: vi.fn(),
@@ -12,6 +14,20 @@ vi.mock('../pages/codexGui/terminal/api', () => ({
 }));
 vi.mock('../api/backend', () => ({ invoke: vi.fn() }));
 beforeEach(() => vi.clearAllMocks());
+
+it('forwards X11 settings through the remote and Web terminal adapters', async () => {
+  const terminals = new RemoteTerminals();
+  const info = { id: 'ssh-x11', cwd: '/', shell: 'SSH',
+    ssh: { host: 'server.test', port: 22, username: 'fixture' } };
+  vi.mocked(openNativeSsh).mockResolvedValue(info);
+  const client = createGuiToolsClient(<T,>(body: object) =>
+    terminals.request(body as Record<string, unknown>, 'owner') as Promise<T>);
+  const request = { endpoint: { host: 'server.test', port: 22 }, username: 'fixture', fingerprint: 'SHA256:known',
+    size: { cols: 80, rows: 24 }, x11: { display: ':1' } };
+  const opened = await remoteTerminalApi(client.terminal).ssh!.open(request, '/project');
+  expect(opened).toMatchObject({ ...info, projectCwd: '/project' });
+  expect(openNativeSsh).toHaveBeenCalledExactlyOnceWith(request, expect.any(Function));
+});
 
 it('scopes SSH files to the authenticated terminal owner and retains project association', async () => {
   const terminals = new RemoteTerminals();

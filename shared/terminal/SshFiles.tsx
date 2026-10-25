@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Button, Checkbox, Input, Progress, Spin, Tooltip } from 'antd';
 import { ArrowUp, Download, FilePlus, Folder, FolderPlus, Home, RefreshCw, Upload } from 'lucide-react';
 import { WorkspaceDrawerTab } from '../chat/WorkspaceDrawerTab';
@@ -10,33 +10,56 @@ import { sshParent, useSshFiles } from './useSshFiles';
 import { useSshFileActions } from './useSshFileActions';
 import { SshFileDialogs } from './SshFileDialogs';
 import { SshFileList } from './SshFileList';
+import { SshDropTarget, type SshNativeDrop } from './SshDropTarget';
+import { releaseSshUploadBatch, type SshUploadBatch } from './sshDrop';
+import type { PendingSshUpload } from './useSshDropQueue';
 import './ssh.css';
 
 export const sshFilesTabId = (id: string) => `ssh-files:${id}`;
 const ICON = <Folder size={16} />;
 
-export function SshFiles({ info, api, active }: { info: TerminalInfo; api: SshApi; active: boolean }) {
+interface DropProps { nativeDrop?: SshNativeDrop; pendingUpload?: PendingSshUpload }
+
+export function SshFiles({ info, api, active, ...drop }: {
+  info: TerminalInfo; api: SshApi; active: boolean;
+} & DropProps) {
   return <WorkspaceDrawerTab active={active} autoOpen
     tab={{ id: sshFilesTabId(info.id), title: t('client.ssh.filesTitle', { host: info.ssh?.host ?? '' }), icon: ICON }}>
-    {() => <SshFileBrowser key={info.id} api={api} id={info.id} />}
+    {visible => <SshFileBrowser key={info.id} api={api} id={info.id} active={active && visible} {...drop} />}
   </WorkspaceDrawerTab>;
 }
 
-export function SshFileBrowser({ api, id }: { api: SshApi; id: string }) {
+export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUpload }: {
+  api: SshApi; id: string; active?: boolean;
+} & DropProps) {
   const files = useSshFiles(api, id);
   const actions = useSshFileActions(files);
   const [address, setAddress] = useState<string>();
   const [filter, setFilter] = useState('');
   const [hidden, setHidden] = useState(true);
   const input = useRef<HTMLInputElement>(null);
+  const accepted = useRef<PendingSshUpload>();
+  useEffect(() => {
+    if (pendingUpload && !files.loaded && files.error) { pendingUpload.complete(); return; }
+    if (!pendingUpload || accepted.current === pendingUpload || files.busy || !files.loaded) return;
+    accepted.current = pendingUpload;
+    void actions.uploadSources(pendingUpload.batch.files, pendingUpload.batch.directory).finally(pendingUpload.complete);
+  }, [pendingUpload, files.busy, files.loaded, files.error, actions.uploadSources]);
+  useEffect(() => () => { accepted.current?.complete(); }, []);
+  const upload = async (batch: SshUploadBatch) => {
+    try { await actions.uploadSources(batch.files); }
+    finally { await releaseSshUploadBatch(batch); }
+  };
   const selected = files.selected;
-  const open = (path: string) => { setAddress(undefined); void files.load(path); };
+  const open = (path: string) => { setAddress(undefined); void files.navigate(path); };
   const action = (key: string, icon: ReactNode, invoke: () => void, disabled = false) =>
     <Tooltip title={t(key)} styles={{ root: { maxWidth: 400 } }}><Button icon={icon} aria-label={t(key)}
       disabled={files.busy || disabled} onClick={invoke} /></Tooltip>;
   const entries = files.entries.filter(entry => (hidden || !entry.name.startsWith('.'))
     && entry.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
-  return <div className="ssh-files" aria-busy={files.busy}>
+  return <SshDropTarget id={id} path={files.path} active={active} disabled={files.busy || !files.loaded}
+    native={nativeDrop} upload={upload} report={files.reportError}>
+    <div className="ssh-files" aria-busy={files.busy}>
     <div className="ssh-file-toolbar">
       {action('client.ssh.refresh', <RefreshCw size={16} />, () => void files.load())}
       {action('client.ssh.newFile', <FilePlus size={16} />, () => actions.create('createFile'))}
@@ -82,6 +105,7 @@ export function SshFileBrowser({ api, id }: { api: SshApi; id: string }) {
       <Button danger disabled={files.busy} onClick={() => actions.remove(selected)}>{t('client.ssh.delete')}</Button>
     </div>}
     <p className="ssh-hint">{t('client.ssh.transferHint')}</p>
+    <p className="ssh-hint">{t('client.ssh.uploadDropHint')}</p>
     <SshFileDialogs files={files} actions={actions} />
-  </div>;
+  </div></SshDropTarget>;
 }

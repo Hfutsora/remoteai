@@ -11,9 +11,24 @@ pub(crate) const TIMEOUT: Duration = Duration::from_secs(20);
 pub(crate) struct HostKey {
     expected: Option<String>,
     observed: Arc<Mutex<Option<String>>>,
+    x11: Option<crate::x11::Forwarder>,
 }
 impl client::Handler for HostKey {
     type Error = russh::Error;
+    async fn server_channel_open_x11(
+        &mut self,
+        channel: russh::Channel<client::Msg>,
+        _originator_address: &str,
+        _originator_port: u32,
+        reply: client::ChannelOpenHandle,
+        _session: &mut client::Session,
+    ) -> std::result::Result<(), Self::Error> {
+        if let Some(forwarder) = &mut self.x11 {
+            forwarder.accept(channel, reply).await;
+        }
+        // Dropping the reply rejects unsolicited channels when forwarding is off.
+        Ok(())
+    }
     async fn check_server_key(
         &mut self,
         key: &PublicKeyOrCertificate,
@@ -30,11 +45,13 @@ impl client::Handler for HostKey {
 async fn handshake(
     endpoint: &Endpoint,
     expected: Option<String>,
+    x11: Option<crate::x11::Forwarder>,
 ) -> Result<client::Handle<HostKey>> {
     let observed = Arc::new(Mutex::new(None));
     let handler = HostKey {
         expected: expected.clone(),
         observed: observed.clone(),
+        x11,
     };
     let config = client::Config {
         keepalive_interval: Some(Duration::from_secs(30)),
@@ -67,6 +84,7 @@ pub async fn probe(endpoint: Endpoint) -> Result<String> {
     let handler = HostKey {
         expected: None,
         observed: observed.clone(),
+        x11: None,
     };
     let session = tokio::time::timeout(
         TIMEOUT,
@@ -87,9 +105,12 @@ pub async fn probe(endpoint: Endpoint) -> Result<String> {
     Ok(fingerprint)
 }
 
-pub(crate) async fn connect(request: &Connect) -> Result<client::Handle<HostKey>> {
+pub(crate) async fn connect(
+    request: &Connect,
+    x11: Option<crate::x11::Forwarder>,
+) -> Result<client::Handle<HostKey>> {
     request.validate()?;
-    let mut session = handshake(&request.endpoint, Some(request.fingerprint.clone())).await?;
+    let mut session = handshake(&request.endpoint, Some(request.fingerprint.clone()), x11).await?;
     let authenticated = if let Some(key) = &request.private_key {
         // Decrypting a private key can be CPU intensive; never do it on the UI or async I/O thread.
         let key = zeroize::Zeroizing::new(key.clone());

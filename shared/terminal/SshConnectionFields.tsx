@@ -3,6 +3,8 @@ import { Form, Input, InputNumber, Radio, type FormInstance } from 'antd';
 import { KeyRound, LockKeyhole, Server, UserRound } from 'lucide-react';
 import type { SshValues } from './useSshConnection';
 import { SshPrivateKeyInput } from './SshPrivateKeyInput';
+import { SshX11Field } from './SshX11Field';
+import { validSshX11 } from './sshX11';
 import { displayText as t } from '../localization/messages';
 
 export function SshConnectionFields({ form, disabled }: { form: FormInstance<SshValues>; disabled: boolean }) {
@@ -53,6 +55,13 @@ export function SshConnectionFields({ form, disabled }: { form: FormInstance<Ssh
         <Input.Password autoComplete="new-password" maxLength={4096}
           placeholder={t('client.ssh.passwordPlaceholder')} />
       </Form.Item>}
+    </section>
+    <section className="ssh-form-section">
+      <Form.Item name="x11" rules={[{ validator: async (_, value: unknown) => {
+        if (value !== undefined && !validSshX11(value)) throw new Error(t('client.ssh.x11InvalidDisplay'));
+      } }]}>
+        <SshX11Field disabled={disabled} />
+      </Form.Item>
     </section>
   </>;
 }

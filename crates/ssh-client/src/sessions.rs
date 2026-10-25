@@ -17,6 +17,7 @@ struct Session {
     input: mpsc::Sender<Input>,
     ssh: Arc<client::Handle<HostKey>>,
     files: Mutex<Option<files::FileSession>>,
+    x11: Option<crate::x11::Lease>,
 }
 
 /// A registry owns connections; a bounded actor serializes each terminal's input and resize requests.
@@ -40,7 +41,7 @@ impl Client {
             .clone()
             .try_acquire_owned()
             .map_err(|_| Error::Limit)?;
-        let (ssh, channel) = tokio::time::timeout(TIMEOUT, open_shell(&request))
+        let (ssh, channel, x11) = tokio::time::timeout(TIMEOUT, open_shell(&request, sink.clone()))
             .await
             .map_err(|_| Error::Connection)??;
         let (input, receive) = mpsc::channel(16);
@@ -48,6 +49,7 @@ impl Client {
             input,
             ssh: Arc::new(ssh),
             files: Mutex::new(None),
+            x11,
         });
         let id = format!("ssh-{}", uuid::Uuid::new_v4());
         self.sessions
@@ -59,6 +61,11 @@ impl Client {
         tokio::spawn(async move {
             let _permit = permit;
             run_shell(channel, receive, &sink).await;
+            // File cleanup can wait for an in-flight SFTP operation; forwarded
+            // applications must stop as soon as their terminal has ended.
+            if let Some(x11) = &session.x11 {
+                x11.0.stop();
+            }
             state.sessions.lock().await.remove(&task_id);
             if let Some(files) = session.files.lock().await.as_mut() {
                 files.cleanup().await;
@@ -155,12 +162,29 @@ impl Client {
     }
 }
 
-async fn open_shell(request: &Connect) -> Result<(client::Handle<HostKey>, Channel<client::Msg>)> {
-    let session = connection::connect(request).await?;
-    let channel = session
+async fn open_shell(
+    request: &Connect,
+    sink: Sink,
+) -> Result<(
+    client::Handle<HostKey>,
+    Channel<client::Msg>,
+    Option<crate::x11::Lease>,
+)> {
+    let x11 = match &request.x11 {
+        Some(options) => Some(crate::x11::State::prepare(options, sink).await?),
+        None => None,
+    };
+    let forwarder = x11
+        .as_ref()
+        .map(|lease| crate::x11::Forwarder::new(lease.0.clone()));
+    let session = connection::connect(request, forwarder).await?;
+    let mut channel = session
         .channel_open_session()
         .await
         .map_err(|_| Error::Connection)?;
+    if let Some(x11) = &x11 {
+        x11.0.request(&mut channel).await?;
+    }
     channel
         .request_pty(
             true,
@@ -173,11 +197,8 @@ async fn open_shell(request: &Connect) -> Result<(client::Handle<HostKey>, Chann
         )
         .await
         .map_err(|_| Error::Connection)?;
-    channel
-        .request_shell(true)
-        .await
-        .map_err(|_| Error::Connection)?;
-    Ok((session, channel))
+    crate::shell_integration::start(&session, &channel).await?;
+    Ok((session, channel, x11))
 }
 
 async fn run_shell(
@@ -190,6 +211,10 @@ async fn run_shell(
         tokio::select! {
             request = input.recv() => {
                 let Some(request) = request else { break };
+                if matches!(&request.command, Command::Write { data, .. } if !data.is_empty())
+                    && !sink(Event::Output { data: crate::shell_integration::INPUT_MARKER.to_vec() }) {
+                    break;
+                }
                 let closing = matches!(request.command, Command::Close { .. });
                 let result = tokio::time::timeout(TIMEOUT, send_input(&channel, request.command)).await
                     .map_err(|_| Error::Connection).and_then(|value| value);

@@ -1,8 +1,10 @@
-import type { SshRemote } from './ssh';
+import type { SshRemote, SshX11 } from './ssh';
 import type { SshCredentials } from './sshCredentials';
+import { validSshX11 } from './sshX11';
 
 export interface SshProfile extends SshRemote {
   id: string; name: string; auth: 'password' | 'key'; fingerprint?: string; revision?: number;
+  x11?: SshX11;
   /** Client-only origin; excluded by parseSshProfile before serialization. */
   accountScope?: string;
 }
@@ -28,10 +30,12 @@ export function parseSshProfile(value: unknown): SshProfile | null {
     || !item.username.trim() || item.username.length > 256 || /[\x00-\x1f\x7f]/.test(item.username)
     || (item.fingerprint !== undefined && (typeof item.fingerprint !== 'string'
       || item.fingerprint.length > 256))
-    || (item.revision !== undefined && (!Number.isSafeInteger(item.revision) || Number(item.revision) < 0))) return null;
+    || (item.revision !== undefined && (!Number.isSafeInteger(item.revision) || Number(item.revision) < 0))
+    || (item.x11 !== undefined && !validSshX11(item.x11))) return null;
   return { id: item.id, name: item.name, host: item.host, username: item.username,
     port: item.port, auth: item.auth as SshProfile['auth'],
     fingerprint: typeof item.fingerprint === 'string' ? item.fingerprint : undefined,
+    ...(item.x11 ? { x11: { ...(item.x11.display ? { display: item.x11.display } : {}) } } : {}),
     ...(typeof item.revision === 'number' ? { revision: item.revision } : {}) };
 }
 

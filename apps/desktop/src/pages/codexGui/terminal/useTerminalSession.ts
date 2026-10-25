@@ -9,6 +9,7 @@ import { connectTerminal } from "../../../../../../shared/terminal/connection";
 import { terminalTheme } from "./theme";
 import type { TerminalApi, TerminalInfo } from "../../../../../../shared/terminal/types";
 import "@xterm/xterm/css/xterm.css";
+import { bindSshDirectory } from '../../../../../../shared/terminal/sshDirectory';
 
 export function useTerminalSession({ cwd, visible, api, session, onLink }: {
   cwd: string; visible: boolean; api: TerminalApi; session?: TerminalInfo; onLink: (link: TerminalLinkTarget) => void;
@@ -33,22 +34,28 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
     const fit = new FitAddon(); terminal.loadAddon(fit); terminal.open(element);
     terminal.loadAddon(new WebLinksAddon(activate));
     if (element.clientWidth && element.clientHeight) fit.fit();
+    const directory = session?.ssh ? bindSshDirectory({ id: session.id, terminal,
+      write: data => connection.input(data) }) : undefined;
     const connection = connectTerminal({ api, cwd, session, size: { cols: terminal.cols, rows: terminal.rows },
       onReady: (value) => { setInfo(value); setStatus(""); }, onError: setStatus,
       onEvent: (event) => {
-        if (event.type === "output") terminal.write(new Uint8Array(event.data));
-        if (event.type === 'reset') terminal.reset();
+        if (event.type === "output") {
+          if (directory) directory.output(event.data); else terminal.write(new Uint8Array(event.data));
+        }
+        if (event.type === 'reset') { directory?.disconnect(); terminal.reset(); }
         if (event.type === 'connection') {
+          if (!event.connected) directory?.disconnect();
           terminal.options.disableStdin = !event.connected;
           setStatus(event.connected ? '' : uiText("client.terminal.connectionLostYouCanContinueWhenItReconnects"));
         }
         if (event.type === "error") setStatus(event.message);
         if (event.type === "exit") {
+          directory?.disconnect();
           terminal.options.disableStdin = true;
           setStatus(uiText("client.chat.thisTerminalHasEndedYouCanOpenANewOne"));
         }
       } });
-    const input = terminal.onData(connection.input);
+    const input = terminal.onData(data => { directory?.input(); connection.input(data); });
     // xterm also emits internal flags that the terminal request does not accept.
     const resize = terminal.onResize(({ cols, rows }) => connection.resize({ cols, rows }));
     let frame = 0;
@@ -64,7 +71,8 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
     terminal.attachCustomKeyEventHandler((event) => handleClipboard(event, terminal, setStatus));
     return () => {
       cancelAnimationFrame(frame); observer.disconnect(); themeObserver.disconnect();
-      input.dispose(); resize.dispose(); connection.dispose(); terminal.dispose(); terminalRef.current = undefined;
+      directory?.dispose(); input.dispose(); resize.dispose(); connection.dispose();
+      terminal.dispose(); terminalRef.current = undefined;
     };
   }, [cwd, api, session]);
   useEffect(() => { if (visible) terminalRef.current?.focus(); }, [visible]);

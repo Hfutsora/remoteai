@@ -3,6 +3,7 @@ pub(crate) mod links;
 mod platform;
 mod service;
 pub(crate) mod ssh;
+pub(crate) mod ssh_drop;
 #[cfg(test)]
 mod tests;
 mod types;

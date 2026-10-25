@@ -154,6 +154,7 @@ pub fn run() {
         .manage(coze::CozeState::default())
         .manage(codex_gui::GuiState::default())
         .manage(codex_gui::dropped_files::DroppedFilesState::default())
+        .manage(gui_terminal::ssh_drop::SshDropState::default())
         .manage(codex_gui::file_preview::PreviewSessions::default())
         .manage(codex_gui::notification_navigation::NavigationState::default())
         .manage(codex_gui::releases::CliUpdateState::default())
@@ -387,6 +388,7 @@ pub fn run() {
             gui_terminal::ssh::codex_gui_ssh_open,
             gui_terminal::ssh::codex_gui_ssh_command,
             gui_terminal::ssh::codex_gui_ssh_files,
+            gui_terminal::ssh_drop::codex_gui_ssh_drop_files,
             gui_terminal::codex_gui_terminal_command,
             gui_terminal::links::codex_gui_terminal_link,
             gui_terminal::links::resources::codex_gui_resource_open,
