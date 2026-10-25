@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Button, Checkbox, Input, Progress, Spin, Tooltip } from 'antd';
-import { ArrowUp, Download, FilePlus, Folder, FolderPlus, Home, RefreshCw, Upload } from 'lucide-react';
+import { ArrowUp, FilePlus, Folder, FolderPlus, Home, RefreshCw, Upload } from 'lucide-react';
 import { WorkspaceDrawerTab } from '../chat/WorkspaceDrawerTab';
 import { displayText as t } from '../localization/messages';
 import { remoteErrorText } from '../localization/errors';
@@ -13,6 +13,9 @@ import { SshFileList } from './SshFileList';
 import { SshDropTarget, type SshNativeDrop } from './SshDropTarget';
 import { releaseSshUploadBatch, type SshUploadBatch } from './sshDrop';
 import type { PendingSshUpload } from './useSshDropQueue';
+import { browserSshDownload } from './sshTransfers';
+import { useSshFileEditor } from './useSshFileEditor';
+import { SshFileEditor } from './SshFileEditor';
 import './ssh.css';
 
 export const sshFilesTabId = (id: string) => `ssh-files:${id}`;
@@ -32,7 +35,9 @@ export function SshFiles({ info, api, active, ...drop }: {
 export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUpload }: {
   api: SshApi; id: string; active?: boolean;
 } & DropProps) {
-  const files = useSshFiles(api, id);
+  const browserFiles = useSshFiles(api, id);
+  const editor = useSshFileEditor({ api, id, download: browserSshDownload, onSaved: () => browserFiles.load() });
+  const files = { ...browserFiles, busy: browserFiles.busy || editor.busy || Boolean(editor.document) };
   const actions = useSshFileActions(files);
   const [address, setAddress] = useState<string>();
   const [filter, setFilter] = useState('');
@@ -43,14 +48,14 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
     if (pendingUpload && !files.loaded && files.error) { pendingUpload.complete(); return; }
     if (!pendingUpload || accepted.current === pendingUpload || files.busy || !files.loaded) return;
     accepted.current = pendingUpload;
-    void actions.uploadSources(pendingUpload.batch.files, pendingUpload.batch.directory).finally(pendingUpload.complete);
+    void actions.uploadSources(pendingUpload.batch.files, pendingUpload.batch.directory)
+      .finally(pendingUpload.complete);
   }, [pendingUpload, files.busy, files.loaded, files.error, actions.uploadSources]);
   useEffect(() => () => { accepted.current?.complete(); }, []);
   const upload = async (batch: SshUploadBatch) => {
     try { await actions.uploadSources(batch.files); }
     finally { await releaseSshUploadBatch(batch); }
   };
-  const selected = files.selected;
   const open = (path: string) => { setAddress(undefined); void files.navigate(path); };
   const action = (key: string, icon: ReactNode, invoke: () => void, disabled = false) =>
     <Tooltip title={t(key)} styles={{ root: { maxWidth: 400 } }}><Button icon={icon} aria-label={t(key)}
@@ -85,6 +90,7 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
       placeholder={t('client.ssh.filter')} aria-label={t('client.ssh.filter')} />
     <Checkbox checked={hidden} onChange={event => setHidden(event.target.checked)}>{t('client.ssh.hidden')}</Checkbox>
     {files.error && <Alert type="error" role="alert" message={remoteErrorText(files.error)} />}
+    {!editor.document && editor.error && <Alert type="error" role="alert" message={remoteErrorText(editor.error)} />}
     {actions.copyStatus && <Alert type={actions.copyStatus === 'client.ssh.pathCopied' ? 'success' : 'error'}
       message={t(actions.copyStatus)} />}
     {files.truncated && <Alert type="info" message={t('client.ssh.truncated')} />}
@@ -94,18 +100,10 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
         size="small" />
       <Button size="small" onClick={files.cancelUpload}>{t('client.ssh.cancelUpload')}</Button>
     </div>}
-    <SshFileList files={files} actions={actions} entries={entries} open={open} upload={() => input.current?.click()} />
-    {selected && <div className="ssh-file-actions">
-      {selected.directory ? <Button disabled={files.busy} onClick={() => {
-        open(selected.path);
-      }}>{t('client.ssh.openFolder')}</Button> : <Button icon={<Download size={15} />} disabled={files.busy}
-        onClick={() => void files.download(selected)}>{t('client.ssh.download')}</Button>}
-      <Button disabled={files.busy} onClick={() => actions.rename(selected)}>
-        {t('client.ssh.rename')}</Button>
-      <Button danger disabled={files.busy} onClick={() => actions.remove(selected)}>{t('client.ssh.delete')}</Button>
-    </div>}
-    <p className="ssh-hint">{t('client.ssh.transferHint')}</p>
-    <p className="ssh-hint">{t('client.ssh.uploadDropHint')}</p>
+    <SshFileList files={files} actions={actions} entries={entries}
+      open={entry => entry.directory ? open(entry.path) : void editor.open(entry)}
+      upload={() => input.current?.click()} />
     <SshFileDialogs files={files} actions={actions} />
+    <SshFileEditor editor={editor} />
   </div></SshDropTarget>;
 }

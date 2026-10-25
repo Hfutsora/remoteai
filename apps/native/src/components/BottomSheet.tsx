@@ -111,6 +111,8 @@ export function BottomSheet({
       const draggedFarEnough = gesture.dy >= DRAG_DISMISS_DISTANCE;
       const flickedDown = gesture.dy > 12 && gesture.vy >= DRAG_DISMISS_VELOCITY;
       if (draggedFarEnough || flickedDown) {
+        // Closing may open a confirmation instead; restore the sheet if it remains visible.
+        resetDrag();
         onClose();
         return;
       }

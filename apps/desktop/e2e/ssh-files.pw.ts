@@ -46,7 +46,7 @@ async function createWorkspace(page: Page, name: string) {
   expect(Math.abs(home!.y - path!.y)).toBeLessThan(3);
   await contextAction(page, 'hello.txt', '新建文件夹');
   await page.getByLabel('文件名').fill(name); await confirm(page).click();
-  await contextAction(page, name, '打开文件夹');
+  await entry(page, name).click();
   await expect(page.getByRole('textbox', { name: '远程路径' })).toHaveValue(`/${name}`);
   await page.locator('.ssh-file-list').click({ button: 'right', position: { x: 15, y: 60 } });
   await page.getByRole('menuitem', { name: '新建文件', exact: true }).click();

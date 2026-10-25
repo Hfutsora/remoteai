@@ -24,13 +24,19 @@ impl PendingUpload {
     async fn prepare(sftp: &SftpSession, request: StartUpload, token: &str) -> Result<Self> {
         let StartUpload { path, size, mode } = request;
         validate_path(&path)?;
-        let (parent, name) = path.rsplit_once('/').ok_or(Error::Invalid)?;
+        let (_, name) = path.rsplit_once('/').ok_or(Error::Invalid)?;
         if !path.starts_with('/') || name.is_empty() || name == "." || name == ".." {
             return Err(Error::Invalid);
         }
         if mode == UploadMode::Reject && upload_destination::exists(sftp, &path).await? {
             return Err(Error::Conflict);
         }
+        let path = if mode == UploadMode::Overwrite {
+            upload_destination::overwrite_path(sftp, &path).await?
+        } else {
+            path
+        };
+        let (parent, name) = path.rsplit_once('/').ok_or(Error::Invalid)?;
         let parent = if parent.is_empty() { "/" } else { parent };
         let parent = sftp.canonicalize(parent).await.map_err(|_| Error::File)?;
         Ok(Self {
@@ -78,8 +84,14 @@ impl Uploads {
             .await
             .map_err(|_| Error::File)?;
         // Only a file successfully created by this upload belongs to its cleanup scope.
+        let metadata = if upload.mode == UploadMode::Overwrite {
+            upload_destination::preserve_metadata(sftp, &upload.destination, &upload.temporary)
+                .await
+        } else {
+            Ok(())
+        };
         self.pending.insert(token.clone(), upload);
-        if file.shutdown().await.is_err() {
+        if file.shutdown().await.is_err() || metadata.is_err() {
             self.cancel(sftp, &token).await?;
             return Err(Error::File);
         }

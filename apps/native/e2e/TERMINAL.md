@@ -56,8 +56,10 @@ node apps/native/e2e/ssh-test.mjs
 ```
 
 Run this alone on the device. It checks pulling saved connections, adding a connection,
-host confirmation, directory navigation, folder creation, rename, deletion, and returning
-to the terminal at font scales 1.0 and 1.3, including landscape. It also checks each tab's
+host confirmation, single-tap directory navigation, long-press rename/deletion, editable text/code
+files, save-and-reopen round trips, unsaved-change protection, and returning to the terminal at
+font scales 1.0 and 1.3, including landscape. Set `SSH_FILES_ONLY=1` to run the focused file checks.
+The fixture retains uploaded bytes so reopening a saved file verifies its content. It also checks each tab's
 close button and the overflow menu for hidden tabs. It restores the original
 font and rotation settings. Inspect `.codex-tmp/mobile-ssh-android/` screenshots for glyph
 clipping. Native transfer unit tests cover picker uploads and download publication;

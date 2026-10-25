@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { hierarchy, prepareHierarchy } from '../../desktop/e2e/android-hierarchy.mjs';
+import { checkSshFiles } from './ssh-file-checks.mjs';
 
 const exec = promisify(execFile);
 const serial = process.env.ANDROID_SERIAL;
@@ -67,6 +68,15 @@ async function input(label, text) {
   await adb('shell', 'input', 'text', text);
   await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
 }
+async function longPress(label) {
+  await wait(label);
+  const [left, top, right, bottom] = (await find(label)).rect;
+  const x = String((left + right) >> 1);
+  const y = String((top + bottom) >> 1);
+  await adb('shell', 'input', 'swipe', x, y, x, y, '800');
+}
+const fileChecks = scale => checkSshFiles({ tap, wait, find, input, screenshot, longPress,
+  back: () => adb('shell', 'input', 'keyevent', 'KEYCODE_BACK') }, scale);
 async function closeThirdTerminal() {
   for (let attempt = 0; attempt < 4; attempt++) {
     if (await find('关闭终端 3')) { await tap('关闭终端 3'); return; }
@@ -119,6 +129,11 @@ async function verify(scale) {
   await wait('远程文件浏览');
   assert.equal(await find('IP 或主机名'), undefined, 'Saved connections open directly without editing');
   await screenshot(`connected-${scale}`);
+  if (process.env.SSH_FILES_ONLY) {
+    await fileChecks(scale);
+    console.log(`PASS SSH native file navigation, long press and editing at font scale ${scale}`);
+    return;
+  }
   {
     await tap('终端连接选项'); await wait('Key server'); await tap('Key server');
     await wait('远程文件浏览');
@@ -146,24 +161,13 @@ async function verify(scale) {
     console.log(`PASS SSH native credential sync and copy at font scale ${scale}`);
     return;
   }
-  await tap('远程文件浏览'); await wait('hello.txt');
-  await screenshot(`files-${scale}`);
-  await tap('中文目录'); await tap('打开文件夹'); await wait('没有匹配的文件');
-  await tap('新建文件夹'); await input('文件名', 'phone-folder'); await tap('确定'); await wait('phone-folder');
-  await tap('phone-folder'); await tap('重命名'); await input('文件名', 'renamed'); await tap('确定');
-  await wait('renamed'); await tap('renamed'); await tap('删除');
-  await wait('删除“renamed”？'); await screenshot(`delete-${scale}`); await tap('删除');
-  await wait('没有匹配的文件'); await tap('返回上一层'); await wait('远程文件浏览');
+  await fileChecks(scale);
   await tap('终端连接选项'); await wait('Saved on Office'); await tap('新建 SSH 连接…');
   await input('连接名称（可选）', 'Phone-added'); await input('IP 或主机名', 'phone.test');
   await input('用户名', 'fixture'); await tap('连接并保存'); await tap('信任并连接');
   await wait('远程文件浏览');
   await tap('终端连接选项'); await wait('Phone-added'); await screenshot(`saved-${scale}`);
   await tap('关闭已保存的连接');
-  await tap('切换横屏'); await wait('切换竖屏');
-  await tap('远程文件浏览'); await tap('hello.txt', true);
-  await wait('下载'); await screenshot(`files-landscape-${scale}`);
-  await tap('返回上一层'); await tap('切换竖屏'); await wait('切换横屏');
   if (process.env.SSH_CLOUD_FIXTURE) {
     const profiles = await (await fetch('http://127.0.0.1:1499/sync/ssh-profiles', {
       headers: { Authorization: 'Bearer ssh-fixture' },
