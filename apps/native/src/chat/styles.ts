@@ -22,7 +22,7 @@ export const useStyles = createThemedStyles((color) => ({
   primary: { backgroundColor: palette.green },
   primaryText: { color: '#fff' },
   disabled: { opacity: 0.4 },
-  header: { paddingHorizontal: 16, paddingVertical: 12, gap: 12, flexDirection: 'row',
+  header: { paddingHorizontal: 16, paddingVertical: 8, gap: 12, flexDirection: 'row',
     alignItems: 'center' },
   headerContent: { flex: 1, minWidth: 0 },
   headerTools: { flexShrink: 0, marginLeft: 'auto' },

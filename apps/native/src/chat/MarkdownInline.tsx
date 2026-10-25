@@ -15,6 +15,7 @@ export interface MarkdownContext {
   muted?: boolean; compact?: boolean; header?: boolean; textAlign?: TextStyle['textAlign'];
   tone?: 'default' | 'process';
   listItemStart?: boolean;
+  flushTop?: boolean; flushBottom?: boolean;
   copy?: CopyAction;
 }
 
@@ -94,13 +95,17 @@ export function MarkdownParagraph({ nodes, heading, context = {} }: {
     if (part.some(hasMarkdownMath)) return <ChatMath key={index} markup={renderMathParagraph(part)}
       muted={context.muted || context.tone === 'process'}
       fontSize={heading ? headingStyles[heading]?.fontSize : undefined} copy={copy} compact={context.compact}
-      flushTop={context.listItemStart && index === 0} />;
+      flushTop={(context.listItemStart || context.flushTop) && index === 0}
+      flushBottom={context.flushBottom && index === parts.length - 1} />;
     return <SelectableChatText key={index} copy={copy} accessibilityRole={heading ? 'header' : undefined}
       style={[styles.messageText, markdownStyles.paragraph, context.compact && markdownStyles.compact,
         context.tone === 'process' && markdownStyles.process,
         context.muted && markdownStyles.muted, (heading || context.header) && markdownStyles.bold,
         heading ? headingStyles[heading] : undefined,
-        context.listItemStart && index === 0 && markdownStyles.listLead, { textAlign: context.textAlign }]}>
+        context.listItemStart && index === 0 && markdownStyles.listLead,
+        context.flushTop && index === 0 && markdownStyles.flushTop,
+        context.flushBottom && index === parts.length - 1 && markdownStyles.flushBottom,
+        { textAlign: context.textAlign }]}>
       <Inline nodes={part} muted={context.muted || context.tone === 'process'} />
     </SelectableChatText>;
   })}</View>;

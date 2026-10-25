@@ -7,6 +7,7 @@ import { currentRunningTurn } from '../../../../shared/chat/runningTurn';
 import { findWorkEntry, type WorkEntry } from '../../../../shared/chat/turnPresentation';
 import { activityTimeline, findActivityEntry, latestActivity, type TimelineEntry as Entry }
   from '../../../../shared/chat/activityTimeline';
+import { hasCompactTimelineGap } from '../../../../shared/chat/timelineSpacing';
 import { ChatActivity } from './ChatActivity';
 import { turnElapsedMs } from '../../../desktop/src/pages/codexGui/turnTiming';
 import { formatTurnDuration } from './formatters';
@@ -143,9 +144,11 @@ function ChatMessageHistory({ props, scroll }: {
           : <button type="button" className="chat-text-action" onClick={scroll.more}
             disabled={loadingMore}>{loadingMore ? t("client.mobile.loading") : t("client.chat.loadEarlierMessages")}</button>}
       </div>}
-      {timeline.map(entry => <Fragment key={entry.id}>
+      {timeline.map((entry, index) => <Fragment key={entry.id}>
         {entry === runningSummary && props.processing}
-        <div data-message-id={'item' in entry ? entry.item.id : entry.id} className={`chat-entry-${entry.kind}`}>
+        <div data-message-id={'item' in entry ? entry.item.id : entry.id}
+          data-response-continuation={hasCompactTimelineGap(timeline[index - 1], entry) || undefined}
+          className={`chat-entry-${entry.kind}`}>
           <TimelineEntry entry={entry} open={open} inline={setInline} desktop={desktop}
             renderUserMessage={props.renderUserMessage} />
         </div>

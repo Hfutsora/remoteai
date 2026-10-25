@@ -275,7 +275,7 @@ html:has(.app-shell.chat-active), body:has(.app-shell.chat-active) { overscroll-
 @media (max-width: 860px) {
   .chat-active .content-shell { padding-bottom: 0; }
   .chat-active .mobile-tabbar { position: static; flex-shrink: 0; }
-  .chat-header { padding-top: max(12px, env(safe-area-inset-top)); }
+  .chat-header { padding-block: max(8px, env(safe-area-inset-top)) 8px; }
 }
 @media (min-width: 861px) {
   .chat-thread-controls, .chat-thread-list { width: 100%; max-width: 940px; margin: 0 auto; }

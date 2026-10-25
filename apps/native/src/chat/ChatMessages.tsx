@@ -14,6 +14,8 @@ import { findWorkEntry } from './turnPresentation';
 import { activityTimeline, findActivityEntry, latestActivity, type TimelineEntry as Entry } from './activityTimeline';
 import { useConversationEntries } from './useConversationEntries';
 import { currentRunningTurn } from '../../../../shared/chat/runningTurn';
+import { hasCompactTimelineGap } from '../../../../shared/chat/timelineSpacing';
+import { questionMessageText } from '../../../../shared/remote-chat/client/asyncQuestions';
 import type { ChatMessagesProps } from '../../../../shared/remote-chat/client/messageProps';
 import { palette, useStyles } from './styles';
 
@@ -22,12 +24,29 @@ type Selection = ProcessSelection | { type: 'item'; id: string; parent?: Process
   | { type: 'turn'; id: string; panel: TurnPanel };
 
 const PROCESS_SEPARATOR_STYLE = { height: 14 };
+const RESPONSE_SEPARATOR_STYLE = { height: 12 };
+const RESPONSE_TEXT_SEPARATOR_STYLE = { height: 6 };
+const RESPONSE_ACTIONS_SEPARATOR_STYLE = { height: 4 };
 
-function MessageSeparator({ leadingItem }: { leadingItem?: Entry }) {
+function hasReplyActions(entry: Entry) {
+  if (entry.kind !== 'message' || entry.item.type !== 'agentMessage') return false;
+  const running = entry.turn.status === 'inProgress' && entry.item.status !== 'completed';
+  return !running && Boolean(questionMessageText(entry.item).trim());
+}
+
+function MessageSeparator({ previous, next }: { previous?: Entry; next?: Entry }) {
   const styles = useStyles();
   useLanguage();
-  const process = leadingItem?.kind === 'process' || leadingItem?.kind === 'activities'
-    || (leadingItem?.kind === 'work' && leadingItem.inline);
+  if (!previous) return null;
+  if (next && hasCompactTimelineGap(previous, next)) {
+    // The copy action already reserves a full touch target below the reply.
+    if (hasReplyActions(previous)) return <View style={RESPONSE_ACTIONS_SEPARATOR_STYLE} />;
+    // Text already includes its paragraph top margin; only add the remaining response spacing.
+    const text = (next.kind === 'message' || next.kind === 'process') && next.item.type === 'agentMessage';
+    return <View style={text ? RESPONSE_TEXT_SEPARATOR_STYLE : RESPONSE_SEPARATOR_STYLE} />;
+  }
+  const process = previous.kind === 'process' || previous.kind === 'activities'
+    || (previous.kind === 'work' && previous.inline);
   return <View style={process ? PROCESS_SEPARATOR_STYLE : styles.messageSeparator} />;
 }
 
@@ -68,6 +87,11 @@ export function ChatMessages({ thread, loading, loadingMore, hasMore, loadOlder,
     ? { ...turn, status: 'cached' } : turn), [thread?.turns, offline]);
   const { entries, hasObservedLiveTurn, setInline } = useConversationEntries(turns);
   const timeline = useMemo(() => activityTimeline(entries), [entries]);
+  const followingEntries = useMemo(() => new Map(timeline.slice(1).map((entry, index) =>
+    [timeline[index].id, entry])), [timeline]);
+  const separator = useCallback(({ leadingItem }: { leadingItem?: Entry }) =>
+    <MessageSeparator previous={leadingItem} next={leadingItem && followingEntries.get(leadingItem.id)} />,
+  [followingEntries]);
   const runningTurn = currentRunningTurn(turns);
   const runningSummary = timeline.find(entry => entry.kind === 'summary' && entry.turn.id === runningTurn?.id);
   const { list, more, preservePosition, historyBottomSpace, initializing, onItemLayout, onFooterLayout,
@@ -98,7 +122,7 @@ export function ChatMessages({ thread, loading, loadingMore, hasMore, loadOlder,
       <TimelineEntry entry={entry} open={open} onInline={setInline}
         processing={entry === runningSummary ? processing : undefined} />
     </View>}
-    ItemSeparatorComponent={MessageSeparator}
+    ItemSeparatorComponent={separator}
     keyboardShouldPersistTaps="handled" initialNumToRender={10}
     // Keep message views attached while the keyboard changes the native clipping bounds.
     removeClippedSubviews={false}

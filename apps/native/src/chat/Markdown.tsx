@@ -133,8 +133,13 @@ export const ChatMarkdown = memo(function ChatMarkdown({
   useLanguage();
   const content = useMemo(() => markdownContent(text, user), [text, user]);
   return <View style={compact && markdownStyles.compactContent}>
-    <MarkdownPage nodes={content} render={(entry, index) => entry.type === 'review'
-    ? <ChatCodeReview key={index} comment={entry.comment} copy={index === content.length - 1 ? copy : undefined} />
-    : <Block key={index} node={entry.node}
-      context={childContext({ tone, copy, compact }, index, content.length)} />} /></View>;
+    <MarkdownPage nodes={content} render={(entry, index) => {
+      if (entry.type === 'review') return <ChatCodeReview key={index} comment={entry.comment}
+        copy={index === content.length - 1 ? copy : undefined} />;
+      // The user bubble already supplies spacing around its outer paragraphs.
+      const userParagraph = user && entry.node.token.type === 'paragraph_open';
+      return <Block key={index} node={entry.node} context={childContext({ tone, copy, compact,
+        flushTop: userParagraph && index === 0,
+        flushBottom: userParagraph && index === content.length - 1 }, index, content.length)} />;
+    }} /></View>;
 });

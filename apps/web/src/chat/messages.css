@@ -35,8 +35,20 @@
 }
 .chat-text-action:hover { color: var(--app-accent, #14806f); }
 @media (max-width: 860px) {
+  /* Response parts use 12px of the shared 22px gap; action rows already include a 44px touch area. */
+  .chat-message-content > [data-response-continuation] { margin-top: -10px; }
+  .chat-message-content > :is(.chat-entry-message, .chat-entry-process):has(.chat-message-actions)
+    + [data-response-continuation] { margin-top: -18px; }
+  .chat-message-content .chat-user-message { padding: 15px; }
+  .chat-message-content .chat-markdown > :is(p, ul, ol) { margin-block: 12px; }
+  .chat-message-content .chat-markdown > :is(p, ul, ol):first-child { margin-top: 0; }
+  .chat-message-content .chat-markdown > :is(p, ul, ol):last-child { margin-bottom: 0; }
+  .chat-message-content .chat-markdown li + li { margin-top: 4px; }
+  .chat-message-content .chat-markdown li > p { margin-block: 12px; }
+  .chat-message-content .chat-markdown li > p:first-child { margin-top: 0; }
+  .chat-message-content .chat-markdown li > p:last-child { margin-bottom: 0; }
   .chat-copy-icon { justify-content: center; min-width: 32px; min-height: 44px; margin-left: -8px; }
-  .chat-assistant-message > .chat-message-actions { margin-top: 10px; }
+  .chat-assistant-message > .chat-message-actions { margin-top: 8px; }
   /* Match native replies: keep the generous touch area below the icon. */
   .chat-assistant-message > .chat-message-actions > .chat-text-action {
     align-items: flex-start; min-height: 44px; padding-block: 0; line-height: 15px;
