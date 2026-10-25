@@ -169,6 +169,8 @@
 .ssh-profile-empty strong { font-weight: 500; }
 .ssh-profile-empty p { max-width: 400px; margin: 0; line-height: 1.7; }
 @media (max-width: 700px) {
+  .ssh-dialog :is(.ssh-dialog-layout, .ssh-form-scroll, .ssh-profile-list) { scrollbar-width: none; }
+  .ssh-dialog :is(.ssh-dialog-layout, .ssh-form-scroll, .ssh-profile-list)::-webkit-scrollbar { display: none; }
   .ssh-dialog { max-width: calc(100vw - 24px); }
   .ssh-dialog .ant-modal-header { padding: 20px; }
   .ssh-dialog .ant-modal-close { top: 18px; inset-inline-end: 16px; }

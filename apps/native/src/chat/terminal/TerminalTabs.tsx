@@ -56,9 +56,10 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
         <Ionicons name="add-outline" size={22} color={color('#17211b', 'ink')} />
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('client.ssh.menu')}
+        accessibilityState={{ expanded: tool === 'ssh' && active }}
         style={[styles.button, disabled && styles.disabled]} disabled={disabled}
         onPress={() => { Keyboard.dismiss(); setTool('ssh'); }}>
-        <Ionicons name="server-outline" size={21} color={color('#17211b', 'ink')} />
+        <Ionicons name="chevron-down" size={21} color={color('#17211b', 'ink')} />
       </Pressable>
       {selected?.session.ssh && <Pressable accessibilityRole="button" accessibilityLabel={t('client.ssh.files')}
         style={styles.button} onPress={() => { Keyboard.dismiss(); setTool('files'); }}>

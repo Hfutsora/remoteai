@@ -32,14 +32,16 @@ export function SshConnectionSheet({ api, cwd, connected, dispose, close }: {
       onPress: () => connection.submit(values), loading: busy,
       disabled: disabled || !validSshValues(values),
     }]}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+    <ScrollView showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <View style={styles.row}>
         <SshButton label={t('client.ssh.new')} disabled={disabled} onPress={() => choose()} />
         <SshButton label={t('client.ssh.refresh')} disabled={busy || loading}
           onPress={() => void connection.refresh()} />
       </View>
       {loading && <ActivityIndicator />}
-      <ScrollView nestedScrollEnabled style={styles.list} contentContainerStyle={styles.content}>
+      <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}
+        style={styles.list} contentContainerStyle={styles.content}>
         {connection.profiles.map(profile => <SshButton key={profile.id} label={profile.name || sshLabel(profile)}
           selected={connection.selected?.id === profile.id} disabled={disabled} onPress={() => choose(profile)} />)}
       </ScrollView>
