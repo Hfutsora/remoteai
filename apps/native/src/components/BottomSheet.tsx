@@ -21,6 +21,7 @@ import { SHEET_HORIZONTAL_PADDING } from './SheetScrollView';
 const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView);
 const DRAG_DISMISS_DISTANCE = 80;
 const DRAG_DISMISS_VELOCITY = 0.9;
+const SHEET_ELEVATION = 24;
 
 export interface BottomSheetAction {
   label: string;
@@ -40,6 +41,8 @@ interface BottomSheetProps {
   onClose: () => void;
   onBack?: () => void;
   children?: ReactNode;
+  /** Covers the entire modal window, including the sheet header. */
+  overlay?: ReactNode;
   actions?: BottomSheetAction[];
   dismissible?: boolean;
   tall?: boolean;
@@ -60,6 +63,7 @@ export function BottomSheet({
   onClose,
   onBack,
   children,
+  overlay,
   actions = [],
   dismissible = true,
   tall = false,
@@ -72,6 +76,10 @@ export function BottomSheet({
   const resolveThemeColor = useThemeColor();
   const styles = useStyles();
   const insetStyle = { paddingHorizontal: horizontalPadding };
+  const sheetAccessibility = {
+    accessibilityElementsHidden: Boolean(overlay),
+    importantForAccessibility: overlay ? 'no-hide-descendants' as const : 'auto' as const,
+  };
   useLanguage();
   const translateY = useRef(new Animated.Value(0)).current;
 
@@ -142,6 +150,7 @@ export function BottomSheet({
       <Pressable accessible={false} style={styles.backdrop} onPress={close} />
       <AnimatedSafeAreaView
         edges={['bottom']}
+        pointerEvents={overlay ? 'none' : 'auto'}
         style={[
           styles.sheet,
           maxWidth !== undefined && { maxWidth, width: '100%', alignSelf: 'center' },
@@ -150,7 +159,8 @@ export function BottomSheet({
         ]}
         {...(!dragFromHeaderOnly ? dragResponder.panHandlers : {})}
       >
-        <View style={insetStyle} {...(dragFromHeaderOnly ? dragResponder.panHandlers : {})}>
+        <View style={insetStyle} {...sheetAccessibility}
+          {...(dragFromHeaderOnly ? dragResponder.panHandlers : {})}>
           <View style={[styles.handle, compactHeader && styles.compactHandle]} />
           <View style={[styles.header, compactHeader && styles.compactHeader]}>
             {onBack && <Pressable accessibilityRole="button" accessibilityLabel={t("client.app.goBackOneLevel")}
@@ -174,9 +184,9 @@ export function BottomSheet({
             </Pressable> : null}
           </View>
         </View>
-        {children ? <View style={[styles.content, compactHeader && styles.compactContent,
+        {children ? <View {...sheetAccessibility} style={[styles.content, compactHeader && styles.compactContent,
           !fullWidthContent && insetStyle]}>{children}</View> : null}
-        {actions.length ? <View style={[styles.actions, insetStyle]}>
+        {actions.length ? <View {...sheetAccessibility} style={[styles.actions, insetStyle]}>
           {actions.map((action) => {
             const tone = action.tone ?? 'neutral';
             return <Pressable
@@ -203,6 +213,7 @@ export function BottomSheet({
           })}
         </View> : null}
       </AnimatedSafeAreaView>
+      {overlay ? <View pointerEvents="box-none" style={styles.overlay}>{overlay}</View> : null}
     </KeyboardAvoidingView>
     </SafeAreaProvider>
   </Modal>;
@@ -211,6 +222,7 @@ export function BottomSheet({
 const useStyles = createThemedStyles((color) => ({
   root: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(6, 20, 15, 0.5)' },
+  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 1, elevation: SHEET_ELEVATION + 1 },
   sheet: {
     maxHeight: '82%',
     backgroundColor: color('#ffffff', 'surface'),
@@ -221,7 +233,7 @@ const useStyles = createThemedStyles((color) => ({
     shadowOpacity: 0.24,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: -8 },
-    elevation: 24,
+    elevation: SHEET_ELEVATION,
   },
   sheetTall: { maxHeight: '92%' },
   handle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', backgroundColor: color('#d5dfd9', 'elevated'), marginBottom: 17 },

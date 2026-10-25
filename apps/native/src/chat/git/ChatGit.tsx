@@ -40,8 +40,17 @@ export function ChatGit(props: Props) {
   const commitFiles = useGitCommitFiles(props.client, props.cwd, detail?.commit?.hash, props.active && props.connected);
   const diff = useGitDiff(props.client, props.cwd, panel.detail, props.active && props.connected);
   const { height } = useWindowDimensions();
+  const hasOverlay = Boolean(menu || panel.fileAction || panel.revisionAction);
   return <BottomSheet visible={props.active} title="Git" onClose={close}
-    onBack={detail ? panel.backDetail : undefined} tall dragFromHeaderOnly fullWidthContent compactHeader>
+    onBack={detail && !hasOverlay ? panel.backDetail : undefined}
+    tall dragFromHeaderOnly fullWidthContent compactHeader
+    overlay={hasOverlay ? <>
+      {menu && !panel.fileAction && !panel.revisionAction && <GitMenu target={menu} panel={panel}
+        connected={props.connected} close={() => setMenu(null)} patchNotice={gitPatchNotice}
+        onPatch={props.downloads ? commit => saveGitPatch(props.downloads!, props.cwd, commit.hash) : undefined} />}
+      {panel.fileAction && <GitFileActionConfirmation panel={panel} connected={props.connected} />}
+      {panel.revisionAction && <GitRevisionConfirmation panel={panel} connected={props.connected} />}
+    </> : undefined}>
     <View style={{ height: height * .80, flexShrink: 1 }}>
       <GitToolbar panel={panel} connected={props.connected} />
       {!props.cwd && <Text style={styles.notice}>{t("client.git.chooseAProjectFirst")}</Text>}
@@ -89,11 +98,6 @@ export function ChatGit(props: Props) {
         {!panel.loading && panel.tab === 'history' && <GitHistory panel={panel} connected={props.connected}
           onMenu={commit => setMenu({ kind: 'commit', commit })} />}
       </>}
-      {menu && !panel.fileAction && !panel.revisionAction && <GitMenu target={menu} panel={panel}
-        connected={props.connected} close={() => setMenu(null)} patchNotice={gitPatchNotice}
-        onPatch={props.downloads ? commit => saveGitPatch(props.downloads!, props.cwd, commit.hash) : undefined} />}
-      {panel.fileAction && <GitFileActionConfirmation panel={panel} connected={props.connected} />}
-      {panel.revisionAction && <GitRevisionConfirmation panel={panel} connected={props.connected} />}
     </View>
   </BottomSheet>;
 }
