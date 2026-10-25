@@ -1,9 +1,10 @@
 import { displayText } from '../i18n/index';
-import { t, useLanguage } from '../i18n';
+import { getLanguage, t, useLanguage } from '../i18n';
+import { petDockText } from '@remoteai/i18n/copy/petDock';
 import { useState } from 'react';
 import { Button, Dialog, Switch } from 'antd-mobile';
 import { ChevronRight, Grid2X2, Info, LockKeyhole, LogOut,
-  Monitor, RefreshCw, ShieldCheck, Type } from 'lucide-react';
+  Monitor, PawPrint, RefreshCw, ShieldCheck, Type } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../hooks';
 import { signOut } from '../store';
 import type { useTotpVault } from '../useTotpVault';
@@ -26,7 +27,7 @@ import { GlobalFontSettings } from '../../../../shared/appearance/GlobalFontSett
 import { useGlobalFontSize } from '../../../../shared/appearance/fontSize';
 
 type Panel = 'profile' | 'refresh' | 'totp' | 'password' | 'about'
-  | 'desktop' | 'theme' | 'files' | 'font' | null;
+  | 'desktop' | 'theme' | 'files' | 'font' | 'petDock' | null;
 
 export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof useTotpVault> }) {
   useLanguage();
@@ -68,6 +69,8 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
             onClick={() => setPanel('refresh')} />
           <SettingsRow label={t("client.app.2faKeys")} value={totpManager.cloudSyncEnabled ? t("client.settings.on") : t("client.settings.off")} icon={ShieldCheck}
             onClick={() => setPanel('totp')} />
+          <SettingsRow label={petDockText(getLanguage(), 'settings.petDock.title')}
+            icon={PawPrint} onClick={() => setPanel('petDock')} />
         </section>
         {profile?.role === 'admin' && <section className="settings-group">
           <SettingsRow label={t("client.settings.adminConsole")} icon={Grid2X2}
@@ -83,6 +86,10 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
       <Button className="settings-logout" block color="danger" fill="outline" onClick={() => void logout()}>
         <LogOut size={21} />{t("client.app.signOut")}</Button>
     </div>
+    <AdaptiveSheet open={panel === 'petDock'} title={petDockText(getLanguage(), 'settings.petDock.title')}
+      onClose={close} width={400}>
+      <div className="settings-sync"><p>{petDockText(getLanguage(), 'settings.petDock.cloudHint')}</p></div>
+    </AdaptiveSheet>
     <AdaptiveSheet open={panel === 'files'} title={t("client.projectBrowser.fileBrowserSettings")} onClose={close} width={400}>
       <div className="settings-sync"><AutoSaveSettings preferences={filePreferences} t={displayText} /></div>
     </AdaptiveSheet>

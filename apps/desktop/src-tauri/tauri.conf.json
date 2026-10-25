@@ -63,6 +63,8 @@
       "resources/dream-skin/assets/**/*",
       "resources/dream-skin/LICENSE",
       "resources/dream-skin/NOTICE.md",
+      "resources/pet-dock/LICENSE",
+      "resources/pet-dock/NOTICE.md",
       "resources/remote-desktop/**/*",
       "resources/desktop-service/**/*",
       "resources/chat-connectivity/*"

@@ -65,6 +65,18 @@
     }
 
     #[test]
+    fn pet_dock_defaults_to_off_and_round_trips_without_changing_other_preferences() {
+        let mut settings: AppSettings = serde_json::from_str("{}").unwrap();
+        assert!(!settings.pet_dock_enabled);
+        settings.pet_dock_enabled = true;
+        let value = serde_json::to_value(&settings).unwrap();
+        assert_eq!(value["petDockEnabled"], true);
+        let restored: AppSettings = serde_json::from_value(value).unwrap();
+        assert!(restored.pet_dock_enabled);
+        assert_eq!(restored.floating_bubble_enabled, settings.floating_bubble_enabled);
+    }
+
+    #[test]
     fn app_settings_show_codex_usage_summary_by_default() {
         let defaults = AppSettings::default();
         let migrated: AppSettings = serde_json::from_str("{}").unwrap();

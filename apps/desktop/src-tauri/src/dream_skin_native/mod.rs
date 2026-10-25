@@ -8,6 +8,7 @@ include!("usage_statusline.rs");
 include!("context_usage_overlay.rs");
 include!("model_refresh.rs");
 include!("cdp.rs");
+include!("pet_dock.rs");
 mod connection;
 pub(crate) use connection::inspect_connection;
 include!("renderer_bindings.rs");
