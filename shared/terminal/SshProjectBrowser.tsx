@@ -6,6 +6,7 @@ import { displayText as t } from '../localization/messages';
 import { remoteErrorText } from '../localization/errors';
 import { getSshProjectClient } from './sshProjectClient';
 import { SshProjectToolbar } from './SshProjectToolbar';
+import { SshHiddenFilesMenuItem } from './SshHiddenFilesMenuItem';
 import { useSshFiles } from './useSshFiles';
 import { useSshFileActions } from './useSshFileActions';
 import { SshFileDialogs } from './SshFileDialogs';
@@ -48,8 +49,10 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
       </div>}
       {files.loaded && <ProjectBrowser client={client} cwd="/" connected t={t} host={host} onClose={() => {}}
         treeOptions={{ root: files.path, showHidden: hidden, revision: files.entries,
+          renderRootMenuExtras: close => <SshHiddenFilesMenuItem hidden={hidden} disabled={files.busy}
+            toggle={() => { setHidden(!hidden); close(); }} />,
           renderToolbar: ({ refresh, menu }) => <SshProjectToolbar path={files.path} disabled={files.busy}
-            hidden={hidden} setHidden={setHidden} actions={<>{refresh}{menu}</>}
+            actions={<>{refresh}{menu}</>}
             navigate={path => { void files.navigate(path); }} upload={selected => { void actions.upload(selected); }} />,
         }} />}
       {files.progress && <div className="ssh-upload-progress ssh-project-feedback" role="status">

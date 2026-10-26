@@ -18,6 +18,8 @@ export interface ProjectTreeOptions {
   root?: string;
   /** Replace the folder heading while retaining its menu and refresh controls. */
   renderToolbar?: (actions: { refresh: ReactNode; menu: ReactNode }) => ReactNode;
+  /** Add host-specific controls to the root folder menu. */
+  renderRootMenuExtras?: (close: () => void) => ReactNode;
   showHidden?: boolean;
   /** A host upload changes this token to refresh loaded folders without losing expansion. */
   revision?: unknown;
@@ -111,7 +113,9 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
     {actions.error && !actions.prompt && <p role="alert" className="pf-notice">{remoteErrorText(actions.error)}</p>}
     {actions.menu && <TreeMenu menu={actions.menu} cwd={cwd} host={host}
       canPaste={!!actions.clipboard} close={actions.close} t={t}
-      command={command => actions.command(actions.menu!.entry, command)} />}
+      command={command => actions.command(actions.menu!.entry, command)}>
+      {options?.renderRootMenuExtras?.(actions.close)}
+    </TreeMenu>}
     {actions.prompt && <TreeActionDialog key={`${actions.prompt.action}:${actions.prompt.entry.path}`}
       prompt={actions.prompt} busy={actions.busy} connected={connected} error={actions.error}
       confirm={name => { void actions.confirm(name); }} cancel={actions.cancel} t={t} />}

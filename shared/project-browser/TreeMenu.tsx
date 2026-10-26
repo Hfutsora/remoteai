@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, Copy, Download, FilePlus, FolderOpen, FolderPlus,
   Scissors, ClipboardPaste, Pencil, Trash2, Terminal, Link, Quote } from 'lucide-react';
 import type { BrowserHost } from './entryActions';
@@ -9,9 +9,9 @@ import { TreeSubmenu } from './TreeSubmenu';
 import { useTreeMenuDismiss } from './useTreeMenuDismiss';
 import { focusFirstMenuItem, MENU_MARGIN, moveMenuFocus, SUBMENU_GAP } from './treeMenuNavigation';
 
-export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
+export function TreeMenu({ menu, host, canPaste, cwd, close, command, t, children }: {
   menu: Menu; host: BrowserHost; canPaste: boolean; cwd: string; close: () => void;
-  command: (action: TreeCommand) => void; t: BrowserTranslate;
+  command: (action: TreeCommand) => void; t: BrowserTranslate; children?: ReactNode;
 }) {
   const element = useRef<HTMLDivElement>(null);
   useTreeMenuDismiss(element, close);
@@ -81,6 +81,7 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
         {!host.open && item('download', menu.entry.directory
           ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download,
         !host.download || (menu.entry.directory && host.downloadDirectory === false))}
+        {root && children && <><div role="separator" />{children}</>}
       </>}
     </div>
   </div>;
