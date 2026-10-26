@@ -1,12 +1,12 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Tooltip } from 'antd';
 import { ArrowRight, ArrowUp, Eye, EyeOff, Home, Upload } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { sshParent } from './useSshFiles';
 
-export function SshProjectToolbar({ path, disabled, hidden, setHidden, navigate, upload }: {
+export function SshProjectToolbar({ path, disabled, hidden, setHidden, navigate, upload, actions }: {
   path: string; disabled: boolean; hidden: boolean; setHidden: (value: boolean) => void;
-  navigate: (path: string) => void; upload: (files: FileList) => void;
+  navigate: (path: string) => void; upload: (files: FileList) => void; actions: ReactNode;
 }) {
   const [address, setAddress] = useState<{ path: string; value: string }>();
   const input = useRef<HTMLInputElement>(null);
@@ -24,6 +24,7 @@ export function SshProjectToolbar({ path, disabled, hidden, setHidden, navigate,
           <button type="button" aria-label={t(key)} aria-pressed={pressed}
             disabled={disabled || unavailable} onClick={click}><Icon size={16} /></button>
         </Tooltip>)}
+      {actions}
       <input type="file" hidden multiple ref={input} onChange={event => {
         if (event.currentTarget.files?.length) upload(event.currentTarget.files);
         event.currentTarget.value = '';

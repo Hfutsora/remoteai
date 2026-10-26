@@ -39,8 +39,6 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
     try { await actions.uploadSources(batch.files); }
     finally { await releaseSshUploadBatch(batch); }
   };
-  const toolbar = <SshProjectToolbar path={files.path} disabled={files.busy} hidden={hidden} setHidden={setHidden}
-    navigate={path => { void files.navigate(path); }} upload={selected => { void actions.upload(selected); }} />;
   return <SshDropTarget id={id} path={files.path} active={active} disabled={files.busy || !files.loaded}
     native={nativeDrop} upload={upload} report={files.reportError}>
     <div className="ssh-project-browser" aria-busy={files.busy}>
@@ -49,7 +47,11 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
         {files.busy ? <Spin /> : <Button onClick={() => void files.load()}>{t('client.terminal.retry')}</Button>}
       </div>}
       {files.loaded && <ProjectBrowser client={client} cwd="/" connected t={t} host={host} onClose={() => {}}
-        treeOptions={{ root: files.path, toolbar, showHidden: hidden, revision: files.entries }} />}
+        treeOptions={{ root: files.path, showHidden: hidden, revision: files.entries,
+          renderToolbar: ({ refresh, menu }) => <SshProjectToolbar path={files.path} disabled={files.busy}
+            hidden={hidden} setHidden={setHidden} actions={<>{refresh}{menu}</>}
+            navigate={path => { void files.navigate(path); }} upload={selected => { void actions.upload(selected); }} />,
+        }} />}
       {files.progress && <div className="ssh-upload-progress ssh-project-feedback" role="status">
         <span>{t('client.ssh.uploadingFile', { name: files.progress.name })}</span>
         <Progress percent={files.progress.total ? Math.floor(files.progress.sent / files.progress.total * 100) : 0}

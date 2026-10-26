@@ -16,7 +16,8 @@ import { ProjectTreeSearch, ProjectTreeSearchNotice } from './ProjectTreeSearch'
 export type BrowserTranslate = (source: string) => string;
 export interface ProjectTreeOptions {
   root?: string;
-  toolbar?: ReactNode;
+  /** Replace the folder heading while retaining its menu and refresh controls. */
+  renderToolbar?: (actions: { refresh: ReactNode; menu: ReactNode }) => ReactNode;
   showHidden?: boolean;
   /** A host upload changes this token to refresh loaded folders without losing expansion. */
   revision?: unknown;
@@ -67,14 +68,16 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
     !entry.path.slice(cwd.replace(/\/+$/, '').length).split('/').some(part => part.startsWith('.'))) : candidates;
   const root = { path: cwd, name: cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd, directory: true };
   const rootGesture = useTreeGesture(position => actions.show({ entry: root, ...position }));
+  const menu = <button type="button" aria-label={t("client.projectBrowser.projectFolderActions")}
+    disabled={!connected || actions.busy} onClick={event => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      actions.show({ entry: root, x: rect.left, y: rect.bottom });
+    }}><MoreHorizontal size={16} /></button>;
+  const refresh = <button type="button" aria-label={t("client.projectBrowser.refreshFileTree")}
+    disabled={!connected} onClick={() => { tree.refresh(); search.refresh(); }}><RefreshCw size={16} /></button>;
   return <nav className="pf-tree" aria-label={t("client.projectBrowser.projectFiles")}>
-    {options?.toolbar}
-    <div className="pf-tree-heading"><span {...rootGesture}>{root.name}</span>
-      <button type="button" aria-label={t("client.projectBrowser.projectFolderActions")} disabled={!connected || actions.busy}
-        onClick={event => { const rect = event.currentTarget.getBoundingClientRect();
-          actions.show({ entry: root, x: rect.left, y: rect.bottom }); }}><MoreHorizontal size={16} /></button>
-      <button type="button" aria-label={t("client.projectBrowser.refreshFileTree")} disabled={!connected}
-        onClick={() => { tree.refresh(); search.refresh(); }}><RefreshCw size={16} /></button></div>
+    {options?.renderToolbar ? options.renderToolbar({ refresh, menu })
+      : <div className="pf-tree-heading"><span {...rootGesture}>{root.name}</span>{menu}{refresh}</div>}
     <ProjectTreeSearch query={search.query} disabled={!connected} t={t}
       change={value => { actions.close(); search.change(value); }} />
     <div ref={list} role="tree" aria-label={t("client.projectBrowser.projectFiles")} className="pf-tree-list" aria-busy={search.loading}>
