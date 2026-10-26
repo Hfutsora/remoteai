@@ -38,6 +38,7 @@ import { remoteTerminals, type RemoteTerminals } from './terminals';
 import { deleteRemoteThread, pinRemoteThread } from './threadActions';
 import { forkRemoteConversation } from './forkConversation';
 import { changeRemoteMessage } from './messageEdit';
+import { sendRemoteMessage } from './sendMessage';
 import { RemoteDesktopHost } from '../remoteDesktop/host';
 import { DESKTOP_OPERATION } from '../../../../shared/remote-desktop/protocol';
 import { RemoteThreadTitles } from './threadTitles';
@@ -299,6 +300,7 @@ export class ChatOperations {
     }
     applyProjectOverride(body);
     const result = body.operation === 'list' ? await readRemoteThreadList(body)
+      : body.operation === 'send' ? await sendRemoteMessage(body as Extract<Request, { operation: 'send' }>)
       : await guiApi.request(body as unknown as Request);
     completeRemoteThreadListWrite(body, result);
     // File documents must stay byte-faithful; conversation image rewriting would corrupt embedded data URLs.

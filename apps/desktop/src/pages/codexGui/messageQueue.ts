@@ -1,6 +1,6 @@
 import { uiText } from "../../i18n/uiText";
 import { guiApi } from "./api";
-import { conversation } from "./events";
+import { conversationSnapshot as conversation } from './conversationSnapshot';
 import { withSentMessage } from "./sentMessages";
 import { queueSendError } from "./queueSendError";
 import type { GuiState, MessageInput, QueuedMessage, Settings, Thread, Turn } from "./types";

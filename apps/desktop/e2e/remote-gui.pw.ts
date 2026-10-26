@@ -59,6 +59,30 @@ async function chooseHost(page: Page, name: string) {
   await expect(page.getByRole('menu', { name: '主机列表' })).toBeHidden();
 }
 
+for (const blocked of [false, true]) {
+  test(`keeps a new remote message after immediately pausing over ${blocked ? 'Relay' : 'P2P'}`,
+    async ({ context, page }) => {
+      const host = await context.newPage();
+      await host.goto(`/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=${blocked}`
+        + `&socket=${encodeURIComponent(endpoint)}`);
+      await expect(host.locator('#status')).toHaveText('registered');
+      await page.bringToFront();
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(`/e2e/remote-gui-harness.html?socket=${encodeURIComponent(endpoint)}`);
+      await chooseHost(page, 'Office PC');
+      await expect(page.locator('.gui-remote-workspace:visible .chat-connection-status'))
+        .toContainText(blocked ? 'Relay' : 'P2P', { timeout: 20_000 });
+      await page.getByRole('button', { name: '新对话', exact: true }).click();
+      const text = 'slow first message: keep after pause';
+      await page.getByRole('textbox', { name: '聊天消息', exact: true }).fill(text);
+      await page.getByRole('button', { name: '发送消息', exact: true }).click();
+      await page.getByRole('button', { name: '暂停生成', exact: true }).click();
+      await expect(page.getByText(text, { exact: true }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: '继续生成', exact: true })).toBeVisible();
+      await page.screenshot({ path: `../../.codex-tmp/interrupted-send-remote-${blocked ? 'relay' : 'direct'}.png` });
+    });
+}
+
 test('remote GUI can disable and restore message queuing while a turn is running', async ({ context, page }, info) => {
   test.setTimeout(90_000);
   const host = await context.newPage();
