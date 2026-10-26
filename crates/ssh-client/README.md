@@ -25,7 +25,7 @@ on cancellation or session close. Inactive uploads are also pruned on subsequent
 Existing destinations require an explicit overwrite or numbered-name choice. SFTP v3 rename
 protects numbered uploads from concurrent name collisions; overwrite retains the previous file
 until the complete upload can be published and attempts rollback if publication fails.
-The legacy whole-file download API remains limited to 4 MiB. Bounded range reads are also available.
+The legacy whole-file download API remains limited to 5 MiB. Bounded range reads are also available.
 Profiles retain only connection metadata and the accepted host fingerprint;
 passwords, private keys and passphrases are never persisted. SSH agents, jump
 hosts, general-purpose tunnels, recursive uploads and remote editing are outside this version.

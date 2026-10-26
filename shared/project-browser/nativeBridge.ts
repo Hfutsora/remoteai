@@ -1,4 +1,4 @@
-import { PROJECT_FILE_LIMIT, PROJECT_SEARCH_QUERY_LIMIT, type ProjectBrowserClient } from './protocol';
+import { PROJECT_SEARCH_QUERY_LIMIT, type ProjectBrowserClient } from './protocol';
 import type { DocumentsSnapshot } from './documents';
 import { withinPath, type BrowserHost, type EntryAction } from './entryActions';
 import { validFileSelection } from './fileSelection';
@@ -77,7 +77,7 @@ export async function handleBrowserRequest(raw: string, options: {
       return { type: 'reply', id, data };
     }
     if (message.action === 'read') return { type: 'reply', id, data: await options.client.read(file) };
-    if (message.action !== 'save' || typeof target.text !== 'string' || target.text.length > PROJECT_FILE_LIMIT
+    if (message.action !== 'save' || typeof target.text !== 'string'
       || typeof target.revision !== 'string') throw new Error('未能保存文件，请确认文件可写后重试。');
     return { type: 'reply', id,
       data: await options.client.save({ ...file, text: target.text, revision: target.revision }) };

@@ -12,6 +12,8 @@ import type { BrowserHost } from './entryActions';
 import { useEditorSelectionMenu } from './useEditorSelectionMenu';
 import { EditorSelectionMenu } from './EditorSelectionMenu';
 import { EditorSearchPanel } from './editorSearchPanel';
+import { utf8ToBytes } from '@noble/hashes/utils';
+import { PROJECT_PLAIN_TEXT_THRESHOLD } from './protocol';
 
 interface Props {
   text: string; path: string; readOnly: boolean; t: BrowserTranslate;
@@ -22,29 +24,39 @@ interface Props {
 export function ProjectEditor(props: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView>();
-  const settings = useRef({ editable: new Compartment(), wrapping: new Compartment(), language: new Compartment() });
+  const settings = useRef({ editable: new Compartment(), wrapping: new Compartment(),
+    language: new Compartment(), features: new Compartment() });
   const latest = useRef(props);
   const synchronizing = useRef(false);
   latest.current = props;
   const [wrap, setWrap] = useState(false);
   const [languageError, setLanguageError] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [plainText, setPlainText] = useState(() => utf8ToBytes(props.text).length > PROJECT_PLAIN_TEXT_THRESHOLD);
+  const byteLength = useRef(0);
   const selectionMenu = useEditorSelectionMenu({ view, path: props.path, enabled: !!props.quoteSelection });
   useLayoutEffect(() => {
     if (!host.current) return;
-    const { editable, wrapping, language } = settings.current;
-    const syntax = editorLanguage(props.path);
+    const { editable, wrapping, language, features } = settings.current;
+    byteLength.current = utf8ToBytes(props.text).length;
     const editor = new EditorView({
       parent: host.current,
       state: EditorState.create({ doc: props.text, extensions: [
-        editorExtensions(props.t), editorTheme, editorHighlighting, editorPhrases(props.t),
+        features.of(editorExtensions(props.t, plainText)), editorTheme, editorPhrases(props.t),
         search({ top: true, createPanel: editor => new EditorSearchPanel(editor, latest.current.t) }),
         EditorState.lineSeparator.of(props.text.includes('\r\n') ? '\r\n' : '\n'),
         EditorView.contentAttributes.of({ 'aria-label': props.t("client.workspaceActions.fileContent"), spellcheck: 'false',
           autocorrect: 'off', autocapitalize: 'off' }),
-        editable.of(EditorState.readOnly.of(props.readOnly)), wrapping.of([]), language.of(syntax ? [] : textFolding),
+        editable.of(EditorState.readOnly.of(props.readOnly)), wrapping.of([]), language.of([]),
         keymap.of([indentWithTab, { key: 'Mod-s', run: () => { latest.current.save(); return true; } }]),
         EditorView.updateListener.of(update => {
+          if (update.docChanged) {
+            update.changes.iterChanges((fromA, toA, fromB, toB) => {
+              byteLength.current += utf8ToBytes(update.state.sliceDoc(fromB, toB)).length
+                - utf8ToBytes(update.startState.sliceDoc(fromA, toA)).length;
+            });
+            setPlainText(byteLength.current > PROJECT_PLAIN_TEXT_THRESHOLD);
+          }
           if (searchPanelOpen(update.startState) !== searchPanelOpen(update.state)) {
             setSearchOpen(searchPanelOpen(update.state));
           }
@@ -54,15 +66,25 @@ export function ProjectEditor(props: Props) {
       ] }),
     });
     view.current = editor;
-    let disposed = false;
-    if (syntax) void syntax.load().then(support => {
-      if (!disposed) editor.dispatch({ effects: language.reconfigure(support) });
-    }).catch(() => { if (!disposed) setLanguageError(true); });
     return () => {
-      disposed = true; editor.destroy(); view.current = undefined;
+      editor.destroy(); view.current = undefined;
     };
     // A document version remounts this editor; keystrokes must not recreate it or reset history.
   }, []);
+  useEffect(() => {
+    const editor = view.current;
+    if (!editor) return;
+    const { features, language } = settings.current;
+    const syntax = plainText ? null : editorLanguage(props.path);
+    setLanguageError(false);
+    editor.dispatch({ effects: [features.reconfigure(editorExtensions(props.t, plainText)),
+      language.reconfigure(plainText ? [] : [editorHighlighting, ...(syntax ? [] : [textFolding])])] });
+    let cancelled = false;
+    if (syntax) void syntax.load().then(support => {
+      if (!cancelled) editor.dispatch({ effects: language.reconfigure([editorHighlighting, support]) });
+    }).catch(() => { if (!cancelled) setLanguageError(true); });
+    return () => { cancelled = true; };
+  }, [plainText, props.path, props.t]);
   useEffect(() => {
     const editor = view.current;
     if (!editor || editor.state.sliceDoc() === props.text) return;
@@ -80,7 +102,7 @@ export function ProjectEditor(props: Props) {
     view.current?.dispatch({ effects: settings.current.wrapping.reconfigure(wrap ? EditorView.lineWrapping : []) });
   }, [wrap]);
   const command = (run: (editor: EditorView) => boolean) => { if (view.current) run(view.current); };
-  return <div className="pf-editor">
+  return <div className="pf-editor" data-plain-text={plainText}>
     <div className="pf-editor-tools" role="toolbar" aria-label={props.t("client.projectBrowser.editorTools")}>
       <button type="button" aria-expanded={searchOpen} aria-pressed={searchOpen}
         onClick={() => command(editor => searchPanelOpen(editor.state)
@@ -90,14 +112,15 @@ export function ProjectEditor(props: Props) {
         <Undo2 size={16} /></button>
       <button type="button" aria-label={props.t("client.projectBrowser.redo")} disabled={props.readOnly} onClick={() => command(redo)}>
         <Redo2 size={16} /></button>
-      <button type="button" aria-label={props.t("client.projectBrowser.foldAll")} onClick={() => command(foldAll)}>
+      {!plainText && <><button type="button" aria-label={props.t("client.projectBrowser.foldAll")} onClick={() => command(foldAll)}>
         <ChevronsDownUp size={16} /></button>
       <button type="button" aria-label={props.t("client.projectBrowser.unfoldAll")} onClick={() => command(unfoldAll)}>
-        <ChevronsUpDown size={16} /></button>
+        <ChevronsUpDown size={16} /></button></>}
       <button type="button" aria-label={props.t("client.projectBrowser.wrapLines")} aria-pressed={wrap} onClick={() => setWrap(!wrap)}>
         <WrapText size={16} /></button>
       {languageError && <span role="status">{props.t("client.projectBrowser.syntaxHighlightingIsUnavailable")}</span>}
     </div>
+    {plainText && <p className="pf-notice" role="status">{props.t('client.projectBrowser.largePlainText')}</p>}
     <div ref={host} className="pf-editor-host" />
     {selectionMenu.menu && view.current && props.quoteSelection && <EditorSelectionMenu
       menu={selectionMenu.menu} editor={view.current} quoteSelection={props.quoteSelection}

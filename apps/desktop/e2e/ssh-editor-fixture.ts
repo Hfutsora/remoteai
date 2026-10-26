@@ -26,6 +26,8 @@ export async function sshEditorFixture(page: Page) {
         return { type: 'list', path, entries, truncated: false };
       }
       case 'read': return { type: 'file', data: files.get(request.path)!.toString('base64') };
+      case 'readChunk': return { type: 'file',
+        data: files.get(request.path)!.subarray(request.offset, request.offset + request.length).toString('base64') };
       case 'uploadStart': {
         if (files.has(request.path) && request.mode === 'reject') throw new Error('client.ssh.conflict');
         const token = String(++sequence); uploads.set(token, { path: request.path, parts: [] });

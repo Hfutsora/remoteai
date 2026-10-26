@@ -169,6 +169,9 @@ export class ChatOperations {
       // Range reads are repeatable; caching their payloads would retain an entire file in memory.
       // Upload chunks retry fixed ranges; retaining every acknowledgement would cap large uploads at 512 requests.
       if (operation === 'videoRead' || operation === 'fileRead' || operation === 'projectFileRead'
+        || (operation === 'projectFileWrite' && typeof object(request.body).upload === 'object'
+          && object(request.body).upload !== null && !Array.isArray(object(request.body).upload)
+          && !(object(request.body).upload as Record<string, unknown>).finish)
         || (operation === 'guiTerminalSshFiles' && ['read', 'readChunk', 'list', 'uploadChunk']
           .includes(String(object(object(request.body).request).type)))
         || operation === 'guiTerminalSshProbe' || operation === 'guiTerminalSshProfiles'

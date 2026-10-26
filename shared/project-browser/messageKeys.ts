@@ -95,6 +95,8 @@ export const messageKeys = [
   "client.projectBrowser.thisFolderIsEmpty",
   "client.projectBrowser.unableToReadThisFilePleaseTryAgain",
   "client.projectBrowser.filesLargerThan2MbCannotBeEditedHere",
+  "client.projectBrowser.largePlainText",
+  "client.projectBrowser.largeImagePreview",
   "client.projectBrowser.thisFileChangedElsewhereCopyYourEditsBeforeReloadingIt",
   "client.projectBrowser.unableToSaveCheckThatTheFileIsWritableAnd",
   "client.workspaceActions.fileContent",

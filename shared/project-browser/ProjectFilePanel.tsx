@@ -21,7 +21,7 @@ export function ProjectFilePanel({ tab, active, connected, edit, save, t, quoteS
     {document?.kind === 'image' && <div className="pf-image"><img src={document.image} alt={filename} /></div>}
     {document && ['binary', 'large'].includes(document.kind) && <div className="pf-empty">
       <FileSearch size={36} /><p>{t(document.kind === 'large'
-        ? "client.projectBrowser.filesLargerThan2MbCannotBeEditedHere" : "client.projectBrowser.previewIsNotAvailableForThisFile")}</p></div>}
+        ? "client.projectBrowser.largeImagePreview" : "client.projectBrowser.previewIsNotAvailableForThisFile")}</p></div>}
     {document && <footer className="pf-status" role="status">
       <span>{Math.max(1, Math.ceil(document.size / 1024))} KB</span>
       <span>{t(document.readOnly ? "client.projectBrowser.readOnly" : isDirty(tab) ? "client.projectBrowser.unsaved" : tab.saved ? "client.configHelp.saved" : "client.projectBrowser.editable")}</span>

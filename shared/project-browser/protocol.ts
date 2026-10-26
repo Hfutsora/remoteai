@@ -1,8 +1,10 @@
 import type { ProjectFilesResponse } from '../remote-chat/projectFiles';
 import type { DownloadClient } from '../remote-chat/downloads';
 import type { EntryChange, EntryRequest } from './entryActions';
+import { readProjectDocument, saveProjectDocument } from './fileTransfer';
 
-export const PROJECT_FILE_LIMIT = 2 * 1024 * 1024;
+export const PROJECT_PLAIN_TEXT_THRESHOLD = 5 * 1024 * 1024;
+export const PROJECT_FILE_CHUNK_BYTES = 256 * 1024;
 export const PROJECT_SEARCH_QUERY_LIMIT = 256;
 
 export interface ProjectFileTarget { cwd: string; path: string }
@@ -15,13 +17,19 @@ export interface ProjectDocument {
   image?: string;
   revision: string;
   readOnly: boolean;
+  chunked?: boolean;
 }
 export type ProjectBrowserRequest =
   | ({ operation: 'projectFiles'; directory?: string; query?: string; searchAllDirectories?: boolean }
     & Pick<ProjectFileTarget, 'cwd'>)
-  | ({ operation: 'projectFileRead' } & ProjectFileTarget)
+  | ({ operation: 'projectFileRead'; chunk?: { offset: number; length: number } } & ProjectFileTarget)
   | ({ operation: 'projectEntryAction' } & EntryRequest)
-  | ({ operation: 'projectFileWrite' } & ProjectFileSave);
+  | ({ operation: 'projectFileWrite' } & ProjectFileSave)
+  | ({ operation: 'projectFileWrite'; revision: string; upload: ProjectFileUpload } & ProjectFileTarget);
+
+export interface ProjectFileUpload {
+  token: string; offset: number; size: number; data: string; finish?: boolean; cancel?: boolean;
+}
 
 export interface ProjectBrowserClient {
   list: (cwd: string, directory?: string, query?: string) => Promise<ProjectFilesResponse>;
@@ -38,8 +46,8 @@ export function createProjectBrowserClient(request: <T>(request: ProjectBrowserR
     list: (cwd: string, directory?: string, query?: string) =>
       request<ProjectFilesResponse>({ operation: 'projectFiles', cwd, directory,
         ...(query === undefined ? {} : { query, searchAllDirectories: true }) }),
-    read: (target: ProjectFileTarget) => request<ProjectDocument>({ operation: 'projectFileRead', ...target }),
-    save: (target: ProjectFileSave) => request<ProjectDocument>({ operation: 'projectFileWrite', ...target }),
+    read: target => readProjectDocument(request, target),
+    save: target => saveProjectDocument(request, target),
     mutate: (target: EntryRequest) => request<EntryChange>({ operation: 'projectEntryAction', ...target }),
   };
 }

@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 
 pub const MAX_SESSIONS: usize = 8;
 // Base64 plus JSON stays below the authenticated relay's minimum message allowance.
-pub const MAX_FILE_BYTES: usize = 4 * 1024 * 1024;
+pub const MAX_FILE_BYTES: usize = 5 * 1024 * 1024;
 /// Per-request memory bound; chunked uploads have no total file-size limit.
 pub const UPLOAD_CHUNK_BYTES: usize = 256 * 1024;
 pub const MAX_INPUT_BYTES: usize = 64 * 1024;

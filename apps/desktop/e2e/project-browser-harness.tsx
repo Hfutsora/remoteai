@@ -9,7 +9,8 @@ import { createGuiToolsClient } from '../../../shared/remote-chat/guiTools';
 import type { ProjectBrowserRequest } from '../../../shared/project-browser/protocol';
 import { guiApi } from '../src/pages/codexGui/api';
 import { displayText } from '../src/i18n/uiText';
-import { browserRequest, browserRoot, savedFiles, causeConflict, seedLargeDirectory } from './project-browser-fixture';
+import { browserRequest, browserRoot, savedFiles, causeConflict, seedLargeDirectory,
+  seedLargeText } from './project-browser-fixture';
 import { ProjectBrowser } from '../../../shared/project-browser/ProjectBrowser';
 import type { BrowserHost } from '../../../shared/project-browser/entryActions';
 import { ChatFileReferencesProvider, useComposerFileReferences } from '../../../shared/chat/ChatFileReferences';
@@ -22,6 +23,7 @@ const params = new URLSearchParams(location.search);
 const dark = params.has('dark');
 const mode = params.get('mode') ?? 'local';
 if (params.has('largeDirectory')) seedLargeDirectory(10_001);
+if (params.has('largeText')) seedLargeText(params.has('atThreshold'));
 const client = createGuiToolsClient(<T,>(request: object) => browserRequest<T>(request as ProjectBrowserRequest));
 guiApi.request = <T,>(request: object) => browserRequest<T>(request as ProjectBrowserRequest);
 Object.assign(window, { savedFiles, causeConflict });
