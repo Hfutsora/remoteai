@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { GUI_ACCOUNTS_EVENT } from '../../../shared/remote-chat/guiAccounts';
 
 type Reply = { text: string } | { error: string };
 interface Request { action: string; sessionId?: string; data?: string; mimeType?: string }
@@ -29,6 +30,26 @@ const start = async (page: Page) => {
   await expect(page.getByRole('status').filter({ hasText: '正在录音' })).toContainText('0:01');
 };
 const stop = (page: Page) => page.getByRole('button', { name: '结束录音并转写' }).click();
+
+test('keeps recording and transcription alive through balance refreshes', async ({ page }, info) => {
+  const backend = await fixture(page, info.project.name);
+  await backend.editor.fill('保留草稿');
+  await start(page);
+  const refreshBalance = () => page.evaluate(method => {
+    window.dispatchEvent(new CustomEvent('dictation-host-event', { detail: { method, params: {} } }));
+  }, GUI_ACCOUNTS_EVENT);
+  await refreshBalance();
+  await expect(page.getByRole('button', { name: '结束录音并转写' })).toBeVisible();
+  await expect(page.locator('.chat-composer-submit')).toBeDisabled();
+  await stop(page);
+  await expect.poll(() => backend.uploads().length).toBe(1);
+  await refreshBalance();
+  await expect(page.locator('.chat-composer-submit')).toBeDisabled();
+  backend.reply({ text: '余额刷新后仍然保留。' });
+  await expect(backend.editor).toHaveValue('保留草稿\n余额刷新后仍然保留。');
+  await expect(page.locator('.chat-composer-submit')).toBeEnabled();
+  expect(backend.calls.filter(call => call.action === 'cancel')).toHaveLength(0);
+});
 
 for (const dark of [false, true]) {
   test(`records browser audio, retries and appends to the latest draft (${dark ? 'dark' : 'light'})`,

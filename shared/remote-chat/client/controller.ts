@@ -38,6 +38,7 @@ import { QueueConnection } from './queueConnection';
 import { AsyncAnswers } from './asyncAnswers';
 import { createGuiAccountsClient } from './guiAccounts';
 import { createRemoteDictationClient } from '../dictation';
+import { GUI_ACCOUNT_SELECTION_EVENT } from '../guiAccounts';
 import { createContextSettingsClient } from './contextSettings';
 import { createGuiToolsClient } from '../guiTools';
 import type { SshProfileStore } from '../../terminal/sshProfiles';
@@ -88,7 +89,9 @@ export class ChatController {
   });
   readonly dictation = createRemoteDictationClient({
     request: body => this.connection.request('request', body),
-    subscribeAccountChange: changed => this.guiAccounts.subscribe(changed),
+    subscribeAccountChange: changed => this.subscribeEvents(event => {
+      if (event.method === GUI_ACCOUNT_SELECTION_EVENT) changed();
+    }),
   });
   readonly guiTools = createGuiToolsClient(<T>(body: object) => this.connection.request<T>('request', body),
     (event, fields) => this.connection.reportDiagnostic?.(event, fields),

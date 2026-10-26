@@ -15,7 +15,7 @@ import { guiSidebar } from '../pages/codexGui/sidebarBridge';
 import { EventStream } from './eventStream';
 import { remoteQueue } from './queue';
 import { QUEUE_EVENT } from '../../../../shared/remote-chat/queue';
-import { GUI_ACCOUNTS_EVENT } from '../../../../shared/remote-chat/guiAccounts';
+import { GUI_ACCOUNTS_EVENT, GUI_ACCOUNT_SELECTION_EVENT } from '../../../../shared/remote-chat/guiAccounts';
 import { subscribeGuiEvent } from '../pages/codexGui/webEvents';
 import { acknowledgedMessages } from './acknowledgedMessages';
 import { guiAccountBalances } from './guiAccountBalances';
@@ -66,6 +66,7 @@ export class ChatHost {
       this.broadcast({ method: SIDEBAR_EVENT, params: snapshot });
     });
     void subscribeGuiEvent('codex-gui-account-changed', () => {
+      this.broadcast({ method: GUI_ACCOUNT_SELECTION_EVENT, params: {} });
       this.broadcast({ method: GUI_ACCOUNTS_EVENT, params: {} });
     }).then((unsubscribe) => {
       if (this.closed) unsubscribe();
