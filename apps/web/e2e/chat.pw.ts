@@ -4,7 +4,7 @@ import { openChatList, connect, navigate, send, settled, screenshot, state, fixt
 import { chatJourney } from './chat-journey';
 import { reliabilityJourney } from './chat-reliability';
 import { historyJourney } from './chat-history';
-import { attachmentJourney } from './chat-attachments';
+import { attachmentJourney, fileCancelJourney } from './chat-attachments';
 import { imageEditorJourney } from './chat-image-editor';
 import { composerLayout, desktopComposer } from './chat-composer';
 import { projectPickerJourney } from './chat-project-picker';
@@ -37,6 +37,8 @@ test.beforeEach(async ({ page, request }, info) => {
 
 
 test('keeps composer icons below single and multiline drafts', async ({ page }) => composerLayout(page));
+test('preserves draft and attachments when file selection is canceled and retried',
+  async ({ page }) => fileCancelJourney(page));
 test('shows only task issues and connection health over relay', async ({ page, request }, info) => {
   await reliabilityJourney(page, request, info);
 });
