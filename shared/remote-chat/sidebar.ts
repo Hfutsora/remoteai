@@ -13,6 +13,7 @@ export interface SidebarThread {
 export interface SidebarSnapshot {
   revision: number;
   pins?: string[];
+  pinnedProjects?: string[];
   threads: Record<string, SidebarThread>;
   readState: Record<string, ThreadReadReceipt>;
 }
@@ -42,5 +43,6 @@ export function projectThreadGroups(threads: Thread[], sidebar: SidebarSnapshot)
     data: prioritizeRunningThreads(group.data, thread => threadPresentation(thread, sidebar).running)
       .sort((left, right) => Number(Boolean(sidebar.pins?.includes(right.id)))
         - Number(Boolean(sidebar.pins?.includes(left.id)))),
-  }));
+  })).sort((left, right) => Number(Boolean(sidebar.pinnedProjects?.includes(right.cwd)))
+    - Number(Boolean(sidebar.pinnedProjects?.includes(left.cwd))));
 }

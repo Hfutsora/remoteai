@@ -1,25 +1,27 @@
 import { displayText } from '../i18n/index';
 import type { ReactElement, HTMLAttributes } from 'react';
-import { Archive, ArchiveRestore, Pencil, Trash2 } from 'lucide-react';
+import { threadMenuItems } from '../../../../shared/chat/threadMenuItems';
+import { forkUnavailableReason } from '../../../../shared/remote-chat/client/forkConversation';
 import { ThreadContextMenu } from '../../../../shared/chat/ThreadContextMenu';
 import { threadActionReason } from '../../../../shared/remote-chat/client/threadActions';
 import type { ThreadActionsModel } from '../../../../shared/remote-chat/client/useThreadActions';
 import type { ChatState, Thread } from './types';
 import { t } from '../i18n';
 
-export function ChatThreadContextMenu({ thread, state, actions, children }: {
+export function ChatThreadContextMenu({ thread, state, actions, onFork, children }: {
   thread: Thread; state: ChatState; actions: ThreadActionsModel;
+  onFork: () => void;
   children: ReactElement<HTMLAttributes<HTMLElement>>;
 }) {
   const current = actions.target?.thread.id === thread.id && actions.view === 'menu';
   const archive = state.archived ? 'unarchive' : 'archive';
-  const reason = (action: 'rename' | 'delete' | typeof archive) => threadActionReason(state, thread, action);
+  const pin = state.sidebar.pins?.includes(thread.id) ? 'unpin' : 'pin';
+  const reason = (action: 'rename' | 'delete' | typeof archive | typeof pin) => threadActionReason(state, thread, action);
   const hint = (current && actions.error) || reason(archive);
   const items = [
-    { key: 'rename', label: t("client.threadActions.renameChat"), icon: <Pencil size={16} />, disabled: !!reason('rename') },
-    { key: archive, label: t(state.archived ? "client.chat.restore" : "client.threadActions.archive"), disabled: !!reason(archive),
-      icon: state.archived ? <ArchiveRestore size={16} /> : <Archive size={16} /> },
-    { key: 'delete', label: t("client.threadActions.deleteChat"), icon: <Trash2 size={16} />, danger: true, disabled: !!reason('delete') },
+    ...threadMenuItems({ pinned: pin === 'unpin', archived: state.archived, translate: t,
+      disabled: action => action === 'fork' ? Boolean(forkUnavailableReason(state, thread))
+        : Boolean(reason(action === 'pin' ? pin : action === 'archive' ? archive : action)) }),
     ...(hint ? [{ key: 'hint', disabled: true, label: <span role="alert">{displayText(hint)}</span> }] : []),
   ];
   return <ThreadContextMenu open={current} disabled={!state.ready || state.sending}
@@ -28,6 +30,8 @@ export function ChatThreadContextMenu({ thread, state, actions, children }: {
       if (open) actions.open(thread); else actions.close();
     }} menu={{ items, onClick: ({ key }) => {
       if (key === 'rename' || key === 'delete') actions.changeView(key);
-      if (key === archive) void actions.submit(archive);
+      if (key === 'archive') void actions.submit(archive);
+      if (key === 'pin') void actions.submit(pin);
+      if (key === 'fork') { actions.close(); onFork(); }
     } }}>{children}</ThreadContextMenu>;
 }

@@ -3,7 +3,8 @@ import { useGuiLanguage } from '../../i18n/useGuiLanguage';
 import { useMemo, useState, type ReactNode } from "react";
 import { App, Button, Input, Modal, Segmented, Spin } from "antd";
 import { ThreadContextMenu } from "../../../../../shared/chat/ThreadContextMenu";
-import { Archive, Pencil, Pin, RefreshCw, Search, Split, Trash2 } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
+import { threadMenuItems } from "../../../../../shared/chat/threadMenuItems";
 import type { GuiController } from "./controller";
 import type { GuiState, Thread } from "./types";
 import { ThreadGroup } from "./ThreadGroup";
@@ -48,16 +49,14 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
     const running = isThreadRunning(state, thread);
     const busy = state.sending || Boolean(state.deleting);
     const needsInput = state.approvals.some((event) => event.params.threadId === thread.id);
-    const items = [
-      { key: "pin", label: state.pins.includes(thread.id) ? uiText("client.conversation.unpin") : uiText("client.conversation.pin"), icon: <Pin size={14} /> },
-      { key: "rename", label: uiText("client.projectBrowser.renamed"), icon: <Pencil size={14} />, disabled: running },
-      { key: "fork", label: uiText("client.conversation.createBranch"), icon: <Split size={14} />,
-        disabled: !canForkLatestConversation(state, thread) },
-      { key: "archive", label: state.archived ? uiText("client.workspaceActions.restoreConversation") : uiText("client.threadActions.archive"), icon: <Archive size={14} />, disabled: running },
-      { key: "delete", label: uiText("client.projectBrowser.deleted"), icon: <Trash2 size={14} />, danger: true,
-        disabled: running || busy || needsInput || Boolean(state.queued[thread.id]?.length)
-          || state.connection !== "ready" },
-    ];
+    const items = threadMenuItems({ pinned: state.pins.includes(thread.id), archived: state.archived, translate: uiText,
+      disabled: action => {
+        if (action === 'pin') return false;
+        if (action === 'fork') return !canForkLatestConversation(state, thread);
+        if (action === 'delete') return running || busy || needsInput || Boolean(state.queued[thread.id]?.length)
+          || state.connection !== 'ready';
+        return running;
+      } });
     return <ThreadContextMenu key={thread.id}
       menu={{ items, onClick: ({ key }) => {
         if (key === "pin") controller.pin(thread.id);

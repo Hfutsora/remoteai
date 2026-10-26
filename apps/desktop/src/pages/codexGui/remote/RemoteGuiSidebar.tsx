@@ -1,7 +1,8 @@
 import { displayText, uiText } from "../../../i18n/uiText";
 import type { ReactNode } from 'react';
 import { Button, Segmented } from 'antd';
-import { ChevronRight, Folder, RefreshCw, Search, SquarePen } from 'lucide-react';
+import { ChevronRight, Folder, Pin, RefreshCw, Search, SquarePen } from 'lucide-react';
+import { RemoteProjectMenu } from '../../../../../../shared/remote-chat/client/RemoteProjectMenu';
 import type { ChatSidebarActions } from '../../../../../web/src/chat/ConnectedChat';
 import type { ChatController, ChatState } from '../../../../../web/src/chat/types';
 import { useThreadGroups } from '../../../../../../shared/remote-chat/client/useThreadGroups';
@@ -26,6 +27,15 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
     ...group, label: group.cwd ? group.label : uiText("client.chat.recent"),
   }));
   const threadActions = useThreadActions(state, controller);
+  const renderHeading = (group: typeof groups[number]) => <button type="button" className={groupsStyle.heading}
+    aria-expanded={!group.collapsed} onClick={() => toggleCollapse(group.cwd)}>
+    <span className={groupsStyle.icon} aria-hidden="true">
+      <Folder size={14} className={groupsStyle.folder} />
+      <ChevronRight size={14} className={groupsStyle.arrow} />
+    </span><span className={groupsStyle.label}>{group.label}</span>
+    {state.sidebar.pinnedProjects?.includes(group.cwd)
+      && <Pin size={12} className={groupsStyle.pin} aria-label={uiText('client.workspaceActions.pinned')} />}
+  </button>;
   const pagination = useThreadScrollPagination({
     enabled: state.ready,
     loading: state.loading,
@@ -57,13 +67,9 @@ export function RemoteGuiSidebar({ state, controller, actions, accountPicker, fo
     <div className={styles.threadList} aria-busy={state.loading} {...pagination}>
       {groups.map(group => <section className={groupsStyle.group} aria-label={group.label} key={group.cwd}>
         <div className={groupsStyle.header}>
-          <button type="button" className={groupsStyle.heading} aria-expanded={!group.collapsed}
-            onClick={() => toggleCollapse(group.cwd)}>
-            <span className={groupsStyle.icon} aria-hidden="true">
-              <Folder size={14} className={groupsStyle.folder} />
-              <ChevronRight size={14} className={groupsStyle.arrow} />
-            </span><span className={groupsStyle.label}>{group.label}</span>
-          </button>
+          {group.cwd ? <RemoteProjectMenu cwd={group.cwd} label={group.label} state={state} controller={controller}
+            translate={uiText} buttonClassName={groupsStyle.add}>{renderHeading(group)}</RemoteProjectMenu>
+            : renderHeading(group)}
           {group.cwd && <button type="button" className={groupsStyle.add}
             aria-label={uiText("client.chat.startAChatIn", { value1: group.label })} disabled={state.sending}
             onClick={() => actions.newChat(group)}><SquarePen size={14} strokeWidth={1.6} /></button>}

@@ -1,6 +1,7 @@
 import { t, useLanguage } from '../i18n';
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronRight, LoaderCircle, Plus, RefreshCw, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, LoaderCircle, Pin, Plus, RefreshCw, Search } from 'lucide-react';
+import { RemoteProjectMenu } from '../../../../shared/remote-chat/client/RemoteProjectMenu';
 import type { ChatController, ChatProject, ChatState } from './types';
 import { useThreadActions } from '../../../../shared/remote-chat/client/useThreadActions';
 import { ChatThreadActions } from './ChatThreadActions';
@@ -28,6 +29,16 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
   const pagination = useThreadListScroll(state, controller, !searching);
   const ready = state.ready;
   const actions = useThreadActions(state, controller);
+  const renderHeading = (group: typeof groups[number]) => <h3 className="chat-grow">
+    <button type="button" className="chat-project-toggle" aria-expanded={!group.collapsed}
+      aria-label={`${group.collapsed ? t('client.chat.expandProject') : t('client.chat.collapseProject')}：${group.label}`}
+      onClick={() => toggleCollapse(group.cwd)}>
+      {group.collapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
+      <span className="chat-ellipsis">{group.label}</span>
+      {desktop && state.sidebar.pinnedProjects?.includes(group.cwd)
+        && <Pin size={12} aria-label={t('client.workspaceActions.pinned')} />}
+    </button>
+  </h3>;
   return <>
     <div className="chat-row chat-thread-controls">
       {desktop ? <SidebarSearchInput value={query} onChange={setQuery} label={t("client.chat.searchChats")}
@@ -47,18 +58,15 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
       {groups.map(group => ({ ...group, label: group.cwd ? group.label : t("client.chat.recent") })).map((group) =>
         <section className="chat-project-group" aria-label={group.label} key={group.cwd}>
           <div className="chat-project-heading">
-            <h3 className="chat-grow"><button type="button" className="chat-project-toggle"
-              aria-expanded={!group.collapsed} aria-label={`${group.collapsed ? t("client.chat.expandProject") : t("client.chat.collapseProject")}：${group.label}`}
-              onClick={() => toggleCollapse(group.cwd)}>
-              {group.collapsed ? <ChevronRight size={14} aria-hidden="true" />
-                : <ChevronDown size={14} aria-hidden="true" />}
-              <span className="chat-ellipsis">{group.label}</span>
-            </button></h3>
+            {desktop && group.cwd ? <RemoteProjectMenu cwd={group.cwd} label={group.label} state={state}
+              controller={controller} translate={t} buttonClassName="chat-back">{renderHeading(group)}</RemoteProjectMenu>
+              : renderHeading(group)}
             {group.cwd && <button type="button" className="chat-back" aria-label={t("client.chat.startAChatIn", { value1: group.label })}
               disabled={state.sending} onClick={() => newChat(group)}><Plus size={18} aria-hidden="true" /></button>}
           </div>
           {group.data.map(thread => <ChatThreadRow key={thread.id} thread={thread} state={state}
-            select={() => { void controller.select(thread); onClose(); }} actions={actions} />)}
+            select={() => { void controller.select(thread); onClose(); }} actions={actions}
+            onFork={() => { void controller.forkConversation(thread).then(opened => { if (opened) onClose(); }); }} />)}
           {group.canToggle && <button type="button" className="chat-group-more" aria-expanded={group.expanded}
             aria-label={`${group.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}：${group.label}`} onClick={() => toggle(group.cwd)}>
             {group.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}</button>}

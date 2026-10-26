@@ -2,7 +2,7 @@ import { displayError } from '../../../i18n/uiText';
 import type { ReactElement } from 'react';
 import { App, Input, Modal } from 'antd';
 import { ThreadContextMenu } from '../../../../../../shared/chat/ThreadContextMenu';
-import { Archive, Pencil, Pin, Split, Trash2 } from 'lucide-react';
+import { threadMenuItems } from '../../../../../../shared/chat/threadMenuItems';
 import { uiText } from "../../../i18n/uiText";
 import type { ChatController, ChatState, Thread } from '../../../../../web/src/chat/types';
 import { forkUnavailableReason } from '../../../../../../shared/remote-chat/client/forkConversation';
@@ -24,16 +24,9 @@ export function RemoteThreadMenu({ thread, state, controller, actions, onClose, 
         {displayError(error instanceof Error ? error.message : "client.errors.theOperationFailedPleaseTryAgain")}</span>);
     });
   };
-  const items = [
-    { key: 'pin', label: uiText(pin === 'pin' ? "client.conversation.pin" : "client.conversation.unpin"), icon: <Pin size={14} />,
-      disabled: disabled(pin) },
-    { key: 'rename', label: uiText("client.projectBrowser.renamed"), icon: <Pencil size={14} />, disabled: disabled('rename') },
-    { key: 'fork', label: uiText("client.conversation.createBranch"), icon: <Split size={14} />,
-      disabled: Boolean(forkUnavailableReason(state, thread)) },
-    { key: 'archive', label: uiText(state.archived ? "client.workspaceActions.restoreConversation" : "client.threadActions.archive"), icon: <Archive size={14} />,
-      disabled: disabled(archive) },
-    { key: 'delete', label: uiText("client.projectBrowser.deleted"), icon: <Trash2 size={14} />, danger: true, disabled: disabled('delete') },
-  ];
+  const items = threadMenuItems({ pinned: pin === 'unpin', archived: state.archived, translate: uiText,
+    disabled: action => action === 'fork' ? Boolean(forkUnavailableReason(state, thread))
+      : disabled(action === 'pin' ? pin : action === 'archive' ? archive : action) });
   return <ThreadContextMenu menu={{ items,
     onClick: ({ key }) => {
       if (key === 'pin') run(pin);

@@ -43,7 +43,9 @@ import { RemoteDesktopHost } from '../remoteDesktop/host';
 import { DESKTOP_OPERATION } from '../../../../shared/remote-desktop/protocol';
 import { RemoteThreadTitles } from './threadTitles';
 import { applyProjectOverride, effectiveProjectThread } from './projects';
-import { PROJECT_LIST_OPERATION } from '../../../../shared/remote-chat/projects';
+import { PROJECT_LIST_OPERATION, PROJECT_PIN_OPERATION, PROJECT_REMOVE_OPERATION }
+  from '../../../../shared/remote-chat/projects';
+import { changeRemoteProject } from './projectActions';
 import { readRemoteThreadList, completeRemoteThreadListWrite, receiveRemoteThreadListEvent } from './threadList';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
@@ -213,6 +215,10 @@ export class ChatOperations {
     }
     if (request.method === 'request' && body.operation === 'delete') return deleteRemoteThread(body.threadId);
     if (request.method === 'request' && body.operation === 'threadPin') return pinRemoteThread(body);
+    if (request.method === 'request'
+      && [PROJECT_PIN_OPERATION, PROJECT_REMOVE_OPERATION].includes(String(body.operation))) {
+      return changeRemoteProject(body);
+    }
     if (request.method === 'request' && body.operation === 'forkLatest') return forkRemoteConversation(body.threadId);
     if (request.method === 'request' && GUI_TOOL_OPERATIONS.has(String(body.operation))) {
       return String(body.operation).startsWith('guiTerminal')

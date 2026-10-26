@@ -1,7 +1,7 @@
 import { uiText } from "../../i18n/uiText";
 import type { ReactElement } from "react";
-import { App, Dropdown, type MenuProps } from "antd";
-import { MoreHorizontal, Pin, PinOff, X } from "lucide-react";
+import { App } from "antd";
+import { ProjectContextMenu } from "../../../../../shared/chat/ProjectContextMenu";
 import type { GuiController } from "./controller";
 import type { GuiState } from "./types";
 import styles from "./ThreadGroup.module.less";
@@ -16,23 +16,8 @@ export function ProjectGroupMenu({ path, label, state, controller, children }: {
       void message.success(<span className="compact-confirm-copy">{uiText("client.conversation.projectRemovedItsConversationsAreNowInRecent")}</span>);
     }
   };
-  const menu: MenuProps = { items: [
-    { key: "pin", label: pinned ? uiText("client.conversation.unpin") : uiText("client.conversation.pin"), icon: pinned ? <PinOff size={16} /> : <Pin size={16} /> },
-    { type: "divider" },
-    { key: "remove", label: state.removingProject === path ? uiText("client.conversation.removing") : uiText("client.conversation.removeProject"), icon: <X size={16} />,
-      disabled: state.sending || Boolean(state.removingProject) || state.connection !== "ready" },
-  ], onClick: ({ key }) => {
-    if (key === "pin") controller.projectActions.pin(path);
-    if (key === "remove") void remove();
-  } };
-  return <>
-    <Dropdown trigger={["contextMenu"]} overlayStyle={{ maxWidth: 400 }} menu={menu}>
-      {children}
-    </Dropdown>
-    <Dropdown trigger={["click"]} overlayStyle={{ maxWidth: 400 }} menu={menu}>
-      <button type="button" className={styles.add} aria-label={uiText("client.conversation.manageProject", { value1: label })}>
-        <MoreHorizontal size={14} aria-hidden="true" />
-      </button>
-    </Dropdown>
-  </>;
+  return <ProjectContextMenu label={label} pinned={pinned} removing={state.removingProject === path}
+    removeDisabled={state.sending || Boolean(state.removingProject) || state.connection !== "ready"}
+    onPin={() => controller.projectActions.pin(path)} onRemove={() => void remove()}
+    translate={uiText} buttonClassName={styles.add}>{children}</ProjectContextMenu>;
 }

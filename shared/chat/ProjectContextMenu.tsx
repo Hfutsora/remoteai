@@ -1,0 +1,30 @@
+import type { ReactElement } from 'react';
+import { Dropdown, type MenuProps } from 'antd';
+import { MoreHorizontal, Pin, PinOff, X } from 'lucide-react';
+import type { MessageTranslator } from '../localization/messages';
+import { ThreadContextMenu } from './ThreadContextMenu';
+import styles from './ThreadContextMenu.module.less';
+
+export function ProjectContextMenu({ label, pinned, removing, pinDisabled, removeDisabled,
+  onPin, onRemove, translate, buttonClassName, children }: {
+  label: string; pinned: boolean; removing?: boolean; pinDisabled?: boolean; removeDisabled: boolean;
+  onPin: () => void; onRemove: () => void; translate: MessageTranslator;
+  buttonClassName: string; children: ReactElement;
+}) {
+  const menu: MenuProps = { items: [
+    { key: 'pin', label: translate(pinned ? 'client.conversation.unpin' : 'client.conversation.pin'),
+      icon: pinned ? <PinOff size={16} /> : <Pin size={16} />, disabled: pinDisabled },
+    { type: 'divider' },
+    { key: 'remove', label: translate(removing ? 'client.conversation.removing' : 'client.conversation.removeProject'),
+      icon: <X size={16} />, disabled: removeDisabled },
+  ], onClick: ({ key }) => { if (key === 'pin') onPin(); if (key === 'remove') onRemove(); } };
+  return <>
+    <ThreadContextMenu menu={menu}>{children}</ThreadContextMenu>
+    <Dropdown trigger={['click']} overlayStyle={{ maxWidth: 400 }} overlayClassName={styles.menu} menu={menu}>
+      <button type="button" className={buttonClassName} aria-haspopup="menu"
+        aria-label={translate('client.conversation.manageProject', { value1: label })}>
+        <MoreHorizontal size={14} aria-hidden="true" />
+      </button>
+    </Dropdown>
+  </>;
+}

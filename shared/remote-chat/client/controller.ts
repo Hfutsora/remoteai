@@ -15,6 +15,7 @@ import type { HistoryVersionSource } from './historyPreparation';
 import { HistoryCache } from './historyCache';
 import { ImageCache } from './imageCache';
 import { ThreadActions, threadMutationPatch, type ThreadMutation } from './threadActions';
+import { ProjectActions } from './projectActions';
 import { ThreadListRequests } from './threadListRequests';
 import { ThreadListCache } from './threadListCache';
 import { mergeThreadList } from './threadListSnapshot';
@@ -51,6 +52,9 @@ import { initialChatState, type ApprovalReply, type ChatProject, type ChatState,
 const SYNCHRONIZATION_RETRY_MS = 3000;
 
 export class ChatController {
+  readonly projectActions = new ProjectActions({ snapshot: () => this.state, update: patch => this.update(patch),
+    generation: () => this.synchronization,
+    request: body => this.connection.request('request', body), complete: sidebar => this.applySidebar(sidebar) });
   readonly messageEditor = new RemoteMessageEditor({ snapshot: () => this.state,
     update: patch => this.update(patch), request: body => this.request(body),
     image: (threadId, source) => this.imagePreview(threadId, source, true), invalidate: threadId => {
@@ -401,7 +405,10 @@ export class ChatController {
   private applySidebar(sidebar?: SidebarSnapshot) {
     if (!sidebar || !Number.isSafeInteger(sidebar.revision) || sidebar.revision < this.state.sidebar.revision
       || !sidebar.threads || !sidebar.readState) return;
-    this.update({ sidebar });
+    const selected = this.state.selected;
+    const entry = selected && sidebar.threads[selected.id];
+    this.update({ sidebar, ...(selected && entry && entry.cwd !== selected.cwd
+      ? { selected: { ...selected, cwd: entry.cwd } } : {}) });
     this.markViewed();
   }
 

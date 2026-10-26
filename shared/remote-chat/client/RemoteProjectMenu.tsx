@@ -1,0 +1,32 @@
+import type { ReactElement } from 'react';
+import { App } from 'antd';
+import { ProjectContextMenu } from '../../chat/ProjectContextMenu';
+import { remoteErrorText } from '../../localization/errors';
+import type { MessageTranslator } from '../../localization/messages';
+import { projectActionReason, type ProjectAction } from './projectActions';
+import type { ChatController } from './controller';
+import type { ChatState } from './types';
+
+export function RemoteProjectMenu({ cwd, label, state, controller, translate, buttonClassName, children }: {
+  cwd: string; label: string; state: ChatState; controller: Pick<ChatController, 'projectActions'>;
+  translate: MessageTranslator; buttonClassName: string; children: ReactElement;
+}) {
+  const { message } = App.useApp();
+  const pinned = Boolean(state.sidebar.pinnedProjects?.includes(cwd));
+  const disabled = Boolean(projectActionReason(state));
+  const run = async (action: ProjectAction) => {
+    try {
+      await controller.projectActions.run(cwd, action);
+      if (action === 'remove') void message.success(<span className="compact-confirm-copy">
+        {translate('client.conversation.projectRemovedItsConversationsAreNowInRecent')}</span>);
+    } catch (error) {
+      void message.error(<span className="compact-confirm-copy">{remoteErrorText(error instanceof Error
+        ? error.message : 'client.errors.theOperationFailedPleaseTryAgain')}</span>);
+    }
+  };
+  return <ProjectContextMenu label={label} pinned={pinned} removing={state.projectActionBusy === cwd}
+    pinDisabled={disabled} removeDisabled={disabled} onPin={() => void run(pinned ? 'unpin' : 'pin')}
+    onRemove={() => void run('remove')} translate={translate} buttonClassName={buttonClassName}>
+    {children}
+  </ProjectContextMenu>;
+}

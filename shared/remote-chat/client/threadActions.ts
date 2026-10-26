@@ -10,7 +10,9 @@ export const THREAD_LONG_PRESS_MS = 500;
 
 export function threadActionReason(state: ChatState, thread: Thread, action: ThreadAction): string {
   if (!state.ready) return "client.threadActions.connectToYourComputerToManageChats";
-  if (state.threadActionBusy || state.sending) return "client.threadActions.waitForTheCurrentActionToFinish";
+  if (state.threadActionBusy || state.projectActionBusy || state.sending) {
+    return "client.threadActions.waitForTheCurrentActionToFinish";
+  }
   if (action === 'pin' || action === 'unpin') return '';
   const current = state.selected?.id === thread.id ? state.selected
     : state.threads.find(item => item.id === thread.id) ?? thread;
