@@ -17,6 +17,8 @@ pub(crate) struct AppSettings {
     #[serde(default)]
     pub(crate) pet_dock_enabled: bool,
     #[serde(default)]
+    pub(crate) pet_dock_show_labels: bool,
+    #[serde(default)]
     pub(crate) theme_color: Option<String>,
     #[serde(default)]
     pub(crate) language: Option<String>,
@@ -275,6 +277,7 @@ impl Default for AppSettings {
             non_proxy_enhancements_enabled: default_non_proxy_enhancements_enabled(),
             floating_bubble_enabled: default_floating_bubble_enabled(),
             pet_dock_enabled: false,
+            pet_dock_show_labels: false,
             theme_color: None,
             language: None,
             privacy_mode: default_privacy_mode(),

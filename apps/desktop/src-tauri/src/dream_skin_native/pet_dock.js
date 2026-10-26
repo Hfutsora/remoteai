@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const KEY = '__remoteAiPetDock';
-  if (window[KEY]?.version === 7) return;
+  if (window[KEY]?.version === 12) return;
   window[KEY]?.destroy();
   // i18n:pet-dock:start
     const petDockCopy = {
@@ -71,6 +71,10 @@
     #remoteai-pet-dock .ra-value { font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
     #remoteai-pet-dock .ra-label, #remoteai-pet-dock .ra-value {
       position:relative; top:var(--ra-text-offset,2px); }
+    #remoteai-pet-dock[data-show-labels=false] .ra-label { display:none; }
+    #remoteai-pet-dock[data-show-labels=false] .ra-window {
+      height:100%; display:flex; align-items:center; justify-content:center; }
+    #remoteai-pet-dock[data-show-labels=false] .ra-value { line-height:1; }
     #remoteai-pet-dock[data-stale=true] .ra-value { color:#e9bd75!important; }
     #remoteai-pet-dock .ra-stale { position:absolute; top:59px; width:100%; text-align:center;
       font-size:8px; color:#edc17e; }
@@ -150,7 +154,8 @@
     setStyle(metrics, 'top', `${29 * baseScale}px`);
     setStyle(metrics, 'height', `${Math.max(21, 28 * baseScale)}px`);
     for (const label of dock.querySelectorAll('.ra-label')) setStyle(label, 'font-size', `${Math.max(7, 9 * baseScale)}px`);
-    for (const value of dock.querySelectorAll('.ra-value')) setStyle(value, 'font-size', `${valueFont(value, Math.max(11, 17 * baseScale), (width - 58 * baseScale) / 2)}px`);
+    const maximumValueFont = quota?.showLabels === true ? Math.max(11, 17 * baseScale) : Math.max(14, 24 * baseScale);
+    for (const value of dock.querySelectorAll('.ra-value')) setStyle(value, 'font-size', `${valueFont(value, maximumValueFont, (width - 58 * baseScale) / 2)}px`);
     setStyle(dock.querySelector('.ra-stale'), 'top', `${height - Math.max(6, 8 * baseScale)}px`);
     setStyle(dock.querySelector('.ra-stale'), 'font-size', `${Math.max(6, 8 * baseScale)}px`);
   }
@@ -191,6 +196,7 @@
   function update(next, image) {
     lastBeat = Date.now();
     quota = next;
+    dock.dataset.showLabels = String(next.showLabels === true);
     if (image && dock.style.backgroundImage !== `url("${image}")`) dock.style.backgroundImage = `url("${image}")`;
     dock.dataset.stale = String(!!next.stale || !!next.error);
     copy = petDockCopy[next.language] ?? petDockCopy.en;
@@ -260,6 +266,6 @@
       toolbarHidden: [...document.querySelectorAll('[data-quick-chat-presentation]')].every(e => getComputedStyle(e).visibility === 'hidden'),
       dockCount: document.querySelectorAll('#remoteai-pet-dock').length };
   }
-  window[KEY] = { version: 7, update, destroy, inspect };
+  window[KEY] = { version: 12, update, destroy, inspect };
   tick();
 })();

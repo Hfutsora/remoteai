@@ -7,7 +7,7 @@ import { translate } from '../../i18n';
 import { PetDockSettingsCard } from './PetDockSettingsCard';
 import type { PetDockStatus } from '../../../../../shared/pet-dock/types';
 
-vi.mock('../../api/petDock', () => ({ petDockApi: { load: vi.fn(), save: vi.fn() } }));
+vi.mock('../../api/petDock', () => ({ petDockApi: { load: vi.fn(), save: vi.fn(), saveLabels: vi.fn() } }));
 let root: Root;
 let container: HTMLDivElement;
 const checked = () => container.querySelector('[role="switch"]')?.getAttribute('aria-checked');
@@ -20,8 +20,9 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
-  vi.mocked(petDockApi.load).mockReset().mockResolvedValue({ enabled: false, state: 'disabled' });
-  vi.mocked(petDockApi.save).mockReset().mockResolvedValue({ enabled: true, state: 'waitingForCodex' });
+  vi.mocked(petDockApi.load).mockReset().mockResolvedValue({ enabled: false, showLabels: false, state: 'disabled' });
+  vi.mocked(petDockApi.save).mockReset().mockResolvedValue({ enabled: true, showLabels: false, state: 'waitingForCodex' });
+  vi.mocked(petDockApi.saveLabels).mockReset().mockResolvedValue({ enabled: true, showLabels: true, state: 'active' });
 });
 
 afterEach(async () => {
@@ -41,7 +42,7 @@ it('shows the saved preference, enables it, and displays the actual connection s
 });
 
 it('keeps the previous setting and offers retry if saving fails', async () => {
-  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: true, state: 'active' });
+  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: true, showLabels: false, state: 'active' });
   vi.mocked(petDockApi.save).mockRejectedValue(new Error('service unavailable'));
   await act(async () => root.render(<PetDockSettingsCard t={t} />));
   await click();
@@ -56,7 +57,7 @@ it('does not overlap status polling, and stops polling after unmount', async () 
   await act(async () => root.render(<PetDockSettingsCard t={t} />));
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
   expect(petDockApi.load).toHaveBeenCalledTimes(1);
-  await act(async () => resolve({ enabled: true, state: 'active' }));
+  await act(async () => resolve({ enabled: true, showLabels: false, state: 'active' }));
   await act(async () => root.render(null));
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
   expect(petDockApi.load).toHaveBeenCalledTimes(1);
@@ -69,13 +70,62 @@ it('honors a switch click during polling and ignores the earlier status response
   await act(async () => { await vi.advanceTimersByTimeAsync(2_500); });
   await click();
   expect(checked()).toBe('true');
-  await act(async () => resolve({ enabled: false, state: 'disabled' }));
+  await act(async () => resolve({ enabled: false, showLabels: false, state: 'disabled' }));
   expect(checked()).toBe('true');
 });
 
 it('shows platform limits and disables the switch on unsupported hosts', async () => {
-  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: false, state: 'unsupported' });
+  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: false, showLabels: false, state: 'unsupported' });
   await act(async () => root.render(<PetDockSettingsCard t={t} />));
   expect(container.querySelector<HTMLButtonElement>('[role="switch"]')?.disabled).toBe(true);
   expect(container.textContent).toContain(t('settings.petDock.unsupported'));
+});
+
+const labelSwitch = () => container.querySelector<HTMLButtonElement>('#pet-quota-dock-labels')!;
+const clickLabels = () => act(async () => labelSwitch().click());
+
+it('saves text labels independently and preserves the active dock', async () => {
+  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: true, showLabels: false, state: 'active' });
+  await act(async () => root.render(<PetDockSettingsCard t={t} />));
+  expect(labelSwitch().getAttribute('aria-checked')).toBe('false');
+  await clickLabels();
+  expect(petDockApi.saveLabels).toHaveBeenCalledWith(true);
+  expect(petDockApi.save).not.toHaveBeenCalled();
+  expect(labelSwitch().getAttribute('aria-checked')).toBe('true');
+  expect(checked()).toBe('true');
+});
+
+it('keeps the saved label preference visible but disabled when the dock is off', async () => {
+  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: false, showLabels: true, state: 'disabled' });
+  await act(async () => root.render(<PetDockSettingsCard t={t} />));
+  expect(labelSwitch().disabled).toBe(true);
+  expect(labelSwitch().getAttribute('aria-checked')).toBe('true');
+});
+
+it('keeps the label preference and offers retry when label saving fails', async () => {
+  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: true, showLabels: true, state: 'active' });
+  vi.mocked(petDockApi.saveLabels).mockRejectedValue(new Error('service unavailable'));
+  await act(async () => root.render(<PetDockSettingsCard t={t} />));
+  await clickLabels();
+  expect(petDockApi.saveLabels).toHaveBeenCalledWith(false);
+  expect(labelSwitch().getAttribute('aria-checked')).toBe('true');
+  expect(container.querySelector('[role="alert"]')?.textContent).toContain(t('settings.petDock.saveError'));
+});
+
+it('ignores an earlier poll and serializes the two switches while labels are saving', async () => {
+  vi.mocked(petDockApi.load).mockResolvedValue({ enabled: true, showLabels: false, state: 'active' });
+  await act(async () => root.render(<PetDockSettingsCard t={t} />));
+  let resolvePoll!: (status: PetDockStatus) => void;
+  let resolveSave!: (status: PetDockStatus) => void;
+  vi.mocked(petDockApi.load).mockImplementation(() => new Promise((done) => { resolvePoll = done; }));
+  vi.mocked(petDockApi.saveLabels).mockImplementation(() => new Promise((done) => { resolveSave = done; }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2_500); });
+  await clickLabels();
+  expect(labelSwitch().disabled).toBe(true);
+  expect(container.querySelector<HTMLButtonElement>('#pet-quota-dock')?.disabled).toBe(true);
+  await click();
+  expect(petDockApi.save).not.toHaveBeenCalled();
+  await act(async () => resolveSave({ enabled: true, showLabels: true, state: 'active' }));
+  await act(async () => resolvePoll({ enabled: true, showLabels: false, state: 'active' }));
+  expect(labelSwitch().getAttribute('aria-checked')).toBe('true');
 });

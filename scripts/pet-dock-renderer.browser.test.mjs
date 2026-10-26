@@ -46,6 +46,42 @@ test('keeps the pet size, scales the base to 1.75, and places live cards below i
   assert.equal(await page.locator('[data-side="right"]').textContent(), '62%');
 });
 
+test('toggles labels live while preserving values, dock geometry and accessible descriptions', async () => {
+  assert.equal(await page.locator('.ra-label:visible').count(), 0);
+  const description = await page.locator('#remoteai-pet-dock').getAttribute('aria-label');
+  const before = await inspect();
+  const numericFont = await page.locator('[data-side="left"]').evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+  await update({ ...official, showLabels: true });
+  assert.equal(await page.locator('.ra-label:visible').count(), 2);
+  assert.deepEqual(await page.locator('.ra-label').allTextContents(), ['5小时剩余', '本周剩余']);
+  const labeledFont = await page.locator('[data-side="left"]').evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+  assert.ok(numericFont > labeledFont);
+  assert.equal((await inspect()).dock.width, before.dock.width);
+  await update({ ...official, showLabels: false });
+  assert.equal(await page.locator('.ra-label:visible').count(), 0);
+  assert.deepEqual(await page.locator('.ra-value').allTextContents(), ['81%', '62%']);
+  assert.equal(await page.locator('#remoteai-pet-dock').getAttribute('aria-label'), description);
+  assert.equal((await inspect()).dockCount, 1);
+  assert.equal((await inspect()).sameMovingParent, true);
+});
+
+test('uses the label preference in API mode and keeps long amounts inside each numeric panel', async () => {
+  const snapshot = { language: 'zh', kind: 'api', remaining: { amount: 1545.42, unit: 'USD' }, totalTokens: 56180000 };
+  await update({ ...snapshot, showLabels: true });
+  assert.deepEqual(await page.locator('.ra-label:visible').allTextContents(), ['剩余额度', '总消耗']);
+  await update({ ...snapshot, showLabels: false });
+  assert.equal(await page.locator('.ra-label:visible').count(), 0);
+  assert.deepEqual(await page.locator('.ra-value').allTextContents(), ['$1545.42', '56.18M']);
+  const measurements = await page.locator('.ra-value').evaluateAll(nodes => nodes.map(node => {
+    const value = node.getBoundingClientRect(), panel = node.parentElement.getBoundingClientRect();
+    return { left: value.left >= panel.left, right: value.right <= panel.right,
+      verticalOffset: value.top + value.height / 2 - panel.top - panel.height / 2 };
+  }));
+  assert.ok(measurements.every(value => value.left && value.right && Math.abs(value.verticalOffset - 2) < 0.1));
+  await update({ ...snapshot, language: 'ja', showLabels: true });
+  assert.deepEqual(await page.locator('.ra-label:visible').allTextContents(), ['残高', '総トークン']);
+});
+
 test('moves the dock in the exact same frame as a dragged native parent', async () => {
   const delta = await page.evaluate(() => {
     const before = window.__remoteAiPetDock.inspect();
