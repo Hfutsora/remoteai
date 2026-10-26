@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { subscribeGuiEvent } from '../webEvents';
-import { dictationClient, recordingError } from './client';
+import type { DictationClient } from './client';
+import { recordingError } from './errors';
 import { startRecording, type Recording } from './recording';
 
 type Phase = 'idle' | 'preparing' | 'recording' | 'transcribing' | 'error';
@@ -8,10 +8,12 @@ interface Operation {
   abort: AbortController; sessionId?: string; recording?: Recording; audio?: Blob; uploading?: boolean;
 }
 interface View { phase: Phase; error?: string; started?: number; canRetry?: boolean }
-interface Options { active: boolean; onText: (text: string) => void; onBusyChange: (busy: boolean) => void }
+interface Options {
+  client: DictationClient; active: boolean; onText: (text: string) => void; onBusyChange: (busy: boolean) => void;
+}
 const IDLE: View = { phase: 'idle' };
 
-export function useDictation({ active, onText, onBusyChange }: Options) {
+export function useDictation({ client, active, onText, onBusyChange }: Options) {
   const [view, setView] = useState<View>(IDLE);
   const current = useRef<Operation>();
   const callbacks = useRef({ onText, onBusyChange });
@@ -28,7 +30,7 @@ export function useDictation({ active, onText, onBusyChange }: Options) {
     operation.recording?.cancel();
     if (operation.sessionId) {
       // Cleanup is best effort; the backend also expires abandoned sessions.
-      void dictationClient.cancel(operation.sessionId).catch(() => undefined);
+      void client.cancel(operation.sessionId).catch(() => undefined);
     }
   };
   const cancel = () => { cancelOperation(); change(IDLE); };
@@ -38,7 +40,7 @@ export function useDictation({ active, onText, onBusyChange }: Options) {
     operation.uploading = true;
     change({ phase: 'transcribing' });
     try {
-      const { text } = await dictationClient.transcribe(operation.sessionId, operation.audio);
+      const { text } = await client.transcribe(operation.sessionId, operation.audio);
       if (!valid(operation)) return;
       current.current = undefined;
       callbacks.current.onText(text);
@@ -48,15 +50,15 @@ export function useDictation({ active, onText, onBusyChange }: Options) {
     } finally { operation.uploading = false; }
   };
   const start = async () => {
-    if (current.current) return;
+    if (!active || current.current) return;
     const operation: Operation = { abort: new AbortController() };
     current.current = operation;
     change({ phase: 'preparing' });
     try {
-      const { sessionId } = await dictationClient.prepare();
+      const { sessionId } = await client.prepare();
       operation.sessionId = sessionId;
       if (!valid(operation)) {
-        void dictationClient.cancel(sessionId).catch(() => undefined);
+        void client.cancel(sessionId).catch(() => undefined);
         return;
       }
       operation.recording = await startRecording(operation.abort.signal);
@@ -76,9 +78,9 @@ export function useDictation({ active, onText, onBusyChange }: Options) {
     if (!active) { cancel(); return; }
     let disposed = false;
     let unsubscribe: (() => void) | undefined;
-    void subscribeGuiEvent('codex-gui-account-changed', () => {
+    void Promise.resolve(client.subscribeAccountChange(() => {
       if (!disposed) cancel();
-    }).then((stop) => { if (disposed) stop(); else unsubscribe = stop; })
+    })).then((stop) => { if (disposed) stop(); else unsubscribe = stop; })
       .catch(() => undefined); // The backend independently checks the pinned account revision.
     return () => {
       disposed = true; unsubscribe?.(); cancelOperation();
@@ -86,7 +88,7 @@ export function useDictation({ active, onText, onBusyChange }: Options) {
     };
     // Lifecycle is scoped to the keyed composer and its visibility.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  }, [active, client]);
   return {
     ...view, cancel, start,
     stop: () => current.current?.recording?.stop(),
