@@ -57,9 +57,13 @@ impl Guard {
             state.mute(true)?;
         }
         state.connected = true;
+        let privacy = state.preferences.privacy_screen;
         drop(state);
         // A saved password and an immediate sign-in attempt have independent outcomes.
-        auto_unlock::connect_saved();
+        // Saved privacy must hide the physical desktop before automatic sign-in can expose it.
+        if !privacy {
+            auto_unlock::connect_saved();
+        }
         Ok(())
     }
 

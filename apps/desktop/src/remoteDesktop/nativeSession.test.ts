@@ -5,6 +5,16 @@ import { DEFAULT_SETTINGS } from '../../../../shared/remote-desktop/protocol';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 const call = vi.mocked(invoke);
+it('reports privacy applied by the host before its first video offer without a viewer-side toggle', async () => {
+  const original = call.getMockImplementation()!;
+  call.mockImplementation(async (command, args) => command === 'remote_desktop_stream_open'
+    ? { sdp: 'private-offer', displayState: { privacyScreen: true, displayId: 'private', displays: [] } }
+    : original(command, args));
+  const session = new NativeDesktopSession(DEFAULT_SETTINGS, []);
+  await expect(session.open()).resolves.toMatchObject({ sdp: 'private-offer', privacyScreen: true, displayId: 'private' });
+  expect(call.mock.calls.some(([command]) => command === 'remote_desktop_privacy')).toBe(false);
+  await session.close();
+});
 it('routes security changes to the active native lease and rejects writes after close', async () => {
   const original = call.getMockImplementation()!;
   const state = { lockOnDisconnect: true, muteHost: false };

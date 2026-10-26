@@ -53,6 +53,7 @@ export class NativeDesktopSession {
       stage = 'stream-open';
       this.diagnostic?.('desktop-stage', { stage, state: 'connecting', ...this.captureDiagnostic() });
       const offer = await this.openStream();
+      if (offer.displayState) this.displays = { ...this.displays, ...offer.displayState };
       if (this.stopped) throw new Error('桌面连接已结束。');
       this.diagnostic?.('desktop-stage', { stage: 'ready', durationMs: performance.now() - started,
         ...this.captureDiagnostic() });
@@ -74,7 +75,7 @@ export class NativeDesktopSession {
   }
 
   private openStream() {
-    return invoke<{ sdp: string; directUpgrade?: boolean; relayStandby?: boolean }>(
+    return invoke<{ sdp: string; directUpgrade?: boolean; relayStandby?: boolean; displayState?: DesktopDisplays }>(
       'remote_desktop_stream_open', { request: {
         id: this.id, profile: profile(this.settings, this.displays), clipboardChannel: this.settings.clipboardChannel === true,
         relayStandby: this.settings.relayStandby === true,
