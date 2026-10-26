@@ -113,6 +113,7 @@ fn provider_model_refresh_request(
         image_input_route_enabled(paths),
     );
     ModelRefreshSource::Configured(ModelRefreshRequest {
+        display_names: Default::default(),
         fast_mode_models: if provider.fast_mode_enabled {
             models.clone()
         } else {
@@ -136,8 +137,13 @@ fn provider_group_model_refresh_request(
         &catalog.image_input_models,
         image_input_route_enabled(paths),
     );
-    let selected_model = catalog.models.first().cloned()?;
+    let selected_model = fs::read_to_string(&paths.current_config)
+        .ok()
+        .and_then(|config| codex_config::root_model(&config))
+        .filter(|model| catalog.models.contains(model))
+        .or_else(|| catalog.models.first().cloned())?;
     Some(ModelRefreshSource::Configured(ModelRefreshRequest {
+        display_names: group_display_names::display_names(providers),
         fast_mode_models: if catalog.fast_mode_enabled {
             catalog.models.clone()
         } else {

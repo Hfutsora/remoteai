@@ -30,5 +30,6 @@ export function useDownloadSelection(tasks: readonly { id: string }[], scope: st
       return { scope, ids: hasAll ? new Set<string>() : new Set(available) };
     });
   };
-  return { selected, toggle, allSelected, toggleAll };
+  const clear = () => setSelection({ scope, ids: new Set<string>() });
+  return { selected, toggle, allSelected, toggleAll, clear };
 }

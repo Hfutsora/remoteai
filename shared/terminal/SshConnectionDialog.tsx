@@ -10,6 +10,7 @@ import { SshProfileList } from './SshProfileList';
 import { displayText as t } from '../localization/messages';
 import { remoteErrorText } from '../localization/errors';
 import './ssh-dialog.css';
+import { SshHostKeyDialog } from './SshHostKeyDialog';
 
 export function SshConnectionDialog({ api, initial, manage = false, projectCwd, close, connected, dispose, changed }: {
   api: SshApi; initial?: SshProfile; manage?: boolean; projectCwd: string; close: () => void;
@@ -85,7 +86,7 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
             {t(trust ? 'client.ssh.trustAndTest' : 'client.ssh.testConnection')}</Button>
           <div ref={feedback} aria-live="polite">
             {tested && <Alert showIcon type="success" message={t('client.ssh.testSucceeded')} />}
-            {trust && <Alert showIcon type="warning" message={t('client.ssh.trustHost')}
+            {trust && !trust.previousFingerprints && <Alert showIcon type="warning" message={t('client.ssh.trustHost')}
               description={<code className="ssh-fingerprint">{trust.fingerprint}</code>} />}
             {error && <Alert showIcon type="error" role="alert" message={remoteErrorText(error)}
               action={<Button size="small" disabled={busy} onClick={() => void connection.refresh()}>
@@ -114,5 +115,7 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
         </div>
       </Form>
     </div>
+    <SshHostKeyDialog trust={trust} busy={busy} confirm={() => { void connection.confirmTrust(); }}
+      cancel={connection.clearTrust} />
   </Modal>;
 }

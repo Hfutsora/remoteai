@@ -14,6 +14,8 @@ import { terminalDocument } from './terminalDocument';
 import { useTerminalOrientation } from './useTerminalOrientation';
 import { TerminalKeys } from './TerminalKeys';
 import { useTerminalStyles as useStyles } from './styles';
+import { useZmodemFiles } from './useZmodemFiles';
+import { ZmodemSheet } from './ZmodemSheet';
 
 export function TerminalSession({ client, session, visible, deviceName, hide, tabs, notice }: {
   client: GuiToolsClient['terminal']; session: TerminalInfo; visible: boolean; deviceName?: string;
@@ -30,6 +32,7 @@ export function TerminalSession({ client, session, visible, deviceName, hide, ta
   const [status, setStatus] = useState(t("client.chat.openingTerminal"));
   const [generation, setGeneration] = useState(0);
   const [wrap, setWrap] = useState(true);
+  const zmodem = useZmodemFiles();
   const orientation = useTerminalOrientation(visible);
   const source = useMemo(() => ({ html }), [html]);
   const updateDisplay = () => {
@@ -40,8 +43,9 @@ export function TerminalSession({ client, session, visible, deviceName, hide, ta
     webview.current?.injectJavaScript(`window.remoteTerminal?.(${JSON.stringify({ type: 'key', data })}); true;`);
   };
   const bridge = useMemo(() => createTerminalBridge({ cwd, session, api: remoteTerminalApi(client), status: setStatus,
+    zmodem: zmodem.handlers,
     emit: event => webview.current?.injectJavaScript(`window.remoteTerminal(${JSON.stringify(event)}); true;`),
-  }), [client, cwd, session]);
+  }), [client, cwd, session, zmodem.handlers]);
   useEffect(() => () => bridge.dispose(), [bridge]);
   useEffect(() => {
     if (!visible) bridge.detach();
@@ -105,6 +109,7 @@ export function TerminalSession({ client, session, visible, deviceName, hide, ta
           onError={() => setStatus(t("client.mobile.terminalDisplayFailedCloseAndReopenIt"))} />
           : <ActivityIndicator style={styles.loading} color={color("#14806f", 'accent')} />}
         {!!message && <Text accessibilityRole="alert" style={styles.status}>{displayError(message)}</Text>}
+        <ZmodemSheet files={zmodem} transfer={bridge.transfer} visible={visible} />
       </View>
     </SafeAreaView></KeyboardAvoidingView></SafeAreaProvider>
   </Modal>;

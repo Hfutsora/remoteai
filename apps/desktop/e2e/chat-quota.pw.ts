@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
 
 // Loading all three production composers can require a cold Vite transform; assertion timeouts stay unchanged.
-test.describe.configure({ timeout: 90_000 });
+test.describe.configure({ timeout: 150_000 });
 
 const entries = ['local', 'remote', 'web'];
 const sample = { totalTokens: 476730000, estimatedCostUsd: 696.49,
@@ -56,6 +56,13 @@ for (const width of [1440, 1000]) {
       await expect(status).not.toContainText('74%');
       await expect(status).not.toContainText('今日');
       await expect(section.locator('.cs-usage-today')).toHaveText('476.73 M · 696.49 USD');
+      const daily = section.locator('.cs-daily-usage');
+      await expect(daily).toBeVisible();
+      const metric = section.getByText(/^[\d.—]+ TTFT$/);
+      const metricBox = (await metric.boundingBox())!;
+      const dailyBox = (await daily.boundingBox())!;
+      expect(dailyBox.x).toBeGreaterThanOrEqual(metricBox.x + metricBox.width);
+      expect(Math.abs(dailyBox.y - metricBox.y)).toBeLessThan(3);
       await expect(section.locator('.cs-usage-remaining')).toHaveCount(0);
       await expect(status).not.toContainText('1193.78');
       const model = section.getByRole('button', { name: /GPT-6-Astra/ }).first();
@@ -81,13 +88,15 @@ for (const width of [1440, 1000]) {
     for (const name of entries) {
       const section = page.getByTestId(name);
       const bounds = (await section.boundingBox())!;
-      for (const selector of ['.cs-quota-estimate', '.cs-usage-today']) {
-        const box = (await section.locator(selector).boundingBox())!;
-        expect(box.x).toBeGreaterThanOrEqual(bounds.x);
-        expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
-      }
+      await expect(section.locator('.cs-daily-usage')).toBeHidden();
+      await expect(section.getByText(/^[\d.—]+ TTFT$/)).toBeVisible();
+      const box = (await section.locator('.cs-quota-estimate').boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
     }
     await page.screenshot({ path: `../../.codex-tmp/pc-quota-${width}-compact.png`, fullPage: true });
+    await page.locator('main').evaluate(node => { node.style.maxWidth = '1100px'; });
+    for (const name of entries) await expect(page.getByTestId(name).locator('.cs-daily-usage')).toBeVisible();
   });
 }
 

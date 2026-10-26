@@ -53,7 +53,7 @@ function setup(autoRespond = true) {
   const timers = new Set();
   const visibilityListeners = trackVisibilityListeners(document);
   const context = { window, document, Element: window.Element, Date: { now: () => now }, setTimeout, clearTimeout,
-    MutationObserver: window.MutationObserver,
+    MutationObserver: window.MutationObserver, getComputedStyle: window.getComputedStyle.bind(window),
     setInterval(fn) { timers.add(fn); return fn; }, clearInterval(fn) { timers.delete(fn); } };
   const run = () => runInNewContext(usageStatuslineScript, context);
   run();

@@ -15,6 +15,7 @@ export interface UsageSummary {
 }
 
 export interface AccountPrivateDetails {
+  alias?: string;
   password: string;
   phoneNumber: string;
   totpSecret: string;

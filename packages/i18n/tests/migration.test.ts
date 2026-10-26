@@ -11,12 +11,15 @@ import messageQueue from '../src/catalogs/client/zh/messageQueue.json';
 import ssh from '../src/catalogs/client/zh/ssh.json';
 import downloadSelection from '../src/catalogs/client/zh/downloadSelection.json';
 import downloadTiming from '../src/catalogs/client/zh/downloadTiming.json';
+import downloadWorkspace from '../src/catalogs/client/zh/downloadWorkspace.json';
 import commandMetrics from '../src/catalogs/client/zh/commandMetrics.json';
 import requestErrors from '../src/catalogs/client/zh/requestErrors.json';
 import chatQuota from '../src/catalogs/client/zh/chatQuota.json';
 import sheet from '../src/catalogs/client/zh/sheet.json';
 import projectBrowserFiles from '../src/catalogs/client/zh/projectBrowserFiles.json';
 import conversationWorkspace from '../src/catalogs/client/zh/conversationWorkspace.json';
+import accountAlias from '../src/catalogs/client/zh/accountAlias.json';
+import filePreview from '../src/catalogs/client/zh/filePreview.json';
 
 const baselines = {
   "client": "751b7f50aca5a2ebf8976190600fd93ce74f94673b73390a87c6fc153bdc6e22",
@@ -32,12 +35,15 @@ const additions = new Set(['client.chat.usePlugin',
   ...Object.keys(ssh),
   ...Object.keys(downloadSelection),
   ...Object.keys(downloadTiming),
+  ...Object.keys(downloadWorkspace),
   ...Object.keys(commandMetrics),
   ...Object.keys(requestErrors),
   ...Object.keys(chatQuota),
   ...Object.keys(sheet),
   ...Object.keys(projectBrowserFiles),
   ...Object.keys(conversationWorkspace),
+  ...Object.keys(accountAlias),
+  ...Object.keys(filePreview),
   'client.remoteDesktop.takeoverTitle', 'client.remoteDesktop.takeoverMessage',
   'client.remoteDesktop.takeoverConfirm', 'client.remoteDesktop.takeoverCancel',
   'client.remoteDesktop.connectionInUse', 'client.remoteDesktop.connectionCancelled',

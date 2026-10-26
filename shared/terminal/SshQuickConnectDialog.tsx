@@ -9,6 +9,7 @@ import { SshPrivateKeyInput } from './SshPrivateKeyInput';
 import { displayText as t } from '../localization/messages';
 import { remoteErrorText } from '../localization/errors';
 import './ssh.css';
+import { SshHostKeyDialog } from './SshHostKeyDialog';
 
 export function SshQuickConnectDialog({ api, profile, projectCwd, connected, dispose, close }: {
   api: SshApi; profile: SshProfile; projectCwd: string; connected: (info: TerminalInfo) => void;
@@ -41,7 +42,7 @@ export function SshQuickConnectDialog({ api, profile, projectCwd, connected, dis
       </>}
       <div aria-live="polite" className="ssh-quick-feedback">
         {(busy || loading) && <Spin tip={t('client.ssh.connecting')}><div style={{ minHeight: 64 }} /></Spin>}
-        {trust && <Alert type="warning" showIcon message={t('client.ssh.trustHost')}
+        {trust && !trust.previousFingerprints && <Alert type="warning" showIcon message={t('client.ssh.trustHost')}
           description={<code>{trust.fingerprint}</code>} />}
         {error && <Alert type="error" showIcon role="alert" message={remoteErrorText(error)}
           action={<Button size="small" disabled={busy} onClick={() => void connection.refresh()}>
@@ -55,5 +56,7 @@ export function SshQuickConnectDialog({ api, profile, projectCwd, connected, dis
         </Button>}
       </div>
     </Form>
+    <SshHostKeyDialog trust={trust} busy={busy} confirm={() => { void connection.confirmTrust(); }}
+      cancel={connection.clearTrust} />
   </Modal>;
 }

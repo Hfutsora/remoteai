@@ -12,12 +12,17 @@ import { TreeMenu } from './TreeMenu';
 import { TreeActionDialog } from './TreeActionDialog';
 import { useProjectTreeSearch } from './useProjectTreeSearch';
 import { ProjectTreeSearch, ProjectTreeSearchNotice } from './ProjectTreeSearch';
+import type { ProjectFile } from '../remote-chat/projectFiles';
 
 export type BrowserTranslate = (source: string) => string;
 export interface ProjectTreeOptions {
   root?: string;
   /** Replace the folder heading while retaining its menu and refresh controls. */
   renderToolbar?: (actions: { refresh: ReactNode; menu: ReactNode }) => ReactNode;
+  /** Add host-specific controls to the root folder menu. */
+  renderRootMenuExtras?: (close: () => void) => ReactNode;
+  /** Add host-specific actions for the selected entry, including the root folder. */
+  renderMenuExtras?: (entry: ProjectFile, close: () => void) => ReactNode;
   showHidden?: boolean;
   /** A host upload changes this token to refresh loaded folders without losing expansion. */
   revision?: unknown;
@@ -111,7 +116,10 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
     {actions.error && !actions.prompt && <p role="alert" className="pf-notice">{remoteErrorText(actions.error)}</p>}
     {actions.menu && <TreeMenu menu={actions.menu} cwd={cwd} host={host}
       canPaste={!!actions.clipboard} close={actions.close} t={t}
-      command={command => actions.command(actions.menu!.entry, command)} />}
+      extraItems={options?.renderMenuExtras?.(actions.menu.entry, actions.close)}
+      command={command => actions.command(actions.menu!.entry, command)}>
+      {options?.renderRootMenuExtras?.(actions.close)}
+    </TreeMenu>}
     {actions.prompt && <TreeActionDialog key={`${actions.prompt.action}:${actions.prompt.entry.path}`}
       prompt={actions.prompt} busy={actions.busy} connected={connected} error={actions.error}
       confirm={name => { void actions.confirm(name); }} cancel={actions.cancel} t={t} />}

@@ -1,5 +1,7 @@
 mod catalog_storage;
 mod group_accounts;
+mod group_display_names;
+pub(crate) use group_accounts::refresh_labels as refresh_group_account_labels;
 mod reasoning_defaults;
 pub(crate) use reasoning_defaults::known_model_reasoning_efforts;
 
@@ -21,6 +23,7 @@ mod tests {
     include!("tests/common.rs");
     include!("tests/balance.rs");
     include!("tests/shared_groups.rs");
+    include!("tests/account_alias.rs");
     include!("tests/codex_switch_balance.rs");
     include!("tests/auth_refresh.rs");
     include!("tests/proxy_config.rs");

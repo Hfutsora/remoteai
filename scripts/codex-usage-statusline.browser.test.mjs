@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { chromium, expect } from "@playwright/test";
+import { join } from 'node:path';
 import { composerUsageOverlay, usageStatuslineScript as script } from "./fixtures/usage-statusline-source.mjs";
 
 let browser;
@@ -139,3 +140,49 @@ test("Japanese and usage toggles stay responsive while conversation timings are 
     assert.equal(await page.evaluate(() => window.__CODEX_SWITCH_USAGE_STATUSLINE__ === undefined), true);
   } finally { await page.close(); }
 });
+
+for (const dark of [false, true]) {
+  test(`daily usage follows all three metrics and hides in narrow ${dark ? 'dark' : 'light'} composers`, async () => {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 280 } });
+    try {
+      await setup(page, dark);
+      await page.locator('#toolbar > span:last-child').evaluate(node => {
+        node.innerHTML = '<span><button data-composer-navigation-target="reasoning">GPT-6-Astra</button></span>';
+      });
+      await page.evaluate(composerUsageOverlay);
+      await page.evaluate(() => window.__CODEX_SWITCH_SPEED_SELECTOR__.updateUsage({
+        enabled: true, totalTokens: 19060000, estimatedCostUsd: 28.2, primaryRemainingPercent: 97,
+      }));
+      const daily = page.locator('[data-today-usage]');
+      const metrics = page.locator('[data-usage-metric]');
+      await expect(daily).toBeVisible();
+      await expect(daily).toHaveText('今日19.06M·28.2 USD·97%');
+      await expect(page.locator('#toolbar [data-today-usage]')).toHaveCount(0);
+      const checkFits = async () => {
+        const last = await metrics.last().boundingBox();
+        const box = await daily.boundingBox();
+        assert.ok(box.x >= last.x + last.width && Math.abs(box.y - last.y) < 3);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      };
+      await checkFits();
+      const directory = process.env.CODEX_USAGE_FOOTER_SCREENSHOT_DIR;
+      if (directory) await page.screenshot({ path: join(directory, `native-${dark ? 'dark' : 'light'}-wide.png`) });
+      await page.setViewportSize({ width: 720, height: 280 });
+      await expect(daily).toBeHidden();
+      for (const metric of await metrics.all()) await expect(metric).toBeVisible();
+      if (directory) await page.screenshot({ path: join(directory, `native-${dark ? 'dark' : 'light'}-narrow.png`) });
+      await page.setViewportSize({ width: 1280, height: 280 });
+      await page.locator('main').evaluate(node => { node.style.maxWidth = '560px'; });
+      await expect(daily).toBeHidden();
+      await page.locator('main').evaluate(node => { node.style.maxWidth = '780px'; });
+      await expect(daily).toBeVisible();
+      for (const language of ['ru', 'ja', 'en']) {
+        await page.evaluate(language => window.__CODEX_SWITCH_SPEED_SELECTOR__.updateLanguage(language), language);
+        await checkFits();
+      }
+      await page.evaluate(composerUsageOverlay);
+      await expect(daily).toHaveCount(1);
+      await expect(page.locator('[data-codex-switch-usage-statusline] > [data-today-usage]:last-child')).toHaveCount(1);
+    } finally { await page.close(); }
+  });
+}

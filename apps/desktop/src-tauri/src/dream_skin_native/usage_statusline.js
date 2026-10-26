@@ -1,5 +1,5 @@
 const KEY = "__CODEX_SWITCH_USAGE_STATUSLINE__";
-const VERSION = 7;
+const VERSION = 8;
 const REFRESH_MS = 1000;
 const TIMING_REFRESH_MS = 2000;
 const TIMING_TIMEOUT_MS = 10000;
@@ -57,6 +57,7 @@ function text() {
 
 function createStatusline() {
   const node = document.createElement("div");
+  node.className = "cs-usage-footer-container";
   node.dataset.codexSwitchUsageStatusline = "true";
   node.setAttribute("role", "status");
   const paths = ["M2 12a6 6 0 0 1 12 0M8 12l3-5",
@@ -181,6 +182,8 @@ async function refresh() {
   const card = activeComposer();
   if (!card) { if (state.node) state.node.hidden = true; return; }
   state.node ??= createStatusline();
+  const dailyUsage = window.__CODEX_SWITCH_SPEED_SELECTOR__?.usageNode;
+  if (dailyUsage && dailyUsage.parentElement !== state.node) state.node.append(dailyUsage);
   if (card.nextElementSibling !== state.node) card.after(state.node);
   state.node.hidden = false;
   const id = activeConversationId(card);

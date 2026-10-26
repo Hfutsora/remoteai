@@ -7,11 +7,13 @@ import type { BrowserTranslate } from './ProjectTree';
 import type { useTabActions } from './useTabActions';
 import { frameStyle, type EditorFrame } from './editorLayout';
 import type { BrowserHost } from './entryActions';
+import type { ProjectPreviewRenderer } from './preview';
 
 export interface EditorPaneOptions {
   store: ProjectDocuments; connected: boolean; t: BrowserTranslate;
   actions: ReturnType<typeof useTabActions>; back: () => void; settings: () => void; settingsOpen: boolean;
   quoteSelection?: BrowserHost['quoteSelection'];
+  renderPreview?: ProjectPreviewRenderer;
 }
 
 export function ProjectEditorPane({ group, frame, options }: {
@@ -54,6 +56,8 @@ export function ProjectEditorPane({ group, frame, options }: {
     {tabs.map(tab => <ProjectFilePanel key={tab.path} tab={tab} active={tab.path === group.activePath}
       connected={connected} edit={text => store.edit(tab.path, text)}
       quoteSelection={options.quoteSelection}
+      renderPreview={options.renderPreview}
+      openFile={path => { void store.open(path, group.id); }}
       save={() => { if (connected && !blocked) void store.save(tab.path); }} t={t} />)}
   </section>;
 }

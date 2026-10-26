@@ -22,10 +22,26 @@ async function checkTree(page: Page) {
   await row(page, '中文目录').click();
   await expect(row(page, 'nested.txt')).toBeVisible();
   await expect(row(page, '中文目录')).toHaveAttribute('aria-expanded', 'true');
-  await page.getByRole('button', { name: '显示隐藏文件', exact: true }).click();
+  await expect(page.getByRole('button', { name: '显示隐藏文件', exact: true })).toHaveCount(0);
+  const more = page.getByRole('button', { name: '项目文件夹操作', exact: true });
+  const hidden = page.getByRole('menuitemcheckbox', { name: '显示隐藏文件', exact: true });
+  await more.click();
+  await expect(hidden).toBeChecked();
+  expect((await page.getByRole('menu').boundingBox())!.width).toBeLessThanOrEqual(400);
+  await page.screenshot({ path: test.info().outputPath('ssh-hidden-files-menu.png'), animations: 'disabled' });
+  await hidden.click();
+  await expect(hidden).toHaveCount(0);
   await expect(row(page, '.hidden')).toHaveCount(0);
-  await page.getByRole('button', { name: '显示隐藏文件', exact: true }).click();
+  await more.click();
+  await expect(hidden).not.toBeChecked();
+  await page.keyboard.press('End');
+  await expect(hidden).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect(row(page, '.hidden')).toBeVisible();
+  await more.click();
+  await expect(hidden).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(hidden).toHaveCount(0);
   const search = page.locator('.pf-tree-search input');
   await search.fill('nested');
   await expect(row(page, 'nested.txt')).toContainText('中文目录/nested.txt');
@@ -68,10 +84,15 @@ async function checkRenameAndDownload(page: Page) {
   await expect(row(page, 'renamed.ts')).toBeVisible();
   await row(page, 'image.bin').click();
   await expect(page.getByText('此文件暂不支持预览。', { exact: true })).toBeVisible();
-  const downloaded = page.waitForEvent('download');
   await row(page, 'image.bin').click({ button: 'right' });
   await page.getByRole('menuitem', { name: '下载', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '已加入下载管理' })).toBeVisible();
+  await page.getByRole('button', { name: '下载管理', exact: true }).click();
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('article', { name: 'image.bin', exact: true })
+    .getByRole('button', { name: '保存到设备', exact: true }).click();
   expect((await downloaded).suggestedFilename()).toBe('image.bin');
+  await page.getByRole('button', { name: '返回 SSH', exact: true }).click();
 }
 
 async function checkWorkspaceClose(page: Page) {

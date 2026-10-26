@@ -17,6 +17,15 @@ export const terminalApi = {
   write: (id: string, data: string) => invoke<void>(commandName(id), {
     request: { type: "write", id, data },
   }),
+  writeBinary: (id: string, data: number[]) => invoke<void>('codex_gui_ssh_command', {
+    request: { type: 'writeBinary', id, data },
+  }),
+  outputFlow: (id: string, enabled: boolean) => invoke<void>('codex_gui_ssh_command', {
+    request: { type: 'outputFlow', id, enabled },
+  }),
+  outputAck: (id: string, bytes: number) => invoke<void>('codex_gui_ssh_command', {
+    request: { type: 'outputAck', id, bytes },
+  }),
   resize: (id: string, size: TerminalSize) => invoke<void>(commandName(id), {
     request: { type: "resize", id, size },
   }),

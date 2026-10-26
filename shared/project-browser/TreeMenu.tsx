@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, Copy, Download, FilePlus, FolderOpen, FolderPlus,
   Scissors, ClipboardPaste, Pencil, Trash2, Terminal, Link, Quote } from 'lucide-react';
 import type { BrowserHost } from './entryActions';
@@ -9,13 +9,13 @@ import { TreeSubmenu } from './TreeSubmenu';
 import { useTreeMenuDismiss } from './useTreeMenuDismiss';
 import { focusFirstMenuItem, MENU_MARGIN, moveMenuFocus, SUBMENU_GAP } from './treeMenuNavigation';
 
-export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
+export function TreeMenu({ menu, host, canPaste, cwd, close, command, t, children, extraItems }: {
   menu: Menu; host: BrowserHost; canPaste: boolean; cwd: string; close: () => void;
-  command: (action: TreeCommand) => void; t: BrowserTranslate;
+  command: (action: TreeCommand) => void; t: BrowserTranslate; children?: ReactNode; extraItems?: ReactNode;
 }) {
   const element = useRef<HTMLDivElement>(null);
   useTreeMenuDismiss(element, close);
-  const [submenu, setSubmenu] = useState<'new' | 'open'>();
+  const [submenu, setSubmenu] = useState<'new'>();
   const [compact, setCompact] = useState(false);
   const [position, setPosition] = useState({ left: menu.x, top: menu.y });
   const stackedSubmenu = compact ? submenu : undefined;
@@ -42,10 +42,6 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
       className={action === 'delete' ? 'pf-danger' : undefined} onClick={() => command(action)}>
       <Icon size={16} /><span>{t(label)}</span></button>;
   const newItems = <>{item('createFile', "client.projectBrowser.newFile", FilePlus)}{item('createFolder', "client.projectBrowser.newFolder", FolderPlus)}</>;
-  const openItems = <>
-    {host.open && item('explorer', "client.projectBrowser.systemFileBrowser", FolderOpen)}
-    {host.openTerminal && item('terminal', "client.projectBrowser.terminal", Terminal)}
-  </>;
   const clearOtherSubmenu = (target: EventTarget) => {
     const button = (target as HTMLElement).closest('button');
     if (button?.closest('[role="menu"]') === element.current && !button.hasAttribute('aria-haspopup')) {
@@ -68,7 +64,6 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
       {stackedSubmenu && <button type="button" role="menuitem" onClick={() => setSubmenu(undefined)}>
         <ArrowLeft size={16} /><span>{t("client.mobile.back")}</span></button>}
       {stackedSubmenu === 'new' && newItems}
-      {stackedSubmenu === 'open' && openItems}
       {!stackedSubmenu && <>
         {item('reference', "client.projectBrowser.referenceFile", Quote, !host.reference)}
         {menu.entry.directory && <TreeSubmenu label={t("client.projectBrowser.new")} icon={FilePlus} active={submenu === 'new'}
@@ -81,13 +76,12 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
         <div role="separator" />
         {item('rename', "client.projectBrowser.renamed", Pencil, root)}{item('delete', "client.projectBrowser.deleted", Trash2, root)}
         <div role="separator" />
-        {(host.open || host.openTerminal) && <TreeSubmenu
-          label={t("client.projectBrowser.openIn")} icon={FolderOpen} active={submenu === 'open'}
-          compact={compact} open={() => setSubmenu('open')}
-          close={() => setSubmenu(current => current === 'open' ? undefined : current)}>{openItems}</TreeSubmenu>}
+        {host.open && item('explorer', "client.projectBrowser.openInExplorer", FolderOpen)}
+        {host.openTerminal && item('terminal', "client.projectBrowser.openInTerminal", Terminal)}
         {!host.open && item('download', menu.entry.directory
           ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download,
         !host.download || (menu.entry.directory && host.downloadDirectory === false))}
+        {(extraItems || (root && children)) && <><div role="separator" />{extraItems}{root && children}</>}
       </>}
     </div>
   </div>;

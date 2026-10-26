@@ -1,3 +1,4 @@
+import { testBrowserChannel, testBrowserLaunchOptions } from './test-browser.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { after, before, beforeEach, test } from 'node:test';
@@ -23,7 +24,11 @@ const update = (snapshot) => page.evaluate(({ snapshot, image }) => window.__rem
 const inspect = () => page.evaluate(() => window.__remoteAiPetDock.inspect());
 const official = { language: 'zh', kind: 'official', fiveHour: { remaining: 81 }, weekly: { remaining: 62 } };
 
-before(async () => { browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || undefined }); });
+before(async () => {
+  browser = await chromium.launch(testBrowserLaunchOptions({
+    channel: testBrowserChannel(process.env.PLAYWRIGHT_CHANNEL),
+  }));
+});
 after(async () => { await browser?.close(); });
 beforeEach(async () => {
   await page?.close();

@@ -19,6 +19,8 @@ export interface TerminalApi {
   resolveLink?: import('./links').ResolveTerminalLink;
   open: (cwd: string, size: TerminalSize, onEvent: (event: TerminalEvent) => void) => Promise<TerminalAttachment>;
   write: (id: string, data: string) => Promise<void>;
+  writeBinary?: (id: string, data: number[]) => Promise<void>;
+  binaryMode?: (id: string, token: string, enabled: boolean) => Promise<void>;
   resize: (id: string, size: TerminalSize) => Promise<void>;
   close: (id: string) => Promise<void>;
   attach?: (info: TerminalInfo, size: TerminalSize, onEvent: (event: TerminalEvent) => void) => Promise<TerminalAttachment>;

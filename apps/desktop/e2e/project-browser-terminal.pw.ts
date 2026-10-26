@@ -2,8 +2,10 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function openTerminal(page: Page, entry: string) {
   await page.getByRole('treeitem', { name: entry, exact: true }).click({ button: 'right' });
-  await page.getByRole('menuitem', { name: '打开位置', exact: true }).hover();
-  await page.getByRole('menuitem', { name: '终端', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: '打开位置', exact: true })).toHaveCount(0);
+  const action = page.getByRole('menuitem', { name: '在终端中打开', exact: true });
+  await expect(action).not.toHaveAttribute('aria-haspopup');
+  await action.click();
 }
 
 for (const mode of ['local', 'remote', 'web']) {
@@ -14,6 +16,12 @@ for (const mode of ['local', 'remote', 'web']) {
     if (mode === 'local') await page.addInitScript(() => Object.assign(window, { __TAURI_INTERNALS__: {} }));
     await page.goto(`/e2e/project-browser-terminal-harness.html?mode=${mode}`);
     await page.getByRole('button', { name: '文件浏览', exact: true }).click();
+    await page.getByRole('treeitem', { name: 'src', exact: true }).click({ button: 'right' });
+    const explorer = page.getByRole('menuitem', { name: '在资源管理器打开', exact: true });
+    await expect(explorer).toHaveCount(mode === 'local' ? 1 : 0);
+    if (mode === 'local') await expect(explorer).not.toHaveAttribute('aria-haspopup');
+    await page.screenshot({ path: info.outputPath(`file-browser-menu-${mode}.png`) });
+    await page.keyboard.press('Escape');
     const panel = page.getByRole('region', { name: '终端', exact: true });
     await openTerminal(page, 'src');
     await expect(panel.locator('.xterm:visible')).toContainText('PS C:/project/src>');

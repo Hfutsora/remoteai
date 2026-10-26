@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { GUI_ACCOUNTS_EVENT } from '../../../shared/remote-chat/guiAccounts';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { GUI_ACCOUNTS_EVENT }: typeof import('../../../shared/remote-chat/guiAccounts') =
+  require('../../../shared/remote-chat/guiAccounts');
 
 type Reply = { text: string } | { error: string };
 interface Request { action: string; sessionId?: string; data?: string; mimeType?: string }

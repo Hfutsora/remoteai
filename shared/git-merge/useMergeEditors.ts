@@ -20,7 +20,11 @@ const paneTheme = EditorView.theme({
   '.cm-gutters': { backgroundColor: 'var(--git-subtle)', color: 'var(--git-muted)', border: 'none' },
   '.cm-activeLineGutter': { backgroundColor: 'transparent' },
   '.cm-cursor': { borderLeftColor: 'var(--git-ink)' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: 'var(--git-accent-bg)' },
+  '.cm-selectionBackground': { backgroundColor: 'var(--git-accent-bg)' },
+  // Match CodeMirror's focused layer selector so its light default cannot override the host palette.
+  '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
+    backgroundColor: 'var(--git-accent-bg)',
+  },
 });
 
 function createPane(options: {

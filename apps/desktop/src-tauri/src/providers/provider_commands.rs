@@ -138,6 +138,7 @@ pub(crate) fn save_provider_blocking<R: Runtime>(
         })
         .unwrap_or(false);
     let profile = normalize_provider_profile(ProviderProfile {
+        account_alias: None,
         id,
         kind,
         name,

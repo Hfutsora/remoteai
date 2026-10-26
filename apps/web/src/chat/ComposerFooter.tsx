@@ -13,7 +13,7 @@ export function ComposerFooter({ desktop, cliVersion, connectionInfo,
   usage = null, metrics = null }: Props) {
   useLanguage();
   if (!desktop && !connectionInfo) return null;
-  return <div className="chat-composer-hint">
+  return <div className="chat-composer-hint cs-usage-footer-container">
     {desktop && <span>Codex{cliVersion ? ` ${cliVersion}` : ''}</span>}
     <div className="chat-composer-details">
       {connectionInfo}

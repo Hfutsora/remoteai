@@ -6,7 +6,12 @@ fn speed_selector_overlay_expression(service_tier: &str) -> String {
     let identity = include_str!("context_usage_reader.js");
     let metrics =
         include_str!("../../../../../shared/context-usage/metrics.js").replace("export ", "");
-    let css = json!(include_str!("usage_statusline.css")).to_string();
+    let css = json!(format!(
+        "{}\n{}",
+        include_str!("usage_statusline.css"),
+        include_str!("../../../../../shared/chat/usageFooter.css")
+    ))
+    .to_string();
     let statusline = include_str!("usage_statusline.js").replace("__USAGE_STATUSLINE_CSS__", &css);
     format!(
         "window.__CODEX_SWITCH_REFRESH_USAGE_STATUSLINE__ = () => {{\n\

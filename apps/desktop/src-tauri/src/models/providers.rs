@@ -1,6 +1,9 @@
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ProviderProfile {
+    /// Display-only metadata for official group members; never persisted as a Provider or used for routing.
+    #[serde(skip)]
+    pub(crate) account_alias: Option<String>,
     pub(crate) id: String,
     #[serde(default)]
     pub(crate) kind: ProviderKind,

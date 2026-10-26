@@ -1,3 +1,4 @@
+import { clickDownloadAction } from './download-test-actions';
 import { expect, test, type Page } from '@playwright/test';
 
 const card = (page: Page) => page.getByRole('article', { name: 'sample.md', exact: true });
@@ -24,7 +25,7 @@ test('automatically retries exactly five times and a manual resume starts a fres
   await expect(card(page)).toContainText('下载失败');
   await page.clock.runFor(60_000);
   expect(await page.evaluate(() => window.downloadFixture.opens)).toBe(6);
-  await card(page).getByRole('button', { name: '继续下载' }).click();
+  await card(page).getByRole('button', { name: /^(继续下载|重试)$/ }).click();
   await page.clock.runFor(1000);
   await expect(card(page)).toContainText('文件已就绪');
   expect(await page.evaluate(() => window.downloadFixture.opens)).toBe(7);
@@ -82,7 +83,7 @@ test('missing cached bytes cannot be opened or marked as saved', async ({ page }
   await expect(card(page).locator('.download-completion')).toHaveCount(0);
   const recoveredAt = firstCompletion + 65_000;
   await page.clock.setFixedTime(recoveredAt);
-  await card(page).getByRole('button', { name: '继续下载', exact: true }).click();
+  await card(page).getByRole('button', { name: /^(继续下载|重试)$/, exact: true }).click();
   await expect(card(page)).toContainText('文件已就绪');
   expect((await page.evaluate(async () => (await window.downloadFixture.saved())[0])).completedAt).toBe(recoveredAt);
   await expect(card(page).locator('.download-completion')).toContainText('用时1分5秒');
@@ -94,6 +95,7 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
     await page.getByRole('button', { name: `下载：${name}`, exact: true }).click();
   }
   await page.getByRole('button', { name: '下载列表', exact: true }).click();
+  if (info.project.name === 'desktop') await page.getByRole('button', { name: '批量管理', exact: true }).click();
   const batch = page.getByRole('button', { name: /^批量删除/ });
   const first = card(page);
   const second = page.getByRole('article', { name: 'sample.bin', exact: true });
@@ -103,7 +105,7 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await expect(first.getByRole('checkbox')).toBeChecked();
   await page.getByRole('button', { name: '全选', exact: true }).click();
   await expect(batch).toHaveText('批量删除（3）');
-  await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(3);
+  await expect(page.getByRole('article').getByRole('checkbox', { checked: true })).toHaveCount(3);
   await page.getByRole('button', { name: '取消全选', exact: true }).click();
   await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(0);
   await first.locator('strong').click();
@@ -111,9 +113,9 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await expect(batch).toBeDisabled();
   await first.getByRole('checkbox').focus();
   await page.keyboard.press('Space');
-  await second.locator('.download-path').click();
+  await second.locator('strong').click();
   await expect(batch).toHaveText('批量删除（2）');
-  await first.getByRole('button', { name: '删除', exact: true }).click();
+  await clickDownloadAction(page, first, '删除');
   await page.getByRole('button', { name: '保留', exact: true }).click();
   await expect(first.getByRole('checkbox')).toBeChecked();
   await batch.click();
@@ -129,6 +131,7 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await expect(batch).toBeDisabled();
   await page.reload();
   await expect(page.getByRole('article')).toHaveCount(1);
+  if (info.project.name === 'desktop') await page.getByRole('button', { name: '批量管理', exact: true }).click();
   await expect(page.getByRole('article')).toHaveAttribute('aria-label', 'empty.txt');
   await page.getByRole('button', { name: '全选', exact: true }).click();
   await batch.click();
@@ -169,10 +172,10 @@ test('retains completion time and total elapsed duration through pauses, reloads
     await enqueue(page);
     await expect(card(page)).toContainText('下载中');
     await expect(card(page).locator('.download-completion')).toHaveCount(0);
-    await card(page).getByRole('button', { name: '暂停', exact: true }).click();
+    await clickDownloadAction(page, card(page), '暂停');
     await expect(card(page)).toContainText('已暂停');
     await page.clock.setFixedTime(completedAt);
-    await card(page).getByRole('button', { name: '继续下载', exact: true }).click();
+    await card(page).getByRole('button', { name: /^(继续下载|重试)$/, exact: true }).click();
     await expect(card(page)).toContainText('文件已就绪');
     const details = card(page).locator('.download-completion');
     await expect(details).toContainText('2026/10/25');

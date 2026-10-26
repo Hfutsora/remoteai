@@ -10,6 +10,7 @@ import { terminalTheme } from "./theme";
 import type { TerminalApi, TerminalInfo } from "../../../../../../shared/terminal/types";
 import "@xterm/xterm/css/xterm.css";
 import { bindSshDirectory } from '../../../../../../shared/terminal/sshDirectory';
+import { useZmodemTransfer } from '../../../../../../shared/terminal/useZmodemTransfer';
 
 export function useTerminalSession({ cwd, visible, api, session, onLink }: {
   cwd: string; visible: boolean; api: TerminalApi; session?: TerminalInfo; onLink: (link: TerminalLinkTarget) => void;
@@ -19,6 +20,7 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
   const [info, setInfo] = useState<TerminalInfo>();
   const [status, setStatus] = useState(uiText("client.chat.openingTerminal"));
   const linkHandler = useRef(onLink);
+  const transfer = useZmodemTransfer(api, session);
   linkHandler.current = onLink;
   useEffect(() => {
     if (!host.current) return;
@@ -36,26 +38,34 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
     if (element.clientWidth && element.clientHeight) fit.fit();
     const directory = session?.ssh ? bindSshDirectory({ id: session.id, terminal,
       write: data => connection.input(data) }) : undefined;
+    const output = (data: number[]) => {
+      if (directory) directory.output(data); else terminal.write(new Uint8Array(data));
+    };
+    const zmodem = transfer.bind(output);
     const connection = connectTerminal({ api, cwd, session, size: { cols: terminal.cols, rows: terminal.rows },
       onReady: (value) => { setInfo(value); setStatus(""); }, onError: setStatus,
       onEvent: (event) => {
         if (event.type === "output") {
-          if (directory) directory.output(event.data); else terminal.write(new Uint8Array(event.data));
+          if (zmodem) zmodem.output(event.data); else output(event.data);
         }
-        if (event.type === 'reset') { directory?.disconnect(); terminal.reset(); }
+        if (event.type === 'reset') { zmodem?.disconnect(); directory?.disconnect(); terminal.reset(); }
         if (event.type === 'connection') {
-          if (!event.connected) directory?.disconnect();
+          if (!event.connected) { zmodem?.disconnect(); directory?.disconnect(); }
           terminal.options.disableStdin = !event.connected;
           setStatus(event.connected ? '' : uiText("client.terminal.connectionLostYouCanContinueWhenItReconnects"));
         }
         if (event.type === "error") setStatus(event.message);
         if (event.type === "exit") {
+          zmodem?.disconnect();
           directory?.disconnect();
           terminal.options.disableStdin = true;
           setStatus(uiText("client.chat.thisTerminalHasEndedYouCanOpenANewOne"));
         }
       } });
-    const input = terminal.onData(data => { directory?.input(); connection.input(data); });
+    const input = terminal.onData(data => {
+      if (zmodem?.busy) { if (data === '\x03') zmodem.cancel(); return; }
+      directory?.input(); connection.input(data);
+    });
     // xterm also emits internal flags that the terminal request does not accept.
     const resize = terminal.onResize(({ cols, rows }) => connection.resize({ cols, rows }));
     let frame = 0;
@@ -71,12 +81,12 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
     terminal.attachCustomKeyEventHandler((event) => handleClipboard(event, terminal, setStatus));
     return () => {
       cancelAnimationFrame(frame); observer.disconnect(); themeObserver.disconnect();
-      directory?.dispose(); input.dispose(); resize.dispose(); connection.dispose();
+      zmodem?.dispose(); directory?.dispose(); input.dispose(); resize.dispose(); connection.dispose();
       terminal.dispose(); terminalRef.current = undefined;
     };
-  }, [cwd, api, session]);
+  }, [cwd, api, session, transfer.bind]);
   useEffect(() => { if (visible) terminalRef.current?.focus(); }, [visible]);
-  return { host, info, status, input: (data: string) => terminalRef.current?.input(data, true) };
+  return { host, info, status, transfer, input: (data: string) => terminalRef.current?.input(data, true) };
 }
 
 function handleClipboard(event: KeyboardEvent, terminal: Terminal, report: (message: string) => void) {

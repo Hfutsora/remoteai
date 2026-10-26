@@ -55,7 +55,9 @@ cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
 node --test scripts/pet-dock-renderer.browser.test.mjs
 ```
 
-浏览器测试默认使用 Playwright Chromium，也可以设置 `PLAYWRIGHT_CHANNEL=msedge` 使用 Edge。
+浏览器测试默认使用 Playwright 自带的 Chromium，首次运行前执行 `npx playwright install chromium`。
+Windows 上禁止用 `PLAYWRIGHT_CHANNEL` 切换到系统 Edge 或 Chrome，避免账户锁定，
+详见[浏览器测试说明](browser-tests.md)。
 测试在独立页面中验证拖动、尺寸、卡片、开关恢复和失联恢复，不连接用户正在使用的宠物。
 
 底座图片和渲染器基于 MIT 开源项目 [Codex Pet Dock](https://github.com/hjxccc/codex-pet-dock)。
