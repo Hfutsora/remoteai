@@ -3,7 +3,7 @@ import { useComposerSuggestion } from '../../../../shared/chat/useComposerSugges
 import { ComposerSuggestion } from './ComposerSuggestion';
 import { ComposerInput } from './ComposerInput';
 import { t, useLanguage } from '../i18n';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ArrowUp, ChevronDown, Pause, Play, Plus,
   SlidersHorizontal, Square, X } from 'lucide-react';
 import { COMPOSER_ACTION_LABELS } from '../../../../shared/remote-chat/composerAction';
@@ -16,7 +16,7 @@ import { ComposerSpeedIndicator } from './ComposerSpeedIndicator';
 import { ChatSettings } from './ChatSettings';
 import { ModelRefreshButton } from './ModelRefreshButton';
 import { ComposerFooter } from './ComposerFooter';
-import { useVisibleChatUsage } from './useVisibleChatUsage';
+import { DesktopUsageContext } from '../../../../shared/chat/DesktopUsageContext';
 import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 import { ComposerGoal } from './ComposerGoal';
 import { ChatAttachmentPreviews } from './ChatAttachments';
@@ -37,7 +37,7 @@ import './composerDesktop.css';
 export function ChatComposer(props: ComposerProps) {
   useLanguage();
   const desktop = useDesktopLayout();
-  const usageSnapshot = useVisibleChatUsage(props.readUsage, desktop && props.active && props.ready);
+  const usageSnapshot = useContext(DesktopUsageContext);
   const metrics = useConversationMetrics(props.readConversationMetrics, props.threadId,
     desktop && props.active && props.ready && usageSnapshot.visible);
   const { models, selection, settingsBusy, settingsError, updateSettings, readUsage, tokenUsage, queue,

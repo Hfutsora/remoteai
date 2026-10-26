@@ -1,6 +1,8 @@
 import { displayText } from '../../i18n/uiText';
 import { uiText } from "../../i18n/uiText";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react";
+import {
+  forwardRef, useContext, useEffect, useImperativeHandle, useRef, useState, type ReactNode,
+} from "react";
 import { flushSync } from "react-dom";
 import { Target, X } from "lucide-react";
 import { isDesktopApp } from "../../api/backend";
@@ -24,7 +26,7 @@ import { IMAGE_TYPES, useComposerDraft } from "./useComposerDraft";
 import { ModelPicker } from "./ModelPicker";
 import { useGuiRequestSpeed } from "./useGuiRequestSpeed";
 import { UsageStatus } from "./UsageStatus";
-import { useUsageStatus } from './useUsageStatus';
+import { DesktopUsageContext } from '../../../../../shared/chat/DesktopUsageContext';
 import { useConversationMetrics } from '../../../../../shared/remote-chat/client/useConversationMetrics';
 import { loadConversationMetrics } from '../../api/conversationMetrics';
 import { ConversationTokenStatus } from './ConversationTokenStatus';
@@ -57,7 +59,7 @@ export const Composer = forwardRef<ComposerHandle, {
   const [dictating, setDictating] = useState(false);
   const goalMode = useGoalMode(state.selected, Boolean(state.goalBusy));
   const requestSpeed = useGuiRequestSpeed(active);
-  const usageSnapshot = useUsageStatus(active);
+  const usageSnapshot = useContext(DesktopUsageContext);
   const metrics = useConversationMetrics(loadConversationMetrics, state.selected, active && state.connection === 'ready');
   const workspaceBusy = Boolean(state.workspaceBusy);
   const { draft, reading: draftReading, editContent, appendDictation, removeImage, editImage, addImages, paste, pasteKeyDown,

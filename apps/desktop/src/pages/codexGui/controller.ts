@@ -12,7 +12,9 @@ import { GuiProjects } from "./projectActions";
 import { GuiReadState } from "./threadReadState";
 import type { AttachmentReference } from "./attachmentTypes";
 import { deleteGuiThread } from "./deleteThread";
-import { conversation, reduceEvent } from "./events";
+import { reduceEvent } from "./events";
+import { conversationSnapshot as conversation } from './conversationSnapshot';
+import { withSentMessage } from './sentMessages';
 import { acceptGuiTurn } from './acceptedTurn';
 import { MessageQueue } from "./messageQueue";
 import { isMessageQueueEnabled } from "../../../../../shared/chat/messageQueueSettings";
@@ -27,7 +29,7 @@ import { ThreadModelSettings } from "./threadModelSettings";
 import { GuiModelCatalog } from "./modelCatalog";
 import { GuiThreadTitles } from "./threadTitles";
 import type { ApprovalReply, GuiEvent, GuiState, Model, Settings, Thread, Turn } from "./types";
-import type { Item, SkillReference } from "./types";
+import type { Item, MessageInput, SkillReference } from "./types";
 
 const STREAM_FRAME_MS = 32;
 
@@ -141,6 +143,11 @@ export class GuiController {
       readState: this.readState, capacityRetry: this.capacityRetry }, threadId, turn); }
     finally { release(); }
   }
+
+  /** Keep confirmed local and remote sends visible even if interruption precedes the user item. */
+  acceptSentTurn = (threadId: string, turn: Turn, input: MessageInput) => {
+    this.acceptTurn(threadId, withSentMessage(turn, [{ ...input, id: turn.id }], 0));
+  };
 
   private flushStream = () => {
     clearTimeout(this.streamTimer);
@@ -364,7 +371,7 @@ export class GuiController {
         text, images, skills, ...(attachments.length ? { attachments } : {}), model: settings.model || undefined,
         effort: settings.effort || undefined, cwd: projectOverride, access: settings.access });
       // Completion can arrive before the request promise resolves. Never resurrect a completed turn.
-      this.acceptTurn(thread.id, turn);
+      this.acceptSentTurn(thread.id, turn, { text, images, skills, attachments });
       void this.titles.generate(thread, text);
       void this.refresh(false, false);
       return true;

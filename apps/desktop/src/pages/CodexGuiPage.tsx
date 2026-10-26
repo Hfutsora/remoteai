@@ -1,5 +1,7 @@
 import { displayText } from '../i18n/uiText';
 import { ImageAiContext } from '../../../../shared/chat/ImageAiContext';
+import { DesktopUsageContext } from '../../../../shared/chat/DesktopUsageContext';
+import { useUsageStatus } from './codexGui/useUsageStatus';
 import { prepareImageEdit } from '../../../web/src/chat/prepareImageEdit';
 import { uiText } from "../i18n/uiText";
 import { useGuiLanguage } from '../i18n/useGuiLanguage';
@@ -78,6 +80,7 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
   const [view, setView] = useState<GuiView>("conversation");
   const { state, visible } = useVisibleGuiState(controller, active);
   const conversationActive = visible && view === "conversation";
+  const { usage } = useUsageStatus(visible);
   useConversationReadState(conversationActive, controller);
   const openTaskConversation = (threadId: string) => {
     setView("conversation");
@@ -107,7 +110,8 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
   const running = state.sending || Object.values(state.conversations).some((value) => value.activeTurn);
   const canQuote = state.connection === "ready" && !state.sending && !state.archived
     && state.compacting !== state.selected;
-  return <ImageAiContext.Provider value={{ enabled: conversationActive && canQuote && !state.workspaceBusy,
+  return <DesktopUsageContext.Provider value={{ usage, visible }}>
+    <ImageAiContext.Provider value={{ enabled: conversationActive && canQuote && !state.workspaceBusy,
     send: async (text, source) => {
       const image = await prepareImageEdit(source);
       if (controller.getSnapshot().selected !== state.selected) return false;
@@ -194,5 +198,6 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
     </div>
   </ChatFileReferencesProvider></DetailsWorkspace>
   </TerminalLaunchContext.Provider>
-  </WorkspaceOperationContext.Provider></DiffTextContext.Provider></ImageAiContext.Provider>;
+  </WorkspaceOperationContext.Provider></DiffTextContext.Provider></ImageAiContext.Provider>
+  </DesktopUsageContext.Provider>;
 }

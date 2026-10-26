@@ -33,7 +33,7 @@ pub(crate) struct Save {
     #[serde(flatten)]
     target: Target,
     #[serde(default)]
-    text: String,
+    text: Option<String>,
     revision: String,
     #[serde(default)]
     upload: Option<transfer::UploadChunk>,
@@ -163,10 +163,11 @@ fn image_mime(path: &Path) -> Option<&'static str> {
 }
 
 fn save(request: Save) -> Result<Document> {
+    let text = request.text.as_deref().ok_or(GuiError::InvalidRequest)?;
     let _guard = EDIT_LOCK.lock().map_err(|_| GuiError::FileBusy)?;
     let path = resolve(&request.target)?;
     let current = snapshot(&path)?;
-    if current.read_only || current.kind != "text" || request.text.contains('\0') {
+    if current.read_only || current.kind != "text" || text.contains('\0') {
         return Err(GuiError::ProjectFileWrite);
     }
     if current.revision != request.revision {
@@ -179,7 +180,7 @@ fn save(request: Save) -> Result<Document> {
         .map_err(|_| GuiError::FileRead)?
         .permissions();
     staged
-        .write_all(request.text.as_bytes())
+        .write_all(text.as_bytes())
         .and_then(|()| staged.as_file().set_permissions(permissions))
         .and_then(|()| staged.as_file().sync_all())
         .map_err(|_| GuiError::ProjectFileWrite)?;

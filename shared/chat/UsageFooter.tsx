@@ -2,7 +2,6 @@ import { Tooltip } from 'antd';
 import type { ReactNode } from 'react';
 import type { MessageTranslator } from '../localization/messages';
 import { usageTrailing, type UsageSummary } from '../remote-chat/usage';
-import { QuotaEstimate } from './QuotaEstimate';
 import { UsageAmounts } from './UsageAmounts';
 
 export function UsageFooter({ usage, translate, children }: {
@@ -12,13 +11,12 @@ export function UsageFooter({ usage, translate, children }: {
   return <>
     {children && <>{children}<span aria-hidden="true"> · </span></>}
     <UsageAmounts tokens={usage?.totalTokens} cost={usage?.estimatedCostUsd} scope="today" translate={translate} />
-    {trailing && <>
+    {trailing && !trailing.quota && <>
       <span aria-hidden="true"> · </span>
       <span className="cs-usage-quota">
         <Tooltip title={trailing.description} trigger={['hover', 'focus']} styles={{ root: { maxWidth: 400 } }}>
           <span className="cs-usage-remaining" tabIndex={0}>{trailing.text}</span>
         </Tooltip>
-        {trailing.quota && <> (<QuotaEstimate usage={usage} translate={translate} />)</>}
       </span>
     </>}
   </>;

@@ -24,7 +24,7 @@ function Harness() {
         <h2>PC remote</h2><div className="chat-conversation"><QuotaComposerFixture /></div>
       </section>
       <section data-testid="web"><h2>Web PC</h2>
-        <div className="chat-conversation"><QuotaComposerFixture /></div></section>
+        <div className="chat-conversation"><QuotaComposerFixture web /></div></section>
       <section data-testid="settings"><h2>Mobile settings</h2><ChatUsage read={readQuota} active ready
         quotaProgress /></section>
     </>}
@@ -35,6 +35,7 @@ style.textContent = '*{box-sizing:border-box}body{font-family:sans-serif;margin:
   + 'main{max-width:1100px;margin:auto}section{background:white;padding:12px;margin:18px 0;border-radius:12px}'
   + 'h2{font-size:16px}section.gui-remote-workspace.chat-page{display:block;height:auto}'
   + '.chat-conversation{display:block}.chat-composer-dock{margin:auto}'
+  + '.quota-account{width:236px;max-width:100%;margin-bottom:12px}'
   + ':root{--ink:#233329;--panel:#fff;--line:#dfe6e1;--muted:#66796d;--green:#0b8065;'
   + '--gui-muted:#66796d;--chat-muted:#66796d;--gui-composer-surface:#f5f6f5;--gui-font-size:14px}';
 document.head.append(style);

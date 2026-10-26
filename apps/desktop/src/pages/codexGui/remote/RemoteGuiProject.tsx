@@ -4,6 +4,7 @@ import { directoryProject } from '../../../../../../shared/remote-chat/projectDi
 import { RemoteProjectPicker } from './RemoteProjectPicker';
 import { GuiHostPicker } from '../GuiHostPicker';
 import { WorkspacePicker } from '../WorkspacePicker';
+import { ConversationWorkspaceStatus } from '../ConversationWorkspaceStatus';
 import { GuiToolbox } from '../GuiToolbox';
 import { ProjectBrowserButton } from '../../../../../web/src/chat/projectBrowser/ProjectBrowserButton';
 import workspaceStyles from '../WorkspacePicker.module.less';
@@ -19,6 +20,8 @@ export function RemoteGuiProject({ state, controller, computers, active }: {
     <div className={styles.projectBar}>
       <RemoteProjectPicker key={`${computers.current?.deviceId}:${state.selected?.id ?? 'draft'}`}
         state={state} controller={controller} active={active} />
+      {state.selected && <ConversationWorkspaceStatus key={`${computers.current?.deviceId}:${cwd}`} cwd={cwd}
+        enabled={active && state.ready && !state.workspaceBusy} request={controller.guiTools.workspace} />}
       <div className={styles.projectBarActions}>
         {!state.selected && <WorkspacePicker key={cwd} cwd={cwd} disabled={!canChoose}
           remote localLabel={uiText("client.conversation.worktree")} enabled={active && state.ready}

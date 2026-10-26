@@ -10,10 +10,12 @@ export interface WorkspaceTab {
 export interface WorkspaceTabs {
   entries: WorkspaceTab[];
   selected: string | null;
+  closed: ReadonlySet<string>;
   visible: boolean;
   content: HTMLDivElement | null;
   register: (tab: WorkspaceTab) => () => void;
   open: (id: string) => void;
+  close: (id: string, order: string[]) => string | null;
   hide: () => void;
   rememberOpener: () => void;
 }

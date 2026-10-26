@@ -5,6 +5,8 @@ import { guiApi } from '../pages/codexGui/api';
 import { remoteQueue } from './queue';
 import { guiComposer } from '../pages/codexGui/composerBridge';
 vi.mock('../pages/codexGui/api', () => ({ guiApi: { connect: vi.fn(), request: vi.fn(), respond: vi.fn() } }));
+vi.mock('./sendMessage', () => ({ sendRemoteMessage: (request: import('../pages/codexGui/types').Request) =>
+  guiApi.request(request) }));
 vi.mock('../pages/codexGui/composerBridge', () => ({ guiComposer: {
   validateSend: vi.fn(), read: vi.fn(), refreshModels: vi.fn(),
 } }));

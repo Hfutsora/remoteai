@@ -26,14 +26,14 @@ afterEach(async () => {
   await act(async () => root.unmount()); setLanguage('zh'); vi.clearAllMocks(); vi.unstubAllGlobals();
 });
 
-it('places daily usage after performance and percentage last, without another metrics request', async () => {
+it('keeps daily usage after performance without account quota or another metrics request', async () => {
   const usage = { totalTokens: 476730000, estimatedCostUsd: 696.49, primaryRemainingPercent: 74,
     primaryRemainingAggregated: false, providerEstimatedCost: null,
     estimatedQuota: { remainingUsd: 1193.78, capacityUsd: 1613.21 } };
   await act(async () => root.render(<ConversationTokenStatus threadId="local-thread" usage={usage}
     metrics={metrics} turns={turns} active />));
   expect(container.textContent)
-    .toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT · 476.73 M · 696.49 USD · 74% (1193.78/1613.21USD)');
+    .toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT · 476.73 M · 696.49 USD');
   expect(loadConversationMetrics).not.toHaveBeenCalled();
   await act(async () => root.render(<ConversationTokenStatus threadId="local-thread" active={false} />));
   expect(container.textContent).toBe('— TSR · — TPS · — TTFT · — · — USD');

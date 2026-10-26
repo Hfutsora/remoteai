@@ -1,6 +1,8 @@
 import { displayText } from '../i18n/index';
 import { displayError } from '../i18n/index';
 import { ImageAiContext } from '../../../../shared/chat/ImageAiContext';
+import { DesktopUsageContext } from '../../../../shared/chat/DesktopUsageContext';
+import { useVisibleChatUsage } from './useVisibleChatUsage';
 import { imageAiSender } from '../../../../shared/remote-chat/client/imageAiSender';
 import { prepareImageEdit } from './prepareImageEdit';
 import { remotePromptSuggestion } from '../../../../shared/remote-chat/client/promptSuggestion';
@@ -92,6 +94,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
   const closeList = () => { if (desktop) setSidebar(false); else drawerMotion.closeDrawer(); };
   const selectedFromList = () => { if (!desktop) drawerMotion.closeDrawer(); };
   const ready = state.ready;
+  const usageSnapshot = useVisibleChatUsage(controller.readUsage, desktop && active && foreground && ready);
   const installer = useRemoteCliInstaller(controller.guiTools,
     cliVersion === undefined && desktop && active && foreground && ready);
   const error = visibleChatError(state.error);
@@ -148,7 +151,13 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       interrupted={state.selected?.turns?.at(-1)?.status === 'interrupted'}
       send={(input) => controller.send(input)} interrupt={() => controller.interrupt()} />
   </>;
-  return <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived
+  const profileMenu = !accountPicker && <ChatProfileMenu client={controller.guiAccounts} desktop={desktop}
+    deviceName={device?.name ?? t("client.settings.chooseAComputer")} email={email} ready={ready}
+    guiTools={controller.guiTools} active={active && foreground && !searching}
+    running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
+    chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />;
+  return <DesktopUsageContext.Provider value={usageSnapshot}>
+    <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived
     && !state.sending && !state.settingsBusy && !state.workspaceBusy && !state.compacting,
     send: imageAiSender(controller, prepareImageEdit) }}>
     <ChatImageContext.Provider value={{ threadId: state.selected?.id ?? null, ready,
@@ -205,16 +214,14 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       headingExtra={!renderSidebar && <ChatThreadFilter state={state} controller={controller} />}>
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}
-        openSearch={() => setSearching(true)} accountPicker={accountPicker} profile={!accountPicker && <ChatProfileMenu client={controller.guiAccounts}
-          deviceName={device?.name ?? t("client.settings.chooseAComputer")} email={email} ready={ready}
-          guiTools={controller.guiTools} active={active && foreground && !searching}
-          running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
-          chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />} />}
+        openSearch={() => setSearching(true)} accountPicker={accountPicker ?? (desktop ? profileMenu : undefined)}
+        profile={!desktop && profileMenu} />}
     </ChatSidebar>
     {searching && <ChatSearch state={state} controller={controller} onClose={() => setSearching(false)}
       select={thread => { setSearching(false); drawerMotion.closeDrawer(); void controller.select(thread); }} />}
     {pickingDevice && <ChatDevices chooseLocal={chooseLocal} devices={devices} onClose={() => setPickingDevice(false)}
       refresh={deviceRefresh} choose={(id) => { chooseDevice(id); setPickingDevice(false); }} />}
   </ChatQuotesProvider></ChatFileReferencesProvider></ChatDetailsWorkspace>
-  </ChatFileContext.Provider></ChatAttachmentMetadata></ChatImageContext.Provider></ImageAiContext.Provider>;
+  </ChatFileContext.Provider></ChatAttachmentMetadata></ChatImageContext.Provider></ImageAiContext.Provider>
+  </DesktopUsageContext.Provider>;
 }
