@@ -2,14 +2,17 @@
 .microphone {
   display: flex; align-items: center; justify-content: center;
   width: 32px; min-width: 32px; height: 32px;
-  color: var(--ink);
+  border: 0; border-radius: 50%; padding: 0; background: transparent; cursor: pointer;
+  color: var(--ink, var(--app-ink));
+  &:hover:not(:disabled) { background: color-mix(in srgb, currentColor 8%, transparent); }
+  &:disabled { cursor: default; opacity: .45; }
   &[aria-pressed='true'] { color: #d43838; background: rgba(212, 56, 56, .1); }
 }
 .panel {
   width: max-content; max-width: min(400px, calc(100vw - 32px));
   padding: 10px 12px; border-radius: 12px;
-  color: var(--ink); background: var(--panel, var(--bg));
-  border: 1px solid var(--line); box-shadow: 0 4px 20px #0002;
+  color: var(--ink, var(--app-ink)); background: var(--panel, var(--bg, var(--app-surface)));
+  border: 1px solid var(--line, var(--app-border)); box-shadow: 0 4px 20px #0002;
   font-size: 12px; overflow-wrap: anywhere;
 }
 .status { display: flex; gap: 8px; align-items: center; }

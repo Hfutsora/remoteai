@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "test:dictation:e2e": "playwright test --config playwright.dictation.config.ts",
     "dev": "vite",
     "build": "vite build",
     "check": "tsc --noEmit -p tsconfig.json && npm run build",

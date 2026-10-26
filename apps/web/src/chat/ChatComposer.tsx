@@ -1,4 +1,6 @@
 import { displayError, displayText } from '../i18n/index';
+import { flushSync } from 'react-dom';
+import { ComposerDictation } from '../../../../shared/chat/dictation/ComposerDictation';
 import { useComposerSuggestion } from '../../../../shared/chat/useComposerSuggestion';
 import { ComposerSuggestion } from './ComposerSuggestion';
 import { ComposerInput } from './ComposerInput';
@@ -54,7 +56,7 @@ export function ChatComposer(props: ComposerProps) {
   const pickerThread = useRef(threadId);
   const dock = useRef<HTMLDivElement>(null);
   const suggestion = useComposerSuggestion({ source: props.suggestions, value: draft.text,
-    blocked: !active || !ready || sending || props.running || props.compacting || settingsBusy || busy
+    blocked: !active || !ready || sending || props.running || props.compacting || settingsBusy || busy || state.dictationBusy
       || draft.hasContent || attachments.items.length > 0 || state.hasQuotes || state.readingClipboard
       || state.queueEditor.loading || menu.open || adding || settings || !!projectFiles || goalMode.enabled,
     fill: text => { draft.setText(text); menu.setSelection({ start: text.length, end: text.length });
@@ -105,7 +107,8 @@ export function ChatComposer(props: ComposerProps) {
   }}>
     {props.projectPicker}
     {queue && <ChatQueue {...queue} {...state.queueEditor} editDisabled={state.queueEditor.editDisabled || busy} />}
-    <form className={`chat-composer${compact && !desktop && !suggestion.text ? ' is-compact' : ''}`}
+    <form className={`chat-composer${props.dictation ? ' has-dictation' : ''}`
+      + `${compact && !desktop && !suggestion.text ? ' is-compact' : ''}`}
       onSubmit={event => { event.preventDefault(); void state.submit(); }}>
       <input ref={photoInput} type="file" accept="image/*" multiple hidden aria-label={t("client.chat.choosePhotos")}
         onChange={event => { pickPhotos(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
@@ -202,6 +205,11 @@ export function ChatComposer(props: ComposerProps) {
               {!compact && <><span>{label}</span><ComposerSpeedIndicator speed={selection.speed} />
                 <ChevronDown size={12} /></>}
             </button>}
+            {props.dictation && <ComposerDictation key={`dictation:${threadId}:${cwd}`} client={props.dictation}
+              active={active && ready && !sending && !props.compacting && !settings && !settingsBusy && !goalBusy}
+              disabled={!active || !ready || busy || settingsBusy || props.compacting || goalBusy}
+              onBusyChange={state.setDictationBusy}
+              onText={text => { flushSync(() => draft.appendDictation(text)); menu.input.current?.focus(); }} />}
             <button type="submit" className="chat-composer-submit" aria-label={displayText(COMPOSER_ACTION_LABELS[action])}
               onPointerDown={event => event.preventDefault()} aria-busy={state.pausing || sending} disabled={actionDisabled}>
               <ActionIcon size={desktop ? 18 : 22}

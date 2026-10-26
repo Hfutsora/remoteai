@@ -124,6 +124,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
         || state.compacting === state.selected?.id} answer={controller.answerAsyncQuestion} />
     {composerHeader}
     <ChatComposer suggestions={remotePromptSuggestion(state, controller.suggestNextPrompt, { scope })}
+      dictation={controller.dictation}
       cliVersion={cliVersion === undefined ? installer.version : cliVersion}
       recoveredEdit={controller.messageEditor.recoveredDrafts.get(state.selected?.id ?? '')}
       consumeRecoveredEdit={() => controller.messageEditor.recoveredDrafts.delete(state.selected?.id ?? '')}
