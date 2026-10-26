@@ -58,6 +58,7 @@ mod oauth;
 mod official_models;
 mod official_plugins;
 mod open_code;
+mod pet_dock;
 mod platform;
 mod port_mapping;
 mod preset_provider;
@@ -230,6 +231,7 @@ pub fn run() {
                     codex_gui::notification_navigation::handle_url(&import_app, &url);
                 }
             });
+            pet_dock::setup(app.handle().clone());
             if !launch_options.headless {
                 dream_skin::start_background_updates();
                 if let Err(error) = codex_runtime::setup(app.handle()) {
@@ -631,6 +633,8 @@ pub fn run() {
             main_window::set_close_to_tray,
             client_integration::set_non_proxy_enhancements,
             floating_bubble::set_floating_bubble,
+            pet_dock::get_pet_dock_status,
+            pet_dock::set_pet_dock_enabled,
             floating_bubble::set_privacy_mode,
             floating_bubble::set_hide_account_notes,
             floating_bubble::set_show_usage_network_errors,

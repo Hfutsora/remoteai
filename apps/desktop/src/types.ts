@@ -542,6 +542,7 @@ export interface AppSettings {
   closeToTray?: boolean;
   nonProxyEnhancementsEnabled?: boolean;
   floatingBubbleEnabled: boolean;
+  petDockEnabled?: boolean;
   privacyMode: boolean;
   hideAccountNotes: boolean;
   bubbleResetDisplay: BubbleResetDisplay;
