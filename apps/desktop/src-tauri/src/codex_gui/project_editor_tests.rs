@@ -24,7 +24,7 @@ fn saves_utf8_and_line_endings_without_overwriting_an_external_edit() {
     let saved = save(Save {
         upload: None,
         target: target(root.path(), "sample.ts"),
-        text: updated.into(),
+        text: Some(updated.into()),
         revision: before.revision.clone(),
     })
     .unwrap();
@@ -35,7 +35,7 @@ fn saves_utf8_and_line_endings_without_overwriting_an_external_edit() {
         save(Save {
             upload: None,
             target: target(root.path(), "sample.ts"),
-            text: "stale".into(),
+            text: Some("stale".into()),
             revision: saved.revision,
         }),
         Err(GuiError::ProjectFileConflict)
@@ -76,7 +76,7 @@ fn binary_and_read_only_files_cannot_be_written() {
     assert!(save(Save {
         upload: None,
         target: target(root.path(), "binary.bin"),
-        text: "x".into(),
+        text: Some("x".into()),
         revision: before.revision
     })
     .is_err());
@@ -91,7 +91,7 @@ fn binary_and_read_only_files_cannot_be_written() {
     assert!(save(Save {
         upload: None,
         target: target(root.path(), "readonly.txt"),
-        text: "x".into(),
+        text: Some("x".into()),
         revision: before.revision
     })
     .is_err());
@@ -136,7 +136,7 @@ fn simultaneous_saves_from_the_same_revision_have_one_winner() {
             let request = Save {
                 upload: None,
                 target: target(root.path(), "note.txt"),
-                text: text.into(),
+                text: Some(text.into()),
                 revision: revision.clone(),
             };
             std::thread::spawn(|| save(request))
@@ -154,4 +154,23 @@ fn simultaneous_saves_from_the_same_revision_have_one_winner() {
             .count(),
         1
     );
+}
+
+#[test]
+fn missing_text_is_rejected_but_an_explicit_empty_document_can_be_saved() {
+    let root = project();
+    let path = root.path().join("note.txt");
+    fs::write(&path, "keep").unwrap();
+    let revision = snapshot(&path).unwrap().revision;
+    let mut body = serde_json::json!({
+        "cwd": execution_path(root.path()), "path": "note.txt", "revision": revision,
+    });
+    assert!(matches!(
+        save(serde_json::from_value(body.clone()).unwrap()),
+        Err(GuiError::InvalidRequest)
+    ));
+    assert_eq!(fs::read_to_string(&path).unwrap(), "keep");
+    body["text"] = serde_json::json!("");
+    save(serde_json::from_value(body).unwrap()).unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), "");
 }
