@@ -69,6 +69,11 @@ export function AccountDetailsSheet({ account, onClose, onUpdated }: AccountDeta
         <Button onClick={() => setRevision(value => value + 1)}>{t("client.accounts.reload")}</Button></div>
         : <Form layout="vertical" className="account-details-form" footer={<Button block color="primary"
           size="large" loading={saving} onClick={() => void save()}><Save size={16} />{t("client.app.saveAccountInformation")}</Button>}>
+      <Form.Item label={t("client.accounts.alias")} help={t("client.accounts.aliasHint")}>
+        <Input value={privateDetails.alias ?? ''} maxLength={16} clearable
+          aria-label={t("client.accounts.alias")} placeholder={t("client.accounts.aliasPlaceholder")}
+          onChange={alias => setPrivateDetails(current => ({ ...current, alias }))} />
+      </Form.Item>
       <Form.Item label={t("client.accounts.accountNotes")}><Input value={note} onChange={setNote} placeholder={t("client.app.addANote")} clearable /></Form.Item>
       <Form.Item label={t("client.accounts.expires")}><Input value={expiresAt} onChange={setExpiresAt} placeholder={t("client.app.forExample20261231")} clearable /></Form.Item>
       <Form.Item label={t("client.accounts.password")}><div className="secret-input-row"><Input type={hidden ? 'password' : 'text'} value={privateDetails.password} onChange={(value) => setPrivateDetails((current) => ({ ...current, password: value }))} placeholder={t("client.app.optional")} /><button type="button" onClick={() => setHidden((value) => !value)} aria-label={hidden ? t("client.accounts.showPassword") : t("client.accounts.hidePassword")}>{hidden ? <Eye size={17} /> : <EyeOff size={17} />}</button></div></Form.Item>

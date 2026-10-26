@@ -52,6 +52,7 @@ fn provider_payload_from_profile(
 
 fn provider_payload_to_profile(provider: &ProviderSyncPayload) -> Result<ProviderProfile, String> {
     Ok(ProviderProfile {
+        account_alias: None,
         request_options: provider.request_options.clone(),
         id: provider.id.clone(),
         kind: provider.kind,

@@ -43,6 +43,7 @@ fn official_profile(paths: &Paths, id: &str, name: String) -> ProviderProfile {
         })
         .collect();
     ProviderProfile {
+        account_alias: None,
         id: id.to_string(),
         kind: ProviderKind::OpenAi,
         name,

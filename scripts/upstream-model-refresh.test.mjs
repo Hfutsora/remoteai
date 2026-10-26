@@ -41,6 +41,7 @@ function modelRefreshExpression(models, capabilities = {}) {
   const substitutions = {
     proxy_running: String(capabilities.proxyRunning ?? true),
     models: JSON.stringify(models),
+    display_names: JSON.stringify(capabilities.displayNames ?? {}),
     fast_mode_models: JSON.stringify(capabilities.fastModeModels ?? []),
     image_input_models: JSON.stringify(capabilities.imageInputModels ?? []),
     selected_model: JSON.stringify(capabilities.selectedModel ?? models[0] ?? defaultModel),
@@ -199,6 +200,21 @@ function createHarness({ models = upstreamModels, select = selectModels, queryKe
     },
   };
 }
+
+test("group aliases update injected and cached labels without changing routing during polling", async () => {
+  const slug = "gpt-6-luna-account@example.test-9a4ad11234567890";
+  const harness = createHarness();
+  const visible = () => harness.observer.options.select(harness.query.state.data).models[0];
+  await harness.refresh([slug], { displayNames: { [slug]: "gpt-6-luna · 工作号" } });
+  assert.equal(visible().displayName, "gpt-6-luna · 工作号");
+  assert.equal(visible().model, slug);
+  harness.client.upstreamModels = [slug];
+  await harness.refresh([slug], { displayNames: { [slug]: "gpt-6-luna · 测试号" } });
+  assert.equal(harness.query.state.data.data[0].displayName, "gpt-6-luna · 测试号");
+  await harness.client.refetch(harness.query);
+  assert.equal(visible().displayName, "gpt-6-luna · 测试号");
+  assert.equal(visible().model, slug);
+});
 
 test("fresh launch and restart refresh models and composer status after a delayed React mount", async () => {
   for (const launch of ["initial launch", "restart"]) {

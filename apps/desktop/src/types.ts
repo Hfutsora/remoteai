@@ -43,6 +43,7 @@ export interface Account {
 }
 
 export interface AccountPrivateDetails {
+  alias?: string;
   password: string;
   phoneNumber: string;
   totpSecret: string;

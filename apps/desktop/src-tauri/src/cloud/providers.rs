@@ -234,6 +234,7 @@ pub(super) fn provider_payload_from_profile(
 
 pub(super) fn provider_payload_to_profile(provider: &ProviderSyncPayload) -> ProviderProfile {
     ProviderProfile {
+        account_alias: None,
         id: provider.id.clone(),
         kind: provider.kind,
         name: provider.name.clone(),

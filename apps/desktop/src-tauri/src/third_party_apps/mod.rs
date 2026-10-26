@@ -301,6 +301,7 @@ fn official_local_proxy_profile(
         models
     };
     ProviderProfile {
+        account_alias: None,
         request_options: Default::default(),
         id: MANAGED_PROVIDER_ID.to_string(),
         kind: ProviderKind::OpenAi,
@@ -341,6 +342,7 @@ pub(crate) mod tests {
 
     pub(crate) fn provider() -> ProviderProfile {
         ProviderProfile {
+            account_alias: None,
             request_options: Default::default(),
             id: MANAGED_PROVIDER_ID.to_string(),
             kind: ProviderKind::Custom,

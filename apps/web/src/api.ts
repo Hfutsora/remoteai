@@ -231,7 +231,7 @@ export async function fetchAccountDetails(accountId: string) {
 export async function updateAccountDetails(accountId: string, details: {
   note: string;
   expiresAt: string;
-  privateDetails: { password: string; phoneNumber: string; totpSecret: string };
+  privateDetails: { alias?: string; password: string; phoneNumber: string; totpSecret: string };
 }) {
   return apiJson<AccountSummary>(`/sync/accounts/${encodeURIComponent(accountId)}/details`, {
     method: 'PATCH',

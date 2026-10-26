@@ -392,6 +392,7 @@ fn deepseek_none_disables_thinking_without_effort() {
 #[test]
 fn provider_image_generation_request_preserves_gpt_image_model() {
     let provider = ProviderProfile {
+        account_alias: None,
         request_options: Default::default(),
         id: "images".to_string(),
         kind: ProviderKind::Custom,
