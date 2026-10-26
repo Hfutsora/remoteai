@@ -9,6 +9,7 @@ const sample = { totalTokens: 476730000, estimatedCostUsd: 696.49,
   estimatedQuota: { remainingUsd: 1193.78, capacityUsd: 1613.21 } };
 
 async function mockUsage(page: Page) {
+  page.on('pageerror', error => { throw error; });
   let usage: unknown = sample;
   let pending = false;
   const releases: (() => void)[] = [];
@@ -28,36 +29,34 @@ async function mockUsage(page: Page) {
     pause: () => { pending = true; }, release: () => releases.forEach(resolve => resolve()) };
 }
 
-async function assertFooter(section: Locator) {
-  const quota = section.locator('.cs-quota-estimate');
+async function assertAccountQuota(section: Locator) {
+  const account = section.locator('.quota-account');
+  const quota = account.locator('.cs-quota-estimate');
   await expect(quota).toHaveText('1193.78/1613.21USD');
-  const typography = await quota.evaluate(element => {
-    const footer = element.closest('[class*="composerHint"], .chat-composer-hint')!;
-    const metric = Array.from(footer.querySelectorAll('span'))
-      .find(node => /TSR$/.test(node.textContent ?? ''))!;
-    const keys = ['fontSize', 'fontWeight', 'fontFamily', 'lineHeight', 'color'] as const;
-    return keys.map(key => [getComputedStyle(element)[key], getComputedStyle(metric)[key]]);
-  });
-  for (const [quotaFont, metricFont] of typography) expect(quotaFont).toBe(metricFont);
-  await expect(quota.locator('..')).toHaveText('74% (1193.78/1613.21USD)');
+  const bar = account.getByRole('progressbar');
+  await expect(bar).toHaveAttribute('aria-valuenow', '74');
+  const barBox = (await bar.boundingBox())!;
+  const quotaBox = (await quota.boundingBox())!;
+  expect(quotaBox.y).toBeGreaterThan(barBox.y + barBox.height);
+  const footer = section.locator('[class*="composerHint"], .chat-composer-hint');
+  await expect(footer).not.toContainText('74%');
+  await expect(footer.locator('.cs-quota-estimate')).toHaveCount(0);
 }
 
 for (const width of [1440, 1000]) {
-  test(`quota shares footer typography and usage stays next to the model at ${width}px`, async ({ page }) => {
+  test(`quota sits below the account progress and usage stays next to the model at ${width}px`, async ({ page }) => {
     await mockUsage(page);
     await page.setViewportSize({ width, height: 1200 });
     await page.goto('/e2e/chat-quota-harness.html', { waitUntil: 'domcontentloaded' });
     for (const name of entries) {
       const section = page.getByTestId(name);
-      await assertFooter(section);
+      await assertAccountQuota(section);
       const status = section.getByRole('group', { name: '当前对话用量' });
       await expect(status).toContainText('413.18 K · 12.34 USD');
       await expect(status).not.toContainText('74%');
       await expect(status).not.toContainText('今日');
       await expect(section.locator('.cs-usage-today')).toHaveText('476.73 M · 696.49 USD');
-      await expect(section.locator('.cs-usage-remaining')).toHaveText('74%');
-      await expect(section.locator('.cs-usage-quota').locator('..'))
-        .toHaveText(/696\.49 USD · 74% \(1193\.78\/1613\.21USD\)$/);
+      await expect(section.locator('.cs-usage-remaining')).toHaveCount(0);
       await expect(status).not.toContainText('1193.78');
       const model = section.getByRole('button', { name: /GPT-6-Astra/ }).first();
       const statusBox = (await status.boundingBox())!;
@@ -75,14 +74,14 @@ for (const width of [1440, 1000]) {
     }
     await page.screenshot({ path: `../../.codex-tmp/pc-quota-${width}.png`, fullPage: true });
     await page.evaluate(() => document.documentElement.style.setProperty('--gui-font-size', '18.2px'));
-    for (const name of entries) await assertFooter(page.getByTestId(name));
+    for (const name of entries) await assertAccountQuota(page.getByTestId(name));
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({ path: `../../.codex-tmp/pc-quota-${width}-large.png`, fullPage: true });
     await page.locator('main').evaluate(node => { node.style.maxWidth = '760px'; });
     for (const name of entries) {
       const section = page.getByTestId(name);
       const bounds = (await section.boundingBox())!;
-      for (const selector of ['.cs-quota-estimate', '.cs-usage-today', '.cs-usage-remaining']) {
+      for (const selector of ['.cs-quota-estimate', '.cs-usage-today']) {
         const box = (await section.locator(selector).boundingBox())!;
         expect(box.x).toBeGreaterThanOrEqual(bounds.x);
         expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
@@ -96,10 +95,17 @@ test('quota handles unavailable values, languages, polling and unmount without c
   const mock = await mockUsage(page);
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto('/e2e/chat-quota-harness.html', { waitUntil: 'domcontentloaded' });
-  for (const name of entries) await assertFooter(page.getByTestId(name));
+  for (const name of entries) await assertAccountQuota(page.getByTestId(name));
   expect(mock.requests).toHaveLength(4);
   await expect(page.getByTestId('settings').locator('.cs-quota-progress'))
     .toContainText('74% · 1,193.78USD 剩余 · 1,613.21USD 总额度');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const web = page.getByTestId('web');
+  await expect(web.locator('.chat-profile-trigger')).toBeVisible();
+  await expect(web.locator('.cs-quota-estimate, .cs-usage-today, .chat-profile-desktop')).toHaveCount(0);
+  await expect(page.getByTestId('settings').locator('.cs-quota-progress'))
+    .toContainText('74% · 1,193.78USD 剩余 · 1,613.21USD 总额度');
+  await page.setViewportSize({ width: 1440, height: 1200 });
   for (const [language, label] of [['en', 'Remaining quota'], ['ru', 'Остаток лимита'], ['ja', '残りの利用枠']]) {
     await page.getByLabel('Language').selectOption(language);
     for (const name of entries) await expect(page.getByTestId(name).locator('.cs-quota-estimate'))

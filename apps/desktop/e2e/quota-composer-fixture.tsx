@@ -6,6 +6,9 @@ import type { ComposerProps } from '../../web/src/chat/composerProps';
 import { invoke } from '../src/api/backend';
 import { initialSettings, settingsFixture } from '../../../shared/remote-chat/testing/settingsFixture';
 import type { GuiState } from '../src/pages/codexGui/types';
+import { DesktopUsageContext } from '../../../shared/chat/DesktopUsageContext';
+import { useVisibleChatUsage } from '../../web/src/chat/useVisibleChatUsage';
+import { QuotaAccountFixture } from './quota-account-fixture';
 
 export const readQuota = () => invoke('codex_gui_usage_summary');
 const noop = () => {};
@@ -32,7 +35,11 @@ const remoteProps: ComposerProps = {
   loadConversations: async () => ({ data: [], nextCursor: null }),
 };
 
-export function QuotaComposerFixture({ local = false }: { local?: boolean }) {
-  return local ? <Composer controller={controller} state={localState} active cliVersion="0.164.0" />
-    : <ChatComposer {...remoteProps} cliVersion="0.164.0" />;
+export function QuotaComposerFixture({ local = false, web = false }: { local?: boolean; web?: boolean }) {
+  const snapshot = useVisibleChatUsage(readQuota, true);
+  return <DesktopUsageContext.Provider value={snapshot}>
+    <div className="quota-account"><QuotaAccountFixture local={local} web={web} /></div>
+    {local ? <Composer controller={controller} state={localState} active cliVersion="0.164.0" />
+      : <ChatComposer {...remoteProps} cliVersion="0.164.0" />}
+  </DesktopUsageContext.Provider>;
 }
