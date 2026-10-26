@@ -80,7 +80,11 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
       : <div className="pf-tree-heading"><span {...rootGesture}>{root.name}</span>{menu}{refresh}</div>}
     <ProjectTreeSearch query={search.query} disabled={!connected} t={t}
       change={value => { actions.close(); search.change(value); }} />
-    <div ref={list} role="tree" aria-label={t("client.projectBrowser.projectFiles")} className="pf-tree-list" aria-busy={search.loading}>
+    <div ref={list} role="tree" aria-label={t("client.projectBrowser.projectFiles")}
+      className="pf-tree-list" aria-busy={search.loading} onContextMenu={event => {
+        if (event.target !== event.currentTarget) return;
+        event.preventDefault(); actions.show({ entry: root, x: event.clientX, y: event.clientY });
+      }}>
       {rows.map(({ entry, depth }) => {
         const expanded = !search.active && tree.expanded.has(entry.path);
         return <div key={entry.path} role="none"
