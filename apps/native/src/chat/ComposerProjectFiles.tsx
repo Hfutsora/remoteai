@@ -39,7 +39,7 @@ export function ComposerProjectFiles({ imagesOnly, threadId, cwd, load, choose, 
     return () => { cancelled = true; };
   }, [load, threadId, cwd, directory, imagesOnly, revision]);
   return <BottomSheet fullWidthContent visible title={imagesOnly ? t("client.mobile.computerPhotos") : t("client.mobile.computerFiles")} subtitle={t("client.mobile.currentChatProject")}
-    onClose={close} dragFromHeaderOnly>
+    onClose={close}>
     <View style={fileStyles.root}>
       <SheetInset style={fileStyles.readable}>
         {result?.parent !== null && result?.parent !== undefined && <Pressable accessibilityRole="button"

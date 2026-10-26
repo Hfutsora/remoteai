@@ -62,7 +62,7 @@ export function ChatMessageAttachments({ attachments }: { attachments: MessageAt
       <Text style={styles.count}>{t('client.chat.attachments.count', { count: attachments.length })}</Text>
     </Pressable>
     {open && active && <BottomSheet visible title={t('client.chat.attachments.details')}
-      maxWidth={DETAILS_WIDTH} onClose={() => setOpen(false)} dragFromHeaderOnly>
+      maxWidth={DETAILS_WIDTH} onClose={() => setOpen(false)}>
       <SheetScrollView contentContainerStyle={styles.details}>
         {attachments.map((file, index) => <AttachmentDetails key={file.path || index}
           file={file} onClose={() => setOpen(false)} />)}

@@ -19,7 +19,7 @@ export function ChatToolDetails({ item, onClose, onBack }: {
   const messageRole = item.type === 'userMessage' ? 'user' : 'assistant';
   const role = ['userMessage', 'agentMessage'].includes(item.type) ? messageRole : 'tool';
   return <BottomSheet fullWidthContent
-    visible tall title={displayText(messageLabel(item))} onClose={onClose} onBack={onBack} dragFromHeaderOnly>
+    visible tall title={displayText(messageLabel(item))} onClose={onClose} onBack={onBack}>
     <SheetScrollView style={sheetStyles.scroll} contentContainerStyle={sheetStyles.content}
       showsVerticalScrollIndicator keyboardShouldPersistTaps="handled">
       {item.status === 'inProgress' && <Text style={styles.subtitle}>{t("client.chat.inProgress.dbb151")}</Text>}

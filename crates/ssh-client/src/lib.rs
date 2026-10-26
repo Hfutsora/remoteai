@@ -12,6 +12,7 @@ mod x11;
 pub use connection::probe;
 pub use sessions::Client;
 pub use types::*;
+pub use x11::ensure_x11;
 
 #[cfg(test)]
 mod tests;

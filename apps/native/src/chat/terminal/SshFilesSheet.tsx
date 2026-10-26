@@ -58,7 +58,7 @@ export function SshFilesSheet({ api, info, connected, close }: {
   const entries = files.entries.filter(entry => (hidden || !entry.name.startsWith('.'))
     && entry.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
   return <BottomSheet visible title={t('client.ssh.files')} subtitle={info.ssh?.host} onClose={close}
-    onBack={close} tall compactHeader dragFromHeaderOnly fullWidthContent>
+    onBack={close} tall compactHeader fullWidthContent>
     <View style={[styles.files, { height: height * .7 }]}>
       <SheetFlatList style={styles.fileList} contentContainerStyle={fileStyles.content}
         data={entries} keyExtractor={entry => entry.path}

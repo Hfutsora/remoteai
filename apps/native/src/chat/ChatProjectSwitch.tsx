@@ -24,7 +24,7 @@ export function ChatProjectSwitch(props: ProjectSwitchProps) {
       <Feather name="chevron-down" size={14} color={color('#6f8177', 'muted')} />
     </Pressable>
     {picker.screen === 'projects' && !picker.disabled && <BottomSheet visible fullWidthContent
-      title={t("client.chat.chooseProject")} onClose={picker.close} dragFromHeaderOnly
+      title={t("client.chat.chooseProject")} onClose={picker.close}
       actions={[{ label: t("client.conversation.newProject"), tone: 'primary', onPress: picker.create }]}>
       <SheetInset style={styles.readable}>
         {picker.loading && <ActivityIndicator accessibilityLabel={t("client.projectBrowser.loading")} />}

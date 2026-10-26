@@ -37,9 +37,38 @@ async function pickFiles(...assets: ReturnType<typeof asset>[]) {
 
 beforeEach(() => {
   state.slots = [];
+  state.index = 0;
   state.pick.mockReset();
   state.read.mockReset();
   setChatPolicy({ ...DEFAULT_CHAT_POLICY, fileUploadMaxMb: 2, fileUploadTotalMaxMb: 3 });
+});
+
+it('cancels without reading files or changing attachments and allows an immediate retry', async () => {
+  const attachments = useComposerAttachments({ threadId: 'thread', sending: false });
+  state.pick.mockResolvedValueOnce({ canceled: true, assets: null });
+  await attachments.pick();
+  expect(state.read).not.toHaveBeenCalled();
+  expect(state.slots[0]).toEqual([]);
+  expect(errors()).toEqual(['']);
+  expect(state.slots[1]).toEqual([true, false]);
+  state.pick.mockResolvedValueOnce({ canceled: false, assets: [asset('notes.txt', 5)] });
+  state.read.mockResolvedValue('aGVsbG8=');
+  await attachments.pick();
+  expect(state.pick).toHaveBeenCalledTimes(2);
+  expect(state.slots[0]).toHaveLength(1);
+  expect(state.slots[1]).toEqual([true, false, true, false]);
+});
+
+it('ignores repeated presses while the system file picker is open', async () => {
+  let cancel!: (value: { canceled: true; assets: null }) => void;
+  state.pick.mockReturnValue(new Promise(resolve => { cancel = resolve; }));
+  const attachments = useComposerAttachments({ threadId: 'thread', sending: false });
+  const pending = attachments.pick();
+  await attachments.pick();
+  expect(state.pick).toHaveBeenCalledTimes(1);
+  cancel({ canceled: true, assets: null });
+  await pending;
+  expect(state.slots[1]).toEqual([true, false]);
 });
 afterEach(() => { setInterfaceLanguage('zh'); setChatPolicy(DEFAULT_CHAT_POLICY); });
 

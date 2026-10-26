@@ -4,6 +4,17 @@ use std::sync::Arc;
 use tauri::{ipc::Channel, AppHandle, Manager, Window};
 
 #[tauri::command]
+pub(crate) async fn codex_gui_ssh_ensure_x11(
+    window: Window,
+    options: csw_ssh_client::X11,
+) -> Result<(), String> {
+    super::authorize(&window).map_err(|error| error.to_string())?;
+    csw_ssh_client::ensure_x11(options)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub(crate) async fn codex_gui_ssh_probe(
     window: Window,
     endpoint: Endpoint,

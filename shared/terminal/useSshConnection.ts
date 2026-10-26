@@ -20,6 +20,7 @@ export function useSshConnection(options: Options) {
   const [selected, setSelected] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [preparingX11, setPreparingX11] = useState(false);
   const [error, setError] = useState('');
   const [trust, setTrust] = useState<{ endpoint: string; fingerprint: string }>();
   const [tested, setTested] = useState<{ endpoint: string; fingerprint: string }>();
@@ -86,6 +87,13 @@ export function useSshConnection(options: Options) {
     } finally { pending.current = false; if (lifetime.current) { setBusy(false); setAction(undefined); } }
   };
   const saveSettings = async (values: SshValues) => {
+    if (values.x11) {
+      if (!api.ensureX11) throw new Error('client.ssh.updateRequired');
+      setPreparingX11(true);
+      try { await api.ensureX11(values.x11); }
+      finally { if (lifetime.current) setPreparingX11(false); }
+      if (!lifetime.current) return;
+    }
     const endpoint = sshEndpointKey({ ...values, host: values.host.trim() });
     const profile = sshProfileFromValues({ values, id: selected?.id ?? createId(), selected,
       fingerprint: tested?.endpoint === endpoint ? tested.fingerprint : undefined });
@@ -119,7 +127,8 @@ export function useSshConnection(options: Options) {
   const selectionError = selected?.revision && !saved.loading && !saved.error
     && (!current || current.revision !== selected.revision || current.accountScope !== selected.accountScope)
     ? 'client.ssh.profileChanged' : '';
-  return { ...saved, selected, choose, busy, action, finished, error: error || saved.error || selectionError, trust,
+  return { ...saved, selected, choose, busy, action, finished, preparingX11,
+    error: error || saved.error || selectionError, trust,
     canConnect: (values: SshValues) => validSshValues(values)
       || (validSshSettings(values) && sameSshLogin(values, selected) && !!api.profiles.credentials),
     tested: !!tested, clearTest: () => setTested(undefined), clearTrust: () => setTrust(undefined),

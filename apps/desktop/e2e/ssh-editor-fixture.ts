@@ -8,6 +8,7 @@ const profile: SshProfile = { id: 'editor', name: 'Editor server', host: 'editor
 export async function sshEditorFixture(page: Page) {
   const files = new Map<string, Buffer | null>([
     ['/中文目录', null], ['/hello.txt', Buffer.from('Hello 中文\n')],
+    ['/中文目录/nested.txt', Buffer.from('Nested file\n')], ['/.hidden', Buffer.from('hidden\n')],
     ['/script.ts', Buffer.from('\ufeffconst greeting = "你好";\r\n')], ['/image.bin', Buffer.from([0, 255, 123, 22])],
   ]);
   const uploads = new Map<string, { path: string; parts: Buffer[] }>();
@@ -25,6 +26,8 @@ export async function sshEditorFixture(page: Page) {
         return { type: 'list', path, entries, truncated: false };
       }
       case 'read': return { type: 'file', data: files.get(request.path)!.toString('base64') };
+      case 'readChunk': return { type: 'file',
+        data: files.get(request.path)!.subarray(request.offset, request.offset + request.length).toString('base64') };
       case 'uploadStart': {
         if (files.has(request.path) && request.mode === 'reject') throw new Error('client.ssh.conflict');
         const token = String(++sequence); uploads.set(token, { path: request.path, parts: [] });
@@ -38,8 +41,22 @@ export async function sshEditorFixture(page: Page) {
         files.set(upload.path, Buffer.concat(upload.parts)); uploads.delete(request.token);
         return { type: 'uploaded', path: upload.path };
       }
-      case 'rename': files.set(request.destination, files.get(request.path)!); files.delete(request.path); break;
-      case 'delete': case 'deleteTree': files.delete(request.path); break;
+      case 'createFile': case 'createFolder':
+        if (files.has(request.path)) throw new Error('client.ssh.conflict');
+        files.set(request.path, request.type === 'createFolder' ? null : Buffer.alloc(0)); break;
+      case 'rename':
+        if (files.has(request.destination)) throw new Error('client.ssh.conflict');
+        for (const [path, value] of [...files]) {
+          if (path === request.path || path.startsWith(`${request.path}/`)) {
+            files.set(request.destination + path.slice(request.path.length), value); files.delete(path);
+          }
+        }
+        break;
+      case 'delete': case 'deleteTree':
+        for (const path of files.keys()) {
+          if (path === request.path || path.startsWith(`${request.path}/`)) files.delete(path);
+        }
+        break;
       default: throw new Error(`Unsupported fixture action ${request.type}`);
     }
     return { type: 'done' };

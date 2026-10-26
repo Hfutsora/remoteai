@@ -53,7 +53,7 @@ function ErrorDetails({ turn }: { turn: Turn }) {
 export function ChatTurnDetails({ turn, panel, onClose }: Props) {
   const detailStyles = useDetailStyles();
   useLanguage();
-  return <BottomSheet fullWidthContent visible tall title={PANEL_TITLES[panel]} onClose={onClose} dragFromHeaderOnly>
+  return <BottomSheet fullWidthContent visible tall title={PANEL_TITLES[panel]} onClose={onClose}>
     <SheetScrollView style={detailStyles.scroll} contentContainerStyle={detailStyles.content}>
       {panel === 'result' && <TaskReviewPanel key={turn.id} turn={turn} />}
       {panel === 'plan' && <PlanDetails turn={turn} />}

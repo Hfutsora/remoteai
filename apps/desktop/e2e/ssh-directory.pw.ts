@@ -74,7 +74,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await drop(page, page.locator('[role="tabpanel"]:visible .xterm'), { name, directory });
     const path = page.getByRole('textbox', { name: '远程路径' });
     await expect(path).toHaveValue(directory);
-    await expect(page.locator('.ssh-file-list')).toContainText(name);
+    await expect(page.getByRole('tree')).toContainText(name);
     const uploaded = await (await page.request.post(`${bridge}/rpc`, { data: {
       type: 'files', id, request: { type: 'read', path: `${directory}/${name}` },
     } })).json();

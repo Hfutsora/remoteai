@@ -1,7 +1,8 @@
+import { SheetGestureScrollView as ScrollView } from '../../components/SheetScrollGesture';
 import { gitAreaColors } from './theme';
 import { useThemeColor } from '../../theme/store';
 import { t, useLanguage } from '../../i18n';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { selectionState } from '../../../../../shared/remote-chat/gitFiles';
 import type { GitFileRow } from '../../../../../shared/remote-chat/useGitFileList';

@@ -1,7 +1,8 @@
+import { SheetGestureScrollView as ScrollView } from '../components/SheetScrollGesture';
 import { displayError } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
 import { t, useLanguage } from '../i18n';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { BottomSheet } from '../components/BottomSheet';
 import { SHEET_READABLE_WIDTH } from '../components/SheetScrollView';
 import { useGuiUpdate, type GuiUpdateOptions } from '../../../../shared/remote-chat/useGuiUpdate';
@@ -16,7 +17,7 @@ export function ChatGuiUpdateSheet({ deviceName, onClose, onBack, ...options }: 
   const update = useGuiUpdate(options);
   return <BottomSheet visible title={update.confirmation ? t("client.app.installCodexGuiUpdate") : t("client.app.updateCodexGui")}
     subtitle={deviceName || t("client.app.currentComputer")} onClose={onClose} onBack={update.confirmation ? update.cancel : onBack}
-    dragFromHeaderOnly maxWidth={SHEET_READABLE_WIDTH} actions={update.confirmation ? [
+    maxWidth={SHEET_READABLE_WIDTH} actions={update.confirmation ? [
       { label: t("client.settings.notNow"), onPress: update.cancel },
       { label: t("client.app.confirmInstallation"), tone: 'primary', disabled: !update.canConfirm, onPress: update.confirm },
     ] : [

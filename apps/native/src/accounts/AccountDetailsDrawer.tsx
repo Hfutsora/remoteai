@@ -82,7 +82,7 @@ function DetailMessage({ panel, note, onClose }: { panel: DetailsPanel; note: st
   const title = panel === 'note' ? t("client.accounts.accountNotes") : t(panel === 'primary'
     ? "client.accounts.primaryUsageWindow" : "client.accounts.secondaryUsageWindow");
   return <BottomSheet visible={visible} title={title} onClose={onClose} onBack={onClose}
-    fullWidthContent dragFromHeaderOnly>
+    fullWidthContent>
     <SheetScrollView contentContainerStyle={styles.messageContent}>
       <Text selectable style={styles.note}>{panel === 'note' ? (note || t("client.accounts.noNotesYet"))
         : t("client.mobile.remainingQuotaAndResetTimeForThisUsageWindowWindow")}</Text>
@@ -102,7 +102,7 @@ function AccountDetailsContent(props: AccountDetailsProps) {
   const edit = () => { setPanel('edit'); void onRefreshServer(); };
   return <>
     <BottomSheet visible={overview} title={t("client.accounts.accountDetails")} subtitle={t("client.accounts.viewAccountUsageAndSettings")}
-      onClose={onClose} tall fullWidthContent dragFromHeaderOnly>
+      onClose={onClose} tall fullWidthContent>
       <SheetScrollView contentContainerStyle={styles.content}>
         <AccountIdentity {...props} onRefresh={refresh} />
         <AccountUsageSection usage={account.usage} refreshing={props.refreshing}

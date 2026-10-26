@@ -154,10 +154,19 @@ fn packet(cookie: &str) -> Vec<u8> {
     packet
 }
 
-async fn x_server() -> (TcpListener, X11) {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+async fn x_server() -> (Arc<TcpListener>, X11) {
+    let listener = Arc::new(TcpListener::bind("127.0.0.1:0").await.unwrap());
     let port = listener.local_addr().unwrap().port();
     assert!(port >= 6000);
+    let readiness = listener.clone();
+    tokio::spawn(async move {
+        drop(readiness.accept().await.unwrap());
+        let (mut probe, _) = readiness.accept().await.unwrap();
+        let mut header = [0; 12];
+        probe.read_exact(&mut header).await.unwrap();
+        assert_eq!(header, [b'l', 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        probe.write_all(&[1, 0, 11, 0, 0, 0, 0, 0]).await.unwrap();
+    });
     (
         listener,
         X11 {
@@ -172,9 +181,6 @@ async fn reverse_x11_channel_roundtrip_and_session_cleanup() {
         let (listener, options) = x_server().await;
         let fixture = fixture(Some(options), false).await;
         let info = fixture.info.unwrap();
-        // The initial availability probe closes without disclosing any cookie.
-        let (mut probe, _) = listener.accept().await.unwrap();
-        assert_eq!(probe.read(&mut [0; 1]).await.unwrap(), 0);
         let requests = fixture.requests.lock().await;
         assert_eq!(requests.screen, 2);
         assert_eq!(requests.cookie.len(), 32);
@@ -249,7 +255,6 @@ async fn incorrect_cookie_never_reaches_local_server() {
     tokio::time::timeout(Duration::from_secs(10), async {
         let (listener, options) = x_server().await;
         let fixture = fixture(Some(options), false).await;
-        drop(listener.accept().await.unwrap());
         let mut remote = fixture
             .handle
             .channel_open_x11("127.0.0.1", 1234)

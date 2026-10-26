@@ -182,9 +182,11 @@ pub(crate) struct ProxySessionRequestSummary {
     pub(crate) cached_tokens: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ProxySessionLatencySummary {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) estimated_cost_usd: Option<f64>,
     pub(crate) total_first_token_time_ms: u64,
     pub(crate) first_token_request_count: u64,
     pub(crate) total_first_response_time_ms: u64,

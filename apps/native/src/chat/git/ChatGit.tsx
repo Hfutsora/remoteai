@@ -1,7 +1,8 @@
+import { SheetGestureScrollView as ScrollView } from '../../components/SheetScrollGesture';
 import { displayError } from '../../i18n/index';
 import { useThemeColor } from '../../theme/store';
 import { t, useLanguage } from '../../i18n';
-import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useEffect, useState } from 'react';
 import type { GitClient } from '../../../../../shared/remote-chat/gitTypes';
 import { useGitDiff, useRemoteGit } from '../../../../../shared/remote-chat/useRemoteGit';
@@ -43,7 +44,7 @@ export function ChatGit(props: Props) {
   const hasOverlay = Boolean(menu || panel.fileAction || panel.revisionAction);
   return <BottomSheet visible={props.active} title="Git" onClose={close}
     onBack={detail && !hasOverlay ? panel.backDetail : undefined}
-    tall dragFromHeaderOnly fullWidthContent compactHeader
+    tall fullWidthContent compactHeader
     overlay={hasOverlay ? <>
       {menu && !panel.fileAction && !panel.revisionAction && <GitMenu target={menu} panel={panel}
         connected={props.connected} close={() => setMenu(null)} patchNotice={gitPatchNotice}

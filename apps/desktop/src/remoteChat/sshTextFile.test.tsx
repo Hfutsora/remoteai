@@ -32,11 +32,11 @@ it.each([[0, 65], [0x89, 0x50, 0x4e, 0x47], [0xc0, 0xaf], [0xed, 0xa0, 0x80], [0
   expect(decodeSshText(Buffer.from(bytes).toString('base64'))).toBeUndefined();
 });
 
-it('enforces the editable byte limit for reads and for Unicode edits', () => {
-  expect(() => decodeSshText(Buffer.alloc(SSH_FILE_LIMIT + 1, 65).toString('base64')))
-    .toThrow('client.ssh.fileTooLarge');
-  expect(() => sshTextUpload('script', { text: '中'.repeat(SSH_FILE_LIMIT / 2), bom: false, newline: '\n' }))
-    .toThrow('client.ssh.fileTooLarge');
+it('decodes and encodes large text without treating the plain-text threshold as an editing limit', () => {
+  expect(decodeSshText(Buffer.alloc(SSH_FILE_LIMIT + 1, 65).toString('base64'))?.text.length)
+    .toBe(SSH_FILE_LIMIT + 1);
+  expect(sshTextUpload('script', { text: '中'.repeat(SSH_FILE_LIMIT / 2), bom: false, newline: '\n' }).size)
+    .toBeGreaterThan(SSH_FILE_LIMIT);
 });
 
 async function fixture(source = 'original') {

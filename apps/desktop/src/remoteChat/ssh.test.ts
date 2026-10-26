@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, it, vi } from 'vitest';
 import { RemoteTerminals } from './terminals';
-import { openNativeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
+import { ensureSshX11, openNativeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
 import type { TerminalEvent } from '../../../../shared/terminal/types';
 import { createGuiToolsClient } from '../../../../shared/remote-chat/guiTools';
 import { remoteTerminalApi } from '../../../../shared/remote-chat/terminalApi';
 
 vi.mock('../pages/codexGui/terminal/sshApi', () => ({
-  openNativeSsh: vi.fn(), sshFiles: vi.fn(), probeSsh: vi.fn(),
+  openNativeSsh: vi.fn(), sshFiles: vi.fn(), probeSsh: vi.fn(), ensureSshX11: vi.fn(),
 }));
 vi.mock('../pages/codexGui/terminal/api', () => ({
   terminalApi: { open: vi.fn(), write: vi.fn(), resize: vi.fn(), close: vi.fn() },
@@ -25,6 +25,8 @@ it('forwards X11 settings through the remote and Web terminal adapters', async (
   const request = { endpoint: { host: 'server.test', port: 22 }, username: 'fixture', fingerprint: 'SHA256:known',
     size: { cols: 80, rows: 24 }, x11: { display: ':1' } };
   const opened = await remoteTerminalApi(client.terminal).ssh!.open(request, '/project');
+  await remoteTerminalApi(client.terminal).ssh!.ensureX11!(request.x11);
+  expect(ensureSshX11).toHaveBeenCalledExactlyOnceWith(request.x11);
   expect(opened).toMatchObject({ ...info, projectCwd: '/project' });
   expect(openNativeSsh).toHaveBeenCalledExactlyOnceWith(request, expect.any(Function));
 });

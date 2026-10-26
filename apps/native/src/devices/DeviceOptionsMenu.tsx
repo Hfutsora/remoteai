@@ -32,7 +32,7 @@ export function DeviceOptionsMenu(props: DeviceOptionsMenuProps) {
   const authDisabled = !device.online || Boolean(switchingAuthDeviceId);
   return <BottomSheet visible title={confirmScreen ? t('client.deviceScreen.confirmTitle') : device.name}
     subtitle={confirmScreen ? device.name : undefined} onClose={onClose}
-    fullWidthContent dragFromHeaderOnly maxWidth={SHEET_READABLE_WIDTH}
+    fullWidthContent maxWidth={SHEET_READABLE_WIDTH}
     actions={confirmScreen ? [{ label: t('client.deviceScreen.turnOff'), tone: 'primary', disabled: !device.online,
       onPress: () => { onClose(); props.onScreenControl(device, true); } }] : []}>
     <SheetScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.optionsContent}>

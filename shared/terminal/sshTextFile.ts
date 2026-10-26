@@ -1,7 +1,6 @@
 import { utf8ToBytes } from '@noble/hashes/utils';
 import { fromByteArray, toByteArray } from 'base64-js';
 import { decodeChatUtf8 } from '../remote-chat/utf8';
-import { SSH_FILE_LIMIT } from './ssh';
 import type { SshUpload } from './sshTransfers';
 
 export interface SshTextContent {
@@ -13,7 +12,6 @@ export interface SshTextContent {
 /** Decode content, rather than guessing from its extension, so dotfiles and extensionless scripts also open. */
 export function decodeSshText(data: string): SshTextContent | undefined {
   const bytes = toByteArray(data);
-  if (bytes.length > SSH_FILE_LIMIT) throw new Error('client.ssh.fileTooLarge');
   // Tabs, line breaks and form feeds are valid text; other control bytes indicate binary content.
   if (bytes.some(byte => (byte < 32 && ![9, 10, 12, 13].includes(byte)) || byte === 127)) return;
   let source: string;
@@ -29,7 +27,6 @@ export function decodeSshText(data: string): SshTextContent | undefined {
 export function sshTextUpload(name: string, content: SshTextContent): SshUpload {
   const text = content.text.replace(/\r\n|\r|\n/g, content.newline);
   const bytes = utf8ToBytes(`${content.bom ? '\uFEFF' : ''}${text}`);
-  if (bytes.length > SSH_FILE_LIMIT) throw new Error('client.ssh.fileTooLarge');
   return { name, size: bytes.length,
     read: async (offset, length) => fromByteArray(bytes.subarray(offset, offset + length)) };
 }

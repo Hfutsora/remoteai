@@ -373,6 +373,7 @@ export interface ProxySessionRequest {
 }
 
 export interface ProxySessionLatencySummary {
+  estimatedCostUsd?: number | null;
   totalFirstTokenTimeMs: number;
   firstTokenRequestCount: number;
   totalFirstResponseTimeMs: number;

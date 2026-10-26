@@ -61,21 +61,22 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.setViewportSize({ width: 1440, height: 900 });
     const stored = await fixture(page, mode);
     await drop(page, page.locator('[role="tabpanel"]:visible .xterm'), [{ name: '中文.txt', content: '你好' }]);
-    await expect(page.locator('.ssh-file-list')).toContainText('中文.txt');
+    await expect(page.getByRole('tree')).toContainText('中文.txt');
     expect(stored.get('/中文.txt')?.toString()).toBe('你好');
-    await drop(page, page.locator('.ssh-files'), [
+    await drop(page, page.locator('.ssh-project-browser'), [
       { name: 'second.txt', content: 'second' }, { name: 'empty.txt', content: '' },
     ]);
-    await expect(page.locator('.ssh-file-list')).toContainText('empty.txt');
+    await expect(page.getByRole('tree')).toContainText('empty.txt');
     expect(stored.get('/second.txt')?.toString()).toBe('second');
     expect(stored.get('/empty.txt')?.length).toBe(0);
-    await drop(page, page.locator('.ssh-files'), [{ name: '中文.txt', content: 'replacement' }]);
+    await drop(page, page.locator('.ssh-project-browser'), [{ name: '中文.txt', content: 'replacement' }]);
     await expect(page.getByRole('dialog', { name: '已存在同名文件' })).toBeVisible();
     expect(stored.get('/中文.txt')?.toString()).toBe('你好');
     await page.getByRole('button', { name: /^覆\s*盖$/ }).click();
     await expect.poll(() => stored.get('/中文.txt')?.toString()).toBe('replacement');
-    await expect(page.locator('.ssh-files')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('.ssh-project-browser')).toHaveAttribute('aria-busy', 'false');
     await page.screenshot({ path: info.outputPath(`ssh-drop-${mode}.png`), animations: 'disabled' });
-    expect(await page.locator('.ssh-files').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect(await page.locator('.ssh-project-browser').evaluate(element => element.scrollWidth <= element.clientWidth))
+      .toBe(true);
   });
 }

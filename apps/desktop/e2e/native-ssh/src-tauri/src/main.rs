@@ -23,6 +23,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             fixture::fixture_config,
             gui_terminal::ssh::codex_gui_ssh_probe,
+            gui_terminal::ssh::codex_gui_ssh_ensure_x11,
             gui_terminal::ssh::codex_gui_ssh_open,
             gui_terminal::ssh::codex_gui_ssh_command,
             gui_terminal::ssh::codex_gui_ssh_files,

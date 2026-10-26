@@ -23,10 +23,11 @@ export type SshFileReply = { type: 'list'; path: string; entries: SshEntry[]; tr
 export interface SshApi {
   profiles: import('./sshProfiles').SshProfileStore;
   probe: (endpoint: SshEndpoint) => Promise<string>;
+  ensureX11?: (options: SshX11) => Promise<void>;
   open: (request: SshConnect, projectCwd: string) => Promise<TerminalInfo>;
   files: (id: string, request: SshFileAction) => Promise<SshFileReply>;
 }
-export const SSH_FILE_LIMIT = 4 * 1024 * 1024;
+export const SSH_FILE_LIMIT = 5 * 1024 * 1024;
 
 /** Keep error keys intact until rendering so open views follow language changes. */
 export const sshError = (error: unknown, fallback: string) =>

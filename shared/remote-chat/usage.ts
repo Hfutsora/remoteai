@@ -1,4 +1,4 @@
-import { defaultText } from '../localization/messages';
+import { defaultText, type MessageTranslator } from '../localization/messages';
 export interface UsageSummary {
   totalTokens: number;
   estimatedCostUsd: number;
@@ -44,7 +44,7 @@ export function formatCost(value: number) {
   return `${value.toLocaleString('en-US', { maximumFractionDigits: value > 0 && value < 0.01 ? 4 : 2 })}USD`;
 }
 
-export function usageTrailing(usage: UsageSummary | null, translate = defaultText, cost = formatCost,
+export function usageTrailing(usage: UsageSummary | null, translate: MessageTranslator = defaultText, cost = formatCost,
   options: { compactQuota?: boolean } = {}) {
   const remaining = usage?.primaryRemainingPercent;
   if (typeof remaining === 'number' && Number.isFinite(remaining)) {

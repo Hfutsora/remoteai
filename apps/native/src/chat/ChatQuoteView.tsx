@@ -35,7 +35,7 @@ export function QuoteDetails({ text, onClose }: { text: string; onClose: () => v
   const styles = useStyles();
   useLanguage();
   const source = useContext(QuoteSourceContext);
-  return <BottomSheet fullWidthContent visible title={t("client.mobile.quoteDetails")} onClose={onClose} dragFromHeaderOnly>
+  return <BottomSheet fullWidthContent visible title={t("client.mobile.quoteDetails")} onClose={onClose}>
     <SheetScrollView contentContainerStyle={quoteStyles.details}>
       <QuoteSourceContext.Provider value={source ? { ...source, onQuote: () => {
         onClose(); source.onQuote?.();

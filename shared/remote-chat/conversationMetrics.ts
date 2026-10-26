@@ -1,9 +1,11 @@
 import type { CommandMetrics } from './commandMetrics';
+import { formatCost } from './usage';
 
 export const CONVERSATION_METRICS_OPERATION = 'conversationMetrics';
 export const CONVERSATION_METRICS_REFRESH_MS = 2_000;
 
 export interface ConversationMetrics extends Partial<CommandMetrics> {
+  estimatedCostUsd?: number | null;
   /** Older remote hosts may not report first-token timing yet. */
   totalFirstTokenTimeMs?: number;
   firstTokenRequestCount?: number;
@@ -13,6 +15,11 @@ export interface ConversationMetrics extends Partial<CommandMetrics> {
 }
 
 export type ReadConversationMetrics = (threadId: string) => Promise<ConversationMetrics>;
+
+export function formatConversationCost(metrics?: ConversationMetrics | null): string {
+  const cost = metrics?.estimatedCostUsd;
+  return typeof cost === 'number' && Number.isFinite(cost) && cost >= 0 ? formatCost(cost) : '—USD';
+}
 
 /** Match the account-page average: output tokens divided by time after the first response. */
 export function formatConversationTps(metrics?: ConversationMetrics | null): string {

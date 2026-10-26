@@ -1,6 +1,6 @@
 import { remoteErrorText } from '../localization/errors';
 import { MoreHorizontal, RefreshCw } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ProjectBrowserClient } from './protocol';
 import { useProjectTree, type DirectoryState } from './useProjectTree';
 import { normalizedPath, parentPath, type BrowserHost } from './entryActions';
@@ -14,6 +14,13 @@ import { useProjectTreeSearch } from './useProjectTreeSearch';
 import { ProjectTreeSearch, ProjectTreeSearchNotice } from './ProjectTreeSearch';
 
 export type BrowserTranslate = (source: string) => string;
+export interface ProjectTreeOptions {
+  root?: string;
+  toolbar?: ReactNode;
+  showHidden?: boolean;
+  /** A host upload changes this token to refresh loaded folders without losing expansion. */
+  revision?: unknown;
+}
 
 function DirectoryNotice({ state, retry, t }: {
   state?: DirectoryState; retry: () => void; t: BrowserTranslate;
@@ -26,16 +33,23 @@ function DirectoryNotice({ state, retry, t }: {
   return null;
 }
 
-export function ProjectTree({ client, cwd, connected, selected, choose, t, host, documents }: {
+export function ProjectTree({ client, cwd, connected, selected, choose, t, host, documents, options }: {
   client: ProjectBrowserClient; cwd: string; connected: boolean; selected?: string;
   choose: (path: string) => void; t: BrowserTranslate;
   host: BrowserHost; documents: ProjectDocuments;
+  options?: ProjectTreeOptions;
 }) {
   const tree = useProjectTree(client, cwd, connected);
   const search = useProjectTreeSearch(client, cwd, connected);
   const list = useRef<HTMLDivElement>(null);
   const [revealPath, setRevealPath] = useState('');
   const actions = useTreeActions({ cwd, connected, host, documents, choose });
+  const previousRevision = useRef(options?.revision);
+  useEffect(() => {
+    if (previousRevision.current === options?.revision) return;
+    previousRevision.current = options?.revision;
+    void tree.reload(); search.refresh();
+  }, [options?.revision, tree.reload, search.refresh]);
   useEffect(() => documents.subscribeEntries(({ request, path }) => {
     search.refresh();
     const change = ['rename', 'move', 'delete'].includes(request.action)
@@ -48,10 +62,13 @@ export function ProjectTree({ client, cwd, connected, selected, choose, t, host,
       .find(row => row.dataset.path === revealPath);
     if (row) { row.focus(); row.scrollIntoView({ block: 'nearest' }); setRevealPath(''); }
   }, [revealPath, search.active, tree.rows]);
-  const rows = search.active ? search.entries.map(entry => ({ entry, depth: 0 })) : tree.rows;
+  const candidates = search.active ? search.entries.map(entry => ({ entry, depth: 0 })) : tree.rows;
+  const rows = options?.showHidden === false ? candidates.filter(({ entry }) =>
+    !entry.path.slice(cwd.replace(/\/+$/, '').length).split('/').some(part => part.startsWith('.'))) : candidates;
   const root = { path: cwd, name: cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd, directory: true };
   const rootGesture = useTreeGesture(position => actions.show({ entry: root, ...position }));
   return <nav className="pf-tree" aria-label={t("client.projectBrowser.projectFiles")}>
+    {options?.toolbar}
     <div className="pf-tree-heading"><span {...rootGesture}>{root.name}</span>
       <button type="button" aria-label={t("client.projectBrowser.projectFolderActions")} disabled={!connected || actions.busy}
         onClick={event => { const rect = event.currentTarget.getBoundingClientRect();

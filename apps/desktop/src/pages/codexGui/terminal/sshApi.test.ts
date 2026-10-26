@@ -8,6 +8,11 @@ import type { TerminalEvent } from '../../../../../../shared/terminal/types';
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn(), Channel: class { onmessage = () => {}; } }));
 afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); localStorage.clear(); });
 
+it('prepares the X server on the local SSH host without opening a connection', async () => {
+  await sshApi.ensureX11!({ display: ':2' });
+  expect(invoke).toHaveBeenCalledExactlyOnceWith('codex_gui_ssh_ensure_x11', { options: { display: ':2' } });
+});
+
 it('persists only connection metadata, never passwords or private keys', () => {
   const profile = { id: 'a', name: 'test', host: 'test', port: 22, username: 'user', auth: 'key' as const,
     password: 'secret', privateKey: 'PRIVATE KEY', passphrase: 'other-secret' };

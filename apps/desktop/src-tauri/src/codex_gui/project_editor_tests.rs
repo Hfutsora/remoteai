@@ -8,6 +8,7 @@ fn target(root: &Path, path: &str) -> Target {
     Target {
         cwd: execution_path(root),
         path: path.to_owned(),
+        chunk: None,
     }
 }
 
@@ -21,6 +22,7 @@ fn saves_utf8_and_line_endings_without_overwriting_an_external_edit() {
     assert_eq!(before.text.as_deref(), Some(original));
     let updated = "\u{feff}const 你好 = 2;\r\n";
     let saved = save(Save {
+        upload: None,
         target: target(root.path(), "sample.ts"),
         text: updated.into(),
         revision: before.revision.clone(),
@@ -31,6 +33,7 @@ fn saves_utf8_and_line_endings_without_overwriting_an_external_edit() {
     fs::write(&path, "external").unwrap();
     assert!(matches!(
         save(Save {
+            upload: None,
             target: target(root.path(), "sample.ts"),
             text: "stale".into(),
             revision: saved.revision,
@@ -54,6 +57,7 @@ fn rejects_paths_outside_the_project_and_non_files() {
     assert!(resolve(&target(root.path(), "..")).is_err());
     assert!(resolve(&target(root.path(), ".")).is_err());
     assert!(resolve(&Target {
+        chunk: None,
         cwd: ".".into(),
         path: "note.txt".into()
     })
@@ -63,29 +67,19 @@ fn rejects_paths_outside_the_project_and_non_files() {
 }
 
 #[test]
-fn binary_large_and_read_only_files_cannot_be_written() {
+fn binary_and_read_only_files_cannot_be_written() {
     let root = project();
     let binary = root.path().join("binary.bin");
     fs::write(&binary, [0, 1, 2, 255]).unwrap();
     let before = snapshot(&binary).unwrap();
     assert_eq!(before.kind, "binary");
     assert!(save(Save {
+        upload: None,
         target: target(root.path(), "binary.bin"),
         text: "x".into(),
         revision: before.revision
     })
     .is_err());
-    let large = root.path().join("large.txt");
-    fs::write(&large, vec![b'a'; MAX_BYTES + 1]).unwrap();
-    assert_eq!(snapshot(&large).unwrap().kind, "large");
-    assert!(matches!(
-        save(Save {
-            target: target(root.path(), "large.txt"),
-            text: "b".repeat(MAX_BYTES + 1),
-            revision: String::new()
-        }),
-        Err(GuiError::ProjectFileTooLarge)
-    ));
     let readonly = root.path().join("readonly.txt");
     fs::write(&readonly, "keep").unwrap();
     let original = fs::metadata(&readonly).unwrap().permissions();
@@ -95,6 +89,7 @@ fn binary_large_and_read_only_files_cannot_be_written() {
     let before = snapshot(&readonly).unwrap();
     assert!(before.read_only);
     assert!(save(Save {
+        upload: None,
         target: target(root.path(), "readonly.txt"),
         text: "x".into(),
         revision: before.revision
@@ -139,6 +134,7 @@ fn simultaneous_saves_from_the_same_revision_have_one_winner() {
         .into_iter()
         .map(|text| {
             let request = Save {
+                upload: None,
                 target: target(root.path(), "note.txt"),
                 text: text.into(),
                 revision: revision.clone(),

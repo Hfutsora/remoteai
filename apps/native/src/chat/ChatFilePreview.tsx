@@ -60,7 +60,7 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
     });
     return () => { observer.abort(); };
   }, [threadId, ready, load, file.path, attempt, binary]);
-  return <BottomSheet fullWidthContent visible tall title={t("client.chat.files.39932f")} subtitle={file.path} onClose={close} dragFromHeaderOnly
+  return <BottomSheet fullWidthContent visible tall title={t("client.chat.files.39932f")} subtitle={file.path} onClose={close}
     actions={[
       ...(download.share ? [{ label: t("client.downloads.shareFile"), onPress: download.share,
         loading: download.sharing, disabled: download.busy }] : []),

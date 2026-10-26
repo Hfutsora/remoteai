@@ -4,9 +4,10 @@ import { Popover } from 'antd';
 import { Check, Hand, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { ACCESS_OPTIONS } from '../../../../shared/remote-chat/composer';
 import { t, useLanguage } from '../i18n';
-import { ChatUsage } from './ChatUsage';
+import { UsageAmounts } from '../../../../shared/chat/UsageAmounts';
 import { ComposerContext } from './ComposerContext';
 import type { ComposerProps } from './composerProps';
+import type { ConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
 
 const ACCESS_ICONS = { 'read-only': Hand, 'workspace-write': ShieldCheck, 'danger-full-access': ShieldAlert };
 
@@ -59,13 +60,17 @@ export function ComposerAccess({ selection, settingsBusy, updateSettings, before
   </Popover>;
 }
 
-export function ComposerDesktopStatus({ props, beforeOpen }: {
+export function ComposerDesktopStatus({ props, beforeOpen, metrics }: {
   props: ComposerProps; beforeOpen: () => void;
+  metrics: ConversationMetrics | null;
 }) {
   useLanguage();
   return <div className="chat-composer-status">
-    <ChatUsage read={props.readUsage} active={props.active} ready={props.ready} inline
-      contextControl={<ComposerContext tokenUsage={props.tokenUsage} threadId={props.threadId}
-        contextSettings={props.contextSettings} ready={props.ready} beforeOpen={beforeOpen} />} />
+    <div className="chat-composer-usage" role="group" aria-label={t('client.chatQuota.currentUsage')}>
+      <ComposerContext tokenUsage={props.tokenUsage} threadId={props.threadId}
+        contextSettings={props.contextSettings} ready={props.ready} beforeOpen={beforeOpen} />
+      <UsageAmounts tokens={props.tokenUsage?.total.totalTokens} cost={metrics?.estimatedCostUsd}
+        scope="current" translate={t} />
+    </div>
   </div>;
 }

@@ -1,5 +1,5 @@
 import type { TerminalRead, TerminalInfo, TerminalSize } from '../terminal/types';
-import type { SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../terminal/ssh';
+import type { SshApi, SshConnect, SshEndpoint, SshFileAction, SshFileReply, SshX11 } from '../terminal/ssh';
 import type { SshProfileStore } from '../terminal/sshProfiles';
 import { createProjectBrowserClient } from '../project-browser/protocol';
 import { projectDownloads } from '../project-browser/downloads';
@@ -34,6 +34,7 @@ export const GUI_TOOL_OPERATIONS = new Set([
   'guiTerminalList', 'guiTerminalOpen', 'guiTerminalRead', 'guiTerminalWrite', 'guiTerminalResize', 'guiTerminalClose',
   'guiTerminalLink',
   'guiTerminalSshProbe', 'guiTerminalSshOpen', 'guiTerminalSshFiles',
+  'guiTerminalSshEnsureX11',
   'guiTerminalSshProfiles', 'guiTerminalSshProfileSave', 'guiTerminalSshProfileRemove',
   'guiGitChanges', 'guiGitDiff', 'guiGitHistory', 'guiGitCommit', 'guiGitCommitFiles',
   'guiGitRepository', 'guiGitAction', 'guiGitFileAction', 'guiGitWorkspace', 'guiGitRevision',
@@ -48,6 +49,15 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
   diagnostic?: import('./diagnostics').ConnectionDiagnostic,
   nativeMedia?: import('../remote-desktop/nativeMedia').NativeMediaFactory,
   stream?: import('../port-mapping/socket').MappingSocketFactory) {
+  const ssh: SshApi = {
+    profiles: unavailableProfiles,
+    probe: (endpoint: SshEndpoint) => request<string>({ operation: 'guiTerminalSshProbe', endpoint }),
+    ensureX11: (options: SshX11) => request<void>({ operation: 'guiTerminalSshEnsureX11', options }),
+    open: (input: SshConnect, cwd: string) =>
+      request<TerminalInfo>({ operation: 'guiTerminalSshOpen', request: input, cwd }),
+    files: (id: string, input: SshFileAction) =>
+      request<SshFileReply>({ operation: 'guiTerminalSshFiles', id, request: input }),
+  };
   return {
     projectBrowser: createProjectBrowserClient(request, projectDownloads(request)),
     files: createGuiFilesClient(request, stream),
@@ -83,14 +93,7 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
       fileAction: (input: GitFileActionRequest) => request<void>({ ...input, operation: 'guiGitFileAction' }),
     },
     terminal: {
-      ssh: {
-        profiles: unavailableProfiles,
-        probe: (endpoint: SshEndpoint) => request<string>({ operation: 'guiTerminalSshProbe', endpoint }),
-        open: (input: SshConnect, cwd: string) =>
-          request<TerminalInfo>({ operation: 'guiTerminalSshOpen', request: input, cwd }),
-        files: (id: string, input: SshFileAction) =>
-          request<SshFileReply>({ operation: 'guiTerminalSshFiles', id, request: input }),
-      },
+      ssh,
       link: (id: string, input: TerminalLinkRequest) =>
         request<TerminalLinkReply>({ operation: 'guiTerminalLink', id, request: input }),
       list: (cwd: string) => request<TerminalInfo[]>({ operation: 'guiTerminalList', cwd }),

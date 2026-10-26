@@ -32,15 +32,18 @@ beforeEach(() => {
     totalOutputTokens: 300, totalOutputTimeMs: 2_000, outputRequestCount: 1,
     totalFirstTokenTimeMs: 2_500, firstTokenRequestCount: 2,
     successfulCommandCount: 3, completedCommandCount: 4,
+    estimatedCostUsd: 1.23,
   });
 });
 afterEach(() => { vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
-it('shows TPS and TTFT to the right of current conversation tokens in mobile settings', () => {
+it('shows current tokens and USD cost with performance on the final row', () => {
   const readConversationMetrics = vi.fn();
-  const content = text(ChatUsage({ read: vi.fn(), active: true, ready: true, readConversationMetrics,
-    threadId: 'mobile-thread', tokenUsage: { total: { totalTokens: 2_500 }, last: { totalTokens: 500 } } }));
-  expect(content).toContain('当前对话 2.50K Token · 75.0% TSR · 150.0 TPS · 1.25 TTFT');
+  const view = ChatUsage({ read: vi.fn(), active: true, ready: true, readConversationMetrics,
+    threadId: 'mobile-thread', tokenUsage: { total: { totalTokens: 2_500 }, last: { totalTokens: 500 } } });
+  const rows = Children.toArray(view.props.children);
+  expect(text(view)).toContain('当前 2.50K Token · 1.23USD');
+  expect(text(rows.at(-1))).toBe('75.0% TSR · 150.0 TPS · 1.25 TTFT');
   expect(useConversationMetrics).toHaveBeenCalledWith(readConversationMetrics, 'mobile-thread', true);
 });
 
@@ -49,7 +52,7 @@ it('shows a placeholder and disables polling while disconnected or settings are 
   for (const state of [{ active: false, ready: true }, { active: true, ready: false }]) {
     const readConversationMetrics = vi.fn();
     expect(text(ChatUsage({ read: vi.fn(), readConversationMetrics, threadId: 'mobile-thread', ...state })))
-      .toContain('当前对话 — Token · — TSR · — TPS · — TTFT');
+      .toContain('当前 — Token · —USD');
     expect(useConversationMetrics).toHaveBeenLastCalledWith(readConversationMetrics, 'mobile-thread', false);
   }
 });

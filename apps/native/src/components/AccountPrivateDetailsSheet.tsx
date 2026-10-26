@@ -158,7 +158,7 @@ export function AccountPrivateDetailsSheet({ account, session, syncing, onClose,
   };
 
   return <>
-    <BottomSheet fullWidthContent dragFromHeaderOnly visible={Boolean(account) && !scannerOpen}
+    <BottomSheet fullWidthContent visible={Boolean(account) && !scannerOpen}
       tall title={t("client.accounts.editAccountInformation")} subtitle={account?.email}
       onClose={onClose} dismissible={!saving} actions={[
         { label: t("client.accounts.cancel"), onPress: onClose, disabled: saving },

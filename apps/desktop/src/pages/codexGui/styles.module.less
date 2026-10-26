@@ -215,7 +215,8 @@
 .modelControls { margin-left: auto; display: flex; gap: 8px; align-items: center;
   flex: 1 1 510px; justify-content: flex-end; min-width: 0; font-size: calc(var(--gui-font-size, 14px) - 2px);
   line-height: max(20px, 1.4em); }
-.composerHint { display: flex; justify-content: space-between; font-size: calc(var(--gui-font-size, 14px) - 4px);
+.composerHint { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between;
+  font-size: calc(var(--gui-font-size, 14px) - 4px);
   color: var(--gui-muted); padding: 7px 5px 0; }
 .attachments { padding: 3px 8px 8px; display: flex; flex-wrap: wrap; gap: 5px;
   :global(.ant-tag) { max-width: 240px; white-space: normal; overflow-wrap: anywhere; } }

@@ -135,13 +135,13 @@ async fn list(sftp: &SftpSession, path: &str) -> Result<FileReply> {
         }
         let target = format!("{}/{}", path.trim_end_matches('/'), name);
         let metadata = entry.metadata();
-        let directory = if metadata.is_symlink() {
-            sftp.metadata(&target)
-                .await
-                .is_ok_and(|metadata| metadata.is_dir())
+        let metadata = if metadata.is_symlink() {
+            // Range reads need the target's size, not the length of a symbolic link's path.
+            sftp.metadata(&target).await.unwrap_or(metadata)
         } else {
-            metadata.is_dir()
+            metadata
         };
+        let directory = metadata.is_dir();
         entries.push(Entry {
             name,
             path: target,

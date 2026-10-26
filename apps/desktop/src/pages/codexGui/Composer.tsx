@@ -24,6 +24,9 @@ import { IMAGE_TYPES, useComposerDraft } from "./useComposerDraft";
 import { ModelPicker } from "./ModelPicker";
 import { useGuiRequestSpeed } from "./useGuiRequestSpeed";
 import { UsageStatus } from "./UsageStatus";
+import { useUsageStatus } from './useUsageStatus';
+import { useConversationMetrics } from '../../../../../shared/remote-chat/client/useConversationMetrics';
+import { loadConversationMetrics } from '../../api/conversationMetrics';
 import { ConversationTokenStatus } from './ConversationTokenStatus';
 import { ProjectPicker } from "./ProjectPicker";
 import { GuiToolbox } from "./GuiToolbox";
@@ -54,6 +57,8 @@ export const Composer = forwardRef<ComposerHandle, {
   const [dictating, setDictating] = useState(false);
   const goalMode = useGoalMode(state.selected, Boolean(state.goalBusy));
   const requestSpeed = useGuiRequestSpeed(active);
+  const usageSnapshot = useUsageStatus(active);
+  const metrics = useConversationMetrics(loadConversationMetrics, state.selected, active && state.connection === 'ready');
   const workspaceBusy = Boolean(state.workspaceBusy);
   const { draft, reading: draftReading, editContent, appendDictation, removeImage, editImage, addImages, paste, pasteKeyDown,
     send: sendDraft, addAttachments, removeAttachment, addQuote, removeQuote, clearQuotes, editQueued }
@@ -157,7 +162,8 @@ export const Composer = forwardRef<ComposerHandle, {
                   goalMode.exit(); skillInput.current?.focus();
                 }}><X size={13} /></button>
             </div>}
-            <UsageStatus active={active} threadId={state.selected} tokenUsage={current?.tokenUsage} />
+            <UsageStatus active={active} threadId={state.selected} tokenUsage={current?.tokenUsage}
+              tokens={current?.tokens} metrics={metrics} />
           </div>
           <ModelPicker models={state.models} model={state.settings.model} effort={state.settings.effort}
             speed={requestSpeed}
@@ -176,8 +182,8 @@ export const Composer = forwardRef<ComposerHandle, {
       </div>
     </div>
     <div className={styles.composerHint}><span>Codex{cliVersion ? ` ${cliVersion}` : ''}</span>
-      <ConversationTokenStatus threadId={state.selected} tokens={current?.tokens ?? 0}
-        turns={current?.turns} active={active && state.connection === 'ready'} /></div>
+      <ConversationTokenStatus threadId={state.selected} metrics={metrics}
+        turns={current?.turns} active={active && state.connection === 'ready'} usage={usageSnapshot.usage} /></div>
     {dialog === "files" && <ComposerFilesDialog onAdd={addAttachments} onImages={() => fileInput.current?.click()}
       onClose={() => setDialog(null)} onError={controller.report} />}
     {dialog === "goal" && <GoalDialog state={state} controller={controller} onClose={() => setDialog(null)} />}

@@ -34,8 +34,6 @@ pub(super) enum GuiError {
     ProjectFileConflict,
     #[error("未能保存文件，请确认文件可写后重试。")]
     ProjectFileWrite,
-    #[error("文件超过 2 MB，暂不支持在这里编辑。")]
-    ProjectFileTooLarge,
     #[error(transparent)]
     ProjectEntry(super::project_entries::Error),
     #[error("暂时无法读取文件夹，请确认文件夹仍可访问。")]

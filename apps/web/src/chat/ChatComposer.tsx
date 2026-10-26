@@ -16,6 +16,8 @@ import { ComposerSpeedIndicator } from './ComposerSpeedIndicator';
 import { ChatSettings } from './ChatSettings';
 import { ModelRefreshButton } from './ModelRefreshButton';
 import { ComposerFooter } from './ComposerFooter';
+import { useVisibleChatUsage } from './useVisibleChatUsage';
+import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 import { ComposerGoal } from './ComposerGoal';
 import { ChatAttachmentPreviews } from './ChatAttachments';
 import { pickChatImages } from './pickChatImages';
@@ -35,6 +37,9 @@ import './composerDesktop.css';
 export function ChatComposer(props: ComposerProps) {
   useLanguage();
   const desktop = useDesktopLayout();
+  const usageSnapshot = useVisibleChatUsage(props.readUsage, desktop && props.active && props.ready);
+  const metrics = useConversationMetrics(props.readConversationMetrics, props.threadId,
+    desktop && props.active && props.ready && usageSnapshot.visible);
   const { models, selection, settingsBusy, settingsError, updateSettings, readUsage, tokenUsage, queue,
     uploadProgress, threadId, active, ready, sending, goal, goalBusy, catalog, cwd, loadFiles, loadCatalog } = props;
   const state = useComposerState(props);
@@ -185,7 +190,7 @@ export function ChatComposer(props: ComposerProps) {
             settingsBusy={settingsBusy} updateSettings={updateSettings} beforeOpen={closeMenus} />}
           <div className="chat-composer-trailing">
             {desktop && <ComposerDesktopStatus key={`status:${threadId}:${cwd}:${active}`} props={props}
-              beforeOpen={closeMenus} />}
+              beforeOpen={closeMenus} metrics={metrics} />}
             {desktop ? <ComposerModelPicker key={`model:${threadId}:${cwd}:${active}`} models={models}
               ready={ready} refreshModels={props.refreshModels}
               selection={selection} updateSettings={updateSettings} settingsBusy={settingsBusy} beforeOpen={closeMenus} />
@@ -206,8 +211,8 @@ export function ChatComposer(props: ComposerProps) {
       </div>
     </form>
     <ComposerFooter desktop={desktop} cliVersion={props.cliVersion}
-      connectionInfo={props.connectionInfo} tokenUsage={tokenUsage}
-      readConversationMetrics={props.readConversationMetrics} threadId={threadId} active={active && ready} />
+      usage={usageSnapshot.usage} metrics={metrics}
+      connectionInfo={props.connectionInfo} />
     {active && !busy && editing && <ChatImageEditor key={editing.id} image={editing}
       save={url => draft.replaceImage(editing, url)} close={() => setEditingId(null)} />}
     {projectFiles && <ComposerProjectFiles imagesOnly={projectFiles === 'photos'} threadId={threadId} cwd={cwd}

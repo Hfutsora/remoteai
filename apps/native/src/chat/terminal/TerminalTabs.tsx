@@ -13,6 +13,7 @@ import { SshFilesSheet } from './SshFilesSheet';
 import { TerminalTabItem } from './TerminalTabItem';
 import { useTabOverflow } from './useTabOverflow';
 import { BottomSheet } from '../../components/BottomSheet';
+import { SheetGestureScrollView } from '../../components/SheetScrollGesture';
 
 export function TerminalTabs({ panel, client, cwd, connected, active }: {
   panel: ReturnType<typeof useRemoteTerminalLauncher>; client: GuiToolsClient['terminal'];
@@ -68,12 +69,12 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
     </View>
     {more && active && <BottomSheet visible title={t('client.terminal.moreTabs')} maxWidth={400}
       onClose={() => setMore(false)}>
-      <ScrollView>{hidden.map(tab => <TerminalTabItem key={tab.id} menu
+      <SheetGestureScrollView>{hidden.map(tab => <TerminalTabItem key={tab.id} menu
         label={tab.session.ssh ? sshLabel(tab.session.ssh)
           : t('client.mobile.terminal', { value1: panel.tabs.indexOf(tab) + 1 })}
         index={panel.tabs.indexOf(tab)} selected={tab.id === panel.selected}
         choose={() => { panel.select(tab.id); setMore(false); }}
-        close={() => panel.remove(tab.id)} />)}</ScrollView>
+        close={() => panel.remove(tab.id)} />)}</SheetGestureScrollView>
     </BottomSheet>}
     {tool === 'ssh' && active && <SshConnectionMenu api={client.ssh} cwd={cwd} connected={panel.adopt}
       dispose={client.close} close={() => setTool(undefined)} />}

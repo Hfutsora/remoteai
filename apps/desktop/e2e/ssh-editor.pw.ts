@@ -51,7 +51,8 @@ async function checkLocales(page: Page, info: TestInfo) {
   await page.screenshot({ path: info.outputPath('ssh-editor-dark.png'), animations: 'disabled' });
 }
 
-for (const scenario of ['local', 'remote', 'web', 'web-phone']) {
+// PC uses the shared tree/editor workspace, covered by ssh-project-browser.pw.ts.
+for (const scenario of ['web-phone']) {
   test(`${scenario}: tap navigation, long press actions and editable text files`, async ({ page }, info) => {
     test.setTimeout(60_000);
     const fixture = await sshEditorFixture(page);

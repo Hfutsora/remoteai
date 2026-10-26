@@ -48,7 +48,7 @@ function Payload({ title, value }: { title: string; value: unknown }) {
     <Pressable accessibilityRole="button" accessibilityLabel={t("client.mobile.view.9c1830", { value1: title })} onPress={() => setOpen(true)}>
       <Text style={styles.subtitle}>{title} ›</Text>
     </Pressable>
-    <BottomSheet fullWidthContent visible={open} tall title={title} onClose={() => setOpen(false)} dragFromHeaderOnly>
+    <BottomSheet fullWidthContent visible={open} tall title={title} onClose={() => setOpen(false)}>
       <SheetScrollView style={{ flexShrink: 1 }}>
         <ChatCodeBlock text={serialized(value)} label={title} copyLabel={t("client.accounts.copy", { value1: title })} />
       </SheetScrollView>

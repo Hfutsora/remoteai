@@ -3,13 +3,17 @@ import { CONVERSATION_TSR_DESCRIPTION, formatConversationTsr } from '../../../..
 import { t, useLanguage } from '../i18n';
 import { useConversationMetrics } from '../../../../shared/remote-chat/client/useConversationMetrics';
 import { CONVERSATION_TPS_DESCRIPTION, CONVERSATION_TTFT_DESCRIPTION, formatConversationTps, formatConversationTtft,
-  type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
+  type ConversationMetrics, type ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
 
 export function ConversationPerformance({ read, threadId, active }: {
   read: ReadConversationMetrics; threadId: string | null; active: boolean;
 }) {
-  useLanguage();
   const metrics = useConversationMetrics(read, threadId, active);
+  return <ConversationPerformanceValues metrics={metrics} />;
+}
+
+export function ConversationPerformanceValues({ metrics }: { metrics: ConversationMetrics | null }) {
+  useLanguage();
   // Nested spans inherit ChatUsage's text metrics; keep each value and abbreviation on the same line.
   const success = `${formatConversationTsr(metrics)}\u00a0TSR`;
   const speed = `${formatConversationTps(metrics)}\u00a0TPS`;

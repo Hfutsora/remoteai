@@ -1,6 +1,7 @@
+import { SheetGestureScrollView as ScrollView } from '../components/SheetScrollGesture';
 import { displayError, t, useLanguage } from '../i18n';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { BottomSheet } from '../components/BottomSheet';
 import { fetchUserProfile } from '../api/client';
 import type { AuthSession } from '../types';
@@ -31,7 +32,7 @@ export function DesktopVersionContent({ update, onClose }: {
     setConfirmation(null);
   };
   return <BottomSheet visible title={confirmation ? t("client.settings.installDesktopUpdate") : t("client.settings.desktopVersion")} onClose={onClose}
-    dragFromHeaderOnly actions={confirmation ? [
+    actions={confirmation ? [
       { label: t("client.settings.notNow"), onPress: () => setConfirmation(null) },
       { label: t("client.settings.installAndRestart"), tone: 'primary', disabled: !canConfirm, onPress: install },
     ] : [

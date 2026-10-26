@@ -78,7 +78,7 @@ function QuestionCard({ item, disabled, error, answer, onCancel }: Omit<Props, '
       <Ionicons name="chevron-forward" size={15} color={color(palette.muted, 'muted')} />
     </Pressable>
     <BottomSheet fullWidthContent visible={open} tall title={t("client.chat.moreInformationNeeded")} onClose={() => setOpen(false)}
-      dismissible={!busy} dragFromHeaderOnly actions={[
+      dismissible={!busy} actions={[
         { label: t("client.downloads.cancelAnswer"), disabled: busy, onPress: cancel },
         { label: t("client.chat.submitAnswer"), tone: 'primary', loading: busy,
           disabled: disabled || answers.some((value) => !value.trim()), onPress: submit },

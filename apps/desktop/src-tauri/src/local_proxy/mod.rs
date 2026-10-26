@@ -52,6 +52,7 @@ mod quota_sse;
 mod request_error;
 pub(crate) mod response_header_timeout;
 mod responses_lite;
+mod session_cost;
 pub(crate) mod session_metrics;
 mod session_titles;
 pub(crate) mod sse_idle_timeout;

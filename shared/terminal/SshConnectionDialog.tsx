@@ -107,7 +107,8 @@ export function SshConnectionDialog({ api, initial, manage = false, projectCwd, 
                 icon={<ArrowUpRight size={16} />}>
                 {t(trust ? 'client.ssh.trustAndConnect' : 'client.ssh.connect')}</Button>
               <Button className="ssh-connect" type="primary" htmlType="submit"
-                loading={action === 'save'} icon={<Save size={16} />}>{t('client.ssh.saveSettings')}</Button>
+                loading={action === 'save'} icon={<Save size={16} />}>
+                {t(connection.preparingX11 ? 'client.ssh.x11Starting' : 'client.ssh.saveSettings')}</Button>
             </>}
           </div>
         </div>

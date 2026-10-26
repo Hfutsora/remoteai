@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
+import { closeChatSettings } from './chat-settings';
 import { openChatList, connect, fixtureUrl, login, navigate, operationCount, screenshot, send, settled, state }
   from './chat-helpers';
 
@@ -213,7 +214,7 @@ test('changes context capacity and opens profile, account picker and token summa
     await page.getByRole('button', { name: '查看上下文用量' }).click();
     await expect(page.getByRole('dialog', { name: '背景信息窗口' })).toContainText('对话设置：400K Token');
     await page.keyboard.press('Escape');
-  } else await closeSheet(page);
+  } else await closeChatSettings(page);
   await openChatList(page);
   const accountMenu = page.getByRole('button', { name: '打开头像菜单', exact: true });
   await expect(accountMenu).toHaveText('演示');

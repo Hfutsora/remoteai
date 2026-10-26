@@ -1,6 +1,7 @@
+import { SheetGestureScrollView as ScrollView } from '../components/SheetScrollGesture';
 import { t, useLanguage } from '../i18n';
 import { useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { Text, TextInput } from 'react-native';
 import { changePassword } from '../api/client';
 import { Toast } from '../components/AppToast';
 import { BottomSheet } from '../components/BottomSheet';

@@ -27,7 +27,7 @@ export function ChatConnectionHealth({ state, device, reconnect, close }: {
   const health = connectionHealth(state, device);
   const tone = healthTones(color)[health.status];
   return <BottomSheet visible title={t("client.chatReliability.connectionCheck")} subtitle={t("client.chatReliability.checkTheConnectionBetweenThisDeviceAndYourComputer")}
-    onClose={close} maxWidth={400} fullWidthContent dragFromHeaderOnly>
+    onClose={close} maxWidth={400} fullWidthContent>
     <SheetScrollView contentContainerStyle={css.content}>
       <View style={[css.summary, { backgroundColor: tone.background }]} accessibilityLiveRegion="polite">
         <View style={[css.summaryIcon, { backgroundColor: tone.color }]}>

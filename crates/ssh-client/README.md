@@ -7,7 +7,11 @@ upload, download, file/folder creation, rename, and confirmed recursive deletion
 
 Optional X11 forwarding displays graphical applications on the PC that owns the
 SSH connection, including when the terminal is viewed through remote mode or Web.
-That PC must have a running X server and the SSH server must permit X11 forwarding.
+Saving a profile with X11 enabled prepares that PC's X server before saving. Testing
+and connecting also prepare it. Windows bundles VcXsrv and starts it when needed;
+macOS starts an installed XQuartz. Linux uses the login session's existing X server.
+The SSH server must permit X11 forwarding. Existing displays are reused only after
+a bounded X11 handshake; startup is serialized across local and remote callers.
 The display defaults to the host's `DISPLAY` environment variable, then `:0`.
 Explicit displays accept local Unix sockets (`:0`, `unix:0`) or loopback TCP
 (`localhost:0`, `127.0.0.1:0`, `[::1]:0`), with an optional screen suffix.
@@ -17,7 +21,10 @@ The host reads `XAUTHORITY` or its home `.Xauthority`; only a random session coo
 is sent to the SSH server. Incoming channels must present that cookie before any
 bytes reach the X server. Up to 32 X11 channels can run per SSH session, and closing
 the terminal closes them. This is trusted X11 access, so enable it only for trusted
-SSH servers and applications. No X server is bundled.
+SSH servers and applications. Managed VcXsrv uses a separate per-user authority file
+and keeps access control enabled. Its cookie and process paths never cross IPC or
+cloud synchronization. See the desktop `resources/x-server/NOTICE.md` for packaging,
+the pinned upstream release, corresponding source and platform support.
 
 Connections are limited to eight. Uploads use 256 KiB chunks with progress and cancellation;
 there is no total upload size cap. Temporary files belong to their SSH session and are removed
@@ -25,7 +32,7 @@ on cancellation or session close. Inactive uploads are also pruned on subsequent
 Existing destinations require an explicit overwrite or numbered-name choice. SFTP v3 rename
 protects numbered uploads from concurrent name collisions; overwrite retains the previous file
 until the complete upload can be published and attempts rollback if publication fails.
-The legacy whole-file download API remains limited to 4 MiB. Bounded range reads are also available.
+The legacy whole-file download API remains limited to 5 MiB. Bounded range reads are also available.
 Profiles retain only connection metadata and the accepted host fingerprint;
 passwords, private keys and passphrases are never persisted. SSH agents, jump
 hosts, general-purpose tunnels, recursive uploads and remote editing are outside this version.

@@ -50,6 +50,7 @@ export function useTreeActions(options: {
       setPrompt({ entry, action: action as TreePrompt['action'] }); return;
     }
     if (action === 'copy' || action === 'cut') {
+      if (options.host.entryActions && !options.host.entryActions.includes(action === 'cut' ? 'move' : 'copy')) return;
       setClipboard({ entry, cut: action === 'cut' });
       setMessage(action === 'cut' ? '已剪切，请到目标文件夹粘贴。' : '已复制，请到目标文件夹粘贴。'); return;
     }

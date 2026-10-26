@@ -18,7 +18,7 @@ export function ChatThreadActions({ actions }: { actions: ThreadActionsModel }) 
   const titles = { menu: t("client.mobile.actions", { value1: actions.target.title }), rename: t("client.threadActions.renameChat"), delete: t("client.threadActions.deleteThisChat") };
   const title = titles[view];
   const hint = reason(view === 'menu' ? archive : view);
-  return <BottomSheet visible title={title} truncateTitle maxWidth={400} dismissible={!busy} dragFromHeaderOnly
+  return <BottomSheet visible title={title} truncateTitle maxWidth={400} dismissible={!busy}
     onClose={actions.close} onBack={view !== 'menu' && !busy ? () => actions.changeView('menu') : undefined}
     actions={view === 'menu' ? [] : [
       { label: t("client.accounts.cancel"), onPress: actions.close, disabled: busy },

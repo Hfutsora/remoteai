@@ -1,5 +1,6 @@
+import { SheetGestureScrollView as ScrollView } from '../../components/SheetScrollGesture';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import type { SshApi } from '../../../../../shared/terminal/ssh';
 import { sshLabel, type SshProfile } from '../../../../../shared/terminal/sshProfiles';
 import type { TerminalInfo } from '../../../../../shared/terminal/types';
@@ -25,7 +26,7 @@ export function SshConnectionMenu({ api, cwd, connected, dispose, close }: {
     connected={connected} dispose={dispose} close={close} />;
 
   return <BottomSheet visible title={t('client.ssh.savedConnections')} onClose={close}
-    maxWidth={400} dragFromHeaderOnly>
+    maxWidth={400}>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
       <View style={styles.row}>
         <SshButton label={t('client.ssh.new')} onPress={() => setDialog({})} />

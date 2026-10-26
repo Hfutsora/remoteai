@@ -7,6 +7,7 @@ import { ChatUsage } from './ChatUsage';
 import { ChatContextSettings } from './ChatContextSettings';
 import { ChatProfileMenu, type ChatConnectionProps } from './ChatProfileMenu';
 import { ModelRefreshButton } from './ModelRefreshButton';
+import { ChatSettingSegments } from './ChatSettingSegments';
 import type { ContextSettingsApi } from '../../../../shared/remote-chat/contextSettings';
 import type { ReadUsage } from '../../../../shared/remote-chat/usage';
 import type { ReadConversationMetrics } from '../../../../shared/remote-chat/conversationMetrics';
@@ -39,15 +40,22 @@ export function ChatSettings({ models, selection, saving, ready, error, updateSe
   const [field, setField] = useState<SettingField | null>(null);
   const [contextOpen, setContextOpen] = useState(false);
   const notice = settingsNotice({ saving, ready, error });
+  const selectInline = (field: SettingField, value: string) => {
+    if (value !== selection[field] || error) void updateSettings({ [field]: value });
+  };
   const choose = async (value: string) => {
     if (!field) return;
     if (value !== selection[field] || error) await updateSettings({ [field]: value });
     setField((current) => current === field ? null : current);
   };
-  return <AdaptiveSheet open title={t("client.chat.chatSettings.1e06eb")} width={400} onClose={onClose}>
+  return <AdaptiveSheet open hideMobileHeader title={t("client.chat.chatSettings.1e06eb")} width={400} onClose={onClose}>
     <div className="chat-settings" aria-hidden={field !== null || contextOpen}>
       <ChatProfileMenu {...connection} variant="settings" ready={ready} />
-      {visibleSettingsFields(selection).map((entry) => <button key={entry.field} type="button"
+      {visibleSettingsFields(selection).map((entry) => entry.field !== 'model'
+        ? <ChatSettingSegments key={entry.field} label={displayText(entry.label)} value={selection[entry.field] ?? ''}
+          options={settingOptions(entry.field, models, selection)} onChange={value => selectInline(entry.field, value)}
+          inactive={field !== null || contextOpen} />
+        : <button key={entry.field} type="button"
         className="chat-setting-entry"
         aria-label={t("client.chat.set", { value1: displayText(entry.label) })} onClick={() => setField(entry.field)} tabIndex={field ? -1 : 0}>
         <strong>{displayText(entry.label)}</strong><span>
