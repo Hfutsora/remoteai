@@ -217,9 +217,14 @@ test('changes context capacity and opens profile, account picker and token summa
   } else await closeChatSettings(page);
   await openChatList(page);
   const accountMenu = page.getByRole('button', { name: '打开头像菜单', exact: true });
-  await expect(accountMenu).toHaveText('演示');
-  await expect(accountMenu.locator('svg')).toHaveCount(0);
-  expect((await page.locator('.chat-drawer-footer:visible').boundingBox())!.height).toBeLessThanOrEqual(70);
+  if (desktop) {
+    await expect(accountMenu).toContainText('演示账户一');
+    await expect(accountMenu.getByRole('progressbar', { name: '主用量剩余' })).toHaveAttribute('aria-valuenow', '28');
+  } else {
+    await expect(accountMenu).toHaveText('演示');
+    await expect(accountMenu.locator('svg')).toHaveCount(0);
+    expect((await page.locator('.chat-drawer-footer:visible').boundingBox())!.height).toBeLessThanOrEqual(70);
+  }
   await screenshot(page, info, 'compact-account-footer');
   await accountMenu.click();
   await page.getByRole('button', { name: '切换账户', exact: true }).click();
