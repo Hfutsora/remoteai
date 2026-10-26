@@ -1,3 +1,4 @@
+import { testBrowserChannel, testBrowserLaunchOptions } from '../../scripts/test-browser.mjs';
 import { defineConfig } from '@playwright/test';
 
 const fixturePort = process.env.CHAT_TEST_API_PORT ?? '1490';
@@ -21,7 +22,9 @@ export default defineConfig({
   workers: 1, timeout: 150_000,
   outputDir: '../../.codex-tmp/h5-chat-playwright',
   reporter: [['list'], ['html', { outputFolder: '../../.codex-tmp/h5-chat-report', open: 'never' }]],
-  use: { baseURL: webUrl, channel: process.env.CHAT_TEST_BROWSER ?? 'msedge',
+  use: {
+    launchOptions: testBrowserLaunchOptions(),
+    baseURL: webUrl, channel: testBrowserChannel(process.env.CHAT_TEST_BROWSER),
     locale: 'zh-CN', headless: true, actionTimeout: 15_000, navigationTimeout: 20_000,
     screenshot: 'only-on-failure', trace: 'retain-on-failure' },
   projects: [
