@@ -1,4 +1,5 @@
 import { browserSshUpload, type SshUpload } from './sshTransfers';
+import { sshParent } from './useSshFiles';
 
 export interface SshUploadBatch {
   files: SshUpload[];
@@ -7,6 +8,14 @@ export interface SshUploadBatch {
 }
 
 export const browserSshUploadBatch = (files: File[]): SshUploadBatch => ({ files: files.map(browserSshUpload) });
+
+/** Search results can belong to a nested folder that is not currently expanded. */
+export function sshDropDirectory(target: Element | null, currentDirectory: string): string {
+  const entry = target?.closest<HTMLElement>('.pf-tree-row[data-path][data-directory]');
+  const path = entry?.dataset.path;
+  if (!path) return currentDirectory;
+  return entry.dataset.directory === 'true' ? path : sshParent(path);
+}
 
 /** A dropped directory can masquerade as a zero-byte File in Chromium. */
 export function droppedSshFiles(data: DataTransfer) {

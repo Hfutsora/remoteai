@@ -9,6 +9,11 @@ export const sshChild = (path: string, name: string) => `${path.replace(/\/+$/, 
 export const validSshName = (name: string) => Boolean(name && name !== '.' && name !== '..'
   && name.length <= 255 && !/[\/\x00-\x1f\x7f]/.test(name));
 
+export interface SshUploadOptions {
+  directory?: string;
+  preserveDirectory?: boolean;
+}
+
 export function useSshFiles(api: SshApi, id: string, saveDownload: SshDownload = browserSshDownload) {
   const [path, setPath] = useState('.');
   const [entries, setEntries] = useState<SshEntry[]>([]);
@@ -72,16 +77,18 @@ export function useSshFiles(api: SshApi, id: string, saveDownload: SshDownload =
     if (response.type !== 'file' || !active.current) return;
     await saveDownload(entry, response.data);
   });
-  const uploadMany = (selected: SshUpload[], resolveConflict?: SshResolveConflict, directory?: string) => run(async () => {
+  const uploadMany = (selected: SshUpload[], resolveConflict?: SshResolveConflict,
+    options: SshUploadOptions = {}) => run(async () => {
     if (selected.some(file => !validSshName(file.name))) throw new Error('client.ssh.invalidName');
-    const destination = directory ?? currentPath.current;
+    const destination = options.directory ?? currentPath.current;
+    const refreshDirectory = options.preserveDirectory ? currentPath.current : destination;
     const controller = new AbortController(); uploadController.current = controller;
     try {
       for (const file of selected) {
         await uploadSshFile({ api, id, path: sshChild(destination, file.name), file, signal: controller.signal,
           resolveConflict, progress: value => { if (active.current) setProgress(value); } });
       }
-      if (active.current) await list(destination);
+      if (active.current) await list(refreshDirectory);
     } finally { uploadController.current = undefined; if (active.current) setProgress(undefined); }
   });
   const upload = (file: SshUpload, resolveConflict?: SshResolveConflict) => uploadMany([file], resolveConflict);

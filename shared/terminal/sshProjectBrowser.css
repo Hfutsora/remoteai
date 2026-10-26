@@ -6,6 +6,7 @@
 .ssh-project-path:focus-within { border-color: var(--pf-accent); }
 .ssh-project-path input { width: 100%; min-width: 0; padding: 6px 8px; background: transparent;
   border: 0; outline: 0; color: inherit; font: inherit; }
+.ssh-project-path input:focus, .ssh-project-path input:focus-visible { outline: none; box-shadow: none; }
 .ssh-project-feedback { max-width: 400px; margin: 0; padding: 8px 12px; overflow-wrap: anywhere; }
 .ssh-project-feedback[role=alert] { color: #c44545; }
 .ssh-project-loading { display: grid; flex: 1; place-items: center; }

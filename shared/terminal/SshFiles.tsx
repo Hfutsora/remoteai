@@ -49,12 +49,12 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
     if (pendingUpload && !files.loaded && files.error) { pendingUpload.complete(); return; }
     if (!pendingUpload || accepted.current === pendingUpload || files.busy || !files.loaded) return;
     accepted.current = pendingUpload;
-    void actions.uploadSources(pendingUpload.batch.files, pendingUpload.batch.directory)
+    void actions.uploadSources(pendingUpload.batch.files, { directory: pendingUpload.batch.directory })
       .finally(pendingUpload.complete);
   }, [pendingUpload, files.busy, files.loaded, files.error, actions.uploadSources]);
   useEffect(() => () => { accepted.current?.complete(); }, []);
   const upload = async (batch: SshUploadBatch) => {
-    try { await actions.uploadSources(batch.files); }
+    try { await actions.uploadSources(batch.files, { directory: batch.directory }); }
     finally { await releaseSshUploadBatch(batch); }
   };
   const open = (path: string) => { setAddress(undefined); void files.navigate(path); };

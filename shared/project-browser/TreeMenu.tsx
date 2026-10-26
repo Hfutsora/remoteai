@@ -9,9 +9,9 @@ import { TreeSubmenu } from './TreeSubmenu';
 import { useTreeMenuDismiss } from './useTreeMenuDismiss';
 import { focusFirstMenuItem, MENU_MARGIN, moveMenuFocus, SUBMENU_GAP } from './treeMenuNavigation';
 
-export function TreeMenu({ menu, host, canPaste, cwd, close, command, t, children }: {
+export function TreeMenu({ menu, host, canPaste, cwd, close, command, t, children, extraItems }: {
   menu: Menu; host: BrowserHost; canPaste: boolean; cwd: string; close: () => void;
-  command: (action: TreeCommand) => void; t: BrowserTranslate; children?: ReactNode;
+  command: (action: TreeCommand) => void; t: BrowserTranslate; children?: ReactNode; extraItems?: ReactNode;
 }) {
   const element = useRef<HTMLDivElement>(null);
   useTreeMenuDismiss(element, close);
@@ -81,7 +81,7 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t, childre
         {!host.open && item('download', menu.entry.directory
           ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download,
         !host.download || (menu.entry.directory && host.downloadDirectory === false))}
-        {root && children && <><div role="separator" />{children}</>}
+        {(extraItems || (root && children)) && <><div role="separator" />{extraItems}{root && children}</>}
       </>}
     </div>
   </div>;
