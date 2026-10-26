@@ -66,6 +66,16 @@ it('maps rename and move to SSH operations and leaves unsupported copy untouched
   await expect(state.client.mutate({ cwd: '/', path: '/code.ts', action: 'copy', directory: '/' })).rejects.toThrow();
 });
 
+it.each([PROJECT_FILE_LIMIT + 1, PROJECT_FILE_LIMIT * 3])('rejects a %i-byte draft before uploading', async size => {
+  const state = fixture();
+  const target = { cwd: '/', path: '/code.ts' };
+  const original = await state.client.read(target);
+  state.files.mockClear();
+  await expect(state.client.save({ ...target, revision: original.revision, text: 'x'.repeat(size) }))
+    .rejects.toThrow('client.projectBrowser.filesLargerThan2MbCannotBeEditedHere');
+  expect(state.files.mock.calls.every(([, request]) => request.type === 'read')).toBe(true);
+});
+
 it('searches unopened directories, tolerates unreadable children and bounds alias cycles', async () => {
   const list = vi.fn(async (path: string) => {
     if (path === '/denied') throw new Error('permission denied');

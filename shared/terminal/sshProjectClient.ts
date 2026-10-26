@@ -8,7 +8,7 @@ import { browserSshDownload } from './sshTransfers';
 import type { SshApi, SshEntry } from './ssh';
 import { SSH_FILE_LIMIT } from './ssh';
 import { sshChild, sshParent, validSshName } from './useSshFiles';
-import { decodeSshText, sshTextUpload } from './sshTextFile';
+import { decodeSshText, sshTextUpload, type SshTextContent } from './sshTextFile';
 import { uploadSshFile } from './sshUpload';
 import { searchSshProject } from './sshProjectSearch';
 
@@ -86,8 +86,7 @@ async function saveSshDocument({ api, id, target, readData }: {
   if (!content || previous.revision !== target.revision) {
     throw new Error('client.projectBrowser.thisFileChangedElsewhereCopyYourEditsBeforeReloadingIt');
   }
-  const file = sshTextUpload(target.path.split('/').at(-1) ?? '', { ...content, text: target.text });
-  if (file.size > PROJECT_FILE_LIMIT) throw new Error('client.ssh.fileTooLarge');
+  const file = editableUpload(target.path.split('/').at(-1) ?? '', { ...content, text: target.text });
   let replacing = false;
   await uploadSshFile({ api, id, path: target.path, file, signal: new AbortController().signal,
     progress: () => {}, resolveConflict: async () => {
@@ -96,6 +95,19 @@ async function saveSshDocument({ api, id, target, readData }: {
       return 'overwrite';
     } });
   return documentFromData(target.path, await file.read(0, file.size));
+}
+
+function editableUpload(name: string, content: SshTextContent) {
+  const tooLarge = 'client.projectBrowser.filesLargerThan2MbCannotBeEditedHere';
+  try {
+    const file = sshTextUpload(name, content);
+    if (file.size > PROJECT_FILE_LIMIT) throw new Error(tooLarge);
+    return file;
+  } catch (error) {
+    // The transfer helper has a higher limit; editor errors must still describe the editing limit.
+    if (error instanceof Error && error.message === 'client.ssh.fileTooLarge') throw new Error(tooLarge);
+    throw error;
+  }
 }
 
 async function mutateSshEntry({ api, id, request, entry }: {
