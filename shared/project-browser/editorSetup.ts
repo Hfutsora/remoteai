@@ -42,7 +42,11 @@ export const editorTheme = EditorView.theme({
   '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'var(--pf-hover)' },
   '.cm-panels': { color: 'var(--pf-ink)', backgroundColor: 'var(--pf-surface)', borderColor: 'var(--pf-border)' },
   '&.cm-focused .cm-cursor': { borderLeftColor: 'var(--pf-ink)' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: 'var(--pf-selection)' },
+  '.cm-selectionBackground': { backgroundColor: 'var(--pf-selection)' },
+  // Match CodeMirror's focused layer selector so its light default cannot override the host palette.
+  '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
+    backgroundColor: 'var(--pf-selection)',
+  },
   '.cm-tooltip': { backgroundColor: 'var(--pf-surface)', color: 'var(--pf-ink)' },
 });
 
