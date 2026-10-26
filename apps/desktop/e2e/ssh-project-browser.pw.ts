@@ -84,10 +84,15 @@ async function checkRenameAndDownload(page: Page) {
   await expect(row(page, 'renamed.ts')).toBeVisible();
   await row(page, 'image.bin').click();
   await expect(page.getByText('此文件暂不支持预览。', { exact: true })).toBeVisible();
-  const downloaded = page.waitForEvent('download');
   await row(page, 'image.bin').click({ button: 'right' });
   await page.getByRole('menuitem', { name: '下载', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '已加入下载管理' })).toBeVisible();
+  await page.getByRole('button', { name: '下载管理', exact: true }).click();
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('article', { name: 'image.bin', exact: true })
+    .getByRole('button', { name: '保存到设备', exact: true }).click();
   expect((await downloaded).suggestedFilename()).toBe('image.bin');
+  await page.getByRole('button', { name: '返回 SSH', exact: true }).click();
 }
 
 async function checkWorkspaceClose(page: Page) {

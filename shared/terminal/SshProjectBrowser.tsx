@@ -19,8 +19,9 @@ import './sshProjectBrowser.css';
 import { browserFileRenderer } from '../file-preview/BrowserFilePreview';
 import { sshPreviewLoader } from '../file-preview/sshLoader';
 
-export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }: {
+export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload, download: managedDownload }: {
   api: SshApi; id: string; active: boolean; nativeDrop?: SshNativeDrop; pendingUpload?: PendingSshUpload;
+  download?: BrowserHost['download'];
 }) {
   const files = useSshFiles(api, id);
   const actions = useSshFileActions(files);
@@ -31,9 +32,9 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
   const { client, download } = useMemo(() => getSshProjectClient(api, id), [api, id]);
   const renderPreview = useMemo(() => browserFileRenderer(sshPreviewLoader(api, id)), [api, id]);
   const host = useMemo<BrowserHost>(() => ({
-    copyPath: path => navigator.clipboard.writeText(path), download, downloadDirectory: false,
+    copyPath: path => navigator.clipboard.writeText(path), download: managedDownload ?? download, downloadDirectory: false,
     entryActions: ['createFile', 'createFolder', 'rename', 'move', 'delete'],
-  }), [download]);
+  }), [download, managedDownload]);
   useEffect(() => {
     if (pendingUpload && !files.loaded && files.error) { pendingUpload.complete(); return; }
     if (!pendingUpload || accepted.current === pendingUpload || files.busy || !files.loaded) return;
