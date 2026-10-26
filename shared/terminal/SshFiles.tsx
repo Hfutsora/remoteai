@@ -16,6 +16,7 @@ import type { PendingSshUpload } from './useSshDropQueue';
 import { browserSshDownload } from './sshTransfers';
 import { useSshFileEditor } from './useSshFileEditor';
 import { SshFileEditor } from './SshFileEditor';
+import { SshProjectBrowser } from './SshProjectBrowser';
 import './ssh.css';
 
 export const sshFilesTabId = (id: string) => `ssh-files:${id}`;
@@ -28,7 +29,7 @@ export function SshFiles({ info, api, active, ...drop }: {
 } & DropProps) {
   return <WorkspaceDrawerTab active={active} autoOpen
     tab={{ id: sshFilesTabId(info.id), title: t('client.ssh.filesTitle', { host: info.ssh?.host ?? '' }), icon: ICON }}>
-    {visible => <SshFileBrowser key={info.id} api={api} id={info.id} active={active && visible} {...drop} />}
+    {visible => <SshProjectBrowser key={info.id} api={api} id={info.id} active={active && visible} {...drop} />}
   </WorkspaceDrawerTab>;
 }
 

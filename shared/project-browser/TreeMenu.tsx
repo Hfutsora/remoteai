@@ -20,6 +20,7 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
   const [position, setPosition] = useState({ left: menu.x, top: menu.y });
   const stackedSubmenu = compact ? submenu : undefined;
   const root = normalizedPath(menu.entry.path) === normalizedPath(cwd);
+  const supports = (action: 'copy' | 'move') => !host.entryActions || host.entryActions.includes(action);
   useLayoutEffect(() => {
     const positionMenu = () => {
       const rect = element.current?.getBoundingClientRect();
@@ -73,7 +74,8 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
         {menu.entry.directory && <TreeSubmenu label={t("client.projectBrowser.new")} icon={FilePlus} active={submenu === 'new'}
           compact={compact} open={() => setSubmenu('new')}
           close={() => setSubmenu(current => current === 'new' ? undefined : current)}>{newItems}</TreeSubmenu>}
-        {item('cut', "client.projectBrowser.cut", Scissors, root)}{item('copy', "client.projectBrowser.copied", Copy, root)}
+        {item('cut', "client.projectBrowser.cut", Scissors, root || !supports('move'))}
+        {item('copy', "client.projectBrowser.copied", Copy, root || !supports('copy'))}
         {item('copyPath', "client.composer.copyPath", Link)}
         {menu.entry.directory && item('paste', "client.projectBrowser.paste", ClipboardPaste, !canPaste)}
         <div role="separator" />
@@ -84,7 +86,8 @@ export function TreeMenu({ menu, host, canPaste, cwd, close, command, t }: {
           compact={compact} open={() => setSubmenu('open')}
           close={() => setSubmenu(current => current === 'open' ? undefined : current)}>{openItems}</TreeSubmenu>}
         {!host.open && item('download', menu.entry.directory
-          ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download, !host.download)}
+          ? "client.projectBrowser.downloadAsZip" : "client.projectBrowser.download", Download,
+        !host.download || (menu.entry.directory && host.downloadDirectory === false))}
       </>}
     </div>
   </div>;

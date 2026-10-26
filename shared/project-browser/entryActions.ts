@@ -10,6 +10,9 @@ export type EntryRequest = ProjectFileTarget & EntryAction;
 export interface EntryChange { path: string; directory: boolean }
 
 export interface BrowserHost {
+  /** Omitted for hosts that support every tree mutation. */
+  entryActions?: readonly EntryAction['action'][];
+  downloadDirectory?: boolean;
   copyPath: (path: string) => Promise<void>;
   reference?: (entry: ProjectFile) => Promise<void>;
   quoteSelection?: (selection: FileSelection) => Promise<void>;

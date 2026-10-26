@@ -3,8 +3,33 @@ import type { SshProfile } from '../../../shared/terminal/sshProfiles';
 
 test.skip(!process.env.SSH_FILES_FIXTURE, 'Requires the isolated Rust SSH bridge on port 1508');
 const bridge = 'http://127.0.0.1:1508';
-const confirm = (page: Page) => page.getByRole('dialog').getByRole('button', { name: /^确\s*定$/ });
-const entry = (page: Page, name: string) => page.locator('.ssh-file-list button').filter({ hasText: name });
+const confirm = (page: Page) => page.locator('[role="dialog"], [role="alertdialog"]')
+  .getByRole('button', { name: /^确\s*定$/ });
+const entry = (page: Page, name: string) => page.locator('.ssh-file-list button, .pf-tree-row').filter({ hasText: name });
+const browser = (page: Page) => page.locator('.ssh-files, .ssh-project-browser');
+const filename = (page: Page) => page.getByRole('textbox', { name: /^(文件名|名称)$/ });
+const sharedBrowser = (page: Page) => page.locator('.ssh-project-browser').count();
+
+async function backToTree(page: Page) {
+  const back = page.getByRole('button', { name: '返回文件列表', exact: true });
+  if (await back.isVisible()) await back.click();
+}
+
+async function createSharedWorkspace(page: Page, name: string) {
+  const create = async (label: string, value: string) => {
+    await page.getByRole('button', { name: '项目文件夹操作', exact: true }).click();
+    await page.getByRole('menuitem', { name: '新建', exact: true }).hover();
+    await page.getByRole('menuitem', { name: label, exact: true }).click();
+    await filename(page).fill(value); await confirm(page).click();
+  };
+  await create('新建文件夹', name);
+  await expect(entry(page, name)).toBeVisible();
+  const path = page.getByRole('textbox', { name: '远程路径' });
+  await path.fill(`/${name}`); await path.press('Enter');
+  await expect(path).toHaveValue(`/${name}`);
+  await create('新建文件', 'note.txt');
+  await backToTree(page);
+}
 
 async function connect(page: Page, mode: string) {
   const fixture = await (await page.request.get(`${bridge}/config`)).json();
@@ -33,6 +58,7 @@ async function contextAction(page: Page, name: string, action: string) {
 }
 
 async function createWorkspace(page: Page, name: string) {
+  if (await sharedBrowser(page)) { await createSharedWorkspace(page, name); return; }
   const { path, home, parent } = await page.locator('.ssh-file-controls').evaluate(controls => {
     const buttons = controls.querySelectorAll('.ssh-file-navigation button');
     const box = (element: Element) => {
@@ -55,7 +81,7 @@ async function createWorkspace(page: Page, name: string) {
 }
 
 async function upload(page: Page, name: string, content: Buffer) {
-  await page.locator('.ssh-files input[type="file"]').setInputFiles({ name, mimeType: 'application/octet-stream',
+  await browser(page).locator('input[type="file"]').setInputFiles({ name, mimeType: 'application/octet-stream',
     buffer: content });
 }
 
@@ -75,14 +101,15 @@ async function checkUploads(page: Page, info: TestInfo) {
   await page.screenshot({ path: info.outputPath('ssh-upload-conflict.png'), animations: 'disabled' });
   await page.getByRole('dialog').getByRole('button', { name: /^覆\s*盖$/ }).click();
   await expect(page.getByRole('dialog', { name: '已存在同名文件' })).toBeHidden();
-  await expect(entry(page, 'note.txt')).toContainText('8 B');
+  await expect(entry(page, 'note.txt')).toBeVisible();
   await upload(page, 'note.txt', Buffer.from('keep both'));
   await page.getByRole('button', { name: '添加数字后缀', exact: true }).click();
   await expect(entry(page, 'note (1).txt')).toBeVisible();
   await assertDownload(page, 'note.txt', 'original');
   await assertDownload(page, 'note (1).txt', 'keep both');
   await upload(page, 'large.bin', Buffer.alloc(6 * 1024 * 1024 + 19, 0x5a));
-  await expect(entry(page, 'large.bin')).toContainText('6,291,475 B');
+  await expect(entry(page, 'large.bin')).toBeVisible();
+  if (!await sharedBrowser(page)) await expect(entry(page, 'large.bin')).toContainText('6,291,475 B');
   await expect(page.getByText('支持 4 MB 以内的文件；上传不会覆盖同名文件。')).toBeHidden();
 }
 
@@ -100,17 +127,17 @@ async function checkCancellation(page: Page) {
     await pendingChunk;
     await page.getByRole('button', { name: '取消上传', exact: true }).click();
   } finally { releaseChunk(); }
-  await expect(page.locator('.ssh-files')).toHaveAttribute('aria-busy', 'false');
+  await expect(browser(page)).toHaveAttribute('aria-busy', 'false');
   await page.unroute(`${bridge}/rpc`);
-  await page.getByRole('button', { name: '刷新', exact: true }).click();
-  await expect(page.locator('.ssh-files')).toHaveAttribute('aria-busy', 'false');
+  await page.getByRole('button', { name: /^(刷新|刷新文件树)$/ }).click();
+  await expect(browser(page)).toHaveAttribute('aria-busy', 'false');
   await expect(entry(page, 'cancelled.bin')).toHaveCount(0);
   await expect(entry(page, '.remoteai-upload-')).toHaveCount(0);
 }
 
 async function checkLanguages(page: Page) {
-  for (const [language, label] of [['English', 'New file'], ['Русский', 'Новый файл'],
-    ['日本語', '新規ファイル'], ['中文', '新建文件']]) {
+  for (const [language, label] of [['English', 'Upload file'], ['Русский', 'Загрузить файл'],
+    ['日本語', 'ファイルをアップロード'], ['中文', '上传文件']]) {
     await page.getByRole('button', { name: language, exact: true }).evaluate(element => element.click());
     await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
   }
@@ -118,7 +145,7 @@ async function checkLanguages(page: Page) {
 
 async function checkMenuAndDelete(page: Page, folder: string, info: TestInfo) {
   await contextAction(page, 'note.txt', '重命名');
-  await page.getByLabel('文件名').fill('renamed.txt'); await confirm(page).click();
+  await filename(page).fill('renamed.txt'); await confirm(page).click();
   await expect(entry(page, 'renamed.txt')).toBeVisible();
   await page.getByRole('button', { name: '上一级', exact: true }).click();
   await entry(page, folder).click({ button: 'right' });
@@ -126,7 +153,7 @@ async function checkMenuAndDelete(page: Page, folder: string, info: TestInfo) {
   await page.screenshot({ path: info.outputPath('ssh-files-context-light.png'), animations: 'disabled' });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toBeHidden();
-  await expect(page.locator('.ssh-files')).toBeVisible();
+  await expect(browser(page)).toBeVisible();
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await contextAction(page, folder, '复制路径');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`/${folder}`);
@@ -135,12 +162,14 @@ async function checkMenuAndDelete(page: Page, folder: string, info: TestInfo) {
   if (page.viewportSize()!.width > 600) await page.setViewportSize({ width: 900, height: 700 });
   await entry(page, folder).click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: '复制路径', exact: true })).toBeVisible();
-  await expect(page.locator('.ssh-file-context')).not.toHaveClass(/ant-slide-up-(enter|appear)/);
+  if (!await sharedBrowser(page)) {
+    await expect(page.locator('.ssh-file-context')).not.toHaveClass(/ant-slide-up-(enter|appear)/);
+  }
   await page.screenshot({ path: info.outputPath('ssh-files-context-dark.png'), animations: 'disabled' });
   await page.getByRole('menuitem', { name: /^删\s*除$/ }).click();
-  await expect(page.getByText('文件夹及其中的所有内容都会删除，且无法撤销。')).toBeVisible();
-  await page.getByRole('dialog', { name: '删除', exact: true })
-    .getByRole('button', { name: /^删\s*除$/ }).click();
+  await expect(page.locator('[role="dialog"], [role="alertdialog"]')).toContainText('无法撤销');
+  await page.locator('[role="dialog"], [role="alertdialog"]')
+    .getByRole('button', { name: /^(删\s*除|确认删除)$/ }).click();
   await expect(entry(page, folder)).toBeHidden();
 }
 

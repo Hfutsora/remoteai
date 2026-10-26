@@ -1,7 +1,7 @@
 import { remoteErrorText } from '../localization/errors';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 import type { ProjectBrowserClient } from './protocol';
-import { ProjectTree, type BrowserTranslate } from './ProjectTree';
+import { ProjectTree, type BrowserTranslate, type ProjectTreeOptions } from './ProjectTree';
 import { ProjectEditorWorkspace } from './ProjectEditorWorkspace';
 import { isDirty, type DocumentsSnapshot } from './documents';
 import { AutoSaveSettings } from './AutoSaveSettings';
@@ -26,10 +26,12 @@ interface Props {
   preferences?: BrowserPreferences;
   host: BrowserHost;
   initialSnapshot?: DocumentsSnapshot;
+  treeOptions?: ProjectTreeOptions;
 }
 
 export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function ProjectBrowser(
-  { client, cwd, connected, t, onClose, preferences: suppliedPreferences, initialSnapshot, host: actionsHost }, ref,
+  { client, cwd, connected, t, onClose, preferences: suppliedPreferences, initialSnapshot, host: actionsHost,
+    treeOptions }, ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
   const file = useProjectDocument(client, cwd, initialSnapshot);
@@ -66,8 +68,8 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
     }}>
     {!connected && <p className="pf-connection" role="status">{t("client.projectBrowser.disconnectedReconnectToContinue")}</p>}
     <div className="pf-browser-layout">
-      <ProjectTree client={client} cwd={cwd} connected={connected} selected={file.activePath} choose={choose} t={t}
-        host={actionsHost} documents={file.store} />
+      <ProjectTree client={client} cwd={treeOptions?.root ?? cwd} connected={connected}
+        selected={file.activePath} choose={choose} t={t} host={actionsHost} documents={file.store} options={treeOptions} />
       <div className="pf-splitter" role="separator" tabIndex={0} aria-orientation="vertical"
         aria-label={t("client.projectBrowser.resizeFileTree")} aria-valuemin={split.minimum} aria-valuemax={split.maximum}
         aria-valuenow={split.width} {...split.handle} />
