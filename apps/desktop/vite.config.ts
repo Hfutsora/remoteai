@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react(), imageEditorPlugin()],
   css: { postcss: { plugins: [fontSizePlugin()] } },
   clearScreen: false,
+  optimizeDeps: { include: ['pdfjs-dist/legacy/build/pdf.mjs'] },
   server: {
     port: 1420,
     strictPort: true,

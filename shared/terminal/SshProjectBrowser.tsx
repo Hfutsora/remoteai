@@ -16,6 +16,8 @@ import { browserSshUploadBatch, releaseSshUploadBatch, sshDropDirectory, type Ss
 import type { PendingSshUpload } from './useSshDropQueue';
 import type { SshApi } from './ssh';
 import './sshProjectBrowser.css';
+import { browserFileRenderer } from '../file-preview/BrowserFilePreview';
+import { sshPreviewLoader } from '../file-preview/sshLoader';
 
 export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }: {
   api: SshApi; id: string; active: boolean; nativeDrop?: SshNativeDrop; pendingUpload?: PendingSshUpload;
@@ -27,6 +29,7 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
   const uploadInput = useRef<HTMLInputElement>(null);
   const uploadDirectory = useRef('');
   const { client, download } = useMemo(() => getSshProjectClient(api, id), [api, id]);
+  const renderPreview = useMemo(() => browserFileRenderer(sshPreviewLoader(api, id)), [api, id]);
   const host = useMemo<BrowserHost>(() => ({
     copyPath: path => navigator.clipboard.writeText(path), download, downloadDirectory: false,
     entryActions: ['createFile', 'createFolder', 'rename', 'move', 'delete'],
@@ -62,6 +65,7 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
         {files.busy ? <Spin /> : <Button onClick={() => void files.load()}>{t('client.terminal.retry')}</Button>}
       </div>}
       {files.loaded && <ProjectBrowser client={client} cwd="/" connected t={t} host={host} onClose={() => {}}
+        renderPreview={renderPreview}
         treeOptions={{ root: files.path, showHidden: hidden, revision: files.entries,
           renderMenuExtras: (entry, close) => entry.directory && <button type="button" role="menuitem"
             disabled={files.busy} onClick={() => { close(); pickUpload(entry.path); }}>

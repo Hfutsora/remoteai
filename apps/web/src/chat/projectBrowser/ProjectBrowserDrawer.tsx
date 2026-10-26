@@ -13,6 +13,8 @@ import { TerminalLaunchContext } from '../../../../../shared/terminal/TerminalLa
 import { terminalDirectory } from '../../../../../shared/project-browser/terminalDirectory';
 import { t, useLanguage } from '../../i18n';
 import './projectBrowserDrawer.css';
+import { browserFileRenderer } from '../../../../../shared/file-preview/BrowserFilePreview';
+import { projectPreviewLoader } from '../../../../../shared/file-preview/projectLoader';
 
 const Browser = lazy(() => import('../../../../../shared/project-browser/ProjectBrowser')
   .then(module => ({ default: module.ProjectBrowser })));
@@ -31,6 +33,7 @@ export function ProjectBrowserDrawer({ client, cwd, connected, active, onClose,
   const workspace = useContext(WorkspaceDrawerContext);
   const launchTerminal = useContext(TerminalLaunchContext);
   const save = useCallback(() => browser.current?.saveActive(), []);
+  const renderPreview = useMemo(() => browserFileRenderer(projectPreviewLoader(client, cwd)), [client, cwd]);
   const hide = workspace?.tabs.hide;
   const actionsHost = useMemo<BrowserHost>(() => ({
     ...(suppliedHost ?? browserHost(client)),
@@ -51,7 +54,7 @@ export function ProjectBrowserDrawer({ client, cwd, connected, active, onClose,
     className="project-browser-drawer" style={theme}>
     {() => <Suspense fallback={<p className="project-browser-loading" role="status">{t("client.projectBrowser.loading")}</p>}>
       <Browser ref={browser} client={client} cwd={cwd} connected={connected} t={displayText}
-        onClose={onClose} host={actionsHost} />
+        onClose={onClose} host={actionsHost} renderPreview={renderPreview} />
     </Suspense>}
   </WorkspaceDrawerTab>;
 }
