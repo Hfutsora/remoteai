@@ -5,6 +5,7 @@ import { CreateProjectDialog } from './CreateProjectDialog';
 import { folderName, projectName, readProjects, saveProject, type SavedProject } from './projectCatalog';
 import { ProjectFolderPicker } from './ProjectFolderPicker';
 import { WorkspacePicker } from './WorkspacePicker';
+import { ConversationWorkspaceStatus } from './ConversationWorkspaceStatus';
 import { useProjectFolderDrop } from './useProjectFolderDrop';
 import dropStyles from './ProjectPicker.module.less';
 import layout from './styles.module.less';
@@ -41,10 +42,12 @@ export function ProjectPicker({ value, projects, disabled, onChange, onError,
     {(drop.dragging || drop.reading) && <div className={dropStyles.dropHint} role="status">
       <span>{drop.reading ? uiText("client.chat.addingAttachments") : uiText("client.composer.dropToAddFilesOrFolders")}</span>
     </div>}
-    {!running && <ProjectFolderPicker value={value} disabled={disabled} triggerRef={trigger}
+    <ProjectFolderPicker value={value} disabled={disabled || running} triggerRef={trigger}
       projects={[...saved, ...projects.map(path => ({ path, name: folderName(path) }))]}
       onChange={onChange} onClear={() => onChange('')} onOpen={() => setSaved(readProjects())}
-      onAdd={() => setCreating(true)} addLabel={uiText("client.conversation.newProject")} />}
+      onAdd={() => setCreating(true)} addLabel={uiText("client.conversation.newProject")} />
+    {(gitEnabled === false || running) && <ConversationWorkspaceStatus key={value} cwd={value}
+      enabled={active} />}
     <div className={layout.projectBarActions}>
       {!running && gitEnabled && onBusyChange && <WorkspacePicker key={value} cwd={value} disabled={disabled}
         onChange={onChange} onBusyChange={onBusyChange} localLabel={hostPicker ? uiText("client.conversation.worktree") : undefined} />}
