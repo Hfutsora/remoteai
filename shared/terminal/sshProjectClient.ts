@@ -11,6 +11,7 @@ import { sshChild, sshParent, validSshName } from './useSshFiles';
 import { decodeSshText, sshTextUpload } from './sshTextFile';
 import { uploadSshFile } from './sshUpload';
 import { searchSshProject } from './sshProjectSearch';
+import { filePreviewKind } from '../file-preview/kinds';
 
 export type SshListDirectory = (path: string) => Promise<{
   path: string; entries: SshEntry[]; truncated: boolean;
@@ -71,6 +72,10 @@ export function createSshProjectClient(api: SshApi, id: string, saveDownload: Ss
     read: async ({ path }) => {
       const file = await entry(path);
       if (file.directory) throw new Error('client.ssh.fileFailed');
+      const preview = filePreviewKind(path);
+      if (preview && !['markdown', 'html', 'image'].includes(preview)) {
+        return { path, size: file.size, revision: '', kind: 'binary', readOnly: true };
+      }
       if (imageTypes[path.split('.').at(-1)?.toLowerCase() ?? ''] && file.size > PROJECT_PLAIN_TEXT_THRESHOLD) {
         return { path, size: file.size, revision: '', kind: 'large', readOnly: true };
       }

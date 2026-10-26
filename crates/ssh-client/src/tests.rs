@@ -1,5 +1,34 @@
 use super::*;
 
+#[tokio::test]
+async fn binary_input_validates_bytes_and_size_before_session_lookup() {
+    let client = Client::default();
+    let valid: Command = serde_json::from_value(serde_json::json!({
+        "type": "writeBinary", "id": "ssh-missing", "data": [0, 24, 127, 128, 255]
+    }))
+    .unwrap();
+    assert!(matches!(client.command(valid).await, Err(Error::Closed)));
+    for bytes in [
+        serde_json::json!([-1]),
+        serde_json::json!([256]),
+        serde_json::json!([1.5]),
+    ] {
+        assert!(serde_json::from_value::<Command>(serde_json::json!({
+            "type": "writeBinary", "id": "ssh-missing", "data": bytes
+        }))
+        .is_err());
+    }
+    assert!(matches!(
+        client
+            .command(Command::WriteBinary {
+                id: "ssh-missing".into(),
+                data: vec![0; MAX_INPUT_BYTES + 1]
+            })
+            .await,
+        Err(Error::Invalid)
+    ));
+}
+
 #[test]
 fn upload_chunks_validate_ranges_without_limiting_total_file_size() {
     use crate::uploads::{decode_chunk, validate_range};

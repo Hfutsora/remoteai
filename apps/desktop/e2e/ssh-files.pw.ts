@@ -86,11 +86,19 @@ async function upload(page: Page, name: string, content: Buffer) {
 }
 
 async function assertDownload(page: Page, name: string, expected: string) {
-  const downloaded = page.waitForEvent('download');
   await contextAction(page, name, '下载');
+  await expect(page.getByRole('status').filter({ hasText: '已加入下载管理' })).toBeVisible();
+  const back = page.getByRole('button', { name: '返回终端', exact: true });
+  if (await back.isVisible()) await back.click();
+  await page.getByRole('button', { name: '下载管理', exact: true }).click();
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('article').filter({ has: page.getByText(name, { exact: true }) })
+    .getByRole('button', { name: '保存到设备', exact: true }).click();
   const buffers: Buffer[] = [];
   for await (const chunk of (await (await downloaded).createReadStream())!) buffers.push(Buffer.from(chunk));
   expect(Buffer.concat(buffers).toString()).toBe(expected);
+  await page.getByRole('button', { name: '返回 SSH', exact: true }).click();
+  await page.getByRole('button', { name: '远程文件浏览', exact: true }).click();
 }
 
 async function checkUploads(page: Page, info: TestInfo) {

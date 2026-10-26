@@ -1,9 +1,12 @@
+import { testBrowserLaunchOptions } from '../../scripts/test-browser.mjs';
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e', testMatch: 'font-size.pw.ts', workers: 1, timeout: 45_000,
   outputDir: '../../.codex-tmp/font-size-playwright',
-  use: { channel: 'msedge', locale: 'zh-CN', headless: true, viewport: { width: 1280, height: 1000 } },
+  use: {
+    launchOptions: testBrowserLaunchOptions(),
+    locale: 'zh-CN', headless: true, viewport: { width: 1280, height: 1000 } },
   projects: [
     { name: 'local', use: { baseURL: 'http://127.0.0.1:1494/' } },
     { name: 'remote', use: { baseURL: 'http://127.0.0.1:1494/' } },

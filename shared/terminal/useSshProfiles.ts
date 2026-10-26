@@ -41,6 +41,7 @@ export function useSshProfiles(store: SshProfileStore, live = true) {
     try {
       const values = await action();
       if (current === version.current) { setProfiles(values); setError(''); }
+      return values;
     } catch (failure) { throw new Error(sshProfileError(failure, 'client.ssh.storageFailed')); }
     finally { writes.delete(request); if (current === version.current) setLoading(false); }
   };

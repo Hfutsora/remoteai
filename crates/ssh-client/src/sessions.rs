@@ -108,6 +108,19 @@ impl Client {
                 }
                 id
             }
+            Command::WriteBinary { id, data } => {
+                if data.len() > MAX_INPUT_BYTES {
+                    return Err(Error::Invalid);
+                }
+                id
+            }
+            Command::OutputAck { id, bytes } => {
+                if *bytes > MAX_INPUT_BYTES {
+                    return Err(Error::Invalid);
+                }
+                id
+            }
+            Command::OutputFlow { id, .. } => id,
             Command::Resize { id, size } => {
                 size.validate()?;
                 id
@@ -207,10 +220,22 @@ async fn run_shell(
     sink: &Sink,
 ) {
     let mut code = None;
+    let mut credit = None;
+    let mut expiry = tokio::time::Instant::now() + TIMEOUT;
     loop {
         tokio::select! {
             request = input.recv() => {
                 let Some(request) = request else { break };
+                match &request.command {
+                    Command::OutputFlow { enabled, .. } => credit = enabled.then_some(MAX_INPUT_BYTES),
+                    Command::OutputAck { bytes, .. } => {
+                        if let Some(value) = credit.as_mut() {
+                            *value = (*value + bytes).min(MAX_INPUT_BYTES);
+                        }
+                    }
+                    _ => {}
+                }
+                expiry = tokio::time::Instant::now() + TIMEOUT;
                 if matches!(&request.command, Command::Write { data, .. } if !data.is_empty())
                     && !sink(Event::Output { data: crate::shell_integration::INPUT_MARKER.to_vec() }) {
                     break;
@@ -223,8 +248,10 @@ async fn run_shell(
                 let _ = request.reply.send(result);
                 if closing || failed { break; }
             }
-            message = channel.wait() => match message {
+            _ = tokio::time::sleep_until(expiry), if credit.is_some() => credit = None,
+            message = channel.wait(), if credit != Some(0) => match message {
                 Some(ChannelMsg::Data { data }) | Some(ChannelMsg::ExtendedData { data, .. }) => {
+                    if let Some(value) = credit.as_mut() { *value = value.saturating_sub(data.len()); }
                     if !sink(Event::Output { data: data.to_vec() }) { break; }
                 }
                 Some(ChannelMsg::ExitStatus { exit_status }) => code = Some(exit_status),
@@ -239,6 +266,8 @@ async fn run_shell(
 async fn send_input(channel: &Channel<client::Msg>, command: Command) -> Result<()> {
     match command {
         Command::Write { data, .. } => channel.data(data.as_bytes()).await,
+        Command::WriteBinary { data, .. } => channel.data(data.as_slice()).await,
+        Command::OutputFlow { .. } | Command::OutputAck { .. } => return Ok(()),
         Command::Resize { size, .. } => {
             channel
                 .window_change(u32::from(size.cols), u32::from(size.rows), 0, 0)

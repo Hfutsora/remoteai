@@ -18,18 +18,20 @@ import { useSshFileEditor } from './useSshFileEditor';
 import { SshFileEditor } from './SshFileEditor';
 import { SshProjectBrowser } from './SshProjectBrowser';
 import './ssh.css';
+import type { BrowserHost } from '../project-browser/entryActions';
 
 export const sshFilesTabId = (id: string) => `ssh-files:${id}`;
 const ICON = <Folder size={16} />;
 
 interface DropProps { nativeDrop?: SshNativeDrop; pendingUpload?: PendingSshUpload }
 
-export function SshFiles({ info, api, active, ...drop }: {
-  info: TerminalInfo; api: SshApi; active: boolean;
+export function SshFiles({ info, api, active, download, ...drop }: {
+  info: TerminalInfo; api: SshApi; active: boolean; download?: BrowserHost['download'];
 } & DropProps) {
   return <WorkspaceDrawerTab active={active} autoOpen
     tab={{ id: sshFilesTabId(info.id), title: t('client.ssh.filesTitle', { host: info.ssh?.host ?? '' }), icon: ICON }}>
-    {visible => <SshProjectBrowser key={info.id} api={api} id={info.id} active={active && visible} {...drop} />}
+    {visible => <SshProjectBrowser key={info.id} api={api} id={info.id} active={active && visible}
+      download={download} {...drop} />}
   </WorkspaceDrawerTab>;
 }
 
@@ -49,12 +51,12 @@ export function SshFileBrowser({ api, id, active = true, nativeDrop, pendingUplo
     if (pendingUpload && !files.loaded && files.error) { pendingUpload.complete(); return; }
     if (!pendingUpload || accepted.current === pendingUpload || files.busy || !files.loaded) return;
     accepted.current = pendingUpload;
-    void actions.uploadSources(pendingUpload.batch.files, pendingUpload.batch.directory)
+    void actions.uploadSources(pendingUpload.batch.files, { directory: pendingUpload.batch.directory })
       .finally(pendingUpload.complete);
   }, [pendingUpload, files.busy, files.loaded, files.error, actions.uploadSources]);
   useEffect(() => () => { accepted.current?.complete(); }, []);
   const upload = async (batch: SshUploadBatch) => {
-    try { await actions.uploadSources(batch.files); }
+    try { await actions.uploadSources(batch.files, { directory: batch.directory }); }
     finally { await releaseSshUploadBatch(batch); }
   };
   const open = (path: string) => { setAddress(undefined); void files.navigate(path); };

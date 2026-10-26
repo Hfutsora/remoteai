@@ -6,6 +6,7 @@ const profile: SshProfile = { id: 'editor', name: 'Editor server', host: 'editor
   username: 'user', auth: 'password', fingerprint: 'SHA256:fixture', revision: 1 };
 
 export async function sshEditorFixture(page: Page) {
+  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({ contentType: 'text/css', body: '' }));
   const files = new Map<string, Buffer | null>([
     ['/中文目录', null], ['/hello.txt', Buffer.from('Hello 中文\n')],
     ['/中文目录/nested.txt', Buffer.from('Nested file\n')], ['/.hidden', Buffer.from('hidden\n')],

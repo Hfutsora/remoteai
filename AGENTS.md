@@ -24,6 +24,18 @@ Keep all instructions in this `AGENTS.md` file in English.
   `apps/admin-go/kong/existing-kong.example.yml`. Keep existing production routes in the repository as well.
   `go -C apps/admin-go test ./internal/server -run TestKong` must pass.
 
+## Browser Tests on Windows
+
+- Default to Playwright's bundled Chromium. Install it with `npx playwright install chromium`;
+  never fall back to system Edge or Chrome when the bundled browser is missing.
+- Repeated system-browser launches with fresh profiles can trigger Windows password checks and lock
+  the signed-in account. Keep Windows account-lockout policy intact.
+- Route test browser environment overrides through `scripts/test-browser.mjs`, which rejects system
+  browser overrides on Windows. See `docs/browser-tests.md` for setup and verification.
+- Use its `testBrowserLaunchOptions` for Chromium Playwright configurations and full-browser launches,
+  or `testBrowserArguments` for raw Chromium launches. Bundled full Chromium can also trigger the
+  password probe; preserve the workaround and existing launch flags, and keep them out of WebKit projects.
+
 ## Automatic Commit and Push
 
 - After completing the requested changes and verifying them successfully, automatically commit the changes made for the current task and push the current branch to its configured upstream. Do not wait for a separate request to commit or push.

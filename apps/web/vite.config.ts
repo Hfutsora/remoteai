@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), imageEditorPlugin(), webVersionPlugin()],
     css: { postcss: { plugins: [fontSizePlugin()] } },
     clearScreen: false,
+    optimizeDeps: { include: ['pdfjs-dist/legacy/build/pdf.mjs'] },
     root: currentDir,
     base: env.VITE_WEB_BASE_PATH || "/web/",
     server: {

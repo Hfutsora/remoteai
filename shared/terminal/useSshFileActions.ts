@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SshEntry } from './ssh';
 import { browserSshUpload } from './sshTransfers';
 import type { SshUpload } from './sshTransfers';
-import { sshChild, validSshName, type useSshFiles } from './useSshFiles';
+import { sshChild, validSshName, type useSshFiles, type SshUploadOptions } from './useSshFiles';
 import type { SshConflictChoice } from './sshUpload';
 
 export type SshFilesState = ReturnType<typeof useSshFiles>;
@@ -28,7 +28,8 @@ export function useSshFileActions(files: SshFilesState) {
     const done = await files.mutate(promptRequest(prompt, sshChild(files.path, prompt.name)));
     if (done) setPrompt(undefined);
   };
-  const uploadSources = (selected: SshUpload[], directory?: string) => files.uploadMany(selected, resolveConflict, directory);
+  const uploadSources = (selected: SshUpload[], options?: SshUploadOptions) =>
+    files.uploadMany(selected, resolveConflict, options);
   const upload = (selected: FileList) => uploadSources(Array.from(selected).map(browserSshUpload));
   const copyPath = async (path: string) => {
     try { await navigator.clipboard.writeText(path); setCopyStatus('client.ssh.pathCopied'); }

@@ -47,6 +47,8 @@ function App() {
         setInput(value => value + data);
         sessions.get(id)?.events.push({ type: 'output', data: Array.from(data, char => char.charCodeAt(0)) });
       },
+      writeBinary: async () => { throw new Error('Binary transfers require the live SSH fixture.'); },
+      binaryMode: async () => {},
       read: async (id, cursor) => ({ found: sessions.has(id), cursor: sessions.get(id)?.events.length ?? 0,
         truncated: false, events: sessions.get(id)?.events.slice(cursor) ?? [] }),
       resize: async (_id, next) => { setSize(`${next.cols} x ${next.rows}`); },

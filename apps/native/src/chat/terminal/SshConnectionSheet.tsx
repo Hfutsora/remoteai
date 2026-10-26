@@ -10,6 +10,7 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { t, displayError, useLanguage } from '../../i18n';
 import { useSshStyles } from './sshStyles';
 import { SshButton, SshField } from './SshControls';
+import { SshHostKeySheet } from './SshHostKeySheet';
 
 export function SshConnectionSheet({ api, cwd, connected, dispose, close }: {
   api: SshApi; cwd: string; connected: (info: TerminalInfo) => void;
@@ -71,10 +72,12 @@ export function SshConnectionSheet({ api, cwd, connected, dispose, close }: {
       </> : <SshField label={t('client.ssh.password')} value={values.password ?? ''} secureTextEntry maxLength={4096}
         editable={!disabled} onChangeText={value => set('password', value)} />}
       <Text style={styles.hint}>{t('client.ssh.credentialsHint')}</Text>
-      {connection.trust && <View><Text style={styles.label}>{t('client.ssh.trustHost')}</Text>
+      {connection.trust && !connection.trust.previousFingerprints && <View>
+        <Text style={styles.label}>{t('client.ssh.trustHost')}</Text>
         <Text selectable style={styles.hint}>{connection.trust.fingerprint}</Text></View>}
       {!!connection.error && <Text accessibilityRole="alert" style={styles.error}>
         {displayError(connection.error)}</Text>}
     </ScrollView>
+    <SshHostKeySheet connection={connection} />
   </BottomSheet>;
 }

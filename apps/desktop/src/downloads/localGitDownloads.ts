@@ -5,6 +5,7 @@ import { guiApi } from '../pages/codexGui/api';
 import { localGitClient } from '../pages/codexGui/localGitClient';
 import { fileDownloadByteLimit } from '../../../../shared/remote-chat/policy';
 import { uiText } from "../i18n/uiText";
+import { sshApi } from '../pages/codexGui/terminal/sshApi';
 
 export const LOCAL_DOWNLOAD_OWNER = 'desktop-local';
 const client: DownloadConnection['client'] = {
@@ -23,6 +24,6 @@ export function useLocalGitDownloads() {
   useEffect(() => {
     if (downloadManager.connectionForGit(localGitClient)) return;
     downloadManager.register({ owner: LOCAL_DOWNLOAD_OWNER, deviceId: 'local', deviceName: uiText("client.composer.thisComputer"),
-      ready: true, mode: 'direct', client, files, git: localGitClient });
+      ready: true, mode: 'direct', client, files, git: localGitClient, ssh: sshApi });
   }, []);
 }

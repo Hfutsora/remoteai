@@ -1,12 +1,15 @@
 import { terminalApi, type TerminalInfo, type TerminalSize } from '../pages/codexGui/terminal/api';
 import { TerminalOutput } from './terminalOutput';
+import { TerminalFlow } from './terminalFlow';
 import { terminalBelongsToProject } from '../../../../shared/remote-chat/terminalProject';
 import { invoke } from '../api/backend';
 import { ensureSshX11, openNativeSsh, probeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
 import type { SshConnect, SshEndpoint, SshFileAction, SshX11 } from '../../../../shared/terminal/ssh';
 
 const MAX_TERMINALS = 8;
-interface Session { info?: TerminalInfo; output: TerminalOutput; exited: boolean; legacyCursor: number }
+interface Session {
+  info?: TerminalInfo; output: TerminalOutput; flow?: TerminalFlow; exited: boolean; legacyCursor: number;
+}
 
 /** PC-owned shells survive transport sessions. The native transport supplies the authenticated owner. */
 export class RemoteTerminals {
@@ -27,12 +30,16 @@ export class RemoteTerminals {
     }
     if (body.operation === 'guiTerminalOpen' || body.operation === 'guiTerminalSshOpen') return this.open(body, owner);
     const session = [...(this.owners.get(owner) ?? [])].find(entry => entry.info?.id === body.id);
-    if (body.operation === 'guiTerminalRead') return readOutput(session, body.cursor);
+    if (body.operation === 'guiTerminalRead') return readOutput(session, body.cursor, body.token);
     if (!session?.info) {
       if (body.operation === 'guiTerminalClose') return;
       throw new Error('终端已关闭，请新建终端。');
     }
     switch (body.operation) {
+      case 'guiTerminalBinaryMode':
+        if (!session.info.ssh || session.exited) throw new Error('client.ssh.closed');
+        session.flow ??= new TerminalFlow(session.info.id, session.output);
+        return session.flow.mode(body.token, body.enabled);
       case 'guiTerminalSshFiles':
         if (!session.info.ssh || session.exited) throw new Error('client.ssh.closed');
         return sshFiles(session.info.id, body.request as SshFileAction);
@@ -47,6 +54,13 @@ export class RemoteTerminals {
       case 'guiTerminalWrite':
         if (session.exited || typeof body.data !== 'string') throw new Error('终端已结束，请新建终端。');
         return terminalApi.write(session.info.id, body.data);
+      case 'guiTerminalWriteBinary':
+        if (!session.info.ssh || session.exited) throw new Error('client.ssh.closed');
+        if (!Array.isArray(body.data) || body.data.length > 64 * 1024
+          || !body.data.every(byte => Number.isInteger(byte) && byte >= 0 && byte <= 255)) {
+          throw new Error('client.ssh.invalid');
+        }
+        return terminalApi.writeBinary(session.info.id, body.data);
       case 'guiTerminalResize':
         if (!session.exited) return terminalApi.resize(session.info.id, body.size as TerminalSize);
         return;
@@ -84,11 +98,13 @@ export class RemoteTerminals {
   }
 }
 
-function readOutput(session: Session | undefined, requestedCursor: unknown) {
+async function readOutput(session: Session | undefined, requestedCursor: unknown, token: unknown) {
   const cursor = requestedCursor ?? session?.legacyCursor ?? 0;
   if (!Number.isSafeInteger(cursor) || Number(cursor) < 0) throw new Error('无法读取终端，请重新打开。');
+  if (!session?.exited) await session?.flow?.read(Number(cursor), token);
   const result = session?.output.read(Number(cursor))
     ?? { found: false, events: [], cursor: 0, truncated: false };
+  session?.flow?.deliveredThrough(result.cursor);
   // Older phones consume arrays; cursor-aware phones can replay retained output after reconnecting.
   if (requestedCursor === undefined) {
     if (session) session.legacyCursor = result.cursor;

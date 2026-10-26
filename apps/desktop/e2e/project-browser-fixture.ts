@@ -94,7 +94,7 @@ export async function browserRequest<T>(request: ProjectBrowserRequest): Promise
   }
   const kind = relative === 'archive.zip' ? 'binary' : relative === 'huge.png' ? 'large' : 'text';
   const chunked = bytes.length > FILE_CHUNK_BYTES;
-  const data: ProjectDocument = { path: request.path, kind, size: kind === 'large' ? 6_000_000 : bytes.length,
+  const data: ProjectDocument = { path: request.path, kind, size: kind === 'large' ? 70_000_000 : bytes.length,
     readOnly: kind !== 'text', revision: fileRevision(relative), chunked,
     text: chunked ? undefined : documents[relative] };
   return data as T;

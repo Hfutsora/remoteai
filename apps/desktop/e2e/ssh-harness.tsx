@@ -22,8 +22,11 @@ import '../src/styles.css';
 import '../../web/src/chat/chat.css';
 import 'antd/dist/reset.css';
 import { cloudFixtureCommand, fixtureProfiles } from './ssh-cloud-fixture';
+import { useLocalGitDownloads } from '../src/downloads/localGitDownloads';
+import { SshDownloadConnection, SshDownloadsPage } from './ssh-downloads-fixture';
 
 const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
+Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true });
 // The shared fixture imports desktop CSS, whose 820px minimum would enlarge the mobile layout viewport.
 if (mode === 'web') document.body.style.minWidth = '320px';
 const simulatedShell = new URLSearchParams(location.search).has('cloud');
@@ -81,6 +84,7 @@ client.terminal.ssh.profiles = fixtureProfiles(mode);
 const remoteApi = remoteTerminalApi(client.terminal);
 
 function Local() {
+  useLocalGitDownloads();
   const panel = useTerminalPanel('/fixture');
   return <><button onClick={panel.toggle}>打开终端</button>
     <div style={{ flex: 1 }}>本地模式</div><TerminalPanel panel={panel} api={terminalApi} active /></>;
@@ -92,20 +96,24 @@ function Remote() {
 }
 function App() {
   const [dark, setDark] = useState(false);
+  const [downloads, setDownloads] = useState(false);
   const content = <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
     <textarea aria-label="聊天输入" style={{ margin: 16 }} />
     {mode === 'local' ? <Local /> : <Remote />}
   </div>;
   return <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
+    <SshDownloadConnection mode={mode} client={client} />
     <div style={{ height: '100vh' }}>
       <div style={{ height: 32 }}><button onClick={() => setInterfaceLanguage('en')}>English</button>
         <button onClick={() => setInterfaceLanguage('zh')}>中文</button>
         <button onClick={() => setInterfaceLanguage('ru')}>Русский</button>
         <button onClick={() => setInterfaceLanguage('ja')}>日本語</button>
+        <button onClick={() => setDownloads(!downloads)}>{downloads ? '返回 SSH' : '下载管理'}</button>
         <button onClick={() => {
           applyThemeMode(dark ? 'light' : 'dark'); setDark(!dark);
         }}>切换主题</button></div>
-      <div style={{ height: 'calc(100% - 32px)' }}>
+      {downloads && <SshDownloadsPage mode={mode} back={() => setDownloads(false)} />}
+      <div hidden={downloads} style={{ height: 'calc(100% - 32px)' }}>
       {mode === 'web' ? <ChatDetailsWorkspace selected="fixture" active enabled>
         <ChatTerminalLayout><div style={{ padding: 16 }}><ChatTerminal client={client.terminal} cwd="/fixture"
           active connected /><textarea aria-label="聊天输入" /></div></ChatTerminalLayout>

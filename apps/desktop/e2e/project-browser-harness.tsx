@@ -10,7 +10,7 @@ import type { ProjectBrowserRequest } from '../../../shared/project-browser/prot
 import { guiApi } from '../src/pages/codexGui/api';
 import { displayText } from '../src/i18n/uiText';
 import { applyThemeMode } from '../src/utils/themeMode';
-import { browserRequest, browserRoot, savedFiles, causeConflict, seedLargeDirectory,
+import { browserRoot, savedFiles, causeConflict, seedLargeDirectory,
   seedLargeText } from './project-browser-fixture';
 import { ProjectBrowser } from '../../../shared/project-browser/ProjectBrowser';
 import type { BrowserHost } from '../../../shared/project-browser/entryActions';
@@ -19,15 +19,16 @@ import type { ReplyQuote } from '../src/pages/codexGui/replyQuotes';
 import { ChatDetailsWorkspace } from '../../web/src/chat/ChatDetailsWorkspace';
 import '../src/styles.css';
 import 'antd/dist/reset.css';
+import { previewBrowserRequest, setPreviewFiles, previewReads } from './browser-preview-fixture';
 
 const params = new URLSearchParams(location.search);
 const dark = params.has('dark');
 const mode = params.get('mode') ?? 'local';
 if (params.has('largeDirectory')) seedLargeDirectory(10_001);
 if (params.has('largeText')) seedLargeText(params.has('atThreshold'));
-const client = createGuiToolsClient(<T,>(request: object) => browserRequest<T>(request as ProjectBrowserRequest));
-guiApi.request = <T,>(request: object) => browserRequest<T>(request as ProjectBrowserRequest);
-Object.assign(window, { savedFiles, causeConflict });
+const client = createGuiToolsClient(<T,>(request: object) => previewBrowserRequest<T>(request as ProjectBrowserRequest));
+guiApi.request = <T,>(request: object) => previewBrowserRequest<T>(request as ProjectBrowserRequest);
+Object.assign(window, { savedFiles, causeConflict, setPreviewFiles, previewReads });
 const browserActions: { path: string; action: string }[] = [];
 const fixtureHost: BrowserHost = {
   copyPath: async path => { browserActions.push({ path, action: 'copyPath' }); },

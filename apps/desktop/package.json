@@ -1,7 +1,7 @@
 {
   "name": "@codex-switch/desktop",
   "private": true,
-  "version": "2.0.23",
+  "version": "2.0.24",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -55,6 +55,7 @@
     "lowlight": "^3.3.0",
     "lucide-react": "^0.468.0",
     "mdast-util-find-and-replace": "^3.0.2",
+    "pdfjs-dist": "5.4.624",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
@@ -62,7 +63,8 @@
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "@remoteai/i18n": "0.1.0"
+    "@remoteai/i18n": "0.1.0",
+    "zmodem.js": "^0.1.10"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

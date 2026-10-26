@@ -9,6 +9,7 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { displayError, t, useLanguage } from '../../i18n';
 import { SshButton, SshField } from './SshControls';
 import { useSshStyles } from './sshStyles';
+import { SshHostKeySheet } from './SshHostKeySheet';
 
 export function SshQuickConnectSheet({ api, profile, cwd, connected, dispose, close }: {
   api: SshApi; profile: SshProfile; cwd: string; connected: (info: TerminalInfo) => void;
@@ -39,11 +40,12 @@ export function SshQuickConnectSheet({ api, profile, cwd, connected, dispose, cl
       </>}
       {(busy || loading) && <View style={styles.row}><ActivityIndicator />
         <Text style={styles.hint}>{t('client.ssh.connecting')}</Text></View>}
-      {trust && <View><Text style={styles.label}>{t('client.ssh.trustHost')}</Text>
+      {trust && !trust.previousFingerprints && <View><Text style={styles.label}>{t('client.ssh.trustHost')}</Text>
         <Text selectable style={styles.hint}>{trust.fingerprint}</Text></View>}
       {!!error && <><Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>
         <SshButton label={t('client.ssh.refresh')} disabled={busy || loading}
           onPress={() => void connection.refresh()} /></>}
     </ScrollView>
+    <SshHostKeySheet connection={connection} />
   </BottomSheet>;
 }

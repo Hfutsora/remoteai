@@ -17,6 +17,7 @@ import './projectBrowser.css';
 import type { BrowserHost } from './entryActions';
 import './treeActions.css';
 import './editorWorkspace.css';
+import type { ProjectPreviewRenderer } from './preview';
 
 export interface ProjectBrowserHandle {
   requestClose: () => void; saveActive: () => void; snapshot: () => DocumentsSnapshot;
@@ -27,11 +28,12 @@ interface Props {
   host: BrowserHost;
   initialSnapshot?: DocumentsSnapshot;
   treeOptions?: ProjectTreeOptions;
+  renderPreview?: ProjectPreviewRenderer;
 }
 
 export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function ProjectBrowser(
   { client, cwd, connected, t, onClose, preferences: suppliedPreferences, initialSnapshot, host: actionsHost,
-    treeOptions }, ref,
+    treeOptions, renderPreview }, ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
   const file = useProjectDocument(client, cwd, initialSnapshot);
@@ -76,6 +78,7 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
       <section className="pf-file" aria-label={t("client.projectBrowser.filePreview")}>
         {settingsOpen && <div className="pf-settings"><AutoSaveSettings preferences={preferences} t={t} /></div>}
         <ProjectEditorWorkspace narrow={split.narrow} options={{ store: file.store, connected, t, actions,
+          renderPreview,
           quoteSelection: actionsHost.quoteSelection,
           back: () => setShowFile(false), settings: () => setSettingsOpen(!settingsOpen), settingsOpen }} />
       </section>

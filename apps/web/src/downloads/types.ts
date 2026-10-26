@@ -6,6 +6,7 @@ export interface DownloadSource extends DownloadLocation {
   owner: string; deviceId: string; deviceName: string; path: string;
   preview?: import('../../../../shared/remote-chat/downloads').PreviewKind;
   gitCommit?: string;
+  sshSessionId?: string;
 }
 export interface DownloadTask {
   id: string; source: DownloadSource; name: string;
@@ -25,4 +26,5 @@ export interface DownloadConnection {
   threadId?: string; cwd?: string; client: DownloadClient; files: FileClient;
   git?: import('../../../../shared/remote-chat/gitTypes').GitClient;
   projectBrowser?: import('../../../../shared/project-browser/protocol').ProjectBrowserClient;
+  ssh?: import('../../../../shared/terminal/ssh').SshApi;
 }
