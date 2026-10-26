@@ -48,7 +48,7 @@ export function ChatUsage({ read, active, ready, tokenUsage, onContextSettings, 
 
 const useStyles = createThemedStyles((color) => ({
   container: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color(palette.border, 'border'), paddingTop: 14, gap: 4 },
-  summary: { marginTop: 8, padding: 12, gap: 4, borderRadius: 12, backgroundColor: color('#eef3f0', 'canvas') },
+  summary: { padding: 12, gap: 4, borderRadius: 12, backgroundColor: color('#eef3f0', 'canvas') },
   row: { color: color(palette.muted, 'muted'), ...textMetrics(12, 20), flexShrink: 1 },
   tokens: { color: color(palette.green, 'accent'), fontWeight: '600' },
   cost: { color: color('#b45d00', 'warning'), fontWeight: '600' },

@@ -26,7 +26,6 @@
     flex-basis: 100%;
     min-width: 0;
     gap: 4px;
-    margin-top: 8px;
     padding: 12px;
     border-radius: 12px;
     background: var(--app-canvas, #eef3f0);
