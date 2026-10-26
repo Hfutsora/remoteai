@@ -5,6 +5,8 @@ import type { ChatConnection, ConnectionEvents } from '../../../../shared/remote
 import { compactUnavailableReason } from '../../../../shared/remote-chat/client/composerCommands';
 import type { GuiEvent, Skill, Thread } from '../pages/codexGui/types';
 import { guiApi } from '../pages/codexGui/api';
+import { GuiController } from '../pages/codexGui/controller';
+import { getGuiController } from '../pages/codexGui/session';
 import { ChatOperations } from './operations';
 import { remoteQueue } from './queue';
 
@@ -12,20 +14,25 @@ vi.mock('../pages/codexGui/composerBridge', () => ({ guiComposer: {
   validateSend: async () => ({ model: 'model', effort: 'high', access: 'workspace-write' }),
 } }));
 vi.mock('../pages/codexGui/api', () => ({ guiApi: { connect: vi.fn(), request: vi.fn(), respond: vi.fn() } }));
+vi.mock('../pages/codexGui/session', () => ({ getGuiController: vi.fn() }));
 const skill: Skill = { name: 'review', path: 'C:/skills/review/SKILL.md', description: '检查代码', enabled: true };
 const thread: Thread = { id: 'chat', preview: '', cwd: 'C:/project', updatedAt: 1, turns: [] };
 const models = [{ id: 'model', model: 'model', displayName: 'Model', isDefault: true,
   defaultReasoningEffort: 'high', supportedReasoningEfforts: [{ reasoningEffort: 'high', description: '' }] }];
 let controller: ChatController;
+let hostController: GuiController;
 let handlers: ConnectionEvents;
 let remote: Thread;
 beforeEach(async () => {
   vi.resetAllMocks();
+  hostController = new GuiController();
+  vi.mocked(getGuiController).mockReturnValue(hostController);
   vi.spyOn(remoteQueue, 'request').mockResolvedValue({ revision: 0, threads: {} });
   remote = structuredClone(thread);
   vi.mocked(guiApi.connect).mockResolvedValue([]);
   vi.mocked(guiApi.request).mockImplementation(async (request) => {
     if (['read', 'resume', 'start'].includes(request.operation)) return { thread: structuredClone(remote) };
+    if (request.operation === 'send') return { turn: { id: 'turn', status: 'inProgress', items: [] } };
     if (request.operation === 'skills') return { data: [{ skills: [{ ...skill, iconUrl: 'x'.repeat(9 * 1024 * 1024) }],
       errors: [] }] };
     return { data: [], nextCursor: null };
@@ -46,7 +53,7 @@ beforeEach(async () => {
   controller.start();
   await vi.waitFor(() => expect(controller.snapshot().ready).toBe(true));
 });
-afterEach(() => controller.stop());
+afterEach(() => { controller.stop(); hostController.dispose(); });
 
 it('loads project skills through the PC allowlist without transferring large icons', async () => {
   const result = await controller.loadSkills(thread.cwd);

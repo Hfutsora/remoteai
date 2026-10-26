@@ -64,7 +64,9 @@ it("updates an open menu and accepts selections while usage polling waits for a 
   });
   expect(controller.getSnapshot().settings.model).toBe("deepseek-v3");
   expect(invoke).toHaveBeenCalledTimes(2);
-  await act(async () => finish.forEach((resolve) => resolve({ totalTokens: 123, running: true })));
+  await act(async () => finish.forEach((resolve) => resolve({
+    totalTokens: 123, estimatedCostUsd: 0.1, running: true,
+  })));
   expect(container.textContent).toContain("123");
   expect(controller.getSnapshot().settings.model).toBe("deepseek-v3");
 });

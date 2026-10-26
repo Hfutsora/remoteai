@@ -12,6 +12,7 @@ vi.mock('react-native', () => ({ Platform: { OS: 'android' }, NativeModules: {} 
 vi.mock('../downloads/previews', () => ({ createPreviewDownloads: () => ({ dispose: vi.fn() }) }));
 vi.mock('../downloads/iosPreviews', () => ({ createIosPreviewDownloads: vi.fn() }));
 vi.mock('../downloads/manager', () => ({ downloadOwner: () => 'test-owner' }));
+vi.mock('../api/client', () => ({ authorizedRequest: vi.fn() }));
 vi.mock('./connection', () => ({ MobileChatConnection: class {
   constructor(events: ConnectionEvents) { mocks.events = events; }
   start() { mocks.events!.mode('relay'); mocks.events!.ready(); }

@@ -30,7 +30,8 @@ beforeEach(() => {
   vi.mocked(getGuiController).mockReturnValue(controller);
   vi.mocked(guiApi.connect).mockResolvedValue([]);
   vi.mocked(guiApi.request).mockImplementation(async (request) => {
-    if (request.operation === 'start' || request.operation === 'resume') return { thread: structuredClone(thread) };
+    if (['start', 'resume', 'read'].includes(request.operation)) return { thread: structuredClone(thread) };
+    if (request.operation === 'send') return { turn: { id: 'turn', status: 'inProgress', items: [] } };
     if (request.operation === 'generateTitle') return { title: '手机聊天标题修复' };
     return {};
   });
@@ -78,10 +79,12 @@ it.each([
   { ...thread, name: '手动命名' },
   { ...thread, turns: [{ id: 'old', status: 'completed', items: [] }] },
 ])('preserves existing and manual titles on resume: %j', async (existing) => {
-  vi.mocked(guiApi.request).mockResolvedValue({ thread: existing });
+  vi.mocked(guiApi.request).mockImplementation(async request => request.operation === 'send'
+    ? { turn: { id: 'turn', status: 'inProgress', items: [] } } : { thread: existing });
   const host = new ChatOperations();
   await request(host, { operation: 'resume', threadId: thread.id }, 'resume');
-  await request(host, { operation: 'send', threadId: thread.id, text: '继续' }, 'send');
+  expect((await request(host, { operation: 'send', threadId: thread.id, text: '继续' }, 'send')).error)
+    .toBeUndefined();
   expect(guiApi.request).not.toHaveBeenCalledWith(expect.objectContaining({ operation: 'generateTitle' }));
 });
 
