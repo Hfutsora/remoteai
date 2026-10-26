@@ -88,7 +88,10 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
     </div>
     <AdaptiveSheet open={panel === 'petDock'} title={petDockText(getLanguage(), 'settings.petDock.title')}
       onClose={close} width={400}>
-      <div className="settings-sync"><p>{petDockText(getLanguage(), 'settings.petDock.cloudHint')}</p></div>
+      <div className="settings-sync">
+        <p>{petDockText(getLanguage(), 'settings.petDock.cloudHint')}</p>
+        <p>{petDockText(getLanguage(), 'settings.petDock.labelsHint')}</p>
+      </div>
     </AdaptiveSheet>
     <AdaptiveSheet open={panel === 'files'} title={t("client.projectBrowser.fileBrowserSettings")} onClose={close} width={400}>
       <div className="settings-sync"><AutoSaveSettings preferences={filePreferences} t={displayText} /></div>

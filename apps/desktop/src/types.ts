@@ -544,6 +544,7 @@ export interface AppSettings {
   nonProxyEnhancementsEnabled?: boolean;
   floatingBubbleEnabled: boolean;
   petDockEnabled?: boolean;
+  petDockShowLabels?: boolean;
   privacyMode: boolean;
   hideAccountNotes: boolean;
   bubbleResetDisplay: BubbleResetDisplay;

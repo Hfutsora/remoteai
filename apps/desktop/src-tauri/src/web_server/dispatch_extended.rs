@@ -4,6 +4,9 @@ fn dispatch_extended_command(app: AppHandle, command: &str, args: Value) -> Resu
         "set_pet_dock_enabled" => serialize(block_on(crate::pet_dock::set_pet_dock_enabled(
             app, argument(&args, "enabled")?,
         ))),
+        "set_pet_dock_labels_visible" => serialize(block_on(crate::pet_dock::set_pet_dock_labels_visible(
+            app, argument(&args, "showLabels")?,
+        ))),
         "cloud_ssh_profiles" => serialize(block_on(crate::cloud::cloud_ssh_profiles(
             app, argument(&args, "identity")?, argument(&args, "request")?,
         ))),

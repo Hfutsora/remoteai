@@ -23,6 +23,7 @@ pub(crate) enum DockState {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PetDockStatus {
     enabled: bool,
+    show_labels: bool,
     state: DockState,
 }
 
@@ -36,7 +37,8 @@ fn set_state(state: DockState) {
 }
 
 fn status(app: &AppHandle) -> Result<PetDockStatus, String> {
-    let enabled = crate::storage::read_app_settings(app)?.pet_dock_enabled;
+    let settings = crate::storage::read_app_settings(app)?;
+    let enabled = settings.pet_dock_enabled;
     let state = if !cfg!(any(target_os = "windows", target_os = "macos")) {
         DockState::Unsupported
     } else if !enabled {
@@ -52,7 +54,11 @@ fn status(app: &AppHandle) -> Result<PetDockStatus, String> {
             state
         }
     };
-    Ok(PetDockStatus { enabled, state })
+    Ok(PetDockStatus {
+        enabled,
+        show_labels: settings.pet_dock_show_labels,
+        state,
+    })
 }
 
 #[tauri::command]
@@ -70,6 +76,21 @@ pub(crate) async fn set_pet_dock_enabled(
     tauri::async_runtime::spawn_blocking(move || {
         let mut settings = crate::storage::read_app_settings(&app)?;
         settings.pet_dock_enabled = enabled;
+        crate::storage::write_app_settings(&app, &settings)?;
+        status(&app)
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub(crate) async fn set_pet_dock_labels_visible(
+    app: AppHandle,
+    show_labels: bool,
+) -> Result<PetDockStatus, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut settings = crate::storage::read_app_settings(&app)?;
+        settings.pet_dock_show_labels = show_labels;
         crate::storage::write_app_settings(&app, &settings)?;
         status(&app)
     })

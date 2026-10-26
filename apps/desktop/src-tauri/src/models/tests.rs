@@ -68,11 +68,15 @@
     fn pet_dock_defaults_to_off_and_round_trips_without_changing_other_preferences() {
         let mut settings: AppSettings = serde_json::from_str("{}").unwrap();
         assert!(!settings.pet_dock_enabled);
+        assert!(!settings.pet_dock_show_labels);
         settings.pet_dock_enabled = true;
+        settings.pet_dock_show_labels = true;
         let value = serde_json::to_value(&settings).unwrap();
         assert_eq!(value["petDockEnabled"], true);
+        assert_eq!(value["petDockShowLabels"], true);
         let restored: AppSettings = serde_json::from_value(value).unwrap();
         assert!(restored.pet_dock_enabled);
+        assert!(restored.pet_dock_show_labels);
         assert_eq!(restored.floating_bubble_enabled, settings.floating_bubble_enabled);
     }
 

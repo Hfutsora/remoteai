@@ -186,11 +186,13 @@ export interface MessageParams38 {
   "settings.petDock.description": Record<string, never>;
   "settings.petDock.disabled": Record<string, never>;
   "settings.petDock.enabled": Record<string, never>;
+  "settings.petDock.labelsHint": Record<string, never>;
   "settings.petDock.loadError": Record<string, never>;
   "settings.petDock.loading": Record<string, never>;
   "settings.petDock.metrics": Record<string, never>;
   "settings.petDock.retry": Record<string, never>;
   "settings.petDock.saveError": Record<string, never>;
+  "settings.petDock.showLabels": Record<string, never>;
   "settings.petDock.title": Record<string, never>;
   "settings.petDock.unavailable": Record<string, never>;
   "settings.petDock.unsupported": Record<string, never>;
@@ -198,6 +200,4 @@ export interface MessageParams38 {
   "settings.petDock.waitingForPet": Record<string, never>;
   "settings.privacy.description": Record<string, never>;
   "settings.privacy.enabled": Record<string, never>;
-  "settings.privacy.hideNotes": Record<string, never>;
-  "settings.privacy.title": Record<string, never>;
 }
