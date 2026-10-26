@@ -1,6 +1,6 @@
 import { messageKeys } from '../../../../shared/project-browser/messageKeys';
 import { displayText, displayError } from '../i18n/index';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,19 +8,27 @@ import { WebView } from 'react-native-webview';
 import { Asset } from 'expo-asset';
 import { readAsStringAsync } from 'expo-file-system';
 import type { ProjectBrowserClient } from '../../../../shared/project-browser/protocol';
-import { handleBrowserRequest, type BrowserHostMessage } from '../../../../shared/project-browser/nativeBridge';
+import { handleBrowserRequest, type BrowserHostMessage,
+  type BrowserSettings } from '../../../../shared/project-browser/nativeBridge';
+import type { BrowserHost } from '../../../../shared/project-browser/entryActions';
+import { isNativeSshBrowserAction,
+  type NativeSshBrowserAction } from '../../../../shared/terminal/nativeSshBrowserAction';
 
 import { t, useLanguage } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 import { useFilePreferences, setFileAutoSave } from '../settings/filePreferences';
 import { readBrowserSession, saveBrowserSession } from './projectBrowserSessions';
 import type { DocumentsSnapshot } from '../../../../shared/project-browser/documents';
 import { projectBrowserHost } from './projectBrowserHost';
 import { useChatFileReference, useChatFileSelection } from '../../../../shared/chat/ChatFileReferences';
 
-export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
+export function ProjectBrowser({ client, cwd, connected, active, onClose, title, subtitle,
+  host: suppliedHost, ssh, children }: {
   client: ProjectBrowserClient; cwd: string; connected: boolean; active: boolean; onClose: () => void;
+  title?: string; subtitle?: string; host?: BrowserHost; children?: ReactNode;
+  ssh?: { settings: NonNullable<BrowserSettings['ssh']>; onAction: (action: NativeSshBrowserAction) => void };
 }) {
   const language = useLanguage();
   const color = useThemeColor();
@@ -31,12 +39,12 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
   const quoteSelection = useChatFileSelection();
   const focusAfterClose = useRef<(() => void) | null>(null);
   const transfer = useMemo(() => new AbortController(), [client, cwd]);
-  const host = useMemo(() => ({ ...projectBrowserHost(client, transfer.signal),
+  const host = useMemo(() => suppliedHost ?? ({ ...projectBrowserHost(client, transfer.signal),
     reference: async (entry: Parameters<typeof reference>[0]) => { focusAfterClose.current = reference(entry); },
     quoteSelection: async (selection: Parameters<typeof quoteSelection>[0]) => {
       focusAfterClose.current = quoteSelection(selection);
     },
-  }), [client, transfer, reference, quoteSelection]);
+  }), [client, transfer, reference, quoteSelection, suppliedHost]);
   useEffect(() => () => transfer.abort(), [transfer]);
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
@@ -54,26 +62,31 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
       const content = await readAsStringAsync(asset.localUri);
       if (!cancelled) setHtml(content);
     };
-    void load().catch(() => { if (!cancelled) setError('文件浏览器未能加载，请重新打开。'); });
+    void load().catch(() => {
+      if (!cancelled) setError('client.projectBrowser.theFileBrowserCouldNotLoadPleaseReopenIt');
+    });
     return () => { cancelled = true; };
   }, []);
   const update = () => emit({ type: 'settings', language, cwd, connected: connected && active && preferences.ready,
     autoSaveDelay: preferences.delay, snapshot: readBrowserSession(client, cwd),
+    ssh: ssh?.settings, capabilities: { entryActions: host.entryActions, downloadDirectory: host.downloadDirectory,
+      reference: !!host.reference, quoteSelection: !!host.quoteSelection },
     labels: Object.fromEntries(messageKeys.map(text => [text, displayText(text)])),
     theme: { '--ink': color('#202c29', 'ink'), '--muted': color('#718078', 'muted'),
       '--panel': color('#fff', 'surface'), '--bg': color('#f5f8f6', 'canvas'),
       '--line': color('#dfe5e1', 'border'), '--green': color('#138475', 'accent'),
       '--browser-on-accent': color('#fff', 'canvas') } });
-  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, preferences]);
+  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, preferences, host, ssh]);
   // Backgrounding the app must not unmount the WebView and discard its unsaved document.
-  return <Modal visible animationType="slide" onRequestClose={close}
+  return <Modal visible={active} animationType="slide" onRequestClose={close}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
     <SafeAreaProvider><SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Ionicons name="folder-open-outline" size={21} color={color('#202c29', 'ink')} />
-          <View style={styles.heading}><Text style={styles.title}>{t("client.projectBrowser.browseFiles")}</Text>
-            <Text style={styles.subtitle} numberOfLines={1}>{cwd.split(/[\\/]/).filter(Boolean).at(-1)}</Text></View>
+          <View style={styles.heading}>
+            <Text style={styles.title}>{title ?? t("client.projectBrowser.browseFiles")}</Text>
+            <Text style={styles.subtitle}>{subtitle ?? cwd.split(/[\\/]/).filter(Boolean).at(-1)}</Text></View>
           <Pressable accessibilityRole="button" accessibilityLabel={t("client.projectBrowser.closeFileBrowser")}
             style={styles.close} onPress={close}><Ionicons name="close" size={24} color={color('#202c29', 'ink')} /></Pressable>
         </View>
@@ -88,6 +101,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
             let message: unknown;
             try { message = JSON.parse(nativeEvent.data); } catch { return; }
             if (!message || typeof message !== 'object' || !('type' in message)) return;
+            if (isNativeSshBrowserAction(message)) { ssh?.onAction(message); return; }
             if (message.type === 'ready') { setReady(true); update(); return; }
             if (message.type === 'closed') {
               if ('snapshot' in message && message.snapshot && typeof message.snapshot === 'object'
@@ -107,8 +121,11 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose }: {
             void handleBrowserRequest(nativeEvent.data, { client, cwd, host, connected: connected && active })
               .then(reply => { if (reply) emit(reply); });
           }}
-          onError={() => { setReady(false); setError('文件浏览器未能加载，请重新打开。'); }} />}
+          onError={() => {
+            setReady(false); setError('client.projectBrowser.theFileBrowserCouldNotLoadPleaseReopenIt');
+          }} />}
         {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
+        {children}
       </KeyboardAvoidingView>
     </SafeAreaView></SafeAreaProvider>
   </Modal>;
@@ -120,8 +137,8 @@ const useStyles = createThemedStyles(color => ({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, minHeight: 60,
     borderBottomWidth: 1, borderBottomColor: color('#dfe5e1', 'border') },
   heading: { flex: 1, minWidth: 0 },
-  title: { fontSize: 16, fontWeight: '600', color: color('#202c29', 'ink') },
-  subtitle: { fontSize: 12, color: color('#718078', 'muted') },
+  title: { ...textMetrics(16, 24), fontWeight: '600', color: color('#202c29', 'ink') },
+  subtitle: { ...textMetrics(12, 18), color: color('#718078', 'muted') },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  error: { color: color('#c44545', 'danger'), padding: 16 },
+  error: { ...textMetrics(14, 22), color: color('#c44545', 'danger'), padding: 16, maxWidth: 400 },
 }));

@@ -20,7 +20,12 @@ const decode = value => value.replaceAll('&quot;', '"').replaceAll('&amp;', '&')
 async function nodes() {
   let xml = '';
   for (let attempt = 0; attempt < 6; attempt++) {
-    xml = await hierarchy(adb);
+    try { xml = await hierarchy(adb); }
+    catch (error) {
+      // Android's legacy dumper can lose a node while a WebView or modal is being replaced.
+      if (attempt === 5 || !String(error).includes('AccessibilityNodeInfoDumper.childNafCheck')) throw error;
+      await pause(); continue;
+    }
     if (xml.includes(`package="${packageName}"`)) break;
     await pause();
   }
@@ -34,8 +39,13 @@ async function nodes() {
   });
 }
 async function find(label) {
-  const matches = (await nodes()).filter(node => (node.text === label || node['content-desc'] === label)
+  const matches = (await nodes()).filter(node => (node.text === label || node['content-desc'] === label
+    || (label === '已保存' && node.text.endsWith(label)))
     && node.rect[2] > node.rect[0] && node.rect[3] > node.rect[1]);
+  if (label === '文件内容' && !matches.length) {
+    return (await nodes()).find(node => node.class === 'android.widget.EditText'
+      && node.rect[2] > node.rect[0] && node.rect[3] > node.rect[1]);
+  }
   return matches.find(node => node.clickable === 'true') ?? matches[0];
 }
 async function wait(label) {
@@ -59,8 +69,10 @@ async function tap(label, scroll = false) {
 }
 async function input(label, text) {
   await wait(label);
-  const node = (await nodes()).find(item => item.class === 'android.widget.EditText'
-    && item['content-desc'] === label);
+  const fields = (await nodes()).filter(item => item.class === 'android.widget.EditText'
+    && item.rect[2] > item.rect[0] && item.rect[3] > item.rect[1]);
+  const node = fields.find(item => item['content-desc'] === label || item.text === label)
+    ?? (fields.length === 1 ? fields[0] : undefined);
   assert.ok(node, label);
   const [left, top, right, bottom] = node.rect;
   await adb('shell', 'input', 'tap', String((left + right) >> 1), String((top + bottom) >> 1));
@@ -101,7 +113,12 @@ async function launch(scale) {
   await adb('shell', 'settings', 'put', 'system', 'font_scale', String(scale));
   await adb('shell', 'am', 'force-stop', packageName);
   await adb('shell', 'am', 'start', '-W', '-n', `${packageName}/com.codexswitch.mobile.MainActivity`);
-  await wait('打开远程终端'); await pause(); await tap('打开远程终端'); await wait('终端连接选项');
+  await wait('打开远程终端');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await pause(); await tap('打开远程终端'); await pause();
+    if (await find('终端连接选项')) return;
+  }
+  await wait('终端连接选项');
 }
 async function verify(scale) {
   if (process.env.SSH_CLOUD_FIXTURE) {

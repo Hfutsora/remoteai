@@ -7,6 +7,7 @@ import { autoSaveDelay } from './preferences';
 import type { BrowserHost } from './entryActions';
 import { setInterfaceLanguage } from '../localization/interfaceLanguage';
 import { displayText } from '../localization/messages';
+import { nativeSshTreeOptions } from '../terminal/nativeSshBrowser';
 
 declare global {
   interface Window {
@@ -64,7 +65,12 @@ function render(settings: BrowserSettings) {
   for (const [name, value] of Object.entries(settings.theme)) {
     if (/^--[\w-]+$/.test(name)) document.documentElement.style.setProperty(name, value);
   }
-  root.render(<ProjectBrowser key={settings.cwd} ref={browser} client={client} cwd={settings.cwd} host={host}
+  const capabilities = settings.capabilities;
+  const actionsHost = capabilities ? { ...host, ...capabilities,
+    reference: capabilities.reference ? host.reference : undefined,
+    quoteSelection: capabilities.quoteSelection ? host.quoteSelection : undefined } : host;
+  root.render(<ProjectBrowser key={settings.cwd} ref={browser} client={client} cwd={settings.cwd} host={actionsHost}
+    treeOptions={nativeSshTreeOptions({ ...settings, connected: settings.connected && !closing }, send)}
     connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
     initialSnapshot={settings.snapshot} preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
       change: delay => { send({ type: 'preferences', delay }); render({ ...settings, autoSaveDelay: delay }); } }}

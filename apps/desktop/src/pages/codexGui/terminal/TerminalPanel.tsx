@@ -10,7 +10,8 @@ import styles from "./terminal.module.less";
 import { TerminalKeys } from './TerminalKeys';
 import { TerminalLinkMenu, type TerminalLinkTarget } from './TerminalLinkMenu';
 import { SshMenu } from '../../../../../../shared/terminal/SshMenu';
-import { SshFiles, SshFileBrowser, sshFilesTabId } from '../../../../../../shared/terminal/SshFiles';
+import { SshFiles, sshFilesTabId } from '../../../../../../shared/terminal/SshFiles';
+import { SshProjectBrowser } from '../../../../../../shared/terminal/SshProjectBrowser';
 import { WorkspaceDrawerContext } from '../../../../../../shared/chat/workspaceDrawer';
 import { TerminalTabStrip } from './TerminalTabStrip';
 import { useGuiLanguage } from '../../../i18n/useGuiLanguage';
@@ -36,12 +37,11 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
   const workspace = useContext(WorkspaceDrawerContext);
   const [fileTabs, setFileTabs] = useState<string[]>([]);
   const [mobileFiles, setMobileFiles] = useState<string>();
-  const fileSession = panel.tabs.find(tab => tab.session?.id === mobileFiles)?.session;
   const selectedSession = panel.tabs.find(tab => tab.id === panel.selected)?.session;
   const uploads = useSshDropQueue(panel.tabs.flatMap(tab => tab.session?.ssh ? [tab.session.id] : []));
   const openFiles = (id: string) => {
-    if (fill) { setMobileFiles(id); return; }
     setFileTabs(previous => previous.includes(id) ? previous : [...previous, id]);
+    if (fill) { setMobileFiles(id); return; }
     workspace?.tabs.open(sshFilesTabId(id));
   };
   return <section ref={host} className={`${styles.panel} ${fill ? styles.fill : ''}`}
@@ -80,12 +80,14 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
     {api.ssh && !fill && panel.tabs.filter(tab => tab.session?.ssh && fileTabs.includes(tab.session.id)).map(tab =>
       <SshFiles key={tab.id} info={tab.session!} api={api.ssh!} active={active} nativeDrop={nativeDrop}
         pendingUpload={uploads.pending.find(value => value.id === tab.session!.id)} />)}
-    {api.ssh && fill && fileSession && <Drawer open={visible} placement="bottom" height="100%"
+    {api.ssh && fill && panel.tabs.filter(tab => tab.session?.ssh && fileTabs.includes(tab.session.id)).map(tab =>
+      <Drawer key={tab.id} open={visible && mobileFiles === tab.session!.id} placement="bottom" height="100%"
       rootClassName="ssh-files-drawer" title={translate('client.ssh.files')} onClose={() => setMobileFiles(undefined)}
       closable={{ 'aria-label': translate('client.ssh.backToTerminal'), placement: 'end' }}>
-      <SshFileBrowser key={fileSession.id} id={fileSession.id} api={api.ssh} nativeDrop={nativeDrop}
-        pendingUpload={uploads.pending.find(value => value.id === fileSession.id)} />
-    </Drawer>}
+      <SshProjectBrowser id={tab.session!.id} api={api.ssh!} nativeDrop={nativeDrop}
+        active={visible && mobileFiles === tab.session!.id}
+        pendingUpload={uploads.pending.find(value => value.id === tab.session!.id)} />
+    </Drawer>)}
   </section>;
 }
 

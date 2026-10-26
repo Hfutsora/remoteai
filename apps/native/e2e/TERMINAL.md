@@ -56,8 +56,8 @@ node apps/native/e2e/ssh-test.mjs
 ```
 
 Run this alone on the device. It checks pulling saved connections, adding a connection,
-host confirmation, single-tap directory navigation, long-press rename/deletion, editable text/code
-files, save-and-reopen round trips, unsaved-change protection, and returning to the terminal at
+host confirmation, the shared expandable file tree, long-press rename/deletion, tabbed text/code
+editing, save-and-reopen round trips, retained drafts after closing the browser, and returning to the terminal at
 font scales 1.0 and 1.3, including landscape. Set `SSH_FILES_ONLY=1` to run the focused file checks.
 The fixture retains uploaded bytes so reopening a saved file verifies its content. It also checks each tab's
 close button and the overflow menu for hidden tabs. It restores the original
@@ -65,6 +65,10 @@ font and rotation settings. Inspect `.codex-tmp/mobile-ssh-android/` screenshots
 clipping. Native transfer unit tests cover picker uploads and download publication;
 desktop `ssh.pw.ts` covers actual SSH/SFTP in local, remote, Web PC and phone layouts
 using the disposable WSL server. iOS presentation still requires device validation.
+
+Run `npm run test:chat:e2e -w @codex-switch/desktop -- ssh-project-browser-mobile.pw.ts`
+for the mobile Web entry point, including touch menus, search, save, draft restoration and landscape.
+`project-browser-native.pw.ts` checks the bundled offline editor and the regular native browser bridge.
 
 For SSH cloud sync, start the real Go profile API against a disposable PostgreSQL database:
 

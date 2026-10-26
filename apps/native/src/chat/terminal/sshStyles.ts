@@ -16,11 +16,4 @@ export const useSshStyles = createThemedStyles(color => ({
   hint: { ...textMetrics(12, 19), color: color('#718078', 'muted'), maxWidth: 400 },
   error: { ...textMetrics(13, 20), color: color('#c44545', 'danger'), maxWidth: 400 },
   list: { maxHeight: 180 },
-  files: { flexShrink: 1, minHeight: 0, gap: 10 },
-  fileList: { flex: 1, minHeight: 0 },
-  file: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10,
-    paddingHorizontal: 8, minHeight: 48, borderRadius: 10 },
-  fileName: { ...textMetrics(14, 22), flex: 1, color: color('#17211b', 'ink') },
-  editor: { flexShrink: 1, minHeight: 0, gap: 10 },
-  editorInput: { flex: 1, minHeight: 100, textAlignVertical: 'top' },
 }));

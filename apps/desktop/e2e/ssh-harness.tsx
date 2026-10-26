@@ -24,6 +24,8 @@ import 'antd/dist/reset.css';
 import { cloudFixtureCommand, fixtureProfiles } from './ssh-cloud-fixture';
 
 const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
+// The shared fixture imports desktop CSS, whose 820px minimum would enlarge the mobile layout viewport.
+if (mode === 'web') document.body.style.minWidth = '320px';
 const simulatedShell = new URLSearchParams(location.search).has('cloud');
 const probeFingerprint = new URLSearchParams(location.search).get('fingerprint') ?? 'SHA256:fixture';
 const bridgePort = Number(new URLSearchParams(location.search).get('bridge') ?? 1498);

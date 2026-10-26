@@ -4,7 +4,7 @@ import { ProjectBrowser } from '../project-browser/ProjectBrowser';
 import type { BrowserHost } from '../project-browser/entryActions';
 import { displayText as t } from '../localization/messages';
 import { remoteErrorText } from '../localization/errors';
-import { createSshProjectClient } from './sshProjectClient';
+import { getSshProjectClient } from './sshProjectClient';
 import { SshProjectToolbar } from './SshProjectToolbar';
 import { useSshFiles } from './useSshFiles';
 import { useSshFileActions } from './useSshFileActions';
@@ -22,7 +22,7 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
   const actions = useSshFileActions(files);
   const [hidden, setHidden] = useState(true);
   const accepted = useRef<PendingSshUpload>();
-  const { client, download } = useMemo(() => createSshProjectClient(api, id), [api, id]);
+  const { client, download } = useMemo(() => getSshProjectClient(api, id), [api, id]);
   const host = useMemo<BrowserHost>(() => ({
     copyPath: path => navigator.clipboard.writeText(path), download, downloadDirectory: false,
     entryActions: ['createFile', 'createFolder', 'rename', 'move', 'delete'],

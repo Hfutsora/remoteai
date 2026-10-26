@@ -8,10 +8,13 @@ export function createSshFileFixture(): SshApi['files'] {
   const content = new Map<string, Buffer>([
     ['/hello.txt', Buffer.from('hello')],
     ['/app.ts', Buffer.from('const message = "中文代码";\r\n')],
+    ['/中文目录/nested.txt', Buffer.from('nested content')],
+    ['/.hidden', Buffer.from('hidden')],
   ]);
   const entries: SshEntry[] = [
     { name: '中文目录', path: '/中文目录', directory: true, size: 0 },
-    ...[...content].map(([path, data]) => ({ path, name: path.slice(1), directory: false, size: data.length })),
+    ...[...content].map(([path, data]) => ({ path, name: path.split('/').at(-1)!,
+      directory: false, size: data.length })),
   ];
   const uploads = new Map<string, Upload>();
   const finish = (token: string): SshFileReply => {
@@ -52,6 +55,8 @@ function fileAction({ action, entries, content }: {
   if (action.type === 'list') return { type: 'list', path, truncated: false,
     entries: entries.filter(entry => entry.path.slice(0, entry.path.lastIndexOf('/')) === path.replace(/\/$/, '')) };
   if (action.type === 'read') return { type: 'file', data: (content.get(path) ?? Buffer.alloc(0)).toString('base64') };
+  if (action.type === 'readChunk') return { type: 'file', data: (content.get(path) ?? Buffer.alloc(0))
+    .slice(action.offset, action.offset + action.length).toString('base64') };
   if (action.type === 'createFolder' || action.type === 'createFile') {
     entries.push({ path, name: path.split('/').at(-1)!, directory: action.type === 'createFolder', size: 0 });
   }

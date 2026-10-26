@@ -18,6 +18,10 @@ export interface BrowserSettings {
   type: 'settings'; cwd: string; connected: boolean; labels: Record<string, string>; theme: Record<string, string>;
   language?: import('@remoteai/i18n').EnabledLanguage;
   autoSaveDelay?: number; snapshot?: DocumentsSnapshot;
+  capabilities?: Pick<BrowserHost, 'entryActions' | 'downloadDirectory'> & {
+    reference: boolean; quoteSelection: boolean;
+  };
+  ssh?: { path: string; hidden: boolean; busy: boolean; revision: number };
 }
 export interface BrowserReply { type: 'reply'; id: number; data?: unknown; error?: string }
 export type BrowserHostMessage = BrowserSettings | BrowserReply | { type: 'close' };

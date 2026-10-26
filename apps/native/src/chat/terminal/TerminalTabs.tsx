@@ -27,7 +27,7 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
   const overflow = useTabOverflow(panel.tabs.map(tab => tab.id), panel.selected);
   const hidden = panel.tabs.filter(tab => overflow.hiddenIds.includes(tab.id));
   useEffect(() => { if (!active || !hidden.length) setMore(false); }, [active, hidden.length]);
-  useEffect(() => { if (!active) setTool(undefined); }, [active]);
+  useEffect(() => { if (!active) setTool(value => value === 'files' ? value : undefined); }, [active]);
   useEffect(() => { setTool(undefined); }, [client, cwd]);
   const selected = panel.tabs.find(tab => tab.id === panel.selected);
   const disabled = panel.busy || !connected || panel.tabs.length >= MAX_REMOTE_TERMINALS;
@@ -78,7 +78,7 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
     </BottomSheet>}
     {tool === 'ssh' && active && <SshConnectionMenu api={client.ssh} cwd={cwd} connected={panel.adopt}
       dispose={client.close} close={() => setTool(undefined)} />}
-    {tool === 'files' && active && selected?.session.ssh && <SshFilesSheet key={selected.id} api={client.ssh}
-      info={selected.session} connected={connected} close={() => setTool(undefined)} />}
+    {tool === 'files' && selected?.session.ssh && <SshFilesSheet key={selected.id} api={client.ssh}
+      info={selected.session} connected={connected} active={active} close={() => setTool(undefined)} />}
   </View>;
 }

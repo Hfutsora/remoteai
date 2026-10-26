@@ -4,7 +4,7 @@ import { fromByteArray, toByteArray } from 'base64-js';
 import type { ProjectBrowserClient, ProjectDocument, ProjectFileSave } from '../project-browser/protocol';
 import { PROJECT_FILE_CHUNK_BYTES, PROJECT_PLAIN_TEXT_THRESHOLD } from '../project-browser/protocol';
 import type { EntryRequest } from '../project-browser/entryActions';
-import { browserSshDownload } from './sshTransfers';
+import { browserSshDownload, type SshDownload } from './sshTransfers';
 import type { SshApi, SshEntry } from './ssh';
 import { SSH_FILE_LIMIT } from './ssh';
 import { sshChild, sshParent, validSshName } from './useSshFiles';
@@ -21,6 +21,22 @@ const imageTypes: Record<string, string> = {
   webp: 'image/webp', ico: 'image/x-icon',
 };
 
+const sessions = new WeakMap<SshApi, Map<string, {
+  saveDownload: SshDownload; browser: ReturnType<typeof createSshProjectClient>;
+}>>();
+
+/** Preserve document-store identity across drawer closes, scoped to the SSH connection and terminal. */
+export function getSshProjectClient(api: SshApi, id: string, saveDownload: SshDownload = browserSshDownload) {
+  let terminals = sessions.get(api);
+  if (!terminals) { terminals = new Map(); sessions.set(api, terminals); }
+  let session = terminals.get(id);
+  if (!session || session.saveDownload !== saveDownload) {
+    session = { saveDownload, browser: createSshProjectClient(api, id, saveDownload) };
+    terminals.set(id, session);
+  }
+  return session.browser;
+}
+
 function documentFromData(path: string, data: string): ProjectDocument {
   const bytes = toByteArray(data);
   const base = { path, size: bytes.length, revision: bytesToHex(sha256(bytes)), readOnly: true };
@@ -31,7 +47,7 @@ function documentFromData(path: string, data: string): ProjectDocument {
   return content ? { ...base, kind: 'text', text: content.text, readOnly: false } : { ...base, kind: 'binary' };
 }
 
-export function createSshProjectClient(api: SshApi, id: string) {
+export function createSshProjectClient(api: SshApi, id: string, saveDownload: SshDownload = browserSshDownload) {
   const list: SshListDirectory = async path => {
     const reply = await api.files(id, { type: 'list', path });
     if (reply.type !== 'list') throw new Error('client.ssh.fileFailed');
@@ -67,7 +83,7 @@ export function createSshProjectClient(api: SshApi, id: string) {
     const file = await entry(path);
     if (file.directory) throw new Error('client.ssh.fileFailed');
     if (file.size > SSH_FILE_LIMIT) throw new Error('client.ssh.fileTooLarge');
-    await browserSshDownload(file, await readData(path));
+    await saveDownload(file, await readData(path));
     return '';
   };
   return { client, download };

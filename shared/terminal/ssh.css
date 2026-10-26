@@ -61,7 +61,8 @@
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 14px; line-height: 1.6;
   padding: 12px; tab-size: 4; white-space: pre; overflow-wrap: normal; }
 .ssh-editor-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
-.ssh-files-drawer .ant-drawer-body { padding: 0 0 env(safe-area-inset-bottom); overflow: hidden; }
+.ssh-files-drawer .ant-drawer-body { display: flex; flex-direction: column; min-height: 0;
+  padding: 0 0 env(safe-area-inset-bottom); overflow: hidden; }
 .ssh-files-drawer .ant-drawer-close { min-width: 44px; min-height: 44px; }
 @media (max-width: 600px) {
   .ssh-files .ant-btn { min-height: 40px; }
