@@ -2,8 +2,8 @@ import { terminalApi, type TerminalInfo, type TerminalSize } from '../pages/code
 import { TerminalOutput } from './terminalOutput';
 import { terminalBelongsToProject } from '../../../../shared/remote-chat/terminalProject';
 import { invoke } from '../api/backend';
-import { openNativeSsh, probeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
-import type { SshConnect, SshEndpoint, SshFileAction } from '../../../../shared/terminal/ssh';
+import { ensureSshX11, openNativeSsh, probeSsh, sshFiles } from '../pages/codexGui/terminal/sshApi';
+import type { SshConnect, SshEndpoint, SshFileAction, SshX11 } from '../../../../shared/terminal/ssh';
 
 const MAX_TERMINALS = 8;
 interface Session { info?: TerminalInfo; output: TerminalOutput; exited: boolean; legacyCursor: number }
@@ -17,6 +17,7 @@ export class RemoteTerminals {
     if (['guiTerminalSshProfiles', 'guiTerminalSshProfileSave', 'guiTerminalSshProfileRemove'].includes(
       String(body.operation))) throw new Error('client.ssh.updateRequired');
     if (body.operation === 'guiTerminalSshProbe') return probeSsh(body.endpoint as SshEndpoint);
+    if (body.operation === 'guiTerminalSshEnsureX11') return ensureSshX11(body.options as SshX11);
     if (body.operation === 'guiTerminalList') {
       const cwd = body.cwd;
       if (cwd !== undefined && typeof cwd !== 'string') throw new Error('请选择有效的项目目录。');

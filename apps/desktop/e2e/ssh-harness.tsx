@@ -43,6 +43,9 @@ mockIPC(async (command, body) => {
     onEvent: Channel<TerminalEvent> };
   if (command === 'codex_gui_ssh_probe') return simulatedShell ? probeFingerprint
     : post('/rpc', { type: 'probe', endpoint: args.endpoint });
+  if (command === 'codex_gui_ssh_ensure_x11') {
+    return post('/rpc', { type: 'ensureX11', options: (body as { options: object }).options });
+  }
   if (command === 'codex_gui_ssh_files') return post('/rpc', { type: 'files', id: args.id, request: args.request });
   if (command === 'codex_gui_ssh_command') return simulatedShell ? undefined
     : post('/rpc', { type: 'command', request: args.request });

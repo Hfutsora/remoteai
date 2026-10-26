@@ -4,7 +4,7 @@
   "version": "2.0.22",
   "identifier": "dev.codex.switch",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "node ../../scripts/prepare-x-server.mjs && npm run dev",
     "devUrl": "http://127.0.0.1:1420",
     "beforeBuildCommand": "npm run build",
     "beforeBundleCommand": "node ../../scripts/prepare-desktop-bundle.mjs",
@@ -65,7 +65,8 @@
       "resources/dream-skin/NOTICE.md",
       "resources/remote-desktop/**/*",
       "resources/desktop-service/**/*",
-      "resources/chat-connectivity/*"
+      "resources/chat-connectivity/*",
+      "resources/x-server/**/*"
     ],
     "icon": [
       "icons/32x32.png",

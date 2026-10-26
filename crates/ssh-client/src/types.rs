@@ -34,6 +34,10 @@ pub enum Error {
     X11Display,
     #[error("client.ssh.x11Unavailable")]
     X11Unavailable,
+    #[error("client.ssh.x11Missing")]
+    X11Missing,
+    #[error("client.ssh.x11StartFailed")]
+    X11Start,
     #[error("client.ssh.x11Rejected")]
     X11Rejected,
 }

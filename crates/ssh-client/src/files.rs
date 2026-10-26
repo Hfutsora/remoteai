@@ -137,9 +137,7 @@ async fn list(sftp: &SftpSession, path: &str) -> Result<FileReply> {
         let metadata = entry.metadata();
         let metadata = if metadata.is_symlink() {
             // Range reads need the target's size, not the length of a symbolic link's path.
-            sftp.metadata(&target)
-                .await
-                .unwrap_or(metadata)
+            sftp.metadata(&target).await.unwrap_or(metadata)
         } else {
             metadata
         };

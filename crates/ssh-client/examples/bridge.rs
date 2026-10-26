@@ -1,5 +1,5 @@
 //! JSON-lines driver for an isolated SSH fixture, never shipped with the application.
-use csw_ssh_client::{Client, Command, Connect, Endpoint, FileAction};
+use csw_ssh_client::{Client, Command, Connect, Endpoint, FileAction, X11};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -9,6 +9,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 #[serde(tag = "type", rename_all = "camelCase")]
 enum Request {
     Probe { endpoint: Endpoint },
+    EnsureX11 { options: X11 },
     Open { request: Connect },
     Command { request: Command },
     Files { id: String, request: FileAction },
@@ -21,6 +22,12 @@ async fn request(
     stream: Value,
 ) -> Result<Value, String> {
     let result = match value {
+        Request::EnsureX11 { options } => {
+            csw_ssh_client::ensure_x11(options)
+                .await
+                .map_err(|e| e.to_string())?;
+            Value::Null
+        }
         Request::Probe { endpoint } => json!(csw_ssh_client::probe(endpoint)
             .await
             .map_err(|e| e.to_string())?),

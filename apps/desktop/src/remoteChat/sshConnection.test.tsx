@@ -15,7 +15,8 @@ async function fixture(initial?: SshProfile) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const api: SshApi = { profiles: { list: vi.fn(async (): Promise<SshProfile[]> => initial ? [initial] : []),
     save: vi.fn(async value => [value]), remove: vi.fn(async () => []) },
-  probe: vi.fn(async () => 'SHA256:first'), open: vi.fn(async () => info), files: vi.fn() };
+  probe: vi.fn(async () => 'SHA256:first'), open: vi.fn(async () => info), files: vi.fn(),
+  ensureX11: vi.fn(async () => {}) };
   const connected = vi.fn(); const dispose = vi.fn(async () => {}); const close = vi.fn();
   const root = createRoot(document.createElement('div'));
   let state!: ReturnType<typeof useSshConnection>;
@@ -173,4 +174,46 @@ it('closes a late connection after leaving the form instead of adopting it in an
   expect(f.dispose).toHaveBeenCalledWith(info.id);
   expect(f.connected).not.toHaveBeenCalled();
   expect(f.api.profiles.save).not.toHaveBeenCalled();
+});
+
+it('prepares X11 once before saving, without testing credentials or opening a terminal', async () => {
+  const f = await fixture();
+  try {
+    let ready!: () => void;
+    vi.mocked(f.api.ensureX11!).mockImplementation(() => new Promise(resolve => { ready = resolve; }));
+    const options = { ...values, x11: { display: ':1' } };
+    let pending!: Promise<void>;
+    await act(async () => { pending = f.state().saveSettings(options); });
+    expect(f.state().preparingX11).toBe(true); expect(f.state().busy).toBe(true);
+    await act(async () => f.state().saveSettings(options));
+    expect(f.api.ensureX11).toHaveBeenCalledExactlyOnceWith(options.x11);
+    expect(f.api.profiles.save).not.toHaveBeenCalled(); expect(f.close).not.toHaveBeenCalled();
+    await act(async () => { ready(); await pending; });
+    expect(f.api.profiles.save).toHaveBeenCalledOnce(); expect(f.close).toHaveBeenCalledOnce();
+    expect(f.api.open).not.toHaveBeenCalled(); expect(f.api.probe).not.toHaveBeenCalled();
+    expect(f.state().preparingX11).toBe(false);
+  } finally { await f.stop(); }
+});
+
+it('keeps the form retryable when X11 startup fails and skips startup when forwarding is disabled', async () => {
+  const f = await fixture();
+  try {
+    vi.mocked(f.api.ensureX11!).mockRejectedValueOnce(new Error('client.ssh.x11StartFailed'));
+    await act(async () => f.state().saveSettings({ ...values, x11: {} }));
+    expect(f.state().error).toBe('client.ssh.x11StartFailed'); expect(f.state().busy).toBe(false);
+    expect(f.api.profiles.save).not.toHaveBeenCalled(); expect(f.close).not.toHaveBeenCalled();
+    await act(async () => f.state().saveSettings(values));
+    expect(f.api.ensureX11).toHaveBeenCalledOnce(); expect(f.api.profiles.save).toHaveBeenCalledOnce();
+  } finally { await f.stop(); }
+});
+
+it('does not save after leaving the form while X11 is starting', async () => {
+  const f = await fixture();
+  let ready!: () => void;
+  vi.mocked(f.api.ensureX11!).mockImplementation(() => new Promise(resolve => { ready = resolve; }));
+  let pending!: Promise<void>;
+  await act(async () => { pending = f.state().saveSettings({ ...values, x11: {} }); });
+  await f.stop();
+  await act(async () => { ready(); await pending; });
+  expect(f.api.profiles.save).not.toHaveBeenCalled(); expect(f.close).not.toHaveBeenCalled();
 });

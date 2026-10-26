@@ -2,6 +2,8 @@
 mod authority;
 mod display;
 mod protocol;
+mod server;
+pub use server::ensure_x11;
 
 use crate::{connection::TIMEOUT, sessions::Sink, Error, Event, Result, X11};
 use russh::{client, Channel, ChannelMsg};
@@ -41,16 +43,7 @@ impl Drop for Lease {
 
 impl State {
     pub async fn prepare(options: &X11, sink: Sink) -> Result<Lease> {
-        let display = match options.display.as_deref().filter(|value| !value.is_empty()) {
-            Some(value) => display::Display::parse(value)?,
-            None => display::Display::from_environment(
-                &std::env::var("DISPLAY").unwrap_or_else(|_| ":0".into()),
-            )?,
-        };
-        // Detect an unavailable X server during connection instead of silently
-        // accepting forwarding that cannot display applications.
-        drop(display.connect().await?);
-        let cookie = authority::load(&display).await?;
+        let server::Ready { display, cookie } = server::prepare(options).await?;
         Ok(Lease(Arc::new(Self {
             display,
             cookie,

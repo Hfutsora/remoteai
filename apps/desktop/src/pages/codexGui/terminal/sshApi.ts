@@ -1,5 +1,6 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import type { SshApi, SshConnect, SshEndpoint, SshFileAction, SshFileReply } from '../../../../../../shared/terminal/ssh';
+import type { SshApi, SshConnect, SshEndpoint, SshFileAction, SshFileReply,
+  SshX11 } from '../../../../../../shared/terminal/ssh';
 import type { TerminalEvent, TerminalInfo } from '../../../../../../shared/terminal/types';
 import { TerminalOutput } from '../../../remoteChat/terminalOutput';
 import { desktopSshProfiles } from '../../../api/sshProfiles';
@@ -13,12 +14,13 @@ export function openNativeSsh(request: SshConnect, onEvent: (event: TerminalEven
   return invoke<TerminalInfo>('codex_gui_ssh_open', { request, onEvent: channel });
 }
 export const probeSsh = (endpoint: SshEndpoint) => invoke<string>('codex_gui_ssh_probe', { endpoint });
+export const ensureSshX11 = (options: SshX11) => invoke<void>('codex_gui_ssh_ensure_x11', { options });
 export const sshFiles = (id: string, request: SshFileAction) =>
   invoke<SshFileReply>('codex_gui_ssh_files', { id, request });
 
 export const sshApi: SshApi = {
   profiles: desktopSshProfiles,
-  probe: probeSsh, files: sshFiles,
+  probe: probeSsh, files: sshFiles, ensureX11: ensureSshX11,
   async open(request, projectCwd) {
     const attachment: Attachment = { output: new TerminalOutput() };
     const info = await openNativeSsh(request, event => {

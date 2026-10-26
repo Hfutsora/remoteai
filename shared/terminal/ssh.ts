@@ -23,6 +23,7 @@ export type SshFileReply = { type: 'list'; path: string; entries: SshEntry[]; tr
 export interface SshApi {
   profiles: import('./sshProfiles').SshProfileStore;
   probe: (endpoint: SshEndpoint) => Promise<string>;
+  ensureX11?: (options: SshX11) => Promise<void>;
   open: (request: SshConnect, projectCwd: string) => Promise<TerminalInfo>;
   files: (id: string, request: SshFileAction) => Promise<SshFileReply>;
 }
