@@ -74,12 +74,25 @@ async function checkRenameAndDownload(page: Page) {
   expect((await downloaded).suggestedFilename()).toBe('image.bin');
 }
 
+async function checkWorkspaceClose(page: Page) {
+  const drawer = page.locator('aside[data-details-panel]');
+  const tabs = drawer.getByRole('tablist', { name: '侧栏内容', exact: true });
+  await tabs.getByRole('button', { name: '关闭文件更改', exact: true }).click();
+  await tabs.getByRole('button', { name: '关闭editor.test 远程文件浏览', exact: true }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.getByRole('tabpanel', { name: 'user@editor.test:22', exact: true }).locator('.xterm')).toBeVisible();
+  await page.getByRole('button', { name: '远程文件浏览', exact: true }).click();
+  await expect(tabs.getByRole('tab')).toHaveCount(1);
+  await expect(editor(page)).toContainText('保留草稿');
+}
+
 for (const mode of ['local', 'remote', 'web']) {
   test(`${mode}: SSH shares the local tree, tabs, editor, drafts and responsive layout`, async ({ page }, info) => {
     const fixture = await sshEditorFixture(page);
     await connect(page, mode);
     await checkTree(page);
     await checkDrafts(page);
+    await checkWorkspaceClose(page);
     fixture.failNextSave();
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('文件操作失败');
