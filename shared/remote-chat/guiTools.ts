@@ -32,7 +32,7 @@ export const GUI_TOOL_OPERATIONS = new Set([
   PROJECT_LIST_OPERATION, PROJECT_SELECT_OPERATION,
   'guiCliStatus', 'guiCliRelease', 'guiCliInstall', 'guiReconnect',
   'guiTerminalList', 'guiTerminalOpen', 'guiTerminalRead', 'guiTerminalWrite', 'guiTerminalResize', 'guiTerminalClose',
-  'guiTerminalLink',
+  'guiTerminalLink', 'guiTerminalWriteBinary', 'guiTerminalBinaryMode',
   'guiTerminalSshProbe', 'guiTerminalSshOpen', 'guiTerminalSshFiles',
   'guiTerminalSshEnsureX11',
   'guiTerminalSshProfiles', 'guiTerminalSshProfileSave', 'guiTerminalSshProfileRemove',
@@ -100,8 +100,12 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
       open: (cwd: string, size: TerminalSize, projectCwd?: string) =>
         request<TerminalInfo>({ operation: 'guiTerminalOpen', cwd, size,
           ...(projectCwd === undefined ? {} : { projectCwd }) }),
-      read: (id: string, cursor: number) => request<TerminalRead>({ operation: 'guiTerminalRead', id, cursor }),
+      read: (id: string, cursor: number, token?: string) =>
+        request<TerminalRead>({ operation: 'guiTerminalRead', id, cursor, token }),
       write: (id: string, data: string) => request<void>({ operation: 'guiTerminalWrite', id, data }),
+      writeBinary: (id: string, data: number[]) => request<void>({ operation: 'guiTerminalWriteBinary', id, data }),
+      binaryMode: (id: string, token: string, enabled: boolean) =>
+        request<void>({ operation: 'guiTerminalBinaryMode', id, token, enabled }),
       resize: (id: string, size: TerminalSize) => request<void>({ operation: 'guiTerminalResize', id, size }),
       close: (id: string) => request<void>({ operation: 'guiTerminalClose', id }),
     },

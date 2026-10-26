@@ -166,9 +166,31 @@ pub enum Event {
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Command {
-    Write { id: String, data: String },
-    Resize { id: String, size: Size },
-    Close { id: String },
+    Write {
+        id: String,
+        data: String,
+    },
+    /// Protocol bytes bypass UTF-8 encoding and shell-input markers.
+    WriteBinary {
+        id: String,
+        data: Vec<u8>,
+    },
+    /// Bound delivery while a remote reader is transferring protocol bytes.
+    OutputFlow {
+        id: String,
+        enabled: bool,
+    },
+    OutputAck {
+        id: String,
+        bytes: usize,
+    },
+    Resize {
+        id: String,
+        size: Size,
+    },
+    Close {
+        id: String,
+    },
 }
 
 #[derive(Deserialize)]

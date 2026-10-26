@@ -13,8 +13,10 @@ const info: TerminalInfo = { id: 'ssh-1', cwd: '', projectCwd: '/project', shell
 
 async function fixture(initial?: SshProfile) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-  const api: SshApi = { profiles: { list: vi.fn(async (): Promise<SshProfile[]> => initial ? [initial] : []),
-    save: vi.fn(async value => [value]), remove: vi.fn(async () => []) },
+  let profiles = initial ? [initial] : [];
+  const api: SshApi = { profiles: { list: vi.fn(async (): Promise<SshProfile[]> => profiles),
+    save: vi.fn(async value => { profiles = [{ ...value, revision: (value.revision ?? 0) + 1 }]; return profiles; }),
+    remove: vi.fn(async () => []) },
   probe: vi.fn(async () => 'SHA256:first'), open: vi.fn(async () => info), files: vi.fn(),
   ensureX11: vi.fn(async () => {}) };
   const connected = vi.fn(); const dispose = vi.fn(async () => {}); const close = vi.fn();
@@ -45,6 +47,26 @@ it('requires host confirmation, saves metadata and credentials separately, and a
 
 const keyProfile: SshProfile = { id: 'key', name: 'Server', host: 'test', port: 22, username: 'user',
   auth: 'key', fingerprint: 'SHA256:first', revision: 3, accountScope: 'account' };
+
+it('updates a changed fingerprint from the editor and resumes its connection test without losing edits', async () => {
+  const f = await fixture({ ...keyProfile, auth: 'password', fingerprint: 'SHA256:old' });
+  try {
+    await act(async () => f.state().test({ ...values, name: 'Edited name' }));
+    expect(f.state().trust?.previousFingerprints).toEqual(['SHA256:old']);
+    await act(async () => f.state().clearTrust());
+    await act(async () => f.state().confirmTrust());
+    expect(f.api.profiles.save).not.toHaveBeenCalled(); expect(f.api.open).not.toHaveBeenCalled();
+    await act(async () => f.state().test({ ...values, name: 'Edited name' }));
+    await act(async () => f.state().confirmTrust());
+    expect(f.state().tested).toBe(true); expect(f.close).not.toHaveBeenCalled();
+    expect(f.state().selected?.revision).toBe(4);
+    expect(f.api.profiles.save).toHaveBeenCalledExactlyOnceWith({ ...keyProfile, auth: 'password' });
+    await act(async () => f.state().saveSettings({ ...values, name: 'Edited name' }));
+    expect(f.api.profiles.save).toHaveBeenLastCalledWith({ ...keyProfile, auth: 'password',
+      name: 'Edited name', revision: 4 }, { password: 'secret' });
+    expect(f.state().error).toBe('');
+  } finally { await f.stop(); }
+});
 
 it('saves a name edit without credentials or a connection and preserves all other saved fields', async () => {
   const f = await fixture(keyProfile);
@@ -139,13 +161,13 @@ it('closes a late test session after the form is unmounted', async () => {
   expect(f.api.profiles.save).not.toHaveBeenCalled();
 });
 
-it('checks a freshly pulled fingerprint and blocks changed hosts before sending credentials', async () => {
+it('prompts for a freshly pulled changed fingerprint before sending credentials', async () => {
   const f = await fixture();
   try {
     await act(async () => f.state().submit(values));
     vi.mocked(f.api.profiles.list).mockResolvedValue([{ ...values, id: 'pc', fingerprint: 'SHA256:other' }]);
     await act(async () => f.state().submit(values));
-    expect(f.state().error).toBe('client.ssh.hostChanged');
+    expect(f.state().trust).toMatchObject({ fingerprint: 'SHA256:first', previousFingerprints: ['SHA256:other'] });
     expect(f.api.open).not.toHaveBeenCalled();
   } finally { await f.stop(); }
 });

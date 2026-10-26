@@ -21,6 +21,7 @@ import type { SshUploadBatch } from '../../../../../../shared/terminal/sshDrop';
 import { sshError } from '../../../../../../shared/terminal/ssh';
 import { nativeSshUploadBatch, subscribeSshFileDrop } from './sshDrop';
 import { getSshDirectory, subscribeSshDirectory } from '../../../../../../shared/terminal/sshDirectory';
+import { ZmodemDialog } from '../../../../../../shared/terminal/ZmodemDialog';
 
 const nativeDrop = { subscribe: subscribeSshFileDrop, read: nativeSshUploadBatch };
 
@@ -102,7 +103,7 @@ function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadP
   const directory = useSyncExternalStore(callback => subscribeSshDirectory(sessionId, callback),
     () => getSshDirectory(sessionId));
   const closeLink = useCallback(() => setLink(undefined), []);
-  const { host, info, status, input } = useTerminalSession({ cwd: tab.cwd, visible, api,
+  const { host, info, status, input, transfer } = useTerminalSession({ cwd: tab.cwd, visible, api,
     session: tab.session, onLink: setLink });
   const content = <>
     <div ref={host} className={styles.screen} aria-label={info?.shell ?? translate("client.projectBrowser.terminal")} />
@@ -118,5 +119,6 @@ function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadP
       }} report={error => setDropError(sshError(error, 'client.ssh.fileFailed'))}>{content}</SshDropTarget> : content}
     {link && visible && <TerminalLinkMenu key={`${link.url}:${link.x}:${link.y}`} target={link} id={info?.id}
       api={api} close={closeLink} translate={translate} />}
+    <ZmodemDialog transfer={transfer} visible={visible} translate={translate} />
   </div>;
 }

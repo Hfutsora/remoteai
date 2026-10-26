@@ -17,9 +17,12 @@ async function fixture(options: { profile?: SshProfile; authenticate?: boolean; 
   credentials?: SshCredentials | null; credentialError?: string; delayCredentials?: boolean } = {}) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const saved = options.profile ?? profile;
+  let profiles = [saved];
   let resolve!: (info: TerminalInfo) => void;
   let resolveCredentials!: (value: SshCredentials) => void;
-  const api: SshApi = { profiles: { list: vi.fn(async () => [saved]), save: vi.fn(async value => [value]),
+  const api: SshApi = { profiles: { list: vi.fn(async () => profiles), save: vi.fn(async value => {
+    profiles = [{ ...value, revision: (value.revision ?? 0) + 1 }]; return profiles;
+  }),
     remove: vi.fn(async () => []) }, probe: vi.fn(async () => options.changed ? 'SHA256:changed' : 'SHA256:saved'),
   open: vi.fn(async request => {
     if (options.authenticate && request.password !== 'secret') throw new Error('client.ssh.authenticationFailed');
@@ -91,11 +94,20 @@ it('requires confirmation before connecting a saved host without a known fingerp
   } finally { await f.stop(); }
 });
 
-it('blocks a changed host fingerprint before attempting authentication', async () => {
+it('confirms a changed fingerprint, saves it before retrieving credentials and continues the original connection', async () => {
   const f = await fixture({ changed: true, credentials: { password: 'secret' } });
   try {
-    expect(f.state().error).toBe('client.ssh.hostChanged'); expect(f.api.open).not.toHaveBeenCalled();
+    expect(f.state().trust).toMatchObject({ fingerprint: 'SHA256:changed',
+      previousFingerprints: ['SHA256:saved'] });
+    expect(f.api.open).not.toHaveBeenCalled();
     expect(f.api.profiles.credentials).not.toHaveBeenCalled();
+    expect(f.api.profiles.save).not.toHaveBeenCalled();
+    await act(async () => Promise.all([f.state().confirmTrust(), f.state().confirmTrust()]));
+    expect(f.api.profiles.save).toHaveBeenCalledExactlyOnceWith({ ...profile, fingerprint: 'SHA256:changed' });
+    expect(f.api.profiles.credentials).toHaveBeenCalledWith({ ...profile, fingerprint: 'SHA256:changed', revision: 2 });
+    expect(f.api.open).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      fingerprint: 'SHA256:changed', password: 'secret' }), '/project');
+    expect(f.connected).toHaveBeenCalledOnce();
   } finally { await f.stop(); }
 });
 
