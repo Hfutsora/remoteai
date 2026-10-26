@@ -26,8 +26,9 @@ before(async () => { browser = await chromium.launch({ headless: true }); });
 after(async () => { await browser?.close(); });
 
 async function loadComposer(page, options = {}) {
-  await page.setContent(`<div contenteditable="true" aria-label="Message"></div>
-    <div><div><div><button data-composer-navigation-target="reasoning">Model</button></div></div></div>`);
+  await page.setContent(`<section data-composer-surface-variant="default">
+    <div contenteditable="true" aria-label="Message"></div>
+    <div><div><div><button data-composer-navigation-target="reasoning">Model</button></div></div></div></section>`);
   await page.evaluate(({ authMethod = "no-auth", provider, host = "local", active = true }) => {
     window.subscriptions = new Set();
     const query = { queryKey: ["models", "list", host, authMethod, 100, provider], isActive: () => active };

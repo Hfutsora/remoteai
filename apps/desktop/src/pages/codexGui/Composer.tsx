@@ -183,7 +183,8 @@ export const Composer = forwardRef<ComposerHandle, {
         </div>
       </div>
     </div>
-    <div className={styles.composerHint}><span>Codex{cliVersion ? ` ${cliVersion}` : ''}</span>
+    <div className={`${styles.composerHint} cs-usage-footer-container`}>
+      <span>Codex{cliVersion ? ` ${cliVersion}` : ''}</span>
       <ConversationTokenStatus threadId={state.selected} metrics={metrics}
         turns={current?.turns} active={active && state.connection === 'ready'} usage={usageSnapshot.usage} /></div>
     {dialog === "files" && <ComposerFilesDialog onAdd={addAttachments} onImages={() => fileInput.current?.click()}

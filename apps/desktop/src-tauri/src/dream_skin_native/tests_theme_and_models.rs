@@ -360,7 +360,8 @@
             "const fastModeAllowed = allowed && fastModeModels.size > 0 && hasActiveProxyModelQuery(true)"
         ));
         assert!(expression.contains("if (changed) window.__CODEX_SWITCH_REFRESH_SPEED_SELECTOR__?.()"));
-        assert!(expression.contains("state.fastModeAllowed || state.usage.enabled"));
+        assert!(expression.contains("selector.hidden = !state.fastModeAllowed"));
+        assert!(expression.contains("@container cs-usage-footer (min-width: 720px)"));
         assert!(expression.contains("controls.hidden = !state.fastModeAllowed"));
         assert!(expression.contains("key[3] === \"no-auth\""));
         assert!(!expression.contains("authMethod = \"chatgpt\""));
