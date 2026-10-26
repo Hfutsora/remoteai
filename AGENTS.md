@@ -1,25 +1,69 @@
 # Agent Notes
 
+Keep all instructions in this `AGENTS.md` file in English.
+
 ## Admin Backend: Go Only
 
-- `apps/admin` 中的 NestJS 版本已停止维护，源码冻结，不再新增功能、修复业务问题或作为生产部署目标。
-- 后端功能开发、问题修复、数据库升级和线上部署统一使用 `apps/admin-go`；管理页面继续使用 `apps/admin-ui`。
-- NestJS 源码仅保留为历史接口契约和本地兼容对照测试基线。不要为更新契约或通过测试而修改已冻结的 NestJS 实现；新功能应在 Go 中实现并增加对应测试。
-- 生产构建、部署配置和运维文档不得重新引入 NestJS 服务。更新和回滚均使用已经验证的 admin-go 镜像。
-- `apps/admin-go/sql` 是数据库升级脚本目录；生产部署说明以 `apps/admin-go/DEPLOYMENT.md` 为准。
-- admin-go 更新和回滚统一使用 `apps/admin-go/scripts/deployment_compose.py` 的 `check`、`up`、`verify`。
-  保留当前容器记录的完整 Compose 文件列表；已启用 TURN 时必须保留 `compose.desktop-relay.yml`。
-  部署前后核对中继端口和网络，不能仅凭 HTTP、聊天 WebSocket 或 STUN 正常就判定远程桌面可用。
-- 新增 Go 接口时同步检查 `apps/admin-go/kong/existing-kong.example.yml` 的覆盖范围及鉴权规则；
-  `go -C apps/admin-go test ./internal/server -run TestKong` 必须通过，线上已有路由也要保存在项目中。
+- The NestJS backend in `apps/admin` is no longer maintained. Its source is frozen: do not add features,
+  fix business logic, or use it as a production deployment target.
+- Use `apps/admin-go` for all backend features, fixes, database upgrades, and production deployments.
+  Continue using `apps/admin-ui` for the admin interface.
+- Keep the NestJS source only as a historical API contract and a baseline for local compatibility tests.
+  Do not modify the frozen implementation to update contracts or pass tests; implement new features in Go
+  and add corresponding tests.
+- Production builds, deployment configuration, and operations documentation must not reintroduce the NestJS service.
+  Use verified admin-go images for both updates and rollbacks.
+- Store database upgrade scripts in `apps/admin-go/sql`.
+  Follow `apps/admin-go/DEPLOYMENT.md` for production deployments.
+- Use the `check`, `up`, and `verify` commands in `apps/admin-go/scripts/deployment_compose.py`
+  for all admin-go updates and rollbacks. Preserve the complete Compose file list recorded by the current container;
+  when TURN is enabled, retain `compose.desktop-relay.yml`.
+  Check relay ports and networking before and after deployment. Working HTTP, chat WebSocket, or STUN connections
+  alone do not establish that remote desktop works.
+- When adding Go endpoints, check route coverage and authentication rules in
+  `apps/admin-go/kong/existing-kong.example.yml`. Keep existing production routes in the repository as well.
+  `go -C apps/admin-go test ./internal/server -run TestKong` must pass.
 
 ## Automatic Commit and Push
 
 - After completing the requested changes and verifying them successfully, automatically commit the changes made for the current task and push the current branch to its configured upstream. Do not wait for a separate request to commit or push.
-- Never include unrelated existing changes in the commit. If verification fails, the branch has no configured upstream, or the push is blocked for a reason other than remote updates, report the issue instead of bypassing checks or rewriting history.
+- Never include unrelated existing changes in the commit, except for verified task cleanup explicitly allowed by the End-of-Conversation Review below. If verification fails, the branch has no configured upstream, or the push is blocked for a reason other than remote updates, report the issue instead of bypassing checks or rewriting history.
 - If remote updates are detected before or during a push, fetch the configured upstream and attempt to merge it into the current branch. After a successful merge, rerun the relevant checks and push again.
 - If the merge produces conflicts, immediately abort it with `git merge --abort`, preserve local commits and existing work, and stop the push. Report the conflict instead of resolving it automatically or forcing the push.
 - Also include tracked files changed only by line-ending differences rather than leaving them uncommitted.
+
+## End-of-Conversation Review
+
+- Before ending a conversation and sending the final response, query active conversations to determine
+  whether the current conversation is the only active one. Prefer `gui_list_running_conversations` and read every page;
+  running conversations waiting for input or approval also count as active.
+  If the query is unavailable or the result is inconclusive, state that limitation instead of assuming exclusivity.
+- If other conversations are still active, finalize and commit only completed, verified changes for the current task.
+  Do not take over uncommitted work from other conversations.
+- If the current conversation is confirmed to be the only active one, inspect all local uncommitted changes
+  in this repository, including staged, unstaged, untracked, and line-ending-only changes.
+  Match each change to its conversation, original requirements, implementation status, and verification results;
+  use `gui_read_conversation` for known conversations. An idle conversation or a final response is not proof
+  of completion: assess the actual changes and verification evidence.
+- For tasks with clear ownership and fully implemented requirements, finish necessary cleanup and run relevant checks.
+  After verification passes, create a separate commit for each task and push under the rules above.
+  This explicitly allows finalizing completed work from other ended conversations, while excluding unrelated
+  or incomplete changes from each commit.
+- If tests or checks previously failed because concurrent conversations made interfering changes, first confirm
+  that the current conversation is the only active one. Review the affected requirements and current code together,
+  eliminate concurrent interference, and rerun both task-specific checks and checks covering their combined impact.
+  Use the new results to assess completion. Separately commit and push each fully implemented, verified task;
+  do not leave it pending solely because earlier checks failed.
+  Do not attribute failures to concurrency without evidence or skip checks. Report tasks that still fail verification
+  or remain incomplete as described below.
+- For incomplete tasks, failed or missing verification, or uncertain ownership or completion, preserve the changes
+  and their staging state. Do not commit prematurely, discard work, or create temporary commits to clear the workspace.
+  Include a report table in the final response with these columns:
+  `Conversation/task | Files | Completed work | Remaining work or uncertainties | Verification | Reason not committed and next steps`.
+- Recheck that no other conversations are active before taking over work from ended conversations and before
+  committing that work. Stop cross-conversation cleanup if activity changes.
+  Preserve and report mixed changes that cannot be reliably separated; never stage everything indiscriminately
+  and include unverified work in a commit.
 
 ## User-Facing Prompts and Copy
 
@@ -29,51 +73,77 @@
 
 ## Internationalization: Single Package
 
-- 后续国际化统一使用独立语言包 `packages/i18n`（`@remoteai/i18n`），作为翻译资源和语言元数据的唯一维护源。
-  此要求覆盖各应用、共享模块、Rust/原生平台资源、浏览器扩展及构建脚本；冻结代码和第三方源码仍遵守原有维护边界。
-- 所有新增或修改的可翻译用户文案都必须放入语言包，包括默认语言、回退文案、状态和错误提示、无障碍标签、权限说明、用户协议及结构化内容。
-  不得在业务代码中新增独立翻译表、内联多语言对象、按语言分支返回的文案或硬编码的可翻译界面文本。
-- 业务代码通过 `@remoteai/i18n` 的公开入口和现有应用适配层获取文案。新文案优先使用语义化键，完整句子通过参数插值表达，避免拼接翻译片段。
-  语言选择、偏好持久化、订阅和平台接入逻辑可保留在应用中，翻译资源不得因此重新分散。
-- Rust、系统权限、扩展清单和嵌入脚本等必须保留在平台目录的语言文件或文案区段，只能作为生成产物存在。
-  在 `packages/i18n/platform/` 维护源文件，并通过 `packages/i18n/platform.json` 登记生成关系；禁止直接维护或手动修改生成副本。
-- 新增或修改文案时同步维护对应模块已发布语言的键和参数，沿用语言包声明的语言启用范围及回退策略。
-  不得因资源集中而擅自扩大语言发布范围；具体资源组织和例外策略以 `packages/i18n/README.md` 为准。
-- 只翻译展示文案，保留协议值、状态标识、数据库值和用户内容的原始语义。
-  现有服务错误文本通过语言包的错误格式化接口在展示边界解码，不得通过翻译后的文案判断业务状态。
-- 资源或语言元数据变更后运行 `npm run generate:i18n`，提交前确保 `npm run check:i18n` 通过。
-  同时检查受影响入口的语言切换、回退和离线资源，禁止通过放宽检查、添加无依据的豁免或复制翻译来绕过语言包归属约束。
+- Use the standalone `packages/i18n` package (`@remoteai/i18n`) as the single source of truth
+  for translation resources and language metadata. This applies to all apps, shared modules, Rust and native
+  platform resources, browser extensions, and build scripts. Respect existing maintenance boundaries
+  for frozen code and third-party sources.
+- Put all new or modified translatable user-facing content in the language package, including default and fallback
+  text, status and error messages, accessibility labels, permission explanations, user agreements, and structured content.
+  Do not add separate translation tables, inline multilingual objects, language-dependent copy branches,
+  or hardcoded translatable interface text to business code.
+- Access copy through public `@remoteai/i18n` entry points and existing app adapters. Prefer semantic keys for new copy
+  and interpolate parameters into complete sentences instead of concatenating translated fragments.
+  Language selection, preference persistence, subscriptions, and platform integration may stay in apps,
+  but must not cause translation resources to become scattered again.
+- Language files or copy sections that must remain in platform directories, such as Rust resources, system permissions,
+  extension manifests, and embedded scripts, must be generated artifacts only.
+  Maintain their sources in `packages/i18n/platform/` and register generation mappings in `packages/i18n/platform.json`.
+  Do not maintain or manually edit generated copies.
+- When adding or modifying copy, update keys and parameters for every released language of the affected module.
+  Preserve the package's declared language availability and fallback policies; centralizing resources does not authorize
+  releasing additional languages. Follow `packages/i18n/README.md` for resource organization and exceptions.
+- Translate display text only. Preserve the original semantics of protocol values, status identifiers, database values,
+  and user content. Decode existing service error text at the display boundary using the package's error formatting API;
+  never determine business state from translated text.
+- After changing resources or language metadata, run `npm run generate:i18n` and ensure `npm run check:i18n` passes
+  before committing. Check language switching, fallback behavior, and offline resources at affected entry points.
+  Do not bypass resource ownership requirements by weakening checks, adding unjustified exemptions, or copying translations.
 
 ## Desktop Local, Remote, and Web Parity
 
-- 后续涉及 PC 端的改动，默认在同一任务中同步修改 `apps/desktop` 的本地模式、远程模式和 `apps/web` 的 PC 页面，确保对应功能、界面效果、交互及文案一致，无需用户另行提醒；用户明确限定范围时，以用户要求为准。
-- 从任一入口修改功能或修复问题时，都要检查另外两个入口的对应实现；能复用的业务逻辑、组件和样式优先放在共享模块，避免各端后续遗漏同步。
-- 三个入口应保持一致的布局、视觉样式、操作反馈和状态展示，并适配各自窗口与桌面浏览器宽度；受平台能力限制无法完全一致时，应提供对应适配，并在交付时说明差异及原因。
-- 完成前分别验证 PC 本地、PC 远程和 Web PC 的受影响功能与展示效果，并在交付时说明同步结果，不得只修改或验证其中一个入口就视为完成。
+- By default, desktop changes must cover local and remote modes in `apps/desktop` and the desktop pages in `apps/web`
+  within the same task. Keep corresponding features, appearance, interactions, and copy consistent without waiting
+  for a reminder. An explicit user scope restriction takes precedence.
+- When changing a feature or fixing an issue at any entry point, inspect the corresponding implementations at the other two.
+  Prefer shared modules for reusable business logic, components, and styles to prevent future omissions.
+- Keep layout, visual styling, interaction feedback, and status displays consistent across all three entry points,
+  adapting to their window and desktop browser widths. Where platform capabilities prevent full parity,
+  provide an appropriate adaptation and explain the differences and reasons at delivery.
+- Before completion, verify affected functionality and appearance separately in desktop local mode, desktop remote mode,
+  and web desktop pages. Report the parity results at delivery; changing or verifying only one entry point is insufficient.
 
 ## Mobile and Web Parity
 
-- 用户提出移动端或手机端改动时，默认在同一任务中同步修改 `apps/native` 和 `apps/web` 在移动端尺寸下的对应功能、界面效果、交互及文案，无需用户另行提醒；用户明确限定范围时，以用户要求为准。
-- Web 的同步范围仅限移动端尺寸，不包含桌面宽屏；保持原生端与 Web 移动端的对应行为一致，并按各自布局适配。能复用的业务逻辑优先放在共享模块，避免两端后续遗漏同步。
-- Android/iOS 系统能力等平台专属改动，不要求照搬到浏览器；应检查 Web 在移动端尺寸下是否需要对应适配，并在交付时说明未同步的部分及原因。
-- 完成前分别验证原生端和 Web 移动端尺寸下受影响的功能与展示效果，并在交付时说明同步结果，不得只修改原生端就将移动端需求视为完成。
+- By default, mobile or phone changes must cover `apps/native` and the corresponding features in `apps/web`
+  at mobile viewport sizes within the same task. Keep appearance, interactions, and copy consistent without waiting
+  for a reminder. An explicit user scope restriction takes precedence.
+- Web parity for mobile requests covers mobile viewport sizes only, excluding wide desktop layouts.
+  Keep native and mobile web behavior consistent while adapting to each layout.
+  Prefer shared modules for reusable business logic to prevent future omissions on either platform.
+- Platform-specific changes, such as Android or iOS system capabilities, need not be copied directly into the browser.
+  Check whether mobile web needs an appropriate adaptation and explain any unsynchronized parts and reasons at delivery.
+- Before completion, verify affected functionality and appearance separately in the native app and at mobile web sizes.
+  Report the parity results at delivery; changing only the native app does not complete a mobile request.
 
 ## Native Text Layout: Prevent Glyph Clipping
 
-- 原生端新增或修改标题、列表入口、返回按钮、导航标签、状态提示等独立 `Text` 时，
-  统一复用 `apps/native/src/theme/text.ts` 的 `textMetrics(fontSize, lineHeight)`，
-  为中文、系统字体和回退字体保留完整的上下笔画空间，不要只设置 `fontSize`。
-- Android 不要直接用固定 `lineHeight` 代替该工具；React Native 的显式行高可能覆盖字体度量，
-  导致部分厂商字体被裁剪。保留工具提供的 `includeFontPadding`、上下留白和最小高度，
-  让系统字体决定实际所需高度；iOS 沿用工具中的平台适配。
-- 不要通过关闭字体缩放、缩小字号、固定文字容器高度或隐藏溢出来掩盖裁剪。
-  父容器应允许随字体增大或换行而增长；横向文字按需要设置收缩和换行，避免挤压图标。
-  图标字体、嵌套富文本等确有特殊排版要求时，应单独验证并说明不能直接复用的原因。
-- 修复文字裁剪时，同时检查同一功能的页面标题、入口、返回栏和相关提示，避免只修复截图中的一处。
-  Web 对应页面在移动端尺寸下同步检查行高、上下留白和换行，继续遵守移动端与 Web 同步要求。
-- 完成前用 Android 真机分别检查默认字体和放大字体（至少系统字体缩放 1.0 和 1.3），
-  查看截图确认中文上下笔画完整，并验证入口和返回操作。
-  类型检查、构建通过或文字框尺寸正常不能替代视觉检查；无法真机验证时必须明确说明未验证范围。
+- When adding or modifying standalone native `Text` elements, such as titles, list entries, back buttons,
+  navigation labels, or status messages, reuse `textMetrics(fontSize, lineHeight)` from `apps/native/src/theme/text.ts`.
+  Reserve enough space above and below glyphs for Chinese, system fonts, and fallback fonts; do not set only `fontSize`.
+- On Android, do not replace this helper with a fixed `lineHeight`. React Native's explicit line height can override
+  font metrics and clip some vendor fonts. Retain the helper's `includeFontPadding`, vertical spacing, and minimum height
+  so the system font determines the actual height needed. Use the helper's existing platform adaptation for iOS.
+- Do not hide clipping by disabling font scaling, reducing font size, fixing text container heights, or hiding overflow.
+  Parent containers must grow with larger fonts or wrapping; allow horizontal text to shrink and wrap as needed
+  without squeezing icons. Where icon fonts or nested rich text require special layout, verify them separately
+  and explain why the helper cannot be reused directly.
+- When fixing clipping, also inspect the feature's page titles, entry points, back navigation bars, and related messages
+  instead of fixing only the location shown in a screenshot. Check line height, vertical spacing, and wrapping
+  on corresponding mobile web pages, following the mobile and web parity requirements.
+- Before completion, test on a physical Android device with default and enlarged fonts, including system font scales
+  of at least 1.0 and 1.3. Inspect screenshots to confirm complete Chinese glyphs and verify entry and back navigation.
+  Passing type checks or builds, or observing normal text box dimensions, cannot replace visual verification.
+  If physical-device testing is unavailable, explicitly state what remains unverified.
 
 ## Tauri 2 WebView Window Creation On Windows
 
