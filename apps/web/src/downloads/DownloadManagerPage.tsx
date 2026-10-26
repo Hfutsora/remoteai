@@ -8,16 +8,26 @@ import { DownloadCard } from './DownloadCard';
 import { useDownloadTasks } from './useDownloadTasks';
 import { useDownloadSelection } from '../../../../shared/downloads/useDownloadSelection';
 import { DownloadBatchActions } from './DownloadBatchActions';
+import { DownloadWorkspace } from './desktop/DownloadWorkspace';
+import { useDesktopLayout } from '../useDesktopLayout';
 import './styles.css';
 
 export function DownloadManagerPage({ owner, onBack }: { owner: string; onBack: () => void }) {
   useLanguage();
+  const desktop = useDesktopLayout();
   const { connection, tasks, error, busy, run, removeTasks } = useDownloadTasks(owner);
   const { selected, toggle, allSelected, toggleAll } = useDownloadSelection(tasks, owner);
   const [view, setView] = useState<'tasks' | 'project' | 'computer'>('tasks');
   if (view !== 'tasks' && connection) return <DownloadBrowser
     key={`${connection.deviceId}:${view}:${connection.threadId ?? connection.cwd ?? ''}`}
     connection={connection} scope={view} back={() => setView('tasks')} />;
+  if (desktop) return <DownloadWorkspace tasks={tasks} owner={owner} busy={!!busy} error={error}
+    run={run} removeTasks={removeTasks} onBack={onBack} allowShare sources={<>
+      <button type="button" className="dw-button" disabled={!connection?.ready || !(connection.threadId || connection.cwd)}
+        onClick={() => setView('project')}><Folder size={17} />{t('client.downloads.currentProject')}</button>
+      <button type="button" className="dw-button" disabled={!connection?.ready}
+        onClick={() => setView('computer')}><Monitor size={17} />{t('client.downloads.thisComputer')}</button>
+    </>} />;
   return <section className="downloads-page">
     <header className="downloads-header"><button type="button" className="download-icon-button"
       aria-label={t("client.discovery.back")} onClick={onBack}><ArrowLeft size={22} /></button><h2>{t("client.downloads.downloads")}</h2></header>

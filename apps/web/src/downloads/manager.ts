@@ -39,6 +39,7 @@ export class WebDownloadManager {
     [...this.connections.values()].find(connection => connection.owner === source.owner
       && connection.deviceId === source.deviceId);
   error = () => this.failure;
+  retryAttempt = (id: string) => this.retryTimers.has(id) ? this.retries.attempt(id) : 0;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private emit = () => { this.listeners.forEach(listener => listener()); };
   private update = (task: DownloadTask) => {

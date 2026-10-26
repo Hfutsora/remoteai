@@ -40,13 +40,14 @@ export function useDownloadTasks(owner: string, options: {
     } catch { setError(t('client.downloads.deleteFailed')); }
     finally { pending.current = false; setBusy(''); }
   };
-  const run = async (task: DownloadTask, operation: 'action' | 'remove' | 'open' | 'share' = 'action') => {
+  const run = async (task: DownloadTask, operation: 'action' | 'remove' | 'open' | 'share' | 'retry' = 'action') => {
     if (operation === 'remove') return removeTasks([task.id], false);
     if (pending.current) return;
     pending.current = true; setBusy(task.id); setError('');
     try {
       if (operation === 'open') await downloadManager.open(task.id, options.openDownload);
       else if (operation === 'share') await downloadManager.share(task.id);
+      else if (operation === 'retry') await downloadManager.resume(task.id);
       else if (['completed', 'ready'].includes(task.status)) await downloadManager.save(task.id);
       else if (['queued', 'preparing', 'downloading', 'verifying'].includes(task.status)) await downloadManager.pause(task.id);
       else await downloadManager.resume(task.id);
