@@ -126,7 +126,7 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await page.screenshot({ path: `../../.codex-tmp/download-selection-${info.project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await batch.click();
-  await page.getByRole('button', { name: '删除', exact: true }).last().click();
+  await page.getByRole('dialog').getByRole('button', { name: '删除', exact: true }).click();
   await expect(page.getByRole('article')).toHaveCount(1);
   await expect(batch).toBeDisabled();
   await page.reload();
@@ -135,7 +135,7 @@ test('selects cards, cancels confirmation and deletes only selected downloads of
   await expect(page.getByRole('article')).toHaveAttribute('aria-label', 'empty.txt');
   await page.getByRole('button', { name: '全选', exact: true }).click();
   await batch.click();
-  await page.getByRole('button', { name: '删除', exact: true }).last().click();
+  await page.getByRole('dialog').getByRole('button', { name: '删除', exact: true }).click();
   await expect(page.getByRole('article')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '全选', exact: true })).toBeDisabled();
 });

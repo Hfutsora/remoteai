@@ -120,8 +120,13 @@ test('the file sheet shares cached bytes offline with sharing on the left', asyn
   const save = sheet.getByRole('button', { name: '保存到设备', exact: true });
   await expect(share).toBeEnabled();
   await share.click({ trial: true });
-  const shareBounds = (await share.boundingBox())!;
-  const saveBounds = (await save.boundingBox())!;
+  await expect(save).toBeEnabled();
+  // Read both rectangles in one frame while the reopened sheet may still be animating.
+  const [shareBounds, saveBounds] = await sheet.locator('.file-download-actions button').evaluateAll(buttons =>
+    buttons.map(button => {
+      const { x, y, width } = button.getBoundingClientRect();
+      return { x, y, width };
+    }));
   expect(shareBounds.x + shareBounds.width).toBeLessThan(saveBounds.x);
   expect(shareBounds.y).toBe(saveBounds.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
