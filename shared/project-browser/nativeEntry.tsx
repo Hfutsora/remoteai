@@ -38,6 +38,7 @@ const client: ProjectBrowserClient = {
   save: target => request('save', target),
   mutate: target => request('mutate', target),
 };
+const blameClient: ProjectBrowserClient = { ...client, blame: target => request('blame', target) };
 const host: BrowserHost = {
   copyPath: path => request('copyPath', { path }),
   download: target => request('download', target),
@@ -73,7 +74,8 @@ function render(settings: BrowserSettings) {
   const actionsHost = capabilities ? { ...host, ...capabilities,
     reference: capabilities.reference ? host.reference : undefined,
     quoteSelection: capabilities.quoteSelection ? host.quoteSelection : undefined } : host;
-  root.render(<ProjectBrowser key={settings.cwd} ref={browser} client={client} cwd={settings.cwd} host={actionsHost}
+  root.render(<ProjectBrowser key={settings.cwd} ref={browser}
+    client={capabilities?.blame ? blameClient : client} cwd={settings.cwd} host={actionsHost}
     treeOptions={nativeSshTreeOptions({ ...settings, connected: settings.connected && !closing }, send)}
     connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
     initialSnapshot={settings.snapshot} preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),

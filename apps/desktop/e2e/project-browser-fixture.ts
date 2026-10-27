@@ -68,8 +68,9 @@ export async function browserRequest<T>(request: ProjectBrowserRequest): Promise
   const path = request.operation === 'projectFiles' ? request.directory ?? '' : request.path;
   const relative = path === request.cwd ? '' : path.replace(`${request.cwd}/`, '');
   if (request.operation === 'projectFileBlame') {
-    document.body.dataset.blameReads = String(Number(document.body.dataset.blameReads ?? 0) + 1);
-    const status = (document.body.dataset.blameStatus ?? 'ready') as ProjectBlame['status'];
+    const body = typeof document === 'undefined' ? undefined : document.body;
+    if (body) body.dataset.blameReads = String(Number(body.dataset.blameReads ?? 0) + 1);
+    const status = (body?.dataset.blameStatus ?? 'ready') as ProjectBlame['status'];
     const commits = ['Alice 中文', 'Bob'].map((author, index) => ({
       hash: String(index + 1).repeat(40), author, time: 1_700_000_000 + index * 86400,
       timezone: '+0800', summary: index ? 'Update content' : 'Initial content',
@@ -78,8 +79,8 @@ export async function browserRequest<T>(request: ProjectBrowserRequest): Promise
     const ranges = lines.length > 100 ? [{ start: 1, count: lines.length, commit: 0 }]
       : lines.map((_, index) => ({ start: index + 1, count: 1, commit: index % 2 }));
     const result: ProjectBlame = { status, revision: fileRevision(relative), commits, ranges };
-    if (document.body.dataset.blameDelay) {
-      await new Promise(resolve => setTimeout(resolve, Number(document.body.dataset.blameDelay)));
+    if (body?.dataset.blameDelay) {
+      await new Promise(resolve => setTimeout(resolve, Number(body.dataset.blameDelay)));
     }
     return result as T;
   }

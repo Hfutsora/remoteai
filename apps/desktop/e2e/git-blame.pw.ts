@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 test.describe.configure({ timeout: 90_000 });
 
 async function open(page: Page, mode: string, query = '') {
+  await page.addInitScript(() => localStorage.setItem('codex-switch.project-browser.auto-save', '0'));
   await page.setViewportSize({ width: 1440, height: 960 });
   if (mode === 'local') await page.addInitScript(() => Object.assign(window, { __TAURI_INTERNALS__: {} }));
   await page.goto(`/e2e/project-browser-terminal-harness.html?mode=${mode}&scripts=1${query}`);
@@ -11,7 +12,7 @@ async function open(page: Page, mode: string, query = '') {
 
 async function menu(page: Page, editor: Locator) {
   await editor.locator('.cm-lineNumbers .cm-gutterElement').nth(1).click({ button: 'right' });
-  return page.getByRole('menuitemcheckbox', { name: '显示 Git Blame', exact: true });
+  return page.getByRole('menuitemcheckbox', { name: /Git Blame/ });
 }
 
 for (const mode of ['local', 'remote', 'web']) {
@@ -22,6 +23,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.getByRole('treeitem', { name: 'package.json', exact: true }).click();
     const editor = page.getByRole('tabpanel', { name: 'package.json', exact: true });
     const item = await menu(page, editor);
+    await expect(item).toHaveText('显示 Git Blame');
     await expect(item).toHaveAttribute('aria-checked', 'false');
     await item.click();
     const gutter = editor.locator('.pf-blame-gutter');
@@ -50,10 +52,13 @@ for (const mode of ['local', 'remote', 'web']) {
     await editor.getByRole('button', { name: '全部展开', exact: true }).click();
     await expect(gutter.locator('.pf-blame-label')).toHaveCount(13);
     const checked = await menu(page, editor);
+    await expect(checked).toHaveText('关闭 Git Blame 批注');
     await expect(checked).toHaveAttribute('aria-checked', 'true');
     await page.screenshot({ path: info.outputPath(`git-blame-menu-${mode}.png`) });
     await checked.click();
     await expect(gutter).toHaveCount(0);
+    await expect(await menu(page, editor)).toHaveText('显示 Git Blame');
+    await page.keyboard.press('Escape');
     expect(errors).toEqual([]);
   });
 
@@ -64,22 +69,24 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.evaluate(() => { document.body.dataset.blameDelay = '500'; });
     await (await menu(page, editor)).click();
     await expect(editor.getByRole('status').filter({ hasText: '正在加载 Git Blame' })).toBeVisible();
-    await editor.getByRole('button', { name: '显示 Git Blame', exact: true }).click();
+    await (await menu(page, editor)).click();
     await page.waitForTimeout(600);
     await expect(editor.locator('.pf-blame-gutter')).toHaveCount(0);
     await page.evaluate(() => { document.body.dataset.blameStatus = 'notRepository'; });
     await (await menu(page, editor)).click();
     await expect(editor.getByText('此文件不在 Git 仓库中。')).toBeVisible();
-    await editor.getByRole('button', { name: '显示 Git Blame', exact: true }).click();
+    await (await menu(page, editor)).click();
     await page.evaluate(() => { document.body.dataset.blameStatus = 'ready'; });
     await (await menu(page, editor)).click();
     await expect(editor.locator('.pf-blame-gutter')).toContainText('Alice 中文');
     await editor.locator('.cm-content').click(); await page.keyboard.press('Control+Home');
     await page.keyboard.insertText('new');
     await page.context().setOffline(true);
-    for (const [language, label, uncommitted] of [
-      ['en', 'Annotate with Git Blame', 'Uncommitted'], ['ja', 'Git Blame を表示', '未コミット'],
-      ['ru', 'Показать Git Blame', 'Не закоммичено'], ['zh', '显示 Git Blame', '未提交'],
+    for (const [language, label, uncommitted, closeLabel] of [
+      ['en', 'Annotate with Git Blame', 'Uncommitted', 'Hide Git Blame Annotations'],
+      ['ja', 'Git Blame を表示', '未コミット', 'Git Blame の注釈を非表示'],
+      ['ru', 'Показать Git Blame', 'Не закоммичено', 'Скрыть аннотации Git Blame'],
+      ['zh', '显示 Git Blame', '未提交', '关闭 Git Blame 批注'],
     ]) {
       await page.evaluate(language => {
         const key = 'codex-switch.web.language.v1'; localStorage.setItem(key, language);
@@ -87,6 +94,8 @@ for (const mode of ['local', 'remote', 'web']) {
       }, language);
       await expect(editor.getByRole('button', { name: label, exact: true })).toBeVisible();
       await expect(editor.locator('.pf-blame-text').first()).toHaveText(uncommitted);
+      await expect(await menu(page, editor)).toHaveText(closeLabel);
+      await page.keyboard.press('Escape');
     }
     await page.context().setOffline(false);
   });

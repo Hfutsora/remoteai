@@ -54,13 +54,14 @@ class BlameMarker extends GutterMarker {
     tooltip.className = 'pf-blame-tooltip';
     tooltip.textContent = this.commit ? `${text}\n${this.commit.hash.slice(0, 12)}\n${this.commit.summary}` : text;
     element.append(tooltip);
-    element.addEventListener('mouseenter', event => {
+    element.addEventListener('pointerenter', event => {
+      if (event.pointerType !== 'mouse') return;
       tooltip.style.display = 'block';
       const bounds = tooltip.getBoundingClientRect();
       tooltip.style.left = `${Math.max(8, Math.min(event.clientX, innerWidth - bounds.width - 8))}px`;
       tooltip.style.top = `${Math.max(8, Math.min(event.clientY + 20, innerHeight - bounds.height - 8))}px`;
     });
-    element.addEventListener('mouseleave', () => { tooltip.style.display = ''; });
+    element.addEventListener('pointerleave', () => { tooltip.style.display = ''; });
     return element;
   }
 }

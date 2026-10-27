@@ -132,10 +132,10 @@ export function ProjectEditor(props: Props) {
     </div>
     {plainText && <p className="pf-notice" role="status">{props.t('client.projectBrowser.largePlainText')}</p>}
     {blame.notice && <p className="pf-notice pf-blame-notice" role="status">{blame.notice}</p>}
-    <div ref={host} className="pf-editor-host" />
+    <div ref={host} className="pf-editor-host" {...blame.handlers} />
     {blame.menu && <GutterMenu position={blame.menu} enabled={blame.enabled}
-      toggle={() => { blame.toggle(); view.current?.focus(); }}
-      close={() => { blame.close(); view.current?.focus(); }} t={props.t} />}
+      toggle={() => { blame.toggle(); if (!blame.menu?.touch) view.current?.focus(); }}
+      close={() => { blame.close(); if (!blame.menu?.touch) view.current?.focus(); }} t={props.t} />}
     {selectionMenu.menu && view.current && props.quoteSelection && <EditorSelectionMenu
       menu={selectionMenu.menu} editor={view.current} quoteSelection={props.quoteSelection}
       close={selectionMenu.close} t={props.t} />}

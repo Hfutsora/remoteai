@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Compartment, StateEffect } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import type { ProjectBlame } from './protocol';
 import type { BrowserTranslate } from './ProjectTree';
 import { blameGutter } from './blameGutter';
+import { useGutterMenu } from './useGutterMenu';
 
 export interface BlameSource {
   read: (revision: string) => Promise<ProjectBlame>;
   revision: string; text: string; connected: boolean;
 }
-export interface GutterMenuPosition { x: number; y: number }
 
 export function useGitBlame(view: MutableRefObject<EditorView | undefined>, source: BlameSource | undefined,
   t: BrowserTranslate) {
   const [enabled, setEnabled] = useState(false);
-  const [menu, setMenu] = useState<GutterMenuPosition>();
+  const gutterMenu = useGutterMenu(view, !!source);
   const [result, setResult] = useState<ProjectBlame>();
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -24,22 +24,6 @@ export function useGitBlame(view: MutableRefObject<EditorView | undefined>, sour
   const revision = source?.revision;
   const connected = source?.connected;
   const uncommitted = t('client.gitBlame.uncommitted');
-  const close = useCallback(() => setMenu(undefined), []);
-  useEffect(() => {
-    const editor = view.current;
-    if (!editor || !supported) return;
-    const open = (event: MouseEvent) => {
-      if (!(event.target instanceof Element) || !event.target.closest('.cm-gutters')) return;
-      event.preventDefault(); event.stopPropagation();
-      setMenu({ x: event.clientX, y: event.clientY });
-    };
-    editor.scrollDOM.addEventListener('contextmenu', open, true);
-    editor.scrollDOM.addEventListener('scroll', close);
-    return () => {
-      editor.scrollDOM.removeEventListener('contextmenu', open, true);
-      editor.scrollDOM.removeEventListener('scroll', close);
-    };
-  }, [supported, close, view]);
   useEffect(() => {
     setResult(undefined); setFailed(false);
     const current = latest.current;
@@ -69,5 +53,5 @@ export function useGitBlame(view: MutableRefObject<EditorView | undefined>, sour
     else if (result?.status === 'notRepository') notice = t('client.gitBlame.notRepository');
     else if (result?.status === 'changed') notice = t('client.gitBlame.changed');
   }
-  return { enabled, menu, close, notice, toggle: () => { setEnabled(value => !value); close(); } };
+  return { ...gutterMenu, enabled, notice, toggle: () => { setEnabled(value => !value); gutterMenu.close(); } };
 }

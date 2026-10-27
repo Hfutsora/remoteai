@@ -1,3 +1,4 @@
+.pf-editor .cm-gutters { -webkit-touch-callout: none; user-select: none; touch-action: pan-y; }
 .pf-editor .pf-blame-gutter { width: 210px; color: var(--pf-muted); background: var(--pf-subtle);
   border-right: 1px solid var(--pf-border); }
 .pf-blame-gutter .cm-gutterElement { padding: 0 9px; }
