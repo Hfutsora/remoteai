@@ -25,6 +25,9 @@ export async function previewBrowserRequest<T>(request: Request): Promise<T> {
   if (request.operation === 'projectFileRead' && bytes) {
     const kind = filePreviewKind(name);
     const text = kind === 'markdown' || kind === 'html';
+    const inlineImage = kind === 'image' && new URLSearchParams(location.search).has('inlineImages');
+    if (inlineImage) return { path: request.path, kind: 'image', size: bytes.length, readOnly: true,
+      image: `data:${previewMimeType(name)};base64,${fromByteArray(bytes)}`, revision: 'fixture' } as T;
     return { path: request.path, kind: text ? 'text' : 'binary', size: bytes.length,
       text: text ? new TextDecoder().decode(bytes) : undefined, readOnly: !text, revision: 'fixture' } as T;
   }

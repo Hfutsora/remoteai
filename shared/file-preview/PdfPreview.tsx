@@ -11,6 +11,7 @@ GlobalWorkerOptions.workerSrc = workerUrl;
 const ZOOM_STEP = 0.25;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
+const WHEEL_ZOOM_SENSITIVITY = 0.002;
 
 export default function PdfPreview({ file, name }: { file: Blob; name: string }) {
   const [document, setDocument] = useState<PDFDocumentProxy>();
@@ -40,6 +41,23 @@ export default function PdfPreview({ file, name }: { file: Blob; name: string })
     observer.observe(host.current);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    const element = host.current;
+    if (!element) return;
+    const wheel = (event: WheelEvent) => {
+      // Ordinary wheel input must keep the current zoom while scrolling a tall page.
+      if (!event.ctrlKey && !event.metaKey) return;
+      if (event.deltaY === 0 || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const factor = Math.exp(-event.deltaY * WHEEL_ZOOM_SENSITIVITY);
+      setZoom(current => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, current * factor)));
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  }, []);
+  const changeZoom = (amount: number) => setZoom(current =>
+    Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, current + amount)));
   return <div className="file-pdf-preview">
     {document && !error && <div className="file-pdf-toolbar">
       <button type="button" aria-label={t('client.mobile.previousPage')} disabled={page <= 1}
@@ -48,10 +66,10 @@ export default function PdfPreview({ file, name }: { file: Blob; name: string })
       <button type="button" aria-label={t('client.mobile.nextPage')} disabled={page >= document.numPages}
         onClick={() => setPage(page + 1)}><ChevronRight size={16} /></button>
       <button type="button" aria-label={t('client.shared.zoomOut')} disabled={zoom <= MIN_ZOOM}
-        onClick={() => setZoom(zoom - ZOOM_STEP)}><ZoomOut size={16} /></button>
+        onClick={() => changeZoom(-ZOOM_STEP)}><ZoomOut size={16} /></button>
       <button type="button" onClick={() => setZoom(1)}>{t('client.workspaceActions.fitToWindow')}</button>
       <button type="button" aria-label={t('client.shared.zoomIn')} disabled={zoom >= MAX_ZOOM}
-        onClick={() => setZoom(zoom + ZOOM_STEP)}><ZoomIn size={16} /></button>
+        onClick={() => changeZoom(ZOOM_STEP)}><ZoomIn size={16} /></button>
     </div>}
     <div className="file-pdf-pages" ref={host}>
       {error ? <p role="status" className="file-preview-feedback">{t('client.filePreview.pdfUnavailable')}</p>

@@ -5,6 +5,25 @@ test.beforeEach(async ({ page }) => {
 });
 
 for (const mode of ['local', 'remote', 'web', 'legacy']) {
+  for (const newlines of ['crlf', 'mixed', 'cr']) {
+    test(`${mode}: preserves JSON line numbers, navigation and folding with ${newlines} newlines`, async ({ page }) => {
+      await page.goto(`e2e/json-preview-harness.html?mode=${mode}&newlines=${newlines}`);
+      const preview = page.locator('.json-file-preview');
+      await expect(preview.locator('.json-token-property').first()).toBeVisible();
+      await expect(preview.locator('.json-preview-info')).toContainText('JSON · 6 行');
+      await expect(preview.locator('.cm-line')).toHaveCount(6);
+      await expect(preview.locator('.cm-activeLine')).toHaveText('  "last": true');
+      await expect(preview.locator('.cm-lineNumbers .cm-activeLineGutter')).toHaveText('5');
+      await preview.locator('.cm-lineNumbers .cm-gutterElement').filter({ hasText: /^2$/ }).click();
+      await expect(preview.locator('.cm-foldPlaceholder')).toHaveCount(1);
+      await expect(preview.locator('.cm-content')).not.toContainText('first-model');
+      await expect(preview.locator('.cm-content')).toContainText('"last": true');
+      await preview.locator('.cm-foldPlaceholder').click();
+      await expect(preview.locator('.cm-content')).toContainText('first-model');
+      await expect(preview.locator('.cm-line')).toHaveCount(6);
+    });
+  }
+
   test(`${mode}: JSON size setting updates highlighting, persists and keeps the end readable`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`e2e/json-preview-harness.html?mode=${mode}`);

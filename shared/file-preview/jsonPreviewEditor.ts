@@ -15,10 +15,10 @@ export const jsonPreviewHighlighting = syntaxHighlighting(HighlightStyle.define(
 export function createJsonPreview(options: {
   parent: HTMLElement; text: string; label: string; extensions: Extension;
 }): EditorView {
+  // Default splitting accepts mixed line endings; a fixed separator merges otherwise valid lines.
   return new EditorView({ parent: options.parent, state: EditorState.create({ doc: options.text, extensions: [
     EditorState.readOnly.of(true), EditorView.editable.of(false), lineNumbers(),
     highlightActiveLine(), highlightActiveLineGutter(), keymap.of(defaultKeymap),
-    EditorState.lineSeparator.of(options.text.includes('\r\n') ? '\r\n' : '\n'),
     EditorView.contentAttributes.of({ 'aria-label': options.label, 'aria-readonly': 'true', tabindex: '0' }),
     options.extensions,
   ] }) });

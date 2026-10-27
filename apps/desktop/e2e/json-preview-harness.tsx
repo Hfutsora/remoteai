@@ -23,9 +23,16 @@ const rows = Math.floor((bytes - 20) / new TextEncoder().encode(row).length);
 const generated = params.has('nested') ? JSON.stringify({ models: [
   { name: 'first-model', options: { enabled: true } }, { name: 'second-model', options: { enabled: false } },
 ], last: true }, null, 2) : '{\n' + row.repeat(rows) + '  "last": true\n}';
-const text = params.has('nested') ? generated
+let text = params.has('nested') ? generated
   : generated + ' '.repeat(Math.max(0, Math.floor(bytes) - new TextEncoder().encode(generated).length));
-const target = { path: 'C:/project/models.json', threadId: 'fixture', line: params.has('nested') ? 3 : 600 };
+if (params.has('newlines')) {
+  text = '{\r\n  "first": {\r\n    "name": "first-model"\r\n  },\r\n  "last": true\r\n}';
+  if (params.get('newlines') === 'mixed') text = text.replace('"first": {\r\n', '"first": {\n');
+  if (params.get('newlines') === 'cr') text = text.replaceAll('\r\n', '\r');
+}
+const initialLine = params.has('nested') ? 3 : 600;
+const target = { path: 'C:/project/models.json', threadId: 'fixture',
+  line: params.has('newlines') ? 5 : initialLine };
 const data = { ...target, sessionId: 'json-preview', name: 'models.json', kind: 'text' as const, text,
   size: new TextEncoder().encode(text).length, url: 'http://127.0.0.1/json-preview/models.json' };
 filePreviewApi.open = async requested => ({ ...data, ...requested });

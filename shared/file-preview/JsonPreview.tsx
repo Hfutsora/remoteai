@@ -12,7 +12,7 @@ export function JsonPreview({ text, size, line }: { text: string; size?: number;
   const limit = useJsonHighlightLimit();
   const bytes = useMemo(() => previewByteLength(text, size), [text, size]);
   const plain = bytes > limit * MEBIBYTE;
-  const lineCount = useMemo(() => text.split('\n').length, [text]);
+  const lineCount = useMemo(() => text.split(/\r\n?|\n/).length, [text]);
   const label = t('client.workspaceActions.fileContent');
   const editor = useJsonPreview({ text, plain, line, label });
   return <section className="json-file-preview" data-plain-text={plain}>
