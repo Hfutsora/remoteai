@@ -2,6 +2,8 @@ import { uiText } from "../../../i18n/uiText";
 import { useState } from "react";
 import type { FilePreviewData } from "./api";
 import { PreviewCode } from "./PreviewCode";
+import { JsonPreview } from '../../../../../../shared/file-preview/JsonPreview';
+import { isJsonPath } from '../../../../../../shared/file-preview/jsonHighlightLimit';
 import { PreviewMarkdown } from "./PreviewMarkdown";
 import styles from "./preview.module.less";
 
@@ -31,6 +33,7 @@ function MediaPreview({ data }: { data: FilePreviewData }) {
 
 export function PreviewContent({ data, source }: { data: FilePreviewData; source: boolean }) {
   if (data.text !== null && (source || data.kind === "text")) {
+    if (isJsonPath(data.path)) return <JsonPreview text={data.text} size={data.size} line={data.line} />;
     return <PreviewCode text={data.text} path={data.path} line={data.line} />;
   }
   if (data.kind === "html") return <iframe title={uiText("client.downloads.htmlPreview")} className={styles.frame}
