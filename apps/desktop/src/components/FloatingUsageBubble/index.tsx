@@ -96,12 +96,12 @@ function floatingUsageClassName(mode: FloatingUsageMode, glass: boolean, settlin
 export function FloatingUsageBubble() {
   const { language, t } = useLanguage();
   const quotaDisplay = useQuotaDisplay();
-  const averageMode = quotaDisplay.status?.enabled ?? false;
-  const average = quotaDisplay.status?.average;
+  const averagePreference = quotaDisplay.status?.enabled ?? false;
   useThemeColor(ignoreThemeError);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
   const [localProxy, setLocalProxy] = useState<LocalProxyStatus | null>(null);
+  const [routingStateLoaded, setRoutingStateLoaded] = useState(false);
   const [providerUsage, setProviderUsage] = useState<UsageSummary | null>(null);
   const [resetDisplay, setResetDisplay] = useState<BubbleResetDisplay>("countdown");
   const [bubbleStyle, setBubbleStyle] = useState<BubbleStyle>("classic");
@@ -126,6 +126,7 @@ export function FloatingUsageBubble() {
     const active = providers.find((item) => item.active) ?? null;
     const provider = active?.kind === "openai" ? active : null;
     setActiveProvider(active);
+    setRoutingStateLoaded(proxy !== null);
     const request = ++providerUsageRequest.current;
     if (!provider) {
       setProviderUsage(null);
@@ -163,9 +164,12 @@ export function FloatingUsageBubble() {
   useEffect(() => subscribeToBubbleStyleChanges(setBubbleStyle), []);
 
   const account = useMemo(() => accounts.find((item) => item.active), [accounts]);
+  const averageMode = averagePreference && routingStateLoaded && Boolean(account) && !activeProvider
+    && !localProxy?.activeProviderGroup && !localProxy?.concurrentAccountRoutingEnabled;
+  const average = averageMode ? quotaDisplay.status?.average : null;
   const activeUpstreamProvider = activeProvider?.kind === "openai" ? activeProvider : null;
-  const activeCustomProvider = !averageMode && activeProvider?.kind === "custom" ? activeProvider : null;
-  const concurrentRoutingActive = !averageMode && Boolean(localProxy?.concurrentAccountRoutingEnabled);
+  const activeCustomProvider = activeProvider?.kind === "custom" ? activeProvider : null;
+  const concurrentRoutingActive = Boolean(localProxy?.concurrentAccountRoutingEnabled);
   let floatingMode: FloatingUsageMode = "account";
   if (concurrentRoutingActive) floatingMode = "concurrent";
   else if (activeCustomProvider) floatingMode = "provider";

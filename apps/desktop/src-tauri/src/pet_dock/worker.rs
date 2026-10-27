@@ -59,14 +59,12 @@ fn iteration(
         return Ok(());
     }
     *was_enabled = true;
-    let mut snapshot = load_snapshot(app, balance, settings.quota_display_all_accounts)
+    let average_preference = settings.quota_display_all_accounts;
+    let mut snapshot = load_snapshot(app, balance, average_preference)
         .unwrap_or_else(|_| data::unavailable("official"));
-    snapshot["average"] = settings.quota_display_all_accounts.into();
     // A slow database read must not re-enable a dock after its switch was turned off.
     let settings = crate::storage::read_app_settings(app)?;
-    if !settings.pet_dock_enabled
-        || snapshot["average"].as_bool().unwrap_or(false) != settings.quota_display_all_accounts
-    {
+    if !settings.pet_dock_enabled || average_preference != settings.quota_display_all_accounts {
         return Ok(());
     }
     snapshot["language"] = serde_json::to_value(settings.language).unwrap_or_default();
@@ -77,18 +75,16 @@ fn iteration(
 
 fn load_snapshot(app: &AppHandle, balance: &BalanceCache, average: bool) -> Result<Value, String> {
     let paths = crate::storage::resolve_paths(app)?;
-    if average {
+    let state = crate::storage::read_state(&paths);
+    let mut snapshot = if should_use_average(&state, average) {
         let average = crate::quota_display::load_average(&paths)?;
         let mut snapshot = data::official(&average.usage, chrono::Utc::now().timestamp());
         snapshot["average"] = true.into();
         snapshot["stale"] = average.stale.into();
-        return Ok(snapshot);
-    }
-    let state = crate::storage::read_state(&paths);
-    if state.concurrent_account_routing_enabled || state.active_provider_group.is_some() {
-        return Ok(data::unavailable("official"));
-    }
-    let mut snapshot = if let Some(id) = state.active_provider_id.as_deref() {
+        snapshot
+    } else if state.concurrent_account_routing_enabled || state.active_provider_group.is_some() {
+        data::unavailable("official")
+    } else if let Some(id) = state.active_provider_id.as_deref() {
         provider_snapshot(app, balance, id)?
     } else if let Some(id) = state.active_account_id.as_deref() {
         data::official(
@@ -107,6 +103,14 @@ fn load_snapshot(app: &AppHandle, balance: &BalanceCache, average: bool) -> Resu
         snapshot = data::unavailable("official");
     }
     Ok(snapshot)
+}
+
+fn should_use_average(state: &crate::models::ManagerStateFile, enabled: bool) -> bool {
+    enabled
+        && state.active_provider_id.is_none()
+        && state.active_provider_group.is_none()
+        && !state.concurrent_account_routing_enabled
+        && state.active_account_id.is_some()
 }
 
 fn provider_snapshot(app: &AppHandle, cache: &BalanceCache, id: &str) -> Result<Value, String> {
@@ -179,5 +183,40 @@ fn sync(snapshot: Option<&Value>) -> Result<DockState, String> {
     {
         let _ = snapshot;
         Ok(DockState::Unsupported)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn average_mode_only_applies_to_an_active_official_account() {
+        let official = crate::models::ManagerStateFile {
+            active_account_id: Some("account-1".into()),
+            ..Default::default()
+        };
+        assert!(super::should_use_average(&official, true));
+        assert!(!super::should_use_average(&official, false));
+
+        let api_provider = crate::models::ManagerStateFile {
+            active_account_id: Some("account-1".into()),
+            active_provider_id: Some("provider-1".into()),
+            ..Default::default()
+        };
+        assert!(!super::should_use_average(&api_provider, true));
+
+        let concurrent = crate::models::ManagerStateFile {
+            active_account_id: Some("account-1".into()),
+            concurrent_account_routing_enabled: true,
+            ..Default::default()
+        };
+        assert!(!super::should_use_average(&concurrent, true));
+
+        let provider_group = crate::models::ManagerStateFile {
+            active_account_id: Some("account-1".into()),
+            active_provider_group: Some("api-group".into()),
+            ..Default::default()
+        };
+        assert!(!super::should_use_average(&provider_group, true));
+        assert!(!super::should_use_average(&Default::default(), true));
     }
 }
