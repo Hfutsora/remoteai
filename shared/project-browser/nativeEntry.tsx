@@ -78,7 +78,9 @@ function render(settings: BrowserSettings) {
     client={capabilities?.blame ? blameClient : client} cwd={settings.cwd} host={actionsHost}
     treeOptions={nativeSshTreeOptions({ ...settings, connected: settings.connected && !closing }, send)}
     connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
-    initialSnapshot={settings.snapshot} preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
+    initialSnapshot={settings.snapshot}
+    onSnapshot={snapshot => send({ type: 'snapshot', cwd: settings.cwd, snapshot })}
+    preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
       change: delay => { send({ type: 'preferences', delay }); render({ ...settings, autoSaveDelay: delay }); } }}
     onClose={() => { void close(); }} />);
 }

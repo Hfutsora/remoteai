@@ -27,16 +27,23 @@ interface Props {
   preferences?: BrowserPreferences;
   host: BrowserHost;
   initialSnapshot?: DocumentsSnapshot;
+  onSnapshot?: (snapshot: DocumentsSnapshot) => void;
   treeOptions?: ProjectTreeOptions;
   renderPreview?: ProjectPreviewRenderer;
 }
 
 export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function ProjectBrowser(
   { client, cwd, connected, t, onClose, preferences: suppliedPreferences, initialSnapshot, host: actionsHost,
-    treeOptions, renderPreview }, ref,
+    treeOptions, renderPreview, onSnapshot }, ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
   const file = useProjectDocument(client, cwd, initialSnapshot);
+  useEffect(() => {
+    if (!onSnapshot) return;
+    const publish = () => onSnapshot(file.store.getSnapshot());
+    publish();
+    return file.store.subscribe(publish);
+  }, [file.store, onSnapshot]);
   const split = useTreeResize(host);
   const [showFile, setShowFile] = useState(!!file.activePath);
   const [settingsOpen, setSettingsOpen] = useState(false);

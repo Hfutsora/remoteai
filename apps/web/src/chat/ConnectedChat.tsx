@@ -132,7 +132,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       connectionInfo={<ChatConnectionInfo state={state} controller={controller} device={device} active={active}
         chooseDevice={() => setPickingDevice(true)} />}
       projectPicker={!composerHeader && <ChatProjectSwitch state={state} controller={controller}
-        active={active && foreground} />}
+        active={active && (desktop ? foreground : true)} />}
       queue={queueProps(state, controller)} readClipboardImages={readClipboardImages} nativeFileDrop={nativeFileDrop}
       connection={{ client: controller.guiAccounts, deviceName: device?.name ?? t("client.settings.chooseAComputer"),
         chooseDevice: () => setPickingDevice(true) }}

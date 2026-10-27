@@ -50,11 +50,17 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [generation, setGeneration] = useState(0);
+  const currentGeneration = useRef(generation);
+  const recover = () => { setReady(false); setGeneration(++currentGeneration.current); };
   const mode = useThemeMode();
   const source = useWebviewSource(html, { mode, background: color('#fff', 'surface'),
     foreground: color('#202c29', 'ink'), variables: { '--panel': color('#fff', 'surface') } });
-  const emit = (message: BrowserHostMessage) =>
+  const emit = (message: BrowserHostMessage) => {
+    // Request IDs restart with the renderer; a late reply must not resolve a new request with the same ID.
+    if (generation !== currentGeneration.current) return;
     webview.current?.injectJavaScript(`window.projectBrowserMessage?.(${JSON.stringify(message)}); true;`);
+  };
   const close = () => { if (ready) emit({ type: 'close' }); else onClose(); };
   useEffect(() => {
     let cancelled = false;
@@ -95,23 +101,27 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
             style={styles.close} onPress={close}><Ionicons name="close" size={24} color={color('#202c29', 'ink')} /></Pressable>
         </View>
         {!html && !error && <ActivityIndicator style={styles.fill} color={color('#138475', 'accent')} />}
-        {html && <WebView ref={webview} source={source} style={styles.screen} javaScriptEnabled
+        {html && <WebView key={generation} ref={webview} source={source} style={styles.screen} javaScriptEnabled
+          onContentProcessDidTerminate={recover} onRenderProcessGone={recover}
           scrollEnabled={false} bounces={false} originWhitelist={['about:blank']}
           allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false}
           sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false} setSupportMultipleWindows={false}
           javaScriptCanOpenWindowsAutomatically={false} keyboardDisplayRequiresUserAction
           onShouldStartLoadWithRequest={({ url }) => url === 'about:blank'}
           onMessage={({ nativeEvent }) => {
+            if (generation !== currentGeneration.current) return;
             let message: unknown;
             try { message = JSON.parse(nativeEvent.data); } catch { return; }
             if (!message || typeof message !== 'object' || !('type' in message)) return;
             if (isNativeSshBrowserAction(message)) { ssh?.onAction(message); return; }
             if (message.type === 'ready') { setReady(true); update(); return; }
-            if (message.type === 'closed') {
+            if (message.type === 'snapshot' || message.type === 'closed') {
+              if (message.type === 'snapshot' && (!('cwd' in message) || message.cwd !== cwd)) return;
               if ('snapshot' in message && message.snapshot && typeof message.snapshot === 'object'
                 && 'tabs' in message.snapshot && Array.isArray(message.snapshot.tabs)) {
                 saveBrowserSession(client, cwd, message.snapshot as DocumentsSnapshot);
               }
+              if (message.type === 'snapshot') return;
               onClose();
               if (focusAfterClose.current) requestAnimationFrame(focusAfterClose.current);
               return;

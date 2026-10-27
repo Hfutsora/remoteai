@@ -19,6 +19,7 @@ import type { DownloadClient } from '../../../../shared/remote-chat/downloads';
 
 interface Props {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
+  foreground?: boolean;
   scope: string; session?: AuthSession;
   downloads?: DownloadClient;
 }
@@ -27,15 +28,18 @@ export function ChatTools(props: Props) {
   const [mapping, setMapping] = useState(false);
   const [project, setProject] = useState<string>();
   const desktop = useDesktopLauncher();
+  // App backgrounding pauses live work without disposing stateful modal contents on Android.
+  const live = props.active && (props.foreground ?? true);
   return <>
-    <ProjectTools key={props.cwd} {...props} openMappings={() => setMapping(true)}
+    <ProjectTools key={props.cwd} {...props} connected={props.connected && live}
+      openMappings={() => setMapping(true)}
       openDesktop={desktop.open}
       openFiles={() => setProject(value => value ?? props.cwd)} />
     {project && <ProjectBrowser client={props.client.projectBrowser} cwd={project}
-      active={props.active} connected={props.connected} onClose={() => setProject(undefined)} />}
+      active={props.active} connected={props.connected && live} onClose={() => setProject(undefined)} />}
     <PortMappings client={props.client.files} scope={props.scope} connected={props.connected} session={props.session}
       active={props.active} deviceName={props.deviceName} open={mapping} close={() => setMapping(false)} />
-    {desktop.opened && <RemoteDesktop client={props.client.desktop} active={props.active}
+    {desktop.opened && <RemoteDesktop client={props.client.desktop} active={live}
       close={desktop.close} />}
   </>;
 }
@@ -51,7 +55,8 @@ function ProjectTools({ client, ...props }: Props & {
   const [menu, setMenu] = useState(false);
   const [launchId, setLaunchId] = useState(0);
   const [git, setGit] = useState(false);
-  useEffect(() => { if (!props.active) setMenu(false); }, [props.active]);
+  useEffect(() => { if (!props.active || props.foreground === false) setMenu(false); },
+    [props.active, props.foreground]);
   return <>
     <Pressable ref={anchor} collapsable={false} accessibilityRole="button" accessibilityLabel={t("client.git.openTools")}
       accessibilityState={{ expanded: menu && props.active }}
