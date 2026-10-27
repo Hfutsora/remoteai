@@ -59,11 +59,14 @@ fn iteration(
         return Ok(());
     }
     *was_enabled = true;
-    let mut snapshot =
-        load_snapshot(app, balance).unwrap_or_else(|_| data::unavailable("official"));
+    let mut snapshot = load_snapshot(app, balance, settings.quota_display_all_accounts)
+        .unwrap_or_else(|_| data::unavailable("official"));
+    snapshot["average"] = settings.quota_display_all_accounts.into();
     // A slow database read must not re-enable a dock after its switch was turned off.
     let settings = crate::storage::read_app_settings(app)?;
-    if !settings.pet_dock_enabled {
+    if !settings.pet_dock_enabled
+        || snapshot["average"].as_bool().unwrap_or(false) != settings.quota_display_all_accounts
+    {
         return Ok(());
     }
     snapshot["language"] = serde_json::to_value(settings.language).unwrap_or_default();
@@ -72,8 +75,15 @@ fn iteration(
     Ok(())
 }
 
-fn load_snapshot(app: &AppHandle, balance: &BalanceCache) -> Result<Value, String> {
+fn load_snapshot(app: &AppHandle, balance: &BalanceCache, average: bool) -> Result<Value, String> {
     let paths = crate::storage::resolve_paths(app)?;
+    if average {
+        let average = crate::quota_display::load_average(&paths)?;
+        let mut snapshot = data::official(&average.usage, chrono::Utc::now().timestamp());
+        snapshot["average"] = true.into();
+        snapshot["stale"] = average.stale.into();
+        return Ok(snapshot);
+    }
     let state = crate::storage::read_state(&paths);
     if state.concurrent_account_routing_enabled || state.active_provider_group.is_some() {
         return Ok(data::unavailable("official"));

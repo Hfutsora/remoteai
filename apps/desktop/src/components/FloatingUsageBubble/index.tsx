@@ -46,6 +46,7 @@ import { useConcurrentUsageStats } from "./useConcurrentUsageStats";
 import { accountParticipatesInConcurrentRouting } from "./concurrentUsageSummary";
 import styles from "./index.module.less";
 import { BubbleResetLabel } from "./BubbleResetLabel";
+import { useQuotaDisplay } from '../../hooks/useQuotaDisplay';
 import { ClassicBubbleVisual } from "./ClassicBubbleVisual";
 
 function usageColor(remaining: number) {
@@ -94,6 +95,9 @@ function floatingUsageClassName(mode: FloatingUsageMode, glass: boolean, settlin
 
 export function FloatingUsageBubble() {
   const { language, t } = useLanguage();
+  const quotaDisplay = useQuotaDisplay();
+  const averageMode = quotaDisplay.status?.enabled ?? false;
+  const average = quotaDisplay.status?.average;
   useThemeColor(ignoreThemeError);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
@@ -160,8 +164,8 @@ export function FloatingUsageBubble() {
 
   const account = useMemo(() => accounts.find((item) => item.active), [accounts]);
   const activeUpstreamProvider = activeProvider?.kind === "openai" ? activeProvider : null;
-  const activeCustomProvider = activeProvider?.kind === "custom" ? activeProvider : null;
-  const concurrentRoutingActive = Boolean(localProxy?.concurrentAccountRoutingEnabled);
+  const activeCustomProvider = !averageMode && activeProvider?.kind === "custom" ? activeProvider : null;
+  const concurrentRoutingActive = !averageMode && Boolean(localProxy?.concurrentAccountRoutingEnabled);
   let floatingMode: FloatingUsageMode = "account";
   if (concurrentRoutingActive) floatingMode = "concurrent";
   else if (activeCustomProvider) floatingMode = "provider";
@@ -178,7 +182,7 @@ export function FloatingUsageBubble() {
     concurrentAccountGroup,
   );
   const refreshProviderStats = providerStats.refresh;
-  const accountId = account?.id ?? null;
+  const accountId = averageMode ? null : account?.id ?? null;
 
   useEffect(() => {
     const windowMode = concurrentRoutingActive
@@ -202,7 +206,7 @@ export function FloatingUsageBubble() {
     });
     return () => { active = false; };
   }, [accountId]);
-  const usage = providerUsage ?? account?.usage;
+  const usage = averageMode ? average?.usage : providerUsage ?? account?.usage;
   const primary = usage?.primary;
   const secondary = usage?.secondary;
   const remaining = primary ? clampPercent(primary.remainingPercent) : null;
@@ -215,7 +219,14 @@ export function FloatingUsageBubble() {
       : remainingTone(remaining) === "warning"
         ? ((language !== "zh" && language !== "en" ? uiText("client.usage.watchQuota", {}, language) : language === "zh" ? inlineCopy["text_35d6abd0"] : inlineCopy["Quota_warning_78ee451a"]))
         : ((language !== "zh" && language !== "en" ? uiText("client.usage.quotaAvailable", {}, language) : language === "zh" ? inlineCopy["text_f6e0fb5e"] : inlineCopy["Quota_healthy_be7d3cf1"]));
-  const bubbleLabel = bubbleActionLabel(language, refreshing, floatingMode);
+  const bubbleLabel = averageMode ? t('settings.quotaDisplay.summary', {
+    primary: average?.primaryAccounts ?? 0, secondary: average?.secondaryAccounts ?? 0,
+    total: average?.totalAccounts ?? accounts.length,
+  }) + (average?.stale || quotaDisplay.error ? ` · ${t('settings.quotaDisplay.stale')}` : '')
+    : bubbleActionLabel(language, refreshing, floatingMode);
+  const resetLabel = averageMode ? <small className="floating-bubble-reset">
+    {t('settings.quotaDisplay.short')}
+  </small> : <BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay} />;
   const ringStyle = {
     "--bubble-progress": `${remaining ?? 0}%`,
     "--bubble-color": remaining === null ? "#7b8780" : usageColor(remaining),
@@ -237,11 +248,14 @@ export function FloatingUsageBubble() {
   }, [remaining]);
 
   const refreshCurrentUsage = useCallback(async () => {
-    if ((!account && !activeProvider && !concurrentRoutingActive) || refreshingRef.current) return;
+    if ((!averageMode && !account && !activeProvider && !concurrentRoutingActive) || refreshingRef.current) return;
     refreshingRef.current = true;
     setRefreshing(true);
     try {
-      if (concurrentRoutingActive) {
+      if (averageMode) {
+        await Promise.allSettled(accounts.map((item) => refreshAccountUsage(item.id)));
+        await Promise.all([load(), quotaDisplay.refresh()]);
+      } else if (concurrentRoutingActive) {
         const enabledAccounts = accounts.filter((item) => (
           accountParticipatesInConcurrentRouting(item, concurrentAccountGroup)
         ));
@@ -264,6 +278,8 @@ export function FloatingUsageBubble() {
     }
   }, [
     account,
+    averageMode,
+    quotaDisplay.refresh,
     accounts,
     activeCustomProvider,
     activeProvider,
@@ -373,18 +389,18 @@ export function FloatingUsageBubble() {
             remaining={remaining}
             weeklyRemaining={weeklyRemaining}
             weekLabel={(language !== "zh" && language !== "en" ? uiText("client.chat.weeks", {}, language) : language === "zh" ? inlineCopy["text_5c553ec3"] : inlineCopy["W_fcb5f40d"])}
-            resetLabel={<BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay} />}
+            resetLabel={resetLabel}
           />}
           {bubbleStyle === "glass" && <><span className="floating-glass-ring" aria-hidden="true">
             <span>{remaining === null ? "--" : `${remaining}%`}</span>
             <small>{(language !== "zh" && language !== "en" ? uiText("client.usage.primaryUsageRemaining", {}, language) : language === "zh" ? inlineCopy["text_f5148b69"] : inlineCopy["Primary_left_173af980"])}</small>
           </span>
-          <span className="floating-glass-brand">Codex</span>
+          <span className="floating-glass-brand">{averageMode ? t('settings.quotaDisplay.short') : 'Codex'}</span>
           <span className="floating-glass-details">
             <span>
               <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.timeUntilReset", {}, language) : language === "zh" ? inlineCopy["text_aeb81803"] : inlineCopy["Until_reset_49a041fd"])}</b>
-              <BubbleResetLabel timestamp={primary?.resetsAt} language={language} display={resetDisplay}
-                className="floating-glass-reset" compact />
+              {averageMode ? <strong>--</strong> : <BubbleResetLabel timestamp={primary?.resetsAt}
+                language={language} display={resetDisplay} className="floating-glass-reset" compact />}
             </span>
             <span>
               <b>{(language !== "zh" && language !== "en" ? uiText("client.usage.resetsRemaining", {}, language) : language === "zh" ? inlineCopy["text_e87a1d3b"] : inlineCopy["Resets_left_e1a17497"])}</b>
