@@ -5,6 +5,7 @@ import type { GuiController } from "./controller";
 import type { GuiState } from "./types";
 import styles from "./ComposerSubmit.module.less";
 import { CONTINUE_MESSAGE } from "./continuation";
+import { modelSelectionError } from "./modelSelection";
 import { useMessageQueueEnabled } from "../../../../../shared/chat/useMessageQueueEnabled";
 
 export function ComposerSubmit({ state, controller, hasDraft, reading, onSend, goalMode = false }: {
@@ -19,7 +20,8 @@ export function ComposerSubmit({ state, controller, hasDraft, reading, onSend, g
   const current = state.selected ? state.conversations[state.selected] : undefined;
   const interrupted = current?.turns[current.turns.length - 1]?.status === "interrupted";
   const continuing = interrupted && !hasDraft && !goalMode;
-  const disabled = state.connection !== "ready" || state.sending || state.archived || reading || !state.models.length;
+  const disabled = state.connection !== "ready" || state.sending || state.archived || reading
+    || Boolean(modelSelectionError(state.models, state.settings));
   const submit = async () => {
     if (disabled) return;
     if (continuing) await controller.send(CONTINUE_MESSAGE, []);

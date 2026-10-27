@@ -1,5 +1,6 @@
 import { uiText } from "../../i18n/uiText";
 import { guiApi } from "./api";
+import { modelSelectionError } from "./modelSelection";
 import { conversation } from "./events";
 import type { ThreadGoal } from "./goalTypes";
 import type { GuiState, Thread } from "./types";
@@ -42,6 +43,7 @@ export class GuiGoals {
   set = async (options: { objective?: string; status: "active" | "paused"; threadId?: string }) => {
     const state = this.host.getSnapshot();
     const id = options.threadId ?? state.selected;
+    if (options.status === "active" && modelSelectionError(state.models, state.settings)) return false;
     if (state.modelCatalogLoading || state.modelSettingsLoading || state.workspaceBusy
       || state.connection !== "ready" || state.sending || state.goalBusy || state.archived
       || state.deleting || state.compacting || (!id && !options.objective?.trim())) return false;

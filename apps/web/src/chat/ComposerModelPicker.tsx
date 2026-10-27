@@ -3,7 +3,7 @@ import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Button, Input, Popover, Tooltip } from 'antd';
 import { Check, ChevronLeft, ChevronRight, RotateCcw, Search } from 'lucide-react';
 import { EFFORT_LABELS } from '../../../../shared/remote-chat/composer';
-import { resolveModelSelection } from '../../../desktop/src/pages/codexGui/modelSelection';
+import { modelSelectionError, resolveModelSelection } from '../../../desktop/src/pages/codexGui/modelSelection';
 import { t, useLanguage } from '../i18n';
 import type { ComposerProps } from './composerProps';
 import type { Model } from './types';
@@ -65,6 +65,7 @@ export function ComposerModelPicker({ models, selection, updateSettings, setting
   const trigger = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLButtonElement>(null);
   const { model, effort } = resolveModelSelection(models, selection);
+  const unavailable = modelSelectionError(models, { model, effort });
   const selected = models.find(entry => entry.model === model);
   const modelLabel = selected?.displayName || model || t("client.shared.syncingModels");
   const effortLabel = displayText(EFFORT_LABELS[effort] || effort);
@@ -99,7 +100,8 @@ export function ComposerModelPicker({ models, selection, updateSettings, setting
         </button>
         <Tooltip title={t("client.chat.resetToRecommendedReasoningEffort")} styles={{ root: { maxWidth: 400 } }}>
           <Button type="text" size="small" className="composer-model-reset" icon={<RotateCcw size={14} />}
-            disabled={effort === recommended.effort} aria-label={t("client.chat.resetToRecommendedReasoningEffort")}
+            disabled={!selected || effort === recommended.effort}
+            aria-label={t("client.chat.resetToRecommendedReasoningEffort")}
             onClick={() => { void updateSettings(recommended); }} />
         </Tooltip>
       </div>
@@ -116,13 +118,17 @@ export function ComposerModelPicker({ models, selection, updateSettings, setting
   return <Popover trigger="click" placement="topRight" arrow={false} open={open && !!model}
     onOpenChange={changeOpen} content={panel} destroyOnHidden styles={{ root: { maxWidth: 400 },
       body: { padding: 0, borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 16px rgb(0 0 0 / 8%)' } }}>
+    <Tooltip title={unavailable ? t(unavailable) : undefined} styles={{ root: { maxWidth: 400 } }}>
     <button ref={trigger} type="button" className="chat-model" disabled={!model}
+      data-model-unavailable={unavailable ? true : undefined}
       aria-haspopup="dialog" aria-expanded={open && !!model}
       aria-label={t("client.chat.modelAndReasoningEffort.bae75e", { model: modelLabel, effort: effortLabel })
         + requestSpeedSuffix(selection.speed, displayText)}
       onKeyDown={event => { if (event.key === 'Escape') changeOpen(false); }}>
-      <span>{modelLabel}</span>{effortLabel && <span className="chat-model-effort">{effortLabel}</span>}
+      <span className="chat-model-name">{modelLabel}</span>
+      {effortLabel && <span className="chat-model-effort">{effortLabel}</span>}
       <ComposerSpeedIndicator speed={selection.speed} />
     </button>
+    </Tooltip>
   </Popover>;
 }

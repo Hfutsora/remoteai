@@ -1,4 +1,5 @@
 import type { ChatConnection, ConnectionEvents } from './connection';
+import { modelSelectionError } from '../../../apps/desktop/src/pages/codexGui/modelSelection';
 import { openPreparedDownload } from '../archiveDownload';
 import { mergeTaskDelivery } from '../taskDelivery';
 import type { RemoteComposerCatalog } from '../composerCatalog';
@@ -688,6 +689,7 @@ export class ChatController {
     const generation = this.synchronization;
     const selection = { ...this.state.settings, model: input.model ?? this.state.settings.model,
       effort: input.effort ?? this.state.settings.effort, access: input.access };
+    if (modelSelectionError(this.state.models, selection)) return false;
     const message = { ...input, ...(selection.model ? { model: selection.model } : {}),
       ...(selection.effort ? { effort: selection.effort } : {}) };
     this.update({ sending: true, error: '',

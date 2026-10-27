@@ -13,6 +13,7 @@ import { backgroundJourney } from './chat-background';
 import { sessionRecoveryJourney } from './chat-session-recovery';
 import { modelPickerJourney } from './chat-model-picker';
 import { chooseSetting, closeChatSettings, isDesktop } from './chat-settings';
+import { checkModelAvailability } from '../../desktop/e2e/model-availability-checks';
 
 test.beforeEach(async ({ page, request }, info) => {
   // Login can open chat immediately; install the network fault before any peer is created.
@@ -65,6 +66,24 @@ test('uses the PC model picker and keeps the mobile settings unchanged', async (
   test.skip(info.project.name !== 'desktop', 'Desktop model picker interaction');
   await modelPickerJourney(page, request, info);
 });
+
+test('web desktop preserves an unavailable model and restores sending after account recovery over relay',
+  async ({ page, request }, info) => {
+    test.skip(info.project.name !== 'desktop', 'Desktop model availability');
+    await connect(page);
+    await expect(page.locator('.chat-connection-status')).toContainText('Relay', { timeout: 20_000 });
+    const original = (await state(request)).composer;
+    await checkModelAvailability(page, {
+      restrict: async () => {
+        await request.post(`${fixtureUrl}/test/composer`, { data: { models: original.models.slice(1) } });
+      },
+      restore: async () => {
+        await request.post(`${fixtureUrl}/test/composer`, { data: { models: original.models } });
+      }, screenshot: '../../.codex-tmp/model-unavailable-web.png',
+    });
+    expect((await state(request)).composer.settings).toEqual(original.settings);
+    expect(await operationCount(request, 'send')).toBe(0);
+  });
 
 test('refreshes an empty model catalog explicitly on mobile and desktop over relay',
   async ({ page, request }, info) => {

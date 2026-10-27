@@ -1,7 +1,7 @@
 import { uiText } from "../../i18n/uiText";
 import { guiApi } from './api';
 import type { GuiController } from './controller';
-import { resolveModelSelection } from './modelSelection';
+import { modelSelectionError, resolveModelSelection } from './modelSelection';
 import type { Model, ListResponse } from './types';
 import { composerPatch, DEFAULT_COMPOSER, MODEL_CATALOG_ERROR, type ComposerSettings,
   type ComposerSnapshot, type RequestSpeed } from '../../../../../shared/remote-chat/composer';
@@ -68,8 +68,7 @@ export class ComposerBridge {
   }
 
   private publishScope(threadId: string | null): ComposerSnapshot {
-    const selection = this.value.models.length ? this.binding!.modelSettings.selection(threadId)
-      : { model: '', effort: '' };
+    const selection = this.binding!.modelSettings.selection(threadId);
     const settings = { ...this.value.settings, ...selection };
     const syncing = Boolean(this.value.syncing || this.binding!.modelSettings.loading(threadId));
     const previous = this.scoped.get(threadId);
@@ -165,6 +164,8 @@ export class ComposerBridge {
 
   async validateSend(body: { threadId?: string; model?: string; effort?: string }) {
     const snapshot = await this.read(body.threadId ?? null);
+    const error = modelSelectionError(snapshot.models, snapshot.settings);
+    if (error) throw new Error(uiText(error));
     if (snapshot.syncing || !snapshot.models.length || (body.model && body.model !== snapshot.settings.model)
       || (body.effort && body.effort !== snapshot.settings.effort)) {
       throw new Error(uiText("client.composer.theModelHasChangedReviewItAndSendAgain"));

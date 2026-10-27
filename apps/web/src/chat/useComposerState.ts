@@ -1,4 +1,5 @@
 import { displayError } from '../i18n/index';
+import { modelSelectionError } from '../../../desktop/src/pages/codexGui/modelSelection';
 import { t } from '../i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useChatDraft } from '../../../../shared/remote-chat/client/useChatDraft';
@@ -74,6 +75,7 @@ export function useComposerState(props: ComposerProps) {
   const action = composerAction({ running: running && !hasContent,
     interrupted: !!props.interrupted && !goalMode.enabled, hasDraft: hasContent });
   const actionDisabled = dictationBusy || (action === 'pause' ? !ready || pausing : disabled || busy || props.goalBusy
+    || Boolean(modelSelectionError(props.models, selection))
     || (goalMode.enabled && running) || (action === 'send' && !hasContent));
   useEffect(() => { if (active && ready && threadId) void goals.load(threadId); }, [goals, threadId, active, ready]);
   useEffect(() => { setError(''); }, [threadId]);

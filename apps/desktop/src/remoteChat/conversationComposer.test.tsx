@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ChatComposer } from '../../../web/src/chat/ChatComposer';
 import type { ComposerProps } from '../../../web/src/chat/composerProps';
 import { guiApi } from '../pages/codexGui/api';
+import { testModels } from '../pages/codexGui/testModels';
 import type { ListResponse, Thread } from '../../../../shared/remote-chat/client/types';
 import type { ProjectFilesResponse } from '../../../../shared/remote-chat/projectFiles';
 
@@ -26,7 +27,8 @@ beforeEach(async () => {
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   props = { connection: { deviceName: '远程电脑', chooseDevice: vi.fn(), client: {
     read: vi.fn(), select: vi.fn(), subscribe: vi.fn(() => vi.fn()),
-  } }, models: [], selection: { model: 'astra', effort: 'high', access: 'workspace-write' },
+  } }, models: [{ ...testModels[0], id: 'astra', model: 'astra' }],
+    selection: { model: 'astra', effort: 'high', access: 'workspace-write' },
     contextSettings: { read: vi.fn(), write: vi.fn() }, readUsage: vi.fn(),
     readConversationMetrics: vi.fn(),
     goals: { load: vi.fn(), clear: vi.fn() }, goalBusy: false,

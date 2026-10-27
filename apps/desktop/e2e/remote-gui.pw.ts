@@ -13,6 +13,7 @@ import { checkThreadSidebarResize } from './thread-sidebar-resize';
 import { checkRemoteTiming } from './remote-timing-checks';
 import { checkRemoteHistory } from './remote-history-checks';
 import { checkRemoteWindowLayout } from './remote-window-layout';
+import { checkModelAvailability } from './model-availability-checks';
 
 declare global { interface Window { desktopTest: typeof desktopTest } }
 
@@ -58,6 +59,27 @@ async function chooseHost(page: Page, name: string) {
   await page.getByRole('menu', { name: '主机列表' }).getByRole('menuitemradio', { name: new RegExp(name) }).click();
   await expect(page.getByRole('menu', { name: '主机列表' })).toBeHidden();
 }
+
+test('remote desktop preserves an unavailable model and restores sending after account recovery',
+  async ({ context, page }) => {
+    const host = await context.newPage();
+    await host.goto('/e2e/chat-harness.html?role=desktop&demo&device=computer-one&blocked=true'
+      + `&socket=${encodeURIComponent(endpoint)}`);
+    await expect(host.locator('#status')).toHaveText('registered');
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`/e2e/remote-gui-harness.html?socket=${encodeURIComponent(endpoint)}`);
+    await chooseHost(page, 'Office PC');
+    await expect(page.locator('.gui-remote-workspace:visible .chat-connection-status'))
+      .toContainText('Relay', { timeout: 20_000 });
+    const catalog = await host.evaluate(() => window.chatTest.demoState().composer.models);
+    await checkModelAvailability(page, {
+      restrict: () => host.evaluate(models => window.chatTest.setComposer({ models }), catalog.slice(1)),
+      restore: () => host.evaluate(models => window.chatTest.setComposer({ models }), catalog),
+      screenshot: '../../.codex-tmp/model-unavailable-remote.png',
+    });
+    expect(await host.evaluate(() => window.chatTest.demoState().operations
+      .filter(operation => operation.operation === 'send').length)).toBe(0);
+  });
 
 for (const blocked of [false, true]) {
   test(`keeps a new remote message after immediately pausing over ${blocked ? 'Relay' : 'P2P'}`,
