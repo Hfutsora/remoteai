@@ -17,6 +17,7 @@ function entryAction(target: Record<string, unknown>): EntryAction {
 export interface BrowserSettings {
   type: 'settings'; cwd: string; connected: boolean; labels: Record<string, string>; theme: Record<string, string>;
   language?: import('@remoteai/i18n').EnabledLanguage;
+  themeMode?: import('../theme/mode').ThemeMode;
   autoSaveDelay?: number; snapshot?: DocumentsSnapshot;
   capabilities?: Pick<BrowserHost, 'entryActions' | 'downloadDirectory'> & {
     reference: boolean; quoteSelection: boolean;

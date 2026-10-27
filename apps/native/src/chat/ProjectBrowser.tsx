@@ -15,7 +15,8 @@ import { isNativeSshBrowserAction,
   type NativeSshBrowserAction } from '../../../../shared/terminal/nativeSshBrowserAction';
 
 import { t, useLanguage } from '../i18n';
-import { useThemeColor } from '../theme/store';
+import { useThemeColor, useThemeMode } from '../theme/store';
+import { useWebviewSource } from '../theme/useWebviewSource';
 import { createThemedStyles } from '../theme/styles';
 import { textMetrics } from '../theme/text';
 import { useFilePreferences, setFileAutoSave } from '../settings/filePreferences';
@@ -49,7 +50,9 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
-  const source = useMemo(() => ({ html }), [html]);
+  const mode = useThemeMode();
+  const source = useWebviewSource(html, { mode, background: color('#fff', 'surface'),
+    foreground: color('#202c29', 'ink'), variables: { '--panel': color('#fff', 'surface') } });
   const emit = (message: BrowserHostMessage) =>
     webview.current?.injectJavaScript(`window.projectBrowserMessage?.(${JSON.stringify(message)}); true;`);
   const close = () => { if (ready) emit({ type: 'close' }); else onClose(); };
@@ -67,7 +70,8 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
     });
     return () => { cancelled = true; };
   }, []);
-  const update = () => emit({ type: 'settings', language, cwd, connected: connected && active && preferences.ready,
+  const update = () => emit({ type: 'settings', language, cwd, themeMode: mode,
+    connected: connected && active && preferences.ready,
     autoSaveDelay: preferences.delay, snapshot: readBrowserSession(client, cwd),
     ssh: ssh?.settings, capabilities: { entryActions: host.entryActions, downloadDirectory: host.downloadDirectory,
       reference: !!host.reference, quoteSelection: !!host.quoteSelection },
@@ -76,7 +80,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
       '--panel': color('#fff', 'surface'), '--bg': color('#f5f8f6', 'canvas'),
       '--line': color('#dfe5e1', 'border'), '--green': color('#138475', 'accent'),
       '--browser-on-accent': color('#fff', 'canvas') } });
-  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, preferences, host, ssh]);
+  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, mode, preferences, host, ssh]);
   // Backgrounding the app must not unmount the WebView and discard its unsaved document.
   return <Modal visible={active} animationType="slide" onRequestClose={close}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>

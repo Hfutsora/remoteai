@@ -62,6 +62,10 @@ async function close() {
 function render(settings: BrowserSettings) {
   currentSettings = settings;
   if (settings.language) setInterfaceLanguage(settings.language);
+  if (settings.themeMode) {
+    document.documentElement.dataset.theme = settings.themeMode;
+    document.documentElement.style.colorScheme = settings.themeMode;
+  }
   for (const [name, value] of Object.entries(settings.theme)) {
     if (/^--[\w-]+$/.test(name)) document.documentElement.style.setProperty(name, value);
   }
