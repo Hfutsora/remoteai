@@ -23,12 +23,15 @@ import { useFilePreferences, setFileAutoSave } from '../settings/filePreferences
 import { readBrowserSession, saveBrowserSession } from './projectBrowserSessions';
 import type { DocumentsSnapshot } from '../../../../shared/project-browser/documents';
 import { projectBrowserHost } from './projectBrowserHost';
+import type { ScriptPanel } from '../../../../shared/terminal/TerminalWorkspaceProvider';
+import { handleNativeScriptAction, nativeScriptState } from '../../../../shared/project-browser/nativeScripts';
 import { useChatFileReference, useChatFileSelection } from '../../../../shared/chat/ChatFileReferences';
 
 export function ProjectBrowser({ client, cwd, connected, active, onClose, title, subtitle,
-  host: suppliedHost, ssh, children }: {
+  host: suppliedHost, ssh, children, scripts }: {
   client: ProjectBrowserClient; cwd: string; connected: boolean; active: boolean; onClose: () => void;
   title?: string; subtitle?: string; host?: BrowserHost; children?: ReactNode;
+  scripts?: ScriptPanel;
   ssh?: { settings: NonNullable<BrowserSettings['ssh']>; onAction: (action: NativeSshBrowserAction) => void };
 }) {
   const language = useLanguage();
@@ -79,6 +82,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
   const update = () => emit({ type: 'settings', language, cwd, themeMode: mode,
     connected: connected && active && preferences.ready,
     autoSaveDelay: preferences.delay, snapshot: readBrowserSession(client, cwd),
+    scripts: scripts && !ssh ? nativeScriptState(scripts) : undefined,
     ssh: ssh?.settings, capabilities: { entryActions: host.entryActions, downloadDirectory: host.downloadDirectory,
       reference: !!host.reference, quoteSelection: !!host.quoteSelection, blame: !!client.blame },
     labels: Object.fromEntries(messageKeys.map(text => [text, displayText(text)])),
@@ -86,7 +90,8 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
       '--panel': color('#fff', 'surface'), '--bg': color('#f5f8f6', 'canvas'),
       '--line': color('#dfe5e1', 'border'), '--green': color('#138475', 'accent'),
       '--browser-on-accent': color('#fff', 'canvas') } });
-  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, mode, preferences, host, ssh]);
+  useEffect(() => { if (ready) update(); },
+    [ready, connected, active, cwd, language, color, mode, preferences, host, ssh, scripts]);
   // Backgrounding the app must not unmount the WebView and discard its unsaved document.
   return <Modal visible={active} animationType="slide" onRequestClose={close}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
@@ -113,6 +118,10 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
             let message: unknown;
             try { message = JSON.parse(nativeEvent.data); } catch { return; }
             if (!message || typeof message !== 'object' || !('type' in message)) return;
+            try {
+              if (handleNativeScriptAction(message, { panel: ssh ? undefined : scripts, cwd,
+                connected: connected && active })) { setError(''); return; }
+            } catch (error) { setError(displayError(error)); return; }
             if (isNativeSshBrowserAction(message)) { ssh?.onAction(message); return; }
             if (message.type === 'ready') { setReady(true); update(); return; }
             if (message.type === 'snapshot' || message.type === 'closed') {

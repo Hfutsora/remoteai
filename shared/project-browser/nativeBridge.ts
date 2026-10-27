@@ -20,6 +20,7 @@ export interface BrowserSettings {
   language?: import('@remoteai/i18n').EnabledLanguage;
   themeMode?: import('../theme/mode').ThemeMode;
   autoSaveDelay?: number; snapshot?: DocumentsSnapshot;
+  scripts?: import('./nativeScripts').NativeScriptState;
   capabilities?: Pick<BrowserHost, 'entryActions' | 'downloadDirectory'> & {
     reference: boolean; quoteSelection: boolean; blame?: boolean;
   };

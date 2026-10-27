@@ -41,7 +41,13 @@
   overflow-wrap: anywhere;
   pointer-events: none;
 }
-.pf-npm-script:hover .pf-npm-script-tooltip,
 .pf-npm-script:focus-visible .pf-npm-script-tooltip { display: block; }
+@media (hover: hover) {
+  .pf-npm-script:hover .pf-npm-script-tooltip { display: block; }
+}
+@media (pointer: coarse) {
+  .pf-npm-gutter { min-width: 32px; }
+  .pf-browser .pf-editor .pf-npm-script { width: 30px; touch-action: manipulation; }
+}
 [data-theme=dark] .pf-browser .pf-editor .pf-npm-script { color: #74b782; }
 [data-theme=dark] .pf-browser .pf-editor .pf-npm-script[data-running=true] { color: #f16b6b; }
