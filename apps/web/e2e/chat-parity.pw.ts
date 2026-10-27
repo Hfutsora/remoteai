@@ -216,7 +216,9 @@ test('changes context capacity and opens profile, account picker and token summa
     await page.keyboard.press('Escape');
   } else await closeChatSettings(page);
   await openChatList(page);
-  const accountMenu = page.getByRole('button', { name: '打开头像菜单', exact: true });
+  const accountMenu = page.getByRole('button', {
+    name: desktop ? /^切换 GUI 账户：/ : '打开头像菜单', exact: !desktop,
+  });
   if (desktop) {
     await expect(accountMenu).toContainText('演示账户一');
     await expect(accountMenu.getByRole('progressbar', { name: '主用量剩余' })).toHaveAttribute('aria-valuenow', '28');
@@ -227,12 +229,15 @@ test('changes context capacity and opens profile, account picker and token summa
   }
   await screenshot(page, info, 'compact-account-footer');
   await accountMenu.click();
-  await page.getByRole('button', { name: '切换账户', exact: true }).click();
-  await expect(page.getByRole('button', { name: '演示账户一', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: '演示账户二', exact: true }).click();
-  await expect(page.getByRole('button', { name: '切换账户', exact: true })).toContainText('演示账户二');
+  if (!desktop) await page.getByRole('button', { name: '切换账户', exact: true }).click();
+  const accountChoices = desktop ? page.getByRole('region', { name: '账户列表' }) : page;
+  await expect(accountChoices.getByRole('button', { name: desktop ? /演示账户一/ : '演示账户一', exact: !desktop }))
+    .toHaveAttribute('aria-pressed', 'true');
+  await accountChoices.getByRole('button', { name: desktop ? /演示账户二/ : '演示账户二', exact: !desktop }).click();
+  await expect(desktop ? accountMenu : page.getByRole('button', { name: '切换账户', exact: true }))
+    .toContainText('演示账户二');
   await expect(page.getByRole('button', { name: 'Token 汇总', exact: true })).toHaveCount(0);
-  await closeSheet(page);
+  if (!desktop) await closeSheet(page);
   if (info.project.name === 'mobile') await page.locator('.chat-drawer .ant-drawer-close').click();
   await navigate(page, '发现');
   await page.locator('.discovery-list').getByRole('button', { name: 'Token 汇总', exact: true }).click();
