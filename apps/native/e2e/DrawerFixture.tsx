@@ -53,6 +53,7 @@ function Fixture() {
       onMoving={() => undefined}
       navigation={<ChatThreadList state={state} controller={controller} bottomInset={0}
         newChat={() => undefined} openActions={item => setActions(item.id)}
+        openProjectActions={project => setActions(project.cwd)}
         select={item => { setSelected(item); drawer.current?.closeDrawer(); }} />}>
       <ChatDrawerSurface enabled {...swipe}>
         <ChatMessages thread={thread} loadOlder={async () => undefined} />

@@ -1,5 +1,6 @@
 import { displayText } from '../i18n/index';
 import { createThemedStyles } from '../theme/styles';
+import { textMetrics } from '../theme/text';
 import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { ActivityIndicator, Pressable, SectionList, Text, View } from 'react-native';
@@ -17,11 +18,13 @@ interface Props {
   controller: ChatController;
   bottomInset: number;
   openActions: (thread: Thread) => void;
+  openProjectActions: (project: ChatProject) => void;
 }
 
 const LIST_BOTTOM_SPACING = 16;
 
-export function ChatThreadList({ state, newChat, select, controller, bottomInset, openActions }: Props) {
+export function ChatThreadList({ state, newChat, select, controller, bottomInset,
+  openActions, openProjectActions }: Props) {
   const styles = useStyles();
   const listStyles = useListStyles();
   const color = useThemeColor();
@@ -41,9 +44,19 @@ export function ChatThreadList({ state, newChat, select, controller, bottomInset
       renderSectionHeader={({ section }) => <View style={styles.row}>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: !section.collapsed }}
           accessibilityLabel={`${section.collapsed ? t("client.chat.expandProject") : t("client.chat.collapseProject")}：${section.label}`}
+          accessibilityHint={section.cwd ? t('client.projectActions.longPressHint') : undefined}
+          delayLongPress={THREAD_LONG_PRESS_MS}
+          onLongPress={section.cwd ? () => openProjectActions(section) : undefined}
+          accessibilityActions={section.cwd ? [{ name: 'longpress',
+            label: t('client.conversation.manageProject', { value1: section.label }) }] : undefined}
+          onAccessibilityAction={event => {
+            if (section.cwd && event.nativeEvent.actionName === 'longpress') openProjectActions(section);
+          }}
           style={[listStyles.projectToggle, styles.fill]} onPress={() => toggleCollapse(section.cwd)}>
           <Feather name={section.collapsed ? 'chevron-right' : 'chevron-down'} size={14} color={color(palette.muted, 'muted')} />
           <Text numberOfLines={1} style={[listStyles.project, styles.fill]}>{section.label}</Text>
+          {state.sidebar.pinnedProjects?.includes(section.cwd) && <Feather name="bookmark" size={12}
+            accessibilityLabel={t('client.workspaceActions.pinned')} color={color(palette.muted, 'muted')} />}
         </Pressable>
         {!!section.cwd && <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.startAChatIn", { value1: section.label })}
           disabled={state.sending} style={[listStyles.add, state.sending && styles.disabled]}
@@ -91,7 +104,7 @@ const useListStyles = createThemedStyles((color) => ({
   content: { paddingHorizontal: 14 },
   pagination: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   projectToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10 },
-  project: { color: color(palette.muted, 'muted'), fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  project: { ...textMetrics(12, 18), color: color(palette.muted, 'muted'), fontWeight: '600' },
   add: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   plus: { color: color(palette.muted, 'muted'), fontSize: 22 },
   thread: { minHeight: 46, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center',

@@ -5,6 +5,9 @@ import { RemoteProjectMenu } from '../../../../shared/remote-chat/client/RemoteP
 import type { ChatController, ChatProject, ChatState } from './types';
 import { useThreadActions } from '../../../../shared/remote-chat/client/useThreadActions';
 import { ChatThreadActions } from './ChatThreadActions';
+import { ChatProjectActions } from './ChatProjectActions';
+import { ChatProjectHeading } from './ChatProjectHeading';
+import { useProjectActions } from '../../../../shared/remote-chat/client/useProjectActions';
 import { ChatThreadRow } from './ChatThreadRow';
 import { useThreadGroups } from '../../../../shared/remote-chat/client/useThreadGroups';
 import { useThreadListScroll } from './useThreadListScroll';
@@ -29,16 +32,19 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
   const pagination = useThreadListScroll(state, controller, !searching);
   const ready = state.ready;
   const actions = useThreadActions(state, controller);
-  const renderHeading = (group: typeof groups[number]) => <h3 className="chat-grow">
+  const projectActions = useProjectActions(state, controller);
+  const renderHeading = (group: typeof groups[number]) => desktop ? <h3 className="chat-grow">
     <button type="button" className="chat-project-toggle" aria-expanded={!group.collapsed}
       aria-label={`${group.collapsed ? t('client.chat.expandProject') : t('client.chat.collapseProject')}：${group.label}`}
       onClick={() => toggleCollapse(group.cwd)}>
       {group.collapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
       <span className="chat-ellipsis">{group.label}</span>
-      {desktop && state.sidebar.pinnedProjects?.includes(group.cwd)
+      {state.sidebar.pinnedProjects?.includes(group.cwd)
         && <Pin size={12} aria-label={t('client.workspaceActions.pinned')} />}
     </button>
-  </h3>;
+  </h3> : <ChatProjectHeading project={group}
+    collapsed={group.collapsed} pinned={Boolean(state.sidebar.pinnedProjects?.includes(group.cwd))}
+    mobile={!desktop} toggle={() => toggleCollapse(group.cwd)} openActions={() => projectActions.open(group)} />;
   return <>
     <div className="chat-row chat-thread-controls">
       {desktop ? <SidebarSearchInput value={query} onChange={setQuery} label={t("client.chat.searchChats")}
@@ -85,5 +91,6 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
       disabled={state.sending} onClick={() => newChat()}><Plus size={20} />{t("client.chat.newChat")}</button>{profile}</div>
     {accountPicker}
     <ChatThreadActions actions={actions} />
+    {!desktop && <ChatProjectActions actions={projectActions} />}
   </>;
 }
