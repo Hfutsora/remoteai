@@ -2,7 +2,8 @@ import { useThemeColor } from '../theme/store';
 import { t, useLanguage } from '../i18n';
 import { LanguageSettingsRow } from './LanguagePicker';
 import { ThemeSheet } from './ThemeSheet';
-import { useThemeMode } from '../theme/preference';
+import { useThemePreference } from '../theme/preference';
+import { THEME_LABELS } from '../../../../shared/theme/mode';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -44,7 +45,7 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
   const styles = useStyles();
   const color = useThemeColor();
   useLanguage();
-  const mode = useThemeMode();
+  const preference = useThemePreference();
   const [panel, setPanel] = useState<SettingsPanel>(null);
   const activeProfile = profile ?? session.profile;
   const username = activeProfile?.email ?? session.email;
@@ -67,7 +68,8 @@ export function SettingsPage({ session, profile, globalRefreshMinutes, onGlobalR
         </Pressable>
       </View>
       <View style={styles.group}>
-        <SettingsRow label={t("client.workspaceSettings.appearance")} value={t(mode === 'dark' ? "client.settings.dark" : "client.settings.light")} icon="contrast-outline"
+        <SettingsRow label={t("client.workspaceSettings.appearance")}
+          value={t(THEME_LABELS[preference])} icon="contrast-outline"
           color={color(settingsColors.blue, 'info')} background="#e7f3ff" divider onPress={() => setPanel('theme')} />
         <LanguageSettingsRow />
       </View>

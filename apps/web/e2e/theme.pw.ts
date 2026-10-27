@@ -1,9 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { navigate } from './chat-helpers';
+import { testText } from '../../../scripts/i18n-fixture.mjs';
 
-test('switches appearance across pages and restores it after reloading', async ({ page }, testInfo) => {
-  const errors: string[] = [];
-  page.on('pageerror', error => errors.push(error.message));
+async function openSettings(page: Page) {
   await page.goto('./');
   await page.getByRole('textbox', { name: '邮箱', exact: true }).fill('review@example.test');
   await page.getByRole('textbox', { name: '密码', exact: true }).fill('local-review');
@@ -11,6 +10,12 @@ test('switches appearance across pages and restores it after reloading', async (
   await page.getByRole('button', { name: '同意并登录' }).click();
   await navigate(page, '设置');
   await expect(page.getByText('欢迎回来', { exact: true })).not.toBeVisible();
+}
+
+test('switches appearance across pages and restores it after reloading', async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await openSettings(page);
   if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /外观/ }).click();
   await page.getByText('暗黑', { exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -45,4 +50,64 @@ test('switches appearance across pages and restores it after reloading', async (
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.screenshot({ path: testInfo.outputPath('light-settings.png'), fullPage: true });
   expect(errors).toEqual([]);
+});
+
+test('defaults to system appearance and follows changes until a manual choice is made', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop', 'The system option belongs to mobile settings.');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await openSettings(page);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('button', { name: /外观/ })).toContainText('跟随系统');
+  await page.getByRole('button', { name: /外观/ }).click();
+  await expect(page.getByRole('radio', { name: '跟随系统', exact: true })).toBeChecked();
+  await page.screenshot({ path: testInfo.outputPath('system-dark-picker.png') });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByRole('radio', { name: '跟随系统', exact: true })).toBeChecked();
+  await page.screenshot({ path: testInfo.outputPath('system-light-picker.png') });
+  await page.getByRole('radio', { name: '明亮', exact: true }).click();
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await navigate(page, '设置');
+  await page.getByRole('button', { name: /外观/ }).click();
+  await page.getByRole('radio', { name: '跟随系统', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await page.evaluate(() => localStorage.getItem('codex-switch.web.theme.v1'))).toBe('system');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('uses the system theme for invalid preferences and synchronizes cleared storage', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('./');
+  await page.evaluate(() => localStorage.setItem('codex-switch.web.theme.v1', 'invalid'));
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', {
+    key: 'codex-switch.web.theme.v1', newValue: 'light',
+  })));
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: null })));
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('shows the system preference in every released language while offline', async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop', 'The system option belongs to mobile settings.');
+  await openSettings(page);
+  await context.setOffline(true);
+  for (const [language, label] of [['en', 'English'], ['ru', 'Русский'], ['ja', '日本語'], ['zh', '简体中文']]) {
+    await page.locator('.interface-language-select').click();
+    await page.getByRole('option', { name: label, exact: true }).click();
+    const appearance = testText('client.workspaceSettings.appearance', {}, language);
+    const system = testText('client.settings.followSystem', {}, language);
+    await page.getByRole('button', { name: new RegExp(appearance) }).click();
+    await expect(page.getByRole('radio', { name: system, exact: true })).toBeChecked();
+    await page.getByRole('radio', { name: system, exact: true }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
 });
