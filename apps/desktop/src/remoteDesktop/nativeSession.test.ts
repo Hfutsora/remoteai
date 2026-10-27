@@ -83,6 +83,7 @@ it('polls a pending privacy transition without a long-running IPC call', async (
 });
 
 it.each([
+  'client.remoteDesktop.privacyRequiresUnattended',
   '请先在电脑的远程设置中开启无人值守，再使用隐私屏。',
   '请在电脑上确认安装，完成后再点一次隐私屏。',
   '请先解锁电脑，再点隐私屏确认安装。',
@@ -100,7 +101,7 @@ it.each([
   await expect(session.privacy(true)).rejects.toThrow(message);
   expect(session.closed).toBe(false);
   accepted = true;
-  const changing = expect(session.privacy(true)).rejects.toThrow('隐私屏未能切换');
+  const changing = expect(session.privacy(true)).rejects.toThrow('client.remoteDesktop.privacyFailed');
   await vi.advanceTimersByTimeAsync(250); await changing;
   expect(session.closed).toBe(true);
   expect(call).toHaveBeenCalledWith('remote_desktop_stream_close', { id: 'native-lease' });

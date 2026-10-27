@@ -8,6 +8,7 @@ vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>
   useState: (value: unknown) => [value, vi.fn()], useEffect: vi.fn(),
 }));
 vi.mock('react-native', () => ({ View: 'View', Pressable: 'Pressable', Text: 'Text', ScrollView: 'ScrollView',
+  Platform: { OS: 'android' },
   StyleSheet: { create: <T,>(value: T) => value } }));
 vi.mock('@expo/vector-icons', () => ({ MaterialCommunityIcons: 'Icon' }));
 
@@ -55,4 +56,16 @@ it.each([{ control: false }, { connected: false }, { supported: false }, { savin
 it('removes text transfer actions when clipboard synchronization is disabled', () => {
   const tree = nodes(SecuritySettings({ ...props, clipboard: { ...props.clipboard, enabled: false }, clipboardActions }));
   expect(tree.some(node => ['复制到本机', '粘贴到远程电脑'].includes(node.props.accessibilityLabel ?? ''))).toBe(false);
+});
+
+it('keeps privacy guidance outside scrolling options so it remains visible after tapping enable', () => {
+  const notice = { message: 'client.remoteDesktop.privacyRequiresUnattended',
+    label: 'client.mobile.reconnect', run: vi.fn() };
+  const tree = nodes(SecuritySettings({ ...props, clipboardActions, notice }));
+  const scroll = tree.find(node => node.type === 'ScrollView')!;
+  expect(nodes(scroll.props.children).some(node => node.props.accessibilityRole === 'alert')).toBe(false);
+  const alert = tree.find(node => node.props.accessibilityRole === 'alert')!;
+  expect(alert.props.children).toContain('使用隐私屏需要先开启无人值守');
+  const action = tree.find(node => node.props.onPress === notice.run)!;
+  action.props.onPress!(); expect(notice.run).toHaveBeenCalledOnce();
 });

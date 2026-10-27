@@ -24,9 +24,9 @@ export function SecuritySettings(props: SecuritySettingsProps) {
     <header><ShieldCheck size={26} aria-hidden="true" /><h2>{t("client.remoteDesktop.security")}</h2>
       <button type="button" className="rd-security-close" onClick={close} aria-label={t("client.remoteDesktop.closeSecurityOptions")}>
         <X size={22} /></button></header>
+    {notice && <div className="rd-security-notice" role="status"><p>{displayError(notice.message)}</p>
+      <button type="button" disabled={saving} onClick={notice.run}>{displayText(notice.label)}</button></div>}
     <div className="rd-security-scroll" tabIndex={0} role="region" aria-label={t("client.remoteDesktop.securitySettings")}>
-      {notice && <div className="rd-security-notice" role="status"><p>{displayError(notice.message)}</p>
-        <button type="button" disabled={saving} onClick={notice.run}>{displayText(notice.label)}</button></div>}
       <AutoUnlockSettings {...props} />
       <Toggle icon={LockKeyhole} title="client.remoteDesktop.lockWhenDisconnected" checked={value.lockOnDisconnect}
         disabled={disabled || !supported} change={() => { void update({ lockOnDisconnect: !value.lockOnDisconnect }); }}

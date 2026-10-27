@@ -9,6 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const baseline = process.argv.includes('--baseline');
+const accessOnly = process.argv.includes('--access');
 const output = path.join(root, '.codex-tmp/desktop-status', baseline ? 'baseline' : 'fixed');
 const serial = process.env.ANDROID_SERIAL;
 assert.ok(serial, 'Set ANDROID_SERIAL to the physical test device');
@@ -69,7 +70,7 @@ async function tap(label) {
     const scrollable = tree.find(node => node.scrollable === 'true');
     if (!scrollable) { await delay(500); continue; }
     const box = bounds(scrollable);
-    const horizontal = box.width > box.height;
+    const horizontal = scrollable.class === 'android.widget.HorizontalScrollView';
     const coordinate = (fraction, start, length) => String(Math.round(start + fraction * length));
     await adb('shell', 'input', 'swipe', coordinate(horizontal ? 0.8 : 0.5, box.left, box.width),
       coordinate(horizontal ? 0.5 : 0.8, box.top, box.height),
@@ -81,7 +82,9 @@ async function tap(label) {
 
 async function verify({ scenario, orientation, fontScale, density, minimumHeight }) {
   const name = `${scenario}-${orientation}-${fontScale}`;
-  const messages = { connecting: '正在连接桌面…', reconnecting: '连接已断开，正在重连…', permission: '请在 Mac 上允许屏幕录制' };
+  const messages = { connecting: '正在连接桌面…', reconnecting: '连接已断开，正在重连…', permission: '请在 Mac 上允许屏幕录制',
+    locked: '电脑已锁屏', privacy: '使用隐私屏需要先开启无人值守', privacyFailed: '隐私屏切换失败',
+    security: '使用隐私屏需要先开启无人值守' };
   // Accessibility bounds can lag behind the rotation animation on a physical device.
   const tree = await waitForTree(tree => {
     const screen = screenBounds(tree);
@@ -96,8 +99,10 @@ async function verify({ scenario, orientation, fontScale, density, minimumHeight
   const retryBox = bounds(retry);
   results.push({ name, message: messageBox, retry: retryBox, minimumHeight });
   if (baseline) return;
-  assert.ok(messageBox.height >= minimumHeight, `${name}: connection text has line and font padding`);
-  assert.ok(retryBox.height >= minimumHeight, `${name}: retry text has line and font padding`);
+  if (scenario !== 'security') {
+    assert.ok(messageBox.height >= minimumHeight, `${name}: connection text has line and font padding`);
+    assert.ok(retryBox.height >= minimumHeight, `${name}: retry text has line and font padding`);
+  }
   assert.ok(messageBox.width <= 400 * density + 1, `${name}: message stays compact`);
   assert.ok(messageBox.bottom <= retryBox.top, `${name}: action leaves the full message width available`);
   assert.ok(messageBox.top >= 0, `${name}: message stays on screen`);
@@ -115,8 +120,13 @@ async function runScenarios(fontScale, density) {
   const ready = await waitForTree(tree => tree.some(node => node['resource-id'] === 'status-line-reference'), 'fixture');
   const reference = ready.find(node => node['resource-id'] === 'status-line-reference');
   const minimumHeight = bounds(reference).height - 1;
-  for (const scenario of ['connecting', 'reconnecting', 'permission']) {
-    await tap(`${scenario[0].toUpperCase()}${scenario.slice(1)} status`);
+  const scenarios = accessOnly ? ['locked', 'privacy', 'privacyFailed', 'security']
+    : ['connecting', 'reconnecting', 'permission', 'locked', 'privacy', 'privacyFailed', 'security'];
+  for (const scenario of scenarios) {
+    const label = ['connecting', 'reconnecting', 'permission'].includes(scenario)
+      ? scenario[0].toUpperCase() + scenario.slice(1) : scenario;
+    await tap(`${label} status`);
+    if (scenario === 'security') await tap('启用');
     await verify({ scenario, orientation: 'landscape', fontScale, density, minimumHeight });
     if (scenario === 'connecting') {
       await tap('重新连接');
@@ -124,7 +134,7 @@ async function runScenarios(fontScale, density) {
     }
     await tap('旋转');
     await verify({ scenario, orientation: 'portrait', fontScale, density, minimumHeight });
-    await tap('关闭');
+    await tap(scenario === 'security' ? '关闭安全选项' : '关闭');
   }
 }
 
