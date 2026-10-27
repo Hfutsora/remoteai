@@ -20,6 +20,12 @@ const directories = new Set(['', 'src', 'nested', 'nested/子目录']);
 export const savedFiles: { path: string; text: string }[] = [];
 export let conflict = false;
 export function causeConflict() { conflict = true; }
+export function seedNpmScripts() {
+  documents['package.json'] = JSON.stringify({ name: 'npm-fixture', scripts: {
+    dev: 'node server.cjs', build: 'node build.cjs', failStart: 'node missing.cjs',
+  }, nested: { scripts: { hidden: 'not a script' } } }, null, 2);
+  documents['src/package.json'] = JSON.stringify({ scripts: { dev: 'node nested.cjs' } }, null, 2);
+}
 const uploads = new Map<string, Uint8Array>();
 const fileRevision = (path: string) => bytesToHex(sha256(utf8ToBytes(documents[path] ?? '')));
 export function seedLargeText(atThreshold = false) {

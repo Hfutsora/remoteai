@@ -6,18 +6,21 @@ import type { BrowserTranslate } from './ProjectTree';
 import type { BrowserHost } from './entryActions';
 import type { ProjectPreviewRenderer } from './preview';
 
-export function ProjectFilePanel({ tab, active, connected, edit, save, t, quoteSelection, renderPreview, openFile }: {
+export function ProjectFilePanel({ tab, active, connected, edit, save, t, quoteSelection, renderPreview, openFile,
+  prepareScript }: {
   tab: DocumentTab; active: boolean; connected: boolean; edit: (text: string) => void;
   save: () => void; t: BrowserTranslate;
   quoteSelection?: BrowserHost['quoteSelection'];
   renderPreview?: ProjectPreviewRenderer;
   openFile: (path: string) => void;
+  prepareScript?: () => Promise<boolean>;
 }) {
   const document = tab.document;
   const filename = tab.path.split(/[\\/]/).at(-1);
   const editor = document?.kind === 'text' && <ProjectEditor key={tab.editorVersion} path={document.path}
     text={tab.text} readOnly={document.readOnly || !connected || tab.loading}
-    onChange={edit} save={save} t={t} quoteSelection={active ? quoteSelection : undefined} />;
+    onChange={edit} save={save} t={t} quoteSelection={active ? quoteSelection : undefined}
+    prepareScript={prepareScript} />;
   const preview = document && renderPreview?.({ document, text: tab.text, active, connected, editor, openFile });
   return <div className="pf-file-panel" role="tabpanel" aria-label={filename} hidden={!active}>
     {tab.error && <div className="pf-feedback" role="alert">{remoteErrorText(tab.error)}</div>}

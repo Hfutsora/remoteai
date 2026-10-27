@@ -24,7 +24,8 @@ export class RemoteTerminals {
     if (body.operation === 'guiTerminalList') {
       const cwd = body.cwd;
       if (cwd !== undefined && typeof cwd !== 'string') throw new Error('请选择有效的项目目录。');
-      const sessions = [...(this.owners.get(owner) ?? [])].flatMap(session => session.info ? [session.info] : []);
+      const sessions = [...(this.owners.get(owner) ?? [])].flatMap(session => session.info
+        ? [{ ...session.info, ...(session.exited ? { exited: true } : {}) }] : []);
       // Older clients may still request all shells; current clients always send their project directory.
       return typeof cwd === 'string' ? sessions.filter(info => terminalBelongsToProject(info, cwd)) : sessions;
     }
@@ -74,6 +75,9 @@ export class RemoteTerminals {
   }
 
   private async open(body: Record<string, unknown>, owner: string) {
+    if (body.npmScript !== undefined && typeof body.npmScript !== 'string') {
+      throw new Error('client.npmScripts.invalid');
+    }
     if (typeof body.cwd !== 'string' || (body.projectCwd !== undefined && typeof body.projectCwd !== 'string')) {
       throw new Error('请选择有效的项目目录。');
     }
@@ -90,9 +94,11 @@ export class RemoteTerminals {
       };
       const info = await (body.operation === 'guiTerminalSshOpen'
         ? openNativeSsh(body.request as SshConnect, onEvent)
-        : terminalApi.open(body.cwd, body.size as TerminalSize, onEvent));
+        : terminalApi.open(body.cwd, body.size as TerminalSize, onEvent,
+          body.npmScript === undefined ? undefined : { npmScript: body.npmScript as string }));
       // Rust resolves symlinks and the default home directory; retain the original project association separately.
-      session.info = { ...info, projectCwd: body.projectCwd ?? body.cwd };
+      session.info = { ...info, projectCwd: body.projectCwd ?? body.cwd,
+        ...(info.npmScript ? { npmScriptCwd: body.cwd } : {}) };
       return session.info;
     } catch (error) { sessions.delete(session); throw error; }
   }

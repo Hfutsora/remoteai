@@ -14,6 +14,7 @@ export interface EditorPaneOptions {
   actions: ReturnType<typeof useTabActions>; back: () => void; settings: () => void; settingsOpen: boolean;
   quoteSelection?: BrowserHost['quoteSelection'];
   renderPreview?: ProjectPreviewRenderer;
+  runScripts?: boolean;
 }
 
 export function ProjectEditorPane({ group, frame, options }: {
@@ -55,6 +56,7 @@ export function ProjectEditorPane({ group, frame, options }: {
     {!active && <div className="pf-empty"><FileSearch size={36} /><p>{t("client.projectBrowser.selectAFileToViewItsContents")}</p></div>}
     {tabs.map(tab => <ProjectFilePanel key={tab.path} tab={tab} active={tab.path === group.activePath}
       connected={connected} edit={text => store.edit(tab.path, text)}
+      prepareScript={options.runScripts ? async () => connected && !blocked && await store.saveAll([tab.path]) : undefined}
       quoteSelection={options.quoteSelection}
       renderPreview={options.renderPreview}
       openFile={path => { void store.open(path, group.id); }}

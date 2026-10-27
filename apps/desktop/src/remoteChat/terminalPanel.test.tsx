@@ -22,6 +22,24 @@ function fixture() {
 vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
 afterEach(() => vi.restoreAllMocks());
 
+it('refreshes npm completion after reconnect and avoids starting another copy of a running script', async () => {
+  const test = fixture();
+  const script: TerminalInfo = { ...info, npmScript: 'dev', npmScriptCwd: info.cwd };
+  test.client.list.mockResolvedValue([script]);
+  try {
+    await test.render();
+    await act(async () => test.panel().addInDirectory(info.cwd, 'dev'));
+    expect(test.client.open).not.toHaveBeenCalled();
+    expect(test.panel().selected).toBe(script.id);
+    await test.render(false);
+    test.client.list.mockResolvedValue([{ ...script, exited: true }]);
+    await test.render(true);
+    expect(test.panel().tabs[0].exited).toBe(true);
+    await act(async () => test.panel().addInDirectory(info.cwd, 'dev'));
+    expect(test.client.open).toHaveBeenCalledWith(info.cwd, { cols: 80, rows: 24 }, info.cwd, { npmScript: 'dev' });
+  } finally { await act(async () => test.root.unmount()); }
+});
+
 it('restores the PC list after remount, hides without closing, and closes only on explicit removal', async () => {
   const test = fixture();
   try {

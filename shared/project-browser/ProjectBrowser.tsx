@@ -78,6 +78,7 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
       <section className="pf-file" aria-label={t("client.projectBrowser.filePreview")}>
         {settingsOpen && <div className="pf-settings"><AutoSaveSettings preferences={preferences} t={t} /></div>}
         <ProjectEditorWorkspace narrow={split.narrow} options={{ store: file.store, connected, t, actions,
+          runScripts: !!actionsHost.openTerminal,
           renderPreview,
           quoteSelection: actionsHost.quoteSelection,
           back: () => setShowFile(false), settings: () => setSettingsOpen(!settingsOpen), settingsOpen }} />

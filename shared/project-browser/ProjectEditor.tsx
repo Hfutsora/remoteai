@@ -14,11 +14,13 @@ import { EditorSelectionMenu } from './EditorSelectionMenu';
 import { EditorSearchPanel } from './editorSearchPanel';
 import { utf8ToBytes } from '@noble/hashes/utils';
 import { PROJECT_PLAIN_TEXT_THRESHOLD } from './protocol';
+import { useNpmScriptButtons } from './useNpmScriptButtons';
 
 interface Props {
   text: string; path: string; readOnly: boolean; t: BrowserTranslate;
   onChange: (text: string) => void; save: () => void;
   quoteSelection?: BrowserHost['quoteSelection'];
+  prepareScript?: () => Promise<boolean>;
 }
 
 export function ProjectEditor(props: Props) {
@@ -35,6 +37,8 @@ export function ProjectEditor(props: Props) {
   const [plainText, setPlainText] = useState(() => utf8ToBytes(props.text).length > PROJECT_PLAIN_TEXT_THRESHOLD);
   const byteLength = useRef(0);
   const selectionMenu = useEditorSelectionMenu({ view, path: props.path, enabled: !!props.quoteSelection });
+  useNpmScriptButtons(view, { path: props.path, disabled: props.readOnly, plainText, t: props.t,
+    prepare: props.prepareScript });
   useLayoutEffect(() => {
     if (!host.current) return;
     const { editable, wrapping, language, features } = settings.current;
