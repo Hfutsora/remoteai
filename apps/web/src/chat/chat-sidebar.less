@@ -11,6 +11,10 @@
 .chat-thread-filter:focus-visible { outline: 2px solid var(--chat-green); outline-offset: 2px; }
 .chat-drawer .ant-drawer-header { padding-bottom: 4px; }
 .chat-sidebar .chat-sidebar-heading { min-height: 56px; padding-bottom: 4px; }
+.chat-sidebar-new { margin-inline-start: auto; flex-shrink: 0; border-radius: 10px; cursor: pointer; }
+.chat-sidebar-new:hover:not(:disabled) { background: var(--chat-pale); }
+.chat-sidebar-new:focus-visible { outline: 2px solid var(--chat-green); outline-offset: -2px; }
+.chat-sidebar-new:disabled { opacity: .4; cursor: default; }
 .chat-sidebar .chat-thread-controls, .chat-drawer .chat-thread-controls { padding: 0 14px 4px; }
 .chat-thread-controls > :first-child { flex: 1; min-width: 0; }
 .chat-thread-controls > .chat-back { flex-shrink: 0; }

@@ -8,7 +8,7 @@ import { prepareImageEdit } from './prepareImageEdit';
 import { remotePromptSuggestion } from '../../../../shared/remote-chat/client/promptSuggestion';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState, type ReactNode } from 'react';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
 import type { ChatComputer } from '../../../../shared/remote-chat/devices';
 import type { ComputerListRefresh } from '../../../../shared/remote-chat/ComputerSearchBar';
 import { ChatApproval } from './ChatApproval';
@@ -212,7 +212,12 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     </ChatTerminalLayout>
     <ChatSidebar desktop={desktop} open={listOpen} onClose={closeList} customHeading={Boolean(renderSidebar)}
       motion={drawerMotion}
-      headingExtra={!renderSidebar && <ChatThreadFilter state={state} controller={controller} />}>
+      headingExtra={!renderSidebar && <>
+        <ChatThreadFilter state={state} controller={controller} />
+        {desktop && <button className="chat-back chat-sidebar-new" type="button"
+          aria-label={t("client.chat.newChat")} title={t("client.chat.newChat")}
+          disabled={state.sending} onClick={() => newChat()}><Plus size={20} aria-hidden="true" /></button>}
+      </>}>
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}
         openSearch={() => setSearching(true)} accountPicker={accountPicker ?? (desktop ? profileMenu : undefined)}

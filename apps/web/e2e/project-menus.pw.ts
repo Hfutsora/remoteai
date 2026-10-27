@@ -77,7 +77,7 @@ test('mobile project long press pins, unpins and confirms removal while preservi
   await page.getByRole('button', { name: '移除项目', exact: true }).click();
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await expect(project).toBeVisible();
-  await page.getByRole('button', { name: '管理项目：project', exact: true }).click();
+  await longPressProject(page);
   await page.getByRole('button', { name: '移除项目', exact: true }).click();
   await page.getByRole('button', { name: '移除项目', exact: true }).click();
   await expect(project).toHaveCount(0);
@@ -146,7 +146,8 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.screenshot({ path: `../../.codex-tmp/project-menu-${mode}.png` });
     await page.getByRole('menuitem', { name: '置顶', exact: true }).click();
     await expect(project.getByLabel('已置顶', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '管理项目：project', exact: true }).click();
+    if (mode === 'web') await heading.click({ button: 'right' });
+    else await page.getByRole('button', { name: '管理项目：project', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: '取消置顶', exact: true })).toBeVisible();
     await page.getByRole('menuitem', { name: '取消置顶', exact: true }).click();
     await expect(project.getByLabel('已置顶', { exact: true })).toHaveCount(0);

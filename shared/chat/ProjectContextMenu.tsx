@@ -6,10 +6,10 @@ import { ThreadContextMenu } from './ThreadContextMenu';
 import styles from './ThreadContextMenu.module.less';
 
 export function ProjectContextMenu({ label, pinned, removing, pinDisabled, removeDisabled,
-  onPin, onRemove, translate, buttonClassName, children }: {
+  onPin, onRemove, translate, buttonClassName, showActionButton = true, children }: {
   label: string; pinned: boolean; removing?: boolean; pinDisabled?: boolean; removeDisabled: boolean;
   onPin: () => void; onRemove: () => void; translate: MessageTranslator;
-  buttonClassName: string; children: ReactElement;
+  buttonClassName: string; showActionButton?: boolean; children: ReactElement;
 }) {
   const menu: MenuProps = { items: [
     { key: 'pin', label: translate(pinned ? 'client.conversation.unpin' : 'client.conversation.pin'),
@@ -20,11 +20,12 @@ export function ProjectContextMenu({ label, pinned, removing, pinDisabled, remov
   ], onClick: ({ key }) => { if (key === 'pin') onPin(); if (key === 'remove') onRemove(); } };
   return <>
     <ThreadContextMenu menu={menu}>{children}</ThreadContextMenu>
-    <Dropdown trigger={['click']} overlayStyle={{ maxWidth: 400 }} overlayClassName={styles.menu} menu={menu}>
+    {showActionButton && <Dropdown trigger={['click']} overlayStyle={{ maxWidth: 400 }}
+      overlayClassName={styles.menu} menu={menu}>
       <button type="button" className={buttonClassName} aria-haspopup="menu"
         aria-label={translate('client.conversation.manageProject', { value1: label })}>
         <MoreHorizontal size={14} aria-hidden="true" />
       </button>
-    </Dropdown>
+    </Dropdown>}
   </>;
 }
