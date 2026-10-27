@@ -1,4 +1,4 @@
-import type { ProjectBrowserRequest, ProjectDocument } from '../../../shared/project-browser/protocol';
+import type { ProjectBlame, ProjectBrowserRequest, ProjectDocument } from '../../../shared/project-browser/protocol';
 import type { ProjectFilesResponse } from '../../../shared/remote-chat/projectFiles';
 import { mutateFixture } from './project-browser-mutations';
 import { fromByteArray, toByteArray } from 'base64-js';
@@ -67,6 +67,22 @@ function searchFiles(cwd: string, query: string): ProjectFilesResponse {
 export async function browserRequest<T>(request: ProjectBrowserRequest): Promise<T> {
   const path = request.operation === 'projectFiles' ? request.directory ?? '' : request.path;
   const relative = path === request.cwd ? '' : path.replace(`${request.cwd}/`, '');
+  if (request.operation === 'projectFileBlame') {
+    document.body.dataset.blameReads = String(Number(document.body.dataset.blameReads ?? 0) + 1);
+    const status = (document.body.dataset.blameStatus ?? 'ready') as ProjectBlame['status'];
+    const commits = ['Alice 中文', 'Bob'].map((author, index) => ({
+      hash: String(index + 1).repeat(40), author, time: 1_700_000_000 + index * 86400,
+      timezone: '+0800', summary: index ? 'Update content' : 'Initial content',
+    }));
+    const lines = (documents[relative] ?? '').split('\n');
+    const ranges = lines.length > 100 ? [{ start: 1, count: lines.length, commit: 0 }]
+      : lines.map((_, index) => ({ start: index + 1, count: 1, commit: index % 2 }));
+    const result: ProjectBlame = { status, revision: fileRevision(relative), commits, ranges };
+    if (document.body.dataset.blameDelay) {
+      await new Promise(resolve => setTimeout(resolve, Number(document.body.dataset.blameDelay)));
+    }
+    return result as T;
+  }
   if (request.operation === 'projectEntryAction') {
     return mutateFixture(request, { documents, directories, revisions }) as T;
   }

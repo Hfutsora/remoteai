@@ -19,7 +19,7 @@ import TerminalPanel from '../src/pages/codexGui/terminal/TerminalPanel';
 import { terminalApi } from '../src/pages/codexGui/terminal/api';
 import { fileApi } from '../src/pages/codexGui/fileApi';
 import { guiApi } from '../src/pages/codexGui/api';
-import { browserRequest, browserRoot, seedNpmScripts, savedFiles } from './project-browser-fixture';
+import { browserRequest, browserRoot, seedNpmScripts, seedLargeText, savedFiles } from './project-browser-fixture';
 import '../src/styles.css';
 import '../../web/src/chat/chat.css';
 import 'antd/dist/reset.css';
@@ -29,6 +29,7 @@ localStorage.setItem('codex-switch:language', 'zh');
 document.body.style.minWidth = '0';
 let opens = 0;
 if (new URLSearchParams(location.search).has('scripts')) seedNpmScripts();
+if (new URLSearchParams(location.search).has('large')) seedLargeText();
 const scriptSessions = new Map<string, { name: string; receive: Parameters<typeof terminalApi.open>[2] }>();
 window.addEventListener('npm-fixture-exit', () => {
   for (const session of scriptSessions.values()) session.receive({ type: 'exit', code: 0 });

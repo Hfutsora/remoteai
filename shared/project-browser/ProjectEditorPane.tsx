@@ -8,6 +8,7 @@ import type { useTabActions } from './useTabActions';
 import { frameStyle, type EditorFrame } from './editorLayout';
 import type { BrowserHost } from './entryActions';
 import type { ProjectPreviewRenderer } from './preview';
+import type { ProjectBlame } from './protocol';
 
 export interface EditorPaneOptions {
   store: ProjectDocuments; connected: boolean; t: BrowserTranslate;
@@ -15,6 +16,7 @@ export interface EditorPaneOptions {
   quoteSelection?: BrowserHost['quoteSelection'];
   renderPreview?: ProjectPreviewRenderer;
   runScripts?: boolean;
+  blame?: (path: string, revision: string) => Promise<ProjectBlame>;
 }
 
 export function ProjectEditorPane({ group, frame, options }: {
@@ -59,6 +61,7 @@ export function ProjectEditorPane({ group, frame, options }: {
       prepareScript={options.runScripts ? async () => connected && !blocked && await store.saveAll([tab.path]) : undefined}
       quoteSelection={options.quoteSelection}
       renderPreview={options.renderPreview}
+      blame={options.blame}
       openFile={path => { void store.open(path, group.id); }}
       save={() => { if (connected && !blocked) void store.save(tab.path); }} t={t} />)}
   </section>;

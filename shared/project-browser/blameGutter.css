@@ -1,0 +1,14 @@
+.pf-editor .pf-blame-gutter { width: 210px; color: var(--pf-muted); background: var(--pf-subtle);
+  border-right: 1px solid var(--pf-border); }
+.pf-blame-gutter .cm-gutterElement { padding: 0 9px; }
+.pf-blame-label { display: block; width: 190px; font-size: 11px; }
+.pf-blame-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+.pf-blame-tooltip { display: none; position: fixed; z-index: 30; width: max-content;
+  max-width: min(400px, calc(100vw - 16px)); padding: 8px 10px; border: 1px solid var(--pf-border);
+  border-radius: 6px; color: var(--pf-ink); background: var(--pf-surface); box-shadow: 0 4px 16px #0002;
+  white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 system-ui; pointer-events: none; }
+.pf-blame-notice { max-width: 400px; overflow-wrap: anywhere; }
+.pf-blame-menu button > svg { flex: 0 0 16px; }
+.pf-blame-menu button[aria-checked=false] > svg { visibility: hidden; }
+.pf-browser[data-narrow=true] .pf-blame-gutter { width: 180px; }
+.pf-browser[data-narrow=true] .pf-blame-label { width: 160px; }

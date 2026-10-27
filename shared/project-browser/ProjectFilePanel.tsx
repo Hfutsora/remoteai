@@ -5,22 +5,25 @@ import { isDirty, type DocumentTab } from './documents';
 import type { BrowserTranslate } from './ProjectTree';
 import type { BrowserHost } from './entryActions';
 import type { ProjectPreviewRenderer } from './preview';
+import type { EditorPaneOptions } from './ProjectEditorPane';
 
 export function ProjectFilePanel({ tab, active, connected, edit, save, t, quoteSelection, renderPreview, openFile,
-  prepareScript }: {
+  prepareScript, blame }: {
   tab: DocumentTab; active: boolean; connected: boolean; edit: (text: string) => void;
   save: () => void; t: BrowserTranslate;
   quoteSelection?: BrowserHost['quoteSelection'];
   renderPreview?: ProjectPreviewRenderer;
   openFile: (path: string) => void;
   prepareScript?: () => Promise<boolean>;
+  blame?: EditorPaneOptions['blame'];
 }) {
   const document = tab.document;
   const filename = tab.path.split(/[\\/]/).at(-1);
   const editor = document?.kind === 'text' && <ProjectEditor key={tab.editorVersion} path={document.path}
     text={tab.text} readOnly={document.readOnly || !connected || tab.loading}
     onChange={edit} save={save} t={t} quoteSelection={active ? quoteSelection : undefined}
-    prepareScript={prepareScript} />;
+    prepareScript={prepareScript} blame={blame ? { read: revision => blame(document.path, revision),
+      text: document.text ?? '', revision: document.revision, connected } : undefined} />;
   const preview = document && renderPreview?.({ document, text: tab.text, active, connected, editor, openFile });
   return <div className="pf-file-panel" role="tabpanel" aria-label={filename} hidden={!active}>
     {tab.error && <div className="pf-feedback" role="alert">{remoteErrorText(tab.error)}</div>}

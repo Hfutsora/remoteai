@@ -79,6 +79,7 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
         {settingsOpen && <div className="pf-settings"><AutoSaveSettings preferences={preferences} t={t} /></div>}
         <ProjectEditorWorkspace narrow={split.narrow} options={{ store: file.store, connected, t, actions,
           runScripts: !!actionsHost.openTerminal,
+          blame: client.blame ? (path, revision) => client.blame!({ cwd, path, revision }) : undefined,
           renderPreview,
           quoteSelection: actionsHost.quoteSelection,
           back: () => setShowFile(false), settings: () => setSettingsOpen(!settingsOpen), settingsOpen }} />
