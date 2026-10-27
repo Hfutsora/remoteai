@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { Contrast } from 'lucide-react';
 import { ThemeModeTabs } from '../../../../shared/theme/ThemeModeTabs';
+import { THEME_LABELS } from '../../../../shared/theme/mode';
 import { t } from '../i18n';
-import { setThemeMode, useThemeMode } from '../theme/preference';
+import { setThemeMode, useThemeMode, useThemePreference } from '../theme/preference';
 import { useDesktopLayout } from '../useDesktopLayout';
 import { SettingsRow } from './SettingsRow';
 
 export function ThemeSettingsRow({ onOpen }: { onOpen: () => void }) {
   const desktop = useDesktopLayout();
   const mode = useThemeMode();
+  const preference = useThemePreference();
   const [error, setError] = useState(false);
   if (!desktop) return <SettingsRow label={t('client.workspaceSettings.appearance')}
-    value={t(mode === 'dark' ? 'client.settings.dark' : 'client.settings.light')}
+    value={t(THEME_LABELS[preference])}
     icon={Contrast} onClick={onOpen} />;
 
   return <div className="settings-row settings-theme-row">

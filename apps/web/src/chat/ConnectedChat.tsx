@@ -42,6 +42,7 @@ import { ConversationChangesButton } from '../../../desktop/src/pages/codexGui/C
 import { ChatAsyncQuestions } from './ChatAsyncQuestions';
 import { ChatSearch } from './ChatSearch';
 import { ChatProfileMenu } from './ChatProfileMenu';
+import { ChatDesktopAccountPicker } from './ChatDesktopAccountPicker';
 import { useChatCatalog } from './useChatCatalog';
 import { compactUnavailableReason } from '../../../../shared/remote-chat/client/composerCommands';
 import { threadPresentation } from '../../../../shared/remote-chat/sidebar';
@@ -152,11 +153,14 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       interrupted={state.selected?.turns?.at(-1)?.status === 'interrupted'}
       send={(input) => controller.send(input)} interrupt={() => controller.interrupt()} />
   </>;
-  const profileMenu = !accountPicker && <ChatProfileMenu client={controller.guiAccounts} desktop={desktop}
+  const profileMenu = !accountPicker && (desktop ? <ChatDesktopAccountPicker client={controller.guiAccounts}
+    ready={ready} active={active && foreground && !searching} device={device} devices={devices}
+    deviceRefresh={deviceRefresh} chooseDevice={chooseDevice} chooseLocal={chooseLocal} />
+    : <ChatProfileMenu client={controller.guiAccounts}
     deviceName={device?.name ?? t("client.settings.chooseAComputer")} email={email} ready={ready}
     guiTools={controller.guiTools} active={active && foreground && !searching}
     running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
-    chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />;
+    chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />);
   return <DesktopUsageContext.Provider value={usageSnapshot}>
     <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived
     && !state.sending && !state.settingsBusy && !state.workspaceBusy && !state.compacting,
