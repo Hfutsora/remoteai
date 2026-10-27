@@ -6,6 +6,30 @@ import { openChatTool } from './chat-tool-actions';
 test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile' && !info.title.startsWith('desktop'),
   'Phone terminal drawer'));
 
+test('desktop and phone terminals keep their command and shell when the theme changes', async ({ page, request }, info) => {
+  await request.post(`${fixtureUrl}/test/reset`);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.addInitScript(() => localStorage.setItem('codex-switch.web.theme.v1', 'dark'));
+  await login(page); await connect(page);
+  await openChatTool(page, '终端');
+  const input = page.locator('.xterm-helper-textarea');
+  await input.fill('theme_probe');
+  const command = page.locator('.xterm-rows').filter({ hasText: 'theme_probe' });
+  await expect(command).toBeVisible();
+  const opened = await operationCount(request, 'guiTerminalOpen');
+  for (const theme of ['dark', 'light', 'dark']) {
+    await page.evaluate(value => window.dispatchEvent(new StorageEvent('storage', {
+      key: 'codex-switch.web.theme.v1', newValue: value,
+    })), theme);
+    await expect(page.locator('.xterm-viewport')).toHaveCSS('background-color',
+      theme === 'dark' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)');
+    await expect(command).toBeVisible();
+    await screenshot(page, info, `terminal-theme-${theme}`);
+  }
+  expect(await operationCount(request, 'guiTerminalOpen')).toBe(opened);
+  expect(await operationCount(request, 'guiTerminalClose')).toBe(0);
+});
+
 test('opens a 90 percent terminal drawer, preserves its shell and draft, and sends input over P2P and Relay',
   async ({ page, request }, info) => {
     await request.post(`${fixtureUrl}/test/reset`);

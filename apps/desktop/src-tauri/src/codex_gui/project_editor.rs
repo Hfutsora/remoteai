@@ -16,6 +16,7 @@ use std::{
 
 const INLINE_BYTES: usize = 256 * 1024;
 const IMAGE_PREVIEW_BYTES: usize = 5 * 1024 * 1024;
+pub(super) mod blame;
 mod transfer;
 // Keep revision checks and replacement together. This lock is only acquired on blocking workers.
 pub(super) static EDIT_LOCK: Mutex<()> = Mutex::new(());

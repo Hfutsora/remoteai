@@ -69,12 +69,17 @@ try {
   await adb('shell', 'input', 'text', 'message');
   await screenshot('search-keyboard');
   await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
-  await tap('关闭', 'Button');
+  await tap('查找', 'Button');
   await tap('文件内容', 'EditText');
   await adb('shell', 'input', 'keyevent', 'KEYCODE_MOVE_END');
   await adb('shell', 'input', 'text', 'native_edit');
   await screenshot('editing-keyboard');
   await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
+  await adb('shell', 'input', 'keyevent', 'KEYCODE_HOME');
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  await adb('shell', 'am', 'start', '-W', '-n', `${applicationId}/com.codexswitch.mobile.MainActivity`);
+  assert.ok((await find('文件内容', 'EditText')).text.includes('native_edit'), 'Draft survives background/resume');
+  await screenshot('resumed-editor');
   await tap('关闭文件浏览器');
   await find('打开文件浏览');
   await tap('打开文件浏览');

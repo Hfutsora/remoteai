@@ -53,7 +53,7 @@ import { RemoteDictation } from './dictation';
 import { DICTATION_OPERATION } from '../../../../shared/remote-chat/dictation';
 
 const OPERATIONS = new Set([
-  'projectFileRead', 'projectFileWrite', 'projectEntryAction',
+  'projectFileRead', 'projectFileBlame', 'projectFileWrite', 'projectEntryAction',
   'suggestNextPrompt',
   'guiGitGenerateMessage',
   'downloadOpen', 'downloadBrowse', 'previewOpen',
@@ -85,6 +85,7 @@ function terminalLinkRequest(request: RpcRequest): Cached['terminalLink'] {
 }
 const READ_OPERATIONS = new Set([
   'projectFileRead',
+  'projectFileBlame',
   'guiFileApplications', 'guiFilePreviewClose', 'guiFilePreviewHost', 'guiFilePreviewText', 'guiResourceClose',
   'suggestNextPrompt',
   PROJECT_LIST_OPERATION,
@@ -173,6 +174,7 @@ export class ChatOperations {
       // Range reads are repeatable; caching their payloads would retain an entire file in memory.
       // Upload chunks retry fixed ranges; retaining every acknowledgement would cap large uploads at 512 requests.
       if (operation === 'videoRead' || operation === 'fileRead' || operation === 'projectFileRead'
+        || operation === 'projectFileBlame'
         || operation === 'guiFilePreviewText'
         || (operation === 'projectFileWrite' && typeof object(request.body).upload === 'object'
           && object(request.body).upload !== null && !Array.isArray(object(request.body).upload)
@@ -323,7 +325,8 @@ export class ChatOperations {
       : await guiApi.request(body as unknown as Request);
     completeRemoteThreadListWrite(body, result);
     // File documents must stay byte-faithful; conversation image rewriting would corrupt embedded data URLs.
-    if (['projectFileRead', 'projectFileWrite', 'projectEntryAction'].includes(String(body.operation))) return result;
+    if (['projectFileRead', 'projectFileBlame', 'projectFileWrite', 'projectEntryAction']
+      .includes(String(body.operation))) return result;
     this.titles.completed(body, result);
     if (body.operation === 'skills') return composerCatalog(result as SkillsResponse, body);
     if (body.operation === 'list') {

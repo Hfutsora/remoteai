@@ -126,6 +126,20 @@ it.each(['projectFileRead', 'projectFileWrite'])('preserves literal image data i
   expect(reply.data).toEqual(data);
 });
 
+it('forwards read-only blame and preserves author and commit text literally', async () => {
+  const body = { operation: 'projectFileBlame', cwd: 'C:/project', path: 'C:/project/note', revision: 'v1' };
+  const data = { status: 'ready', revision: 'v1', commits: [{ hash: 'abc', author: '保存', time: 1,
+    timezone: '+0800', summary: 'data:image/png;base64,aW1hZ2U=' }], ranges: [{ start: 1, count: 1, commit: 0 }] };
+  vi.mocked(guiApi.request).mockResolvedValue(data);
+  const operations = new ChatOperations();
+  const request = { kind: 'request' as const, id: 'blame', method: 'request' as const, body };
+  expect(await operations.execute(request)).toMatchObject({ data });
+  expect(guiApi.request).toHaveBeenCalledExactlyOnceWith(body);
+  // Completed reads are repeatable and must not retain every large file's annotations in the retry cache.
+  expect(await operations.execute(request)).toMatchObject({ data });
+  expect(guiApi.request).toHaveBeenCalledTimes(2);
+});
+
 it.each(['createFolder', 'copy', 'move', 'rename', 'delete'])
 ('deduplicates project tree action %s across remote retries', async action => {
   const body = { operation: 'projectEntryAction', cwd: 'D:/remote', path: 'D:/remote/folder',

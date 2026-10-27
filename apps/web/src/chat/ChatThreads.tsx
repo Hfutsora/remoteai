@@ -65,7 +65,8 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
         <section className="chat-project-group" aria-label={group.label} key={group.cwd}>
           <div className="chat-project-heading">
             {desktop && group.cwd ? <RemoteProjectMenu cwd={group.cwd} label={group.label} state={state}
-              controller={controller} translate={t} buttonClassName="chat-back">{renderHeading(group)}</RemoteProjectMenu>
+              controller={controller} translate={t} buttonClassName="chat-back" showActionButton={false}>
+              {renderHeading(group)}</RemoteProjectMenu>
               : renderHeading(group)}
             {group.cwd && <button type="button" className="chat-back" aria-label={t("client.chat.startAChatIn", { value1: group.label })}
               disabled={state.sending} onClick={() => newChat(group)}><Plus size={18} aria-hidden="true" /></button>}
@@ -87,8 +88,8 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
       </div>
       </>}
     </div>
-    <div className="chat-drawer-footer"><button className="chat-new-button" type="button"
-      disabled={state.sending} onClick={() => newChat()}><Plus size={20} />{t("client.chat.newChat")}</button>{profile}</div>
+    {!desktop && <div className="chat-drawer-footer"><button className="chat-new-button" type="button"
+      disabled={state.sending} onClick={() => newChat()}><Plus size={20} />{t("client.chat.newChat")}</button>{profile}</div>}
     {accountPicker}
     <ChatThreadActions actions={actions} />
     {!desktop && <ChatProjectActions actions={projectActions} />}

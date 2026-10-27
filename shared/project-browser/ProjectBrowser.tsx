@@ -27,16 +27,23 @@ interface Props {
   preferences?: BrowserPreferences;
   host: BrowserHost;
   initialSnapshot?: DocumentsSnapshot;
+  onSnapshot?: (snapshot: DocumentsSnapshot) => void;
   treeOptions?: ProjectTreeOptions;
   renderPreview?: ProjectPreviewRenderer;
 }
 
 export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function ProjectBrowser(
   { client, cwd, connected, t, onClose, preferences: suppliedPreferences, initialSnapshot, host: actionsHost,
-    treeOptions, renderPreview }, ref,
+    treeOptions, renderPreview, onSnapshot }, ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
   const file = useProjectDocument(client, cwd, initialSnapshot);
+  useEffect(() => {
+    if (!onSnapshot) return;
+    const publish = () => onSnapshot(file.store.getSnapshot());
+    publish();
+    return file.store.subscribe(publish);
+  }, [file.store, onSnapshot]);
   const split = useTreeResize(host);
   const [showFile, setShowFile] = useState(!!file.activePath);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -78,6 +85,8 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
       <section className="pf-file" aria-label={t("client.projectBrowser.filePreview")}>
         {settingsOpen && <div className="pf-settings"><AutoSaveSettings preferences={preferences} t={t} /></div>}
         <ProjectEditorWorkspace narrow={split.narrow} options={{ store: file.store, connected, t, actions,
+          runScripts: !!actionsHost.openTerminal,
+          blame: client.blame ? (path, revision) => client.blame!({ cwd, path, revision }) : undefined,
           renderPreview,
           quoteSelection: actionsHost.quoteSelection,
           back: () => setShowFile(false), settings: () => setSettingsOpen(!settingsOpen), settingsOpen }} />

@@ -83,6 +83,12 @@ Keep all instructions in this `AGENTS.md` file in English.
 - Whenever a user request involves writing prompts or copy, proactively refine and improve the wording so it is concise, friendly, and accurate instead of simply repeating the user's original wording.
 - Keep temporary messages, including hover tooltips, popovers, and confirmation prompts shown after a click, visually compact. Limit the text area to a maximum width of `400px`, which is roughly one line of 25 full-width Chinese characters at the standard body-text size. Wrap longer copy onto additional lines instead of widening the message.
 
+## Context Menus: Right-Click and Touch Long-Press
+
+- Whenever a menu can be opened with a right-click, also support opening the same menu with a touch long-press.
+  Apply this requirement when adding or modifying context menu interactions across all applicable platforms and entry points.
+  Preserve right-click behavior and verify that both gestures expose the same menu actions.
+
 ## Internationalization: Single Package
 
 - Use the standalone `packages/i18n` package (`@remoteai/i18n`) as the single source of truth

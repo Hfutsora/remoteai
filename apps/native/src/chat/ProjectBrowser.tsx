@@ -15,7 +15,8 @@ import { isNativeSshBrowserAction,
   type NativeSshBrowserAction } from '../../../../shared/terminal/nativeSshBrowserAction';
 
 import { t, useLanguage } from '../i18n';
-import { useThemeColor } from '../theme/store';
+import { useThemeColor, useThemeMode } from '../theme/store';
+import { useWebviewSource } from '../theme/useWebviewSource';
 import { createThemedStyles } from '../theme/styles';
 import { textMetrics } from '../theme/text';
 import { useFilePreferences, setFileAutoSave } from '../settings/filePreferences';
@@ -49,9 +50,17 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
-  const source = useMemo(() => ({ html }), [html]);
-  const emit = (message: BrowserHostMessage) =>
+  const [generation, setGeneration] = useState(0);
+  const currentGeneration = useRef(generation);
+  const recover = () => { setReady(false); setGeneration(++currentGeneration.current); };
+  const mode = useThemeMode();
+  const source = useWebviewSource(html, { mode, background: color('#fff', 'surface'),
+    foreground: color('#202c29', 'ink'), variables: { '--panel': color('#fff', 'surface') } });
+  const emit = (message: BrowserHostMessage) => {
+    // Request IDs restart with the renderer; a late reply must not resolve a new request with the same ID.
+    if (generation !== currentGeneration.current) return;
     webview.current?.injectJavaScript(`window.projectBrowserMessage?.(${JSON.stringify(message)}); true;`);
+  };
   const close = () => { if (ready) emit({ type: 'close' }); else onClose(); };
   useEffect(() => {
     let cancelled = false;
@@ -67,16 +76,17 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
     });
     return () => { cancelled = true; };
   }, []);
-  const update = () => emit({ type: 'settings', language, cwd, connected: connected && active && preferences.ready,
+  const update = () => emit({ type: 'settings', language, cwd, themeMode: mode,
+    connected: connected && active && preferences.ready,
     autoSaveDelay: preferences.delay, snapshot: readBrowserSession(client, cwd),
     ssh: ssh?.settings, capabilities: { entryActions: host.entryActions, downloadDirectory: host.downloadDirectory,
-      reference: !!host.reference, quoteSelection: !!host.quoteSelection },
+      reference: !!host.reference, quoteSelection: !!host.quoteSelection, blame: !!client.blame },
     labels: Object.fromEntries(messageKeys.map(text => [text, displayText(text)])),
     theme: { '--ink': color('#202c29', 'ink'), '--muted': color('#718078', 'muted'),
       '--panel': color('#fff', 'surface'), '--bg': color('#f5f8f6', 'canvas'),
       '--line': color('#dfe5e1', 'border'), '--green': color('#138475', 'accent'),
       '--browser-on-accent': color('#fff', 'canvas') } });
-  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, preferences, host, ssh]);
+  useEffect(() => { if (ready) update(); }, [ready, connected, active, cwd, language, color, mode, preferences, host, ssh]);
   // Backgrounding the app must not unmount the WebView and discard its unsaved document.
   return <Modal visible={active} animationType="slide" onRequestClose={close}
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
@@ -91,23 +101,27 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
             style={styles.close} onPress={close}><Ionicons name="close" size={24} color={color('#202c29', 'ink')} /></Pressable>
         </View>
         {!html && !error && <ActivityIndicator style={styles.fill} color={color('#138475', 'accent')} />}
-        {html && <WebView ref={webview} source={source} style={styles.screen} javaScriptEnabled
+        {html && <WebView key={generation} ref={webview} source={source} style={styles.screen} javaScriptEnabled
+          onContentProcessDidTerminate={recover} onRenderProcessGone={recover}
           scrollEnabled={false} bounces={false} originWhitelist={['about:blank']}
           allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false}
           sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false} setSupportMultipleWindows={false}
           javaScriptCanOpenWindowsAutomatically={false} keyboardDisplayRequiresUserAction
           onShouldStartLoadWithRequest={({ url }) => url === 'about:blank'}
           onMessage={({ nativeEvent }) => {
+            if (generation !== currentGeneration.current) return;
             let message: unknown;
             try { message = JSON.parse(nativeEvent.data); } catch { return; }
             if (!message || typeof message !== 'object' || !('type' in message)) return;
             if (isNativeSshBrowserAction(message)) { ssh?.onAction(message); return; }
             if (message.type === 'ready') { setReady(true); update(); return; }
-            if (message.type === 'closed') {
+            if (message.type === 'snapshot' || message.type === 'closed') {
+              if (message.type === 'snapshot' && (!('cwd' in message) || message.cwd !== cwd)) return;
               if ('snapshot' in message && message.snapshot && typeof message.snapshot === 'object'
                 && 'tabs' in message.snapshot && Array.isArray(message.snapshot.tabs)) {
                 saveBrowserSession(client, cwd, message.snapshot as DocumentsSnapshot);
               }
+              if (message.type === 'snapshot') return;
               onClose();
               if (focusAfterClose.current) requestAnimationFrame(focusAfterClose.current);
               return;

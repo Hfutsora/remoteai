@@ -8,26 +8,24 @@ import { guiAccountAvatar } from '../../../../shared/remote-chat/guiAccountAvata
 import { useGuiAccounts } from '../../../../shared/remote-chat/client/useGuiAccounts';
 import type { GuiToolsClient } from '../../../../shared/remote-chat/guiTools';
 import { ChatGuiUpdateSheet } from './ChatGuiUpdateSheet';
-import { RemoteAccountSummary } from '../../../desktop/src/pages/codexGui/remote/RemoteAccountSummary';
-import './chatProfileDesktop.css';
 
 const ACCOUNT_REFRESH_MS = 60_000;
 export interface ChatConnectionProps {
   client: GuiAccountsClient; deviceName: string; chooseDevice: () => void;
 }
-type Props = ChatConnectionProps & { ready: boolean; active?: boolean; desktop?: boolean } & (
+type Props = ChatConnectionProps & { ready: boolean; active?: boolean } & (
   { variant: 'settings' } | { variant?: 'profile'; email: string;
     guiTools: GuiToolsClient; running: boolean }
 );
 
 export function ChatProfileMenu(props: Props) {
-  const { client, deviceName, ready, chooseDevice, active = true, desktop = false } = props;
+  const { client, deviceName, ready, chooseDevice, active = true } = props;
   const settings = props.variant === 'settings';
   useLanguage();
   const [panel, setPanel] = useState<'profile' | 'accounts' | 'update' | null>(null);
   const [query, setQuery] = useState('');
   useEffect(() => { if (!active) setPanel(null); }, [active]);
-  const accounts = useGuiAccounts(client, ready, desktop || panel === 'accounts' ? ACCOUNT_REFRESH_MS : 0);
+  const accounts = useGuiAccounts(client, ready, panel === 'accounts' ? ACCOUNT_REFRESH_MS : 0);
   const selection = accounts.snapshot?.selection;
   const current = accounts.snapshot?.choices.find(choice => selection?.kind === choice.kind && selection.id === choice.id);
   const { initials } = guiAccountAvatar(accounts.snapshot, t("client.chat.me"));
@@ -50,10 +48,9 @@ export function ChatProfileMenu(props: Props) {
   </>;
   return <>
     {settings ? connectionOptions : <button type="button"
-      className={desktop ? 'chat-profile-desktop' : 'chat-profile-trigger'}
+      className="chat-profile-trigger"
       aria-label={t("client.chat.openProfileMenu")} aria-expanded={panel !== null} onClick={() => setPanel('profile')}>
-      {desktop ? <RemoteAccountSummary name={current?.name || t("client.chat.chooseAccount")}
-        current={current} ready={ready} running={accounts.snapshot?.running} /> : initials}</button>}
+      {initials}</button>}
     {panel === 'update' && active && props.variant !== 'settings' && <ChatGuiUpdateSheet client={props.guiTools}
       active={active} connected={ready} running={props.running} deviceName={deviceName}
       onClose={close} onBack={() => setPanel('profile')} />}

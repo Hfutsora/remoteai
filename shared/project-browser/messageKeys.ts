@@ -2,6 +2,13 @@ import type { MessageKey } from '@remoteai/i18n';
 
 /** Labels sent to the offline native file-browser WebView. */
 export const messageKeys = [
+  "client.gitBlame.annotate",
+  "client.gitBlame.hideAnnotations",
+  "client.gitBlame.uncommitted",
+  "client.gitBlame.loading",
+  "client.gitBlame.unavailable",
+  "client.gitBlame.notRepository",
+  "client.gitBlame.changed",
   "client.projectBrowser.searchFilesOrFolders",
   "client.projectBrowser.clearSearch",
   "client.projectBrowser.searching",

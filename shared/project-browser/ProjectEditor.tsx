@@ -4,7 +4,7 @@ import { EditorView, keymap } from '@codemirror/view';
 import { indentWithTab, undo, redo } from '@codemirror/commands';
 import { foldAll, unfoldAll } from '@codemirror/language';
 import { closeSearchPanel, openSearchPanel, search, searchPanelOpen } from '@codemirror/search';
-import { ChevronsDownUp, ChevronsUpDown, Redo2, Search, Undo2, WrapText } from 'lucide-react';
+import { ChevronsDownUp, ChevronsUpDown, GitCommitHorizontal, Redo2, Search, Undo2, WrapText } from 'lucide-react';
 import { editorHighlighting, editorLanguage, editorPhrases, editorTheme, textFolding } from './editorSetup';
 import { editorExtensions } from './editorExtensions';
 import type { BrowserTranslate } from './ProjectTree';
@@ -14,11 +14,16 @@ import { EditorSelectionMenu } from './EditorSelectionMenu';
 import { EditorSearchPanel } from './editorSearchPanel';
 import { utf8ToBytes } from '@noble/hashes/utils';
 import { PROJECT_PLAIN_TEXT_THRESHOLD } from './protocol';
+import { useNpmScriptButtons } from './useNpmScriptButtons';
+import { useGitBlame, type BlameSource } from './useGitBlame';
+import { GutterMenu } from './GutterMenu';
 
 interface Props {
   text: string; path: string; readOnly: boolean; t: BrowserTranslate;
   onChange: (text: string) => void; save: () => void;
   quoteSelection?: BrowserHost['quoteSelection'];
+  prepareScript?: () => Promise<boolean>;
+  blame?: BlameSource;
 }
 
 export function ProjectEditor(props: Props) {
@@ -35,6 +40,9 @@ export function ProjectEditor(props: Props) {
   const [plainText, setPlainText] = useState(() => utf8ToBytes(props.text).length > PROJECT_PLAIN_TEXT_THRESHOLD);
   const byteLength = useRef(0);
   const selectionMenu = useEditorSelectionMenu({ view, path: props.path, enabled: !!props.quoteSelection });
+  const blame = useGitBlame(view, props.blame, props.t);
+  useNpmScriptButtons(view, { path: props.path, disabled: props.readOnly, plainText, t: props.t,
+    prepare: props.prepareScript });
   useLayoutEffect(() => {
     if (!host.current) return;
     const { editable, wrapping, language, features } = settings.current;
@@ -119,9 +127,15 @@ export function ProjectEditor(props: Props) {
       <button type="button" aria-label={props.t("client.projectBrowser.wrapLines")} aria-pressed={wrap} onClick={() => setWrap(!wrap)}>
         <WrapText size={16} /></button>
       {languageError && <span role="status">{props.t("client.projectBrowser.syntaxHighlightingIsUnavailable")}</span>}
+      {props.blame && <button type="button" aria-label={props.t('client.gitBlame.annotate')}
+        aria-pressed={blame.enabled} onClick={blame.toggle}><GitCommitHorizontal size={16} /></button>}
     </div>
     {plainText && <p className="pf-notice" role="status">{props.t('client.projectBrowser.largePlainText')}</p>}
-    <div ref={host} className="pf-editor-host" />
+    {blame.notice && <p className="pf-notice pf-blame-notice" role="status">{blame.notice}</p>}
+    <div ref={host} className="pf-editor-host" {...blame.handlers} />
+    {blame.menu && <GutterMenu position={blame.menu} enabled={blame.enabled}
+      toggle={() => { blame.toggle(); if (!blame.menu?.touch) view.current?.focus(); }}
+      close={() => { blame.close(); if (!blame.menu?.touch) view.current?.focus(); }} t={props.t} />}
     {selectionMenu.menu && view.current && props.quoteSelection && <EditorSelectionMenu
       menu={selectionMenu.menu} editor={view.current} quoteSelection={props.quoteSelection}
       close={selectionMenu.close} t={props.t} />}

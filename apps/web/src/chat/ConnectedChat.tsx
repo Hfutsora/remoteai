@@ -8,7 +8,7 @@ import { prepareImageEdit } from './prepareImageEdit';
 import { remotePromptSuggestion } from '../../../../shared/remote-chat/client/promptSuggestion';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState, type ReactNode } from 'react';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
 import type { ChatComputer } from '../../../../shared/remote-chat/devices';
 import type { ComputerListRefresh } from '../../../../shared/remote-chat/ComputerSearchBar';
 import { ChatApproval } from './ChatApproval';
@@ -42,6 +42,7 @@ import { ConversationChangesButton } from '../../../desktop/src/pages/codexGui/C
 import { ChatAsyncQuestions } from './ChatAsyncQuestions';
 import { ChatSearch } from './ChatSearch';
 import { ChatProfileMenu } from './ChatProfileMenu';
+import { ChatDesktopAccountPicker } from './ChatDesktopAccountPicker';
 import { useChatCatalog } from './useChatCatalog';
 import { compactUnavailableReason } from '../../../../shared/remote-chat/client/composerCommands';
 import { threadPresentation } from '../../../../shared/remote-chat/sidebar';
@@ -131,7 +132,7 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       connectionInfo={<ChatConnectionInfo state={state} controller={controller} device={device} active={active}
         chooseDevice={() => setPickingDevice(true)} />}
       projectPicker={!composerHeader && <ChatProjectSwitch state={state} controller={controller}
-        active={active && foreground} />}
+        active={active && (desktop ? foreground : true)} />}
       queue={queueProps(state, controller)} readClipboardImages={readClipboardImages} nativeFileDrop={nativeFileDrop}
       connection={{ client: controller.guiAccounts, deviceName: device?.name ?? t("client.settings.chooseAComputer"),
         chooseDevice: () => setPickingDevice(true) }}
@@ -152,11 +153,14 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
       interrupted={state.selected?.turns?.at(-1)?.status === 'interrupted'}
       send={(input) => controller.send(input)} interrupt={() => controller.interrupt()} />
   </>;
-  const profileMenu = !accountPicker && <ChatProfileMenu client={controller.guiAccounts} desktop={desktop}
+  const profileMenu = !accountPicker && (desktop ? <ChatDesktopAccountPicker client={controller.guiAccounts}
+    ready={ready} active={active && foreground && !searching} device={device} devices={devices}
+    deviceRefresh={deviceRefresh} chooseDevice={chooseDevice} chooseLocal={chooseLocal} />
+    : <ChatProfileMenu client={controller.guiAccounts}
     deviceName={device?.name ?? t("client.settings.chooseAComputer")} email={email} ready={ready}
     guiTools={controller.guiTools} active={active && foreground && !searching}
     running={state.sending || running || Object.values(state.sidebar.threads).some(thread => thread.running)}
-    chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />;
+    chooseDevice={() => { drawerMotion.closeDrawer(); setPickingDevice(true); }} />);
   return <DesktopUsageContext.Provider value={usageSnapshot}>
     <ImageAiContext.Provider value={{ enabled: active && ready && !state.selectedArchived
     && !state.sending && !state.settingsBusy && !state.workspaceBusy && !state.compacting,
@@ -212,7 +216,12 @@ export function ConnectedChat({ chat, device, devices, active, scope, email, cho
     </ChatTerminalLayout>
     <ChatSidebar desktop={desktop} open={listOpen} onClose={closeList} customHeading={Boolean(renderSidebar)}
       motion={drawerMotion}
-      headingExtra={!renderSidebar && <ChatThreadFilter state={state} controller={controller} />}>
+      headingExtra={!renderSidebar && <>
+        <ChatThreadFilter state={state} controller={controller} />
+        {desktop && <button className="chat-back chat-sidebar-new" type="button"
+          aria-label={t("client.chat.newChat")} title={t("client.chat.newChat")}
+          disabled={state.sending} onClick={() => newChat()}><Plus size={20} aria-hidden="true" /></button>}
+      </>}>
       {renderSidebar ? renderSidebar({ newChat, onClose: selectedFromList, openSearch: () => setSearching(true) })
         : <ChatThreads state={state} controller={controller} newChat={newChat} onClose={selectedFromList}
         openSearch={() => setSearching(true)} accountPicker={accountPicker ?? (desktop ? profileMenu : undefined)}

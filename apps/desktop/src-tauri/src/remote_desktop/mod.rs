@@ -22,6 +22,8 @@ mod macos;
 #[cfg(any(target_os = "macos", test))]
 mod macos_keymap;
 pub(crate) mod security;
+#[cfg(windows)]
+mod session_access;
 mod sessions;
 #[cfg(target_os = "macos")]
 use macos::{input as platform_input, monitors};
@@ -51,6 +53,9 @@ mod windows_input;
 
 #[derive(Debug, thiserror::Error)]
 pub(super) enum DesktopError {
+    #[cfg(windows)]
+    #[error("locked desktop requires unattended access")]
+    LockedWithoutUnattended,
     #[cfg(windows)]
     #[error(transparent)]
     Unlock(#[from] auto_unlock::Error),
@@ -196,13 +201,15 @@ fn safe_error(error: DesktopError) -> String {
     }
     match error {
         #[cfg(windows)]
+        DesktopError::LockedWithoutUnattended => "client.remoteDesktop.lockedRequiresUnattended",
+        #[cfg(windows)]
         DesktopError::Unlock(_) => "自动解锁未完成，请重试。",
         #[cfg(any(windows, target_os = "macos"))]
-        DesktopError::Privacy => "隐私屏未能切换，请重新连接后重试。",
+        DesktopError::Privacy => "client.remoteDesktop.privacyFailed",
         #[cfg(any(windows, target_os = "macos"))]
         DesktopError::Resolution => "分辨率未能切换，请选择其他分辨率后重试。",
         #[cfg(windows)]
-        DesktopError::PrivacyService => "请先在电脑的远程设置中开启无人值守，再使用隐私屏。",
+        DesktopError::PrivacyService => "client.remoteDesktop.privacyRequiresUnattended",
         #[cfg(windows)]
         DesktopError::PrivacySetup => "请在电脑上确认安装，完成后再点一次隐私屏。",
         #[cfg(windows)]
@@ -362,7 +369,9 @@ pub(crate) async fn remote_desktop_renew(
         .await;
     }
     tauri::async_runtime::spawn_blocking(move || {
-        with_session(&id, |session| {
+        // Renewal only updates authorization. Capture/input report desktop access failures over
+        // the live control channel before it closes, so lease polling must not close it first.
+        with_lease(&id, |session| {
             session.deadline = lease::deadline(Some(expires_at))?;
             Ok(())
         })

@@ -189,7 +189,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
         <Text style={styles.buttonText}>{t("client.chat.restore")}</Text></Pressable>}
       <View style={styles.headerTools}>
         <ChatTools client={controller.guiTools} downloads={controller.downloads}
-          active={active && foreground} connected={ready}
+          active={active} foreground={foreground} connected={ready}
           scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])}
           session={session}
           deviceName={device?.name} cwd={state.selected?.cwd ?? state.draftProject?.cwd ?? ''} />
@@ -235,7 +235,7 @@ function ConnectedChat({ session, device, devices, selected, active: pageActive,
       scope: JSON.stringify([session.baseUrl, session.email, device?.deviceId]), storage: Storage,
     })}
       queue={queueProps(state, controller)}
-      projectPicker={<ChatProjectSwitch state={state} controller={controller} active={active && foreground} />}
+      projectPicker={<ChatProjectSwitch state={state} controller={controller} active={active} />}
       connection={{ client: controller.guiAccounts, deviceName: device?.name,
         chooseDevice: () => setPickingDevice(true) }}
       goals={controller.goals} goal={state.selected ? state.goals?.[state.selected.id] : null} goalBusy={state.goalBusy}

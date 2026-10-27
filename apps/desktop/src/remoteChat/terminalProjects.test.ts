@@ -12,6 +12,25 @@ beforeEach(() => vi.resetAllMocks());
 const list = (cwd: string) => ({ operation: 'guiTerminalList', cwd });
 const open = (cwd: string) => ({ operation: 'guiTerminalOpen', cwd, size: { cols: 80, rows: 24 } });
 
+it('forwards npm scripts and restores their original directory and completed state', async () => {
+  const terminals = new RemoteTerminals();
+  let receive!: Parameters<typeof terminalApi.open>[2];
+  vi.mocked(terminalApi.open).mockImplementation(async (_cwd, _size, onEvent, options) => {
+    receive = onEvent;
+    return { id: 'script', cwd: '/resolved/package', shell: 'npm', ...options };
+  });
+  await terminals.request({ ...open('/project/package'), projectCwd: '/project', npmScript: 'dev' }, 'owner');
+  expect(terminalApi.open).toHaveBeenCalledWith('/project/package', { cols: 80, rows: 24 },
+    expect.any(Function), { npmScript: 'dev' });
+  expect(await terminals.request(list('/project'), 'owner')).toMatchObject([
+    { npmScript: 'dev', npmScriptCwd: '/project/package' },
+  ]);
+  receive({ type: 'exit', code: 0 });
+  expect(await terminals.request(list('/project'), 'owner')).toMatchObject([{ npmScript: 'dev', exited: true }]);
+  await expect(terminals.request({ ...open('/project'), npmScript: { name: 'dev' } }, 'owner'))
+    .rejects.toThrow('client.npmScripts.invalid');
+});
+
 it('keeps project shells and their output separate across reconnects and explicit closes', async () => {
   const terminals = new RemoteTerminals();
   let sequence = 0;

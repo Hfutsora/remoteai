@@ -12,7 +12,7 @@ import { readClipboardImages } from '../clipboardImages';
 import { readDroppedFiles, subscribeFileDrop } from '../fileDrop';
 import { isDesktopApp } from '../../../api/backend';
 import { useRemoteTerminalPanel } from '../../../../../../shared/remote-chat/useRemoteTerminalPanel';
-import { TerminalLaunchContext } from '../../../../../../shared/terminal/TerminalLaunchContext';
+import { TerminalWorkspaceProvider } from '../../../../../../shared/terminal/TerminalWorkspaceProvider';
 import { remoteTerminalApi } from './terminalApi';
 import { useTerminalLinkTunnels } from '../terminal/useTerminalLinkTunnels';
 import { RemoteGuiTools } from './RemoteGuiTools';
@@ -51,7 +51,7 @@ export default function RemoteGuiWorkspace(props: {
   return <section ref={workspace} className={`${styles.page} chat-page gui-remote-workspace`}
     data-dream-skin={skinStyle ? 'true' : undefined} style={skinStyle} aria-label={`Codex GUI：${device.name}`}>
     <ConfigProvider getPopupContainer={popupContainer}>
-    <TerminalLaunchContext.Provider value={terminal.addInDirectory}>
+    <TerminalWorkspaceProvider panel={terminal}>
     <RemoteFileEnvironment controller={chat.controller} ready={chat.state.ready} threadId={chat.state.selected?.id ?? null}>
     <ConnectedChat chat={chat} active={active} device={device} devices={computers.devices} email="" desktopDiffs
       cliVersion={installer.version}
@@ -82,7 +82,7 @@ export default function RemoteGuiWorkspace(props: {
       renderSidebar={actions => <RemoteGuiSidebar state={chat.state} controller={chat.controller}
         actions={actions} accountPicker={accountPicker} focusMode={props.focusMode} />} />
     </RemoteFileEnvironment>
-    </TerminalLaunchContext.Provider>
+    </TerminalWorkspaceProvider>
     </ConfigProvider>
   </section>;
 }

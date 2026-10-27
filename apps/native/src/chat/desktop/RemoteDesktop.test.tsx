@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RTCView } from 'react-native-webrtc';
 import { RemoteDesktop } from './RemoteDesktop';
 import { DesktopTakeover } from './DesktopTakeover';
+import { resources } from '@remoteai/i18n/client';
+import { setInterfaceLanguage } from '../../../../../shared/localization/interfaceLanguage';
 import type { DesktopClient } from '../../../../../shared/remote-desktop/protocol';
 
 const runtime = vi.hoisted(() => ({ landscape: false, viewOnly: false, input: vi.fn(), rotate: vi.fn(),
@@ -78,6 +80,22 @@ beforeEach(() => {
   runtime.privacy = false; runtime.privacyAvailable = true;
 });
 afterEach(() => vi.unstubAllGlobals());
+
+it.each(['ios', 'android'] as const)('shows localized lock and privacy guidance with compact wrapping on %s', platform => {
+  Platform.OS = platform;
+  try {
+    for (const language of ['zh', 'en', 'ru', 'ja'] as const) {
+      setInterfaceLanguage(language);
+      for (const key of ['client.remoteDesktop.lockedRequiresUnattended',
+        'client.remoteDesktop.privacyRequiresUnattended', 'client.remoteDesktop.privacyFailed'] as const) {
+        runtime.status = key;
+        const alert = render().find(node => node.props.accessibilityRole === 'alert')!;
+        expect(alert.props.children).toBe(resources[language][key]);
+        expect(StyleSheet.flatten(alert.props.style)).toMatchObject({ maxWidth: 400 });
+      }
+    }
+  } finally { setInterfaceLanguage('zh'); }
+});
 
 it.each(['ios', 'android'] as const)('shows a compact confirmation with separate cancel and connect actions on %s', platform => {
   Platform.OS = platform; runtime.takeover = true;

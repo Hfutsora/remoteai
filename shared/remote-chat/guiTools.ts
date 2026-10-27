@@ -1,4 +1,4 @@
-import type { TerminalRead, TerminalInfo, TerminalSize } from '../terminal/types';
+import type { TerminalRead, TerminalInfo, TerminalSize, TerminalLaunchOptions } from '../terminal/types';
 import type { SshApi, SshConnect, SshEndpoint, SshFileAction, SshFileReply, SshX11 } from '../terminal/ssh';
 import type { SshProfileStore } from '../terminal/sshProfiles';
 import { createProjectBrowserClient } from '../project-browser/protocol';
@@ -97,8 +97,8 @@ export function createGuiToolsClient(request: <T>(body: object) => Promise<T>,
       link: (id: string, input: TerminalLinkRequest) =>
         request<TerminalLinkReply>({ operation: 'guiTerminalLink', id, request: input }),
       list: (cwd: string) => request<TerminalInfo[]>({ operation: 'guiTerminalList', cwd }),
-      open: (cwd: string, size: TerminalSize, projectCwd?: string) =>
-        request<TerminalInfo>({ operation: 'guiTerminalOpen', cwd, size,
+      open: (cwd: string, size: TerminalSize, projectCwd?: string, options?: TerminalLaunchOptions) =>
+        request<TerminalInfo>({ operation: 'guiTerminalOpen', cwd, size, ...options,
           ...(projectCwd === undefined ? {} : { projectCwd }) }),
       read: (id: string, cursor: number, token?: string) =>
         request<TerminalRead>({ operation: 'guiTerminalRead', id, cursor, token }),

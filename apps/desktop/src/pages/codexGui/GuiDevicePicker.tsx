@@ -10,10 +10,10 @@ function DeviceList({ navigation, busy, choose }: {
   navigation: GuiComputerNavigation; busy: boolean; choose: (device: GuiComputerNavigation['current']) => void;
 }) {
   return <section className={styles.deviceList} aria-label={uiText("client.workspaceSettings.devices")} aria-busy={navigation.loading}>
-    <button type="button" className={styles.deviceOption} disabled={busy}
+    {navigation.allowLocal !== false && <button type="button" className={styles.deviceOption} disabled={busy}
       aria-pressed={!navigation.current} onClick={() => choose(null)}>
       <Monitor size={16} /><span>{uiText("client.composer.thisComputer")}</span>{!navigation.current && <Check size={16} />}
-    </button>
+    </button>}
     {navigation.devices.map((device) => <button key={device.deviceId} type="button"
       className={styles.deviceOption} aria-pressed={navigation.current?.deviceId === device.deviceId}
       disabled={busy || !device.online} onClick={() => choose(device)}>

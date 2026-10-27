@@ -114,7 +114,7 @@ export class NativeDesktopSession {
     if (!this.id || this.stopped) throw new Error('桌面连接已结束。');
     if (this.changingPrivacy) throw new Error('正在调整显示，请稍候。');
     const failure = change.resolution ? '分辨率未能切换，请选择其他分辨率后重试。'
-      : '隐私屏未能切换，请重新连接后重试。';
+      : 'client.remoteDesktop.privacyFailed';
     this.changingPrivacy = true;
     let accepted = false;
     try {

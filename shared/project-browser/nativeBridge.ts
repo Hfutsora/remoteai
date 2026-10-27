@@ -2,6 +2,7 @@ import { PROJECT_SEARCH_QUERY_LIMIT, type ProjectBrowserClient } from './protoco
 import type { DocumentsSnapshot } from './documents';
 import { withinPath, type BrowserHost, type EntryAction } from './entryActions';
 import { validFileSelection } from './fileSelection';
+import { displayText } from '../localization/messages';
 
 function entryAction(target: Record<string, unknown>): EntryAction {
   if (target.action === 'delete') return { action: 'delete' };
@@ -17,9 +18,10 @@ function entryAction(target: Record<string, unknown>): EntryAction {
 export interface BrowserSettings {
   type: 'settings'; cwd: string; connected: boolean; labels: Record<string, string>; theme: Record<string, string>;
   language?: import('@remoteai/i18n').EnabledLanguage;
+  themeMode?: import('../theme/mode').ThemeMode;
   autoSaveDelay?: number; snapshot?: DocumentsSnapshot;
   capabilities?: Pick<BrowserHost, 'entryActions' | 'downloadDirectory'> & {
-    reference: boolean; quoteSelection: boolean;
+    reference: boolean; quoteSelection: boolean; blame?: boolean;
   };
   ssh?: { path: string; hidden: boolean; busy: boolean; revision: number };
 }
@@ -60,6 +62,14 @@ export async function handleBrowserRequest(raw: string, options: {
     }
     if (typeof target.path !== 'string' || target.path.length > 4096) throw new Error('文件暂时无法读取，请重试。');
     const file = { cwd: options.cwd, path: target.path };
+    if (message.action === 'blame') {
+      if (!options.client.blame || typeof target.revision !== 'string' || !target.revision
+        || target.revision.length > 256 || !withinPath(file.path, options.cwd)
+        || file.path.replace(/\\/g, '/').split('/').includes('..')) {
+        throw new Error(displayText('client.gitBlame.unavailable'));
+      }
+      return { type: 'reply', id, data: await options.client.blame({ ...file, revision: target.revision }) };
+    }
     if (message.action === 'mutate') {
       return { type: 'reply', id, data: await options.client.mutate({ ...file, ...entryAction(target) }) };
     }
