@@ -41,7 +41,7 @@ export const useGitStyles = createThemedStyles((color) => ({
   notice: { maxWidth: 400, marginHorizontal: 16, marginVertical: 8,
     fontSize: 12, lineHeight: 18, color: color(palette.muted, 'muted') },
   error: { maxWidth: 400, marginHorizontal: 16, marginVertical: 8,
-    fontSize: 12, lineHeight: 18, color: color(palette.danger, 'danger') },
+    ...textMetrics(12, 18), color: color(palette.danger, 'danger') },
   tabs: { flexDirection: 'row', marginHorizontal: 16, padding: 3, gap: 4,
     backgroundColor: color('#f2f5f3', 'canvas'), borderRadius: 10 },
   tab: { flex: 1, minHeight: 38, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },

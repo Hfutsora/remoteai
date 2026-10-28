@@ -14,6 +14,9 @@ fn dispatch_extended_command(app: AppHandle, command: &str, args: Value) -> Resu
         "cloud_ssh_profiles" => serialize(block_on(crate::cloud::cloud_ssh_profiles(
             app, argument(&args, "identity")?, argument(&args, "request")?,
         ))),
+        "cloud_lounge_ticket" => serialize(block_on(crate::cloud::cloud_lounge_ticket(
+            app, argument(&args, "identity")?,
+        ))),
         "codex_gui_cli_status" => serialize(block_on(crate::codex_gui::releases::codex_gui_cli_status(app))),
         "codex_gui_cli_release" => serialize(block_on(crate::codex_gui::releases::codex_gui_cli_release())),
         "codex_gui_cli_check" => serialize(block_on(crate::codex_gui::releases::codex_gui_cli_check(app))),

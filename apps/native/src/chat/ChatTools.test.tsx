@@ -21,6 +21,9 @@ vi.mock('./desktop/RemoteDesktop', () => ({ RemoteDesktop: 'Desktop' }));
 vi.mock('./ChatToolsPopover', () => ({ ChatToolsPopover: 'Popover' }));
 vi.mock('./portMapping/PortMappings', () => ({ PortMappings: 'Mappings' }));
 vi.mock('./ProjectBrowser', () => ({ ProjectBrowser: 'Browser' }));
+vi.mock('../../../../shared/remote-chat/useRemoteTerminalLauncher', () => ({
+  useRemoteTerminalLauncher: () => ({ tabs: [], busy: false, toggle: vi.fn() }),
+}));
 vi.mock('../../../../shared/remote-desktop/useDesktopLauncher', () => ({
   useDesktopLauncher: () => ({ opened: true, open: vi.fn(), close: vi.fn() }),
 }));
@@ -33,7 +36,7 @@ afterEach(() => vi.unstubAllGlobals());
 it('keeps stateful tools visible through background and reconnect, while pausing desktop input', () => {
   for (const [foreground, connected] of [[true, true], [false, true], [false, false], [true, true]]) {
     const tree = ChatTools({ client, cwd: state.project, scope: 'device', active: true, foreground, connected });
-    const [projectTools, browser, mappings, desktop] = tree.props.children as Tool[];
+    const [projectTools, browser, , mappings, desktop] = tree.props.children as Tool[];
     expect(projectTools.props.active).toBe(true);
     expect(browser.props.active).toBe(true);
     expect(mappings.props.active).toBe(true);
@@ -46,5 +49,5 @@ it('keeps stateful tools visible through background and reconnect, while pausing
 it('still hides tools when leaving the device page', () => {
   const tree = ChatTools({ client, cwd: state.project, scope: 'device', active: false, foreground: true,
     connected: true });
-  for (const tool of tree.props.children as Tool[]) expect(tool.props.active).toBe(false);
+  for (const tool of (tree.props.children as Tool[]).filter(Boolean)) expect(tool.props.active).toBe(false);
 });

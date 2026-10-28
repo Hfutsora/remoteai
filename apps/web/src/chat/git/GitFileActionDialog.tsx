@@ -31,6 +31,7 @@ export function GitFileActionDialog({ panel, connected }: { panel: RemoteGit; co
       : <p>{t(prompt.action === 'rollback'
         ? "client.git.discardAllUncommittedChangesInTheseFilesAndDeleteNewly"
         : "client.git.deleteTheseFilesFromTheProjectThisCannotBeUndone")}</p>}
-    {panel.error && <p role="alert">{displayError(panel.error)}</p>}
+    {panel.error && <p role="alert" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+      {displayError(panel.error)}</p>}
   </Modal>;
 }

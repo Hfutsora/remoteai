@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type SetStateAction } from 'react';
 import type { GuiToolsClient } from './guiTools';
 import type { TerminalInfo } from '../terminal/types';
 import { terminalBelongsToProject, terminalProjectKey } from './terminalProject';
+import { useScriptTerminalRefresh } from './useScriptTerminalRefresh';
 
 const INITIAL_SIZE = { cols: 80, rows: 24 };
 export const MAX_REMOTE_TERMINALS = 8;
@@ -49,6 +50,13 @@ export function useRemoteTerminalPanel(options: {
     selected: sessions.some(session => session.id === previous.selected)
       ? previous.selected : sessions.at(-1)?.id ?? '',
   }));
+  useScriptTerminalRefresh({ scope, enabled: connected && panel.tabs.some(tab =>
+    tab.session.npmScript && !tab.exited && !tab.session.exited), refresh: async current => {
+    if (scope.pending) return;
+    const version = scope.generation;
+    const sessions = await list();
+    if (current() && !scope.pending && version === scope.generation) restore(sessions);
+  } });
   useEffect(() => {
     if (!connected) return;
     let cancelled = false;
