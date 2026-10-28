@@ -5,6 +5,7 @@ import { filePreviewKind, type PreviewLoader } from './kinds';
 import { usePreviewFile } from './usePreviewFile';
 import { PreviewContent } from '../../apps/desktop/src/pages/codexGui/filePreview/PreviewContent';
 import { BrowserMarkdown } from './BrowserMarkdown';
+import { HtmlPreviewFrame } from './HtmlPreviewFrame';
 import { BrowserImagePreview } from './BrowserImagePreview';
 import './browserFilePreview.css';
 
@@ -59,7 +60,6 @@ function BrowserFilePreview(props: ProjectPreviewProps & { load: PreviewLoader }
     </div>
     {source ? props.editor : kind === 'markdown' ? <BrowserMarkdown text={props.text} path={props.document.path}
       load={props.load} openFile={props.openFile} />
-      : <iframe title={t('client.downloads.htmlPreview')} srcDoc={props.text} sandbox="allow-scripts"
-        referrerPolicy="no-referrer" />}
+      : <HtmlPreviewFrame text={props.text} path={props.document.path} load={props.load} />}
   </div>;
 }
