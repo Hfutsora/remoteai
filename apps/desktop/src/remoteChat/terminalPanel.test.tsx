@@ -22,6 +22,58 @@ function fixture() {
 vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
 afterEach(() => vi.restoreAllMocks());
 
+it('refreshes hidden scripts without overlapping reads and stops refreshing after completion', async () => {
+  vi.useFakeTimers();
+  const test = fixture();
+  const script = { ...info, npmScript: 'dev' };
+  test.client.list.mockResolvedValue([script]);
+  try {
+    await test.render();
+    let finish!: (sessions: TerminalInfo[]) => void;
+    test.client.list.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => vi.advanceTimersByTimeAsync(6000));
+    expect(test.client.list).toHaveBeenCalledTimes(2);
+    expect(test.panel().open).toBe(false);
+    await act(async () => finish([{ ...script, exited: true }]));
+    expect(test.panel().tabs[0].exited).toBe(true);
+    await act(async () => vi.advanceTimersByTimeAsync(4000));
+    expect(test.client.list).toHaveBeenCalledTimes(2);
+  } finally { await act(async () => test.root.unmount()); vi.useRealTimers(); }
+});
+
+it('ignores a script status refresh that finishes after disconnecting', async () => {
+  vi.useFakeTimers();
+  const test = fixture();
+  test.client.list.mockResolvedValue([{ ...info, npmScript: 'dev' }]);
+  try {
+    await test.render();
+    let finish!: (sessions: TerminalInfo[]) => void;
+    test.client.list.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => vi.advanceTimersByTimeAsync(2000));
+    await test.render(false);
+    await act(async () => finish([]));
+    expect(test.panel().tabs).toHaveLength(1);
+  } finally { await act(async () => test.root.unmount()); vi.useRealTimers(); }
+});
+
+it('refreshes npm completion after reconnect and avoids starting another copy of a running script', async () => {
+  const test = fixture();
+  const script: TerminalInfo = { ...info, npmScript: 'dev', npmScriptCwd: info.cwd };
+  test.client.list.mockResolvedValue([script]);
+  try {
+    await test.render();
+    await act(async () => test.panel().addInDirectory(info.cwd, 'dev'));
+    expect(test.client.open).not.toHaveBeenCalled();
+    expect(test.panel().selected).toBe(script.id);
+    await test.render(false);
+    test.client.list.mockResolvedValue([{ ...script, exited: true }]);
+    await test.render(true);
+    expect(test.panel().tabs[0].exited).toBe(true);
+    await act(async () => test.panel().addInDirectory(info.cwd, 'dev'));
+    expect(test.client.open).toHaveBeenCalledWith(info.cwd, { cols: 80, rows: 24 }, info.cwd, { npmScript: 'dev' });
+  } finally { await act(async () => test.root.unmount()); }
+});
+
 it('restores the PC list after remount, hides without closing, and closes only on explicit removal', async () => {
   const test = fixture();
   try {

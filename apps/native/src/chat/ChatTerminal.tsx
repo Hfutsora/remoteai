@@ -12,16 +12,28 @@ import { BottomSheet } from '../components/BottomSheet';
 import { palette } from './styles';
 import { useToolLaunch } from '../../../../shared/remote-chat/useToolLaunch';
 
-/** Project views may disappear; shells stay on their PC until the user explicitly closes them. */
-export function ChatTerminal({ client, cwd, active, connected, deviceName, launchId = 0, hideTrigger = false }: {
+interface Props {
   client: GuiToolsClient['terminal']; cwd: string; active: boolean; connected: boolean; deviceName?: string;
   launchId?: number; hideTrigger?: boolean;
-}) {
+}
+export type ChatTerminalPanel = ReturnType<typeof useRemoteTerminalLauncher>;
+
+/** Project views may disappear; shells stay on their PC until the user explicitly closes them. */
+export function ChatTerminal(props: Props & { panel?: ChatTerminalPanel }) {
+  return props.panel ? <TerminalView {...props} panel={props.panel} /> : <StandaloneTerminal {...props} />;
+}
+
+function StandaloneTerminal(props: Props) {
+  const panel = useRemoteTerminalLauncher(props);
+  return <TerminalView {...props} panel={panel} />;
+}
+
+function TerminalView({ client, cwd, active, connected, deviceName, launchId = 0, hideTrigger = false, panel }:
+  Props & { panel: ChatTerminalPanel }) {
   const resolveThemeColor = useThemeColor();
   const styles = useStyles();
   const color = useThemeColor();
   useLanguage();
-  const panel = useRemoteTerminalLauncher({ client, cwd, connected });
   useToolLaunch(launchId, panel.toggle, connected && !panel.busy);
   const selected = panel.tabs.find(tab => tab.id === panel.selected);
   const disabled = panel.busy || (!connected && !panel.tabs.length && !panel.error);

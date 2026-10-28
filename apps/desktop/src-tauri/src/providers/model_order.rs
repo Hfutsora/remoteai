@@ -103,14 +103,21 @@ pub(super) fn sort_group_models(models: &mut [String], providers: &[ProviderProf
             let is_relay = crate::aggregate_api::member_account_id(&provider.id).is_none();
             group_visible_models(provider)
                 .into_iter()
-                .map(move |model| (provider_group_model_name(provider, model), (is_relay, model)))
+                .map(move |model| {
+                    (
+                        provider_group_model_name(provider, model),
+                        (is_relay, model),
+                    )
+                })
         })
         .collect();
-    models.sort_by(|left, right| match (identities.get(left), identities.get(right)) {
-        (Some((left_relay, left_model)), Some((right_relay, right_model))) => left_relay
-            .cmp(right_relay)
-            .then_with(|| compare_models(left_model, right_model))
-            .then_with(|| left.cmp(right)),
-        _ => compare_models(left, right),
-    });
+    models.sort_by(
+        |left, right| match (identities.get(left), identities.get(right)) {
+            (Some((left_relay, left_model)), Some((right_relay, right_model))) => left_relay
+                .cmp(right_relay)
+                .then_with(|| compare_models(left_model, right_model))
+                .then_with(|| left.cmp(right)),
+            _ => compare_models(left, right),
+        },
+    );
 }

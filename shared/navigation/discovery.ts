@@ -1,4 +1,5 @@
 export const discoveryEntries = [
+  { page: 'lounge', label: 'client.lounge.title' },
   { page: 'devices', label: 'client.app.devices' },
   { page: 'totp', label: 'client.discovery.twoFactor' },
   { page: 'downloads', label: 'client.downloads.downloads' },

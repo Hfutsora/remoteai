@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider } from 'antd';
-import { TerminalLaunchContext } from '../../../shared/terminal/TerminalLaunchContext';
+import { TerminalWorkspaceProvider } from '../../../shared/terminal/TerminalWorkspaceProvider';
 import { useRemoteTerminalPanel } from '../../../shared/remote-chat/useRemoteTerminalPanel';
 import { useRemoteTerminalLauncher } from '../../../shared/remote-chat/useRemoteTerminalLauncher';
 import { createGuiToolsClient } from '../../../shared/remote-chat/guiTools';
@@ -19,7 +19,7 @@ import TerminalPanel from '../src/pages/codexGui/terminal/TerminalPanel';
 import { terminalApi } from '../src/pages/codexGui/terminal/api';
 import { fileApi } from '../src/pages/codexGui/fileApi';
 import { guiApi } from '../src/pages/codexGui/api';
-import { browserRequest, browserRoot } from './project-browser-fixture';
+import { browserRequest, browserRoot, seedNpmScripts, seedLargeText, savedFiles } from './project-browser-fixture';
 import '../src/styles.css';
 import '../../web/src/chat/chat.css';
 import 'antd/dist/reset.css';
@@ -28,13 +28,31 @@ const mode = new URLSearchParams(location.search).get('mode') ?? 'local';
 localStorage.setItem('codex-switch:language', 'zh');
 document.body.style.minWidth = '0';
 let opens = 0;
-terminalApi.open = async (cwd, _size, receive) => {
+if (new URLSearchParams(location.search).has('scripts')) seedNpmScripts();
+if (new URLSearchParams(location.search).has('large')) seedLargeText();
+const scriptSessions = new Map<string, { name: string; receive: Parameters<typeof terminalApi.open>[2] }>();
+window.addEventListener('npm-fixture-exit', () => {
+  for (const session of scriptSessions.values()) session.receive({ type: 'exit', code: 0 });
+  scriptSessions.clear();
+});
+terminalApi.open = async (cwd, _size, receive, options) => {
   const id = String(++opens);
   document.body.dataset.terminalOpens = String(opens);
+  if (options?.npmScript === 'failStart') throw new Error('Fixture startup failure');
+  if (options?.npmScript) {
+    scriptSessions.set(id, { name: options.npmScript, receive });
+    document.body.dataset.scriptCwd = cwd;
+    document.body.dataset.savedBeforeRun = savedFiles.at(-1)?.text ?? '';
+  }
   receive({ type: 'output', data: [...new TextEncoder().encode(`PS ${cwd}> `)] });
-  return { id, cwd, shell: 'PowerShell' };
+  return { id, cwd, shell: 'PowerShell', ...options };
 };
-terminalApi.write = terminalApi.resize = terminalApi.close = async () => {};
+terminalApi.write = terminalApi.resize = async () => {};
+terminalApi.close = async id => {
+  scriptSessions.get(id)?.receive({ type: 'exit', code: 0 });
+  scriptSessions.delete(id);
+  document.body.dataset.terminalCloses = String(Number(document.body.dataset.terminalCloses ?? 0) + 1);
+};
 fileApi.perform = async () => { throw new Error('Unexpected system application launch'); };
 guiApi.request = <T,>(request: object) => browserRequest<T>(request as ProjectBrowserRequest);
 const terminals = new RemoteTerminals();
@@ -47,7 +65,7 @@ const remoteApi = remoteTerminalApi(client.terminal);
 
 function Layout({ panel, children }: { panel: TerminalPanelState; children: ReactNode }) {
   const Workspace = mode === 'local' ? DetailsWorkspace : ChatDetailsWorkspace;
-  return <TerminalLaunchContext.Provider value={panel.addInDirectory}>
+  return <TerminalWorkspaceProvider panel={panel}>
     <Workspace selected="fixture" active enabled contentClassName="chat-diff-layout">
       <ChatTerminalLayout>
         <div style={{ flex: 1, minHeight: 0, padding: 20 }}>
@@ -58,7 +76,7 @@ function Layout({ panel, children }: { panel: TerminalPanelState; children: Reac
         {children}
       </ChatTerminalLayout>
     </Workspace>
-  </TerminalLaunchContext.Provider>;
+  </TerminalWorkspaceProvider>;
 }
 
 function Local() {

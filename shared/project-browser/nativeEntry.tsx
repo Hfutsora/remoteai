@@ -8,6 +8,8 @@ import type { BrowserHost } from './entryActions';
 import { setInterfaceLanguage } from '../localization/interfaceLanguage';
 import { displayText } from '../localization/messages';
 import { nativeSshTreeOptions } from '../terminal/nativeSshBrowser';
+import { TerminalWorkspaceProvider } from '../terminal/TerminalWorkspaceProvider';
+import { nativeScriptPanel } from './nativeScripts';
 
 declare global {
   interface Window {
@@ -38,6 +40,7 @@ const client: ProjectBrowserClient = {
   save: target => request('save', target),
   mutate: target => request('mutate', target),
 };
+const blameClient: ProjectBrowserClient = { ...client, blame: target => request('blame', target) };
 const host: BrowserHost = {
   copyPath: path => request('copyPath', { path }),
   download: target => request('download', target),
@@ -62,6 +65,10 @@ async function close() {
 function render(settings: BrowserSettings) {
   currentSettings = settings;
   if (settings.language) setInterfaceLanguage(settings.language);
+  if (settings.themeMode) {
+    document.documentElement.dataset.theme = settings.themeMode;
+    document.documentElement.style.colorScheme = settings.themeMode;
+  }
   for (const [name, value] of Object.entries(settings.theme)) {
     if (/^--[\w-]+$/.test(name)) document.documentElement.style.setProperty(name, value);
   }
@@ -69,12 +76,18 @@ function render(settings: BrowserSettings) {
   const actionsHost = capabilities ? { ...host, ...capabilities,
     reference: capabilities.reference ? host.reference : undefined,
     quoteSelection: capabilities.quoteSelection ? host.quoteSelection : undefined } : host;
-  root.render(<ProjectBrowser key={settings.cwd} ref={browser} client={client} cwd={settings.cwd} host={actionsHost}
-    treeOptions={nativeSshTreeOptions({ ...settings, connected: settings.connected && !closing }, send)}
-    connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
-    initialSnapshot={settings.snapshot} preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
-      change: delay => { send({ type: 'preferences', delay }); render({ ...settings, autoSaveDelay: delay }); } }}
-    onClose={() => { void close(); }} />);
+  root.render(<TerminalWorkspaceProvider panel={nativeScriptPanel(settings.scripts, send)}>
+    <ProjectBrowser key={settings.cwd} ref={browser}
+      client={capabilities?.blame ? blameClient : client} cwd={settings.cwd} host={actionsHost}
+      treeOptions={nativeSshTreeOptions({ ...settings, connected: settings.connected && !closing }, send)}
+      connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
+      initialSnapshot={settings.snapshot} runScripts={!!settings.scripts}
+      onFullscreenChange={active => send({ type: 'fullscreen', active })}
+      onSnapshot={snapshot => send({ type: 'snapshot', cwd: settings.cwd, snapshot })}
+      preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
+        change: delay => { send({ type: 'preferences', delay }); render({ ...settings, autoSaveDelay: delay }); } }}
+      onClose={() => { void close(); }} />
+  </TerminalWorkspaceProvider>);
 }
 window.projectBrowserMessage = message => {
   if (message.type === 'settings') { render(message); return; }

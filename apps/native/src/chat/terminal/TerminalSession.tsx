@@ -1,5 +1,7 @@
 import { displayError } from '../../i18n/index';
-import { useThemeColor } from '../../theme/store';
+import { useThemeColor, useThemeMode } from '../../theme/store';
+import { useWebviewSource } from '../../theme/useWebviewSource';
+import { terminalAppearance } from '../../../../../shared/terminal/theme';
 import { t, useLanguage } from '../../i18n';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
@@ -34,9 +36,12 @@ export function TerminalSession({ client, session, visible, deviceName, hide, ta
   const [wrap, setWrap] = useState(true);
   const zmodem = useZmodemFiles();
   const orientation = useTerminalOrientation(visible);
-  const source = useMemo(() => ({ html }), [html]);
+  const mode = useThemeMode();
+  const appearance = terminalAppearance(mode === 'dark');
+  const source = useWebviewSource(html, { mode, background: appearance.theme.background,
+    foreground: appearance.theme.foreground, variables: appearance.variables }, generation);
   const updateDisplay = () => {
-    const display = { type: 'display', wrap, shortcuts: !orientation.landscape };
+    const display = { type: 'display', wrap, shortcuts: !orientation.landscape, theme: mode };
     webview.current?.injectJavaScript(`window.remoteTerminal?.(${JSON.stringify(display)}); true;`);
   };
   const inputKey = (data: string) => {
@@ -57,7 +62,7 @@ export function TerminalSession({ client, session, visible, deviceName, hide, ta
       .catch(() => { if (!cancelled) setStatus(t("client.mobile.terminalDidNotLoadCloseAndReopenIt")); });
     return () => { cancelled = true; };
   }, []);
-  useEffect(() => { if (visible) updateDisplay(); }, [wrap, visible, orientation.landscape]);
+  useEffect(() => { if (visible) updateDisplay(); }, [wrap, visible, orientation.landscape, mode]);
   const labels = `(() => { const screen = document.getElementById('viewport'); const keys = document.querySelector('nav');
     if (screen) screen.setAttribute('aria-label', ${JSON.stringify(t("client.projectBrowser.terminal"))});
     if (keys) keys.setAttribute('aria-label', ${JSON.stringify(t("client.runtimeErrors.terminalShortcuts"))}); })(); true;`;
@@ -93,7 +98,8 @@ export function TerminalSession({ client, session, visible, deviceName, hide, ta
             <Ionicons name="chevron-down" size={24} color={color("#17211b", 'ink')} /></Pressable>
         </View>
         {!orientation.landscape && tabs}
-        {html ? <WebView key={generation} ref={webview} source={source} style={styles.screen}
+        {html ? <WebView key={generation} ref={webview} source={source}
+          style={[styles.screen, { backgroundColor: appearance.theme.background }]}
           originWhitelist={['about:blank']} javaScriptEnabled scrollEnabled={false} bounces={false}
           showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}
           allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false}

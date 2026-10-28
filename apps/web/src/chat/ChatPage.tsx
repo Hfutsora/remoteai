@@ -17,7 +17,7 @@ import { useComputerListRefresh } from './useComputerListRefresh';
 import { useDesktopLayout } from '../useDesktopLayout';
 import { useRemoteCliInstaller } from '../../../../shared/remote-chat/useRemoteCliInstaller';
 import { useRemoteTerminalLauncher } from '../../../../shared/remote-chat/useRemoteTerminalLauncher';
-import { TerminalLaunchContext } from '../../../../shared/terminal/TerminalLaunchContext';
+import { TerminalWorkspaceProvider } from '../../../../shared/terminal/TerminalWorkspaceProvider';
 import { GuiRemoteDesktop } from '../../../desktop/src/pages/codexGui/GuiRemoteDesktop';
 import { RemoteGuiTools } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiTools';
 import { RemoteGuiProject } from '../../../desktop/src/pages/codexGui/remote/RemoteGuiProject';
@@ -82,7 +82,7 @@ function WebChat({ session, device, selected, ...props }: Props & {
   }, [selected, chat.state.ready, device?.deviceId, session.baseUrl, session.email]);
   useDownloadConnection({ session, deviceId: device?.deviceId ?? '', deviceName: device?.name ?? '',
     controller: chat.controller, enabled: selected });
-  return <TerminalLaunchContext.Provider value={terminal.addInDirectory}>
+  return <TerminalWorkspaceProvider panel={terminal}>
     {props.tokenSummary && <ChatTokenSummary read={chat.controller.readTokenSummary} ready={chat.state.ready}
       scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])}
       deviceName={device?.name} onClose={props.closeTokenSummary} />}
@@ -101,5 +101,5 @@ function WebChat({ session, device, selected, ...props }: Props & {
         cwd={cwd} />
     </div>}
     scope={JSON.stringify([session.baseUrl, session.email, device?.deviceId ?? ''])} />
-  </TerminalLaunchContext.Provider>;
+  </TerminalWorkspaceProvider>;
 }

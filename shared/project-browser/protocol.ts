@@ -9,6 +9,13 @@ export const PROJECT_SEARCH_QUERY_LIMIT = 256;
 
 export interface ProjectFileTarget { cwd: string; path: string }
 export interface ProjectFileSave extends ProjectFileTarget { text: string; revision: string }
+export interface ProjectBlameCommit { hash: string; author: string; time: number; timezone: string; summary: string }
+export interface ProjectBlame {
+  status: 'ready' | 'notRepository' | 'untracked' | 'changed' | 'unavailable';
+  revision: string;
+  commits: ProjectBlameCommit[];
+  ranges: { start: number; count: number; commit: number | null }[];
+}
 export interface ProjectDocument {
   path: string;
   kind: 'text' | 'image' | 'binary' | 'large';
@@ -23,6 +30,7 @@ export type ProjectBrowserRequest =
   | ({ operation: 'projectFiles'; directory?: string; query?: string; searchAllDirectories?: boolean }
     & Pick<ProjectFileTarget, 'cwd'>)
   | ({ operation: 'projectFileRead'; chunk?: { offset: number; length: number } } & ProjectFileTarget)
+  | ({ operation: 'projectFileBlame'; revision: string } & ProjectFileTarget)
   | ({ operation: 'projectEntryAction' } & EntryRequest)
   | ({ operation: 'projectFileWrite' } & ProjectFileSave)
   | ({ operation: 'projectFileWrite'; revision: string; upload: ProjectFileUpload } & ProjectFileTarget);
@@ -36,6 +44,7 @@ export interface ProjectBrowserClient {
   read: (target: ProjectFileTarget) => Promise<ProjectDocument>;
   save: (target: ProjectFileSave) => Promise<ProjectDocument>;
   mutate: (request: EntryRequest) => Promise<EntryChange>;
+  blame?: (target: ProjectFileTarget & { revision: string }) => Promise<ProjectBlame>;
   transfer?: DownloadClient;
 }
 
@@ -47,6 +56,7 @@ export function createProjectBrowserClient(request: <T>(request: ProjectBrowserR
       request<ProjectFilesResponse>({ operation: 'projectFiles', cwd, directory,
         ...(query === undefined ? {} : { query, searchAllDirectories: true }) }),
     read: target => readProjectDocument(request, target),
+    blame: target => request<ProjectBlame>({ operation: 'projectFileBlame', ...target }),
     save: target => saveProjectDocument(request, target),
     mutate: (target: EntryRequest) => request<EntryChange>({ operation: 'projectEntryAction', ...target }),
   };

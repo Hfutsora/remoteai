@@ -52,8 +52,8 @@ export function ProjectBrowserDrawer({ client, cwd, connected, active, onClose,
   return <WorkspaceDrawerTab active={active}
     tab={{ id: workspaceTabId.files(cwd), title: t("client.projectBrowser.browseFiles"), icon: FILES_ICON, save }}
     className="project-browser-drawer" style={theme}>
-    {() => <Suspense fallback={<p className="project-browser-loading" role="status">{t("client.projectBrowser.loading")}</p>}>
-      <Browser ref={browser} client={client} cwd={cwd} connected={connected} t={displayText}
+    {visible => <Suspense fallback={<p className="project-browser-loading" role="status">{t("client.projectBrowser.loading")}</p>}>
+      <Browser ref={browser} client={client} cwd={cwd} connected={connected} t={displayText} active={visible}
         onClose={onClose} host={actionsHost} renderPreview={renderPreview} />
     </Suspense>}
   </WorkspaceDrawerTab>;

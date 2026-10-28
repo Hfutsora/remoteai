@@ -73,6 +73,7 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
     {notice && <div className={styles.status} role="alert">{translate(notice)}</div>}
     {!panel.tabs.length && empty}
     {panel.tabs.map((tab) => <TerminalPane key={tab.id} tab={tab} api={api} translate={translate} shortcuts={fill}
+      onExit={() => panel.exited?.(tab.id)}
       upload={async batch => {
         if (!tab.session) return;
         openFiles(tab.session.id);
@@ -95,9 +96,10 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
   </section>;
 }
 
-function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadPending }: {
+function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadPending, onExit }: {
   tab: TerminalTab; visible: boolean; api: TerminalApi; translate: (source: string) => string;
   shortcuts: boolean;
+  onExit: () => void;
   upload: (batch: SshUploadBatch) => Promise<void>; uploadPending: boolean;
 }) {
   const [link, setLink] = useState<TerminalLinkTarget>();
@@ -107,7 +109,7 @@ function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadP
     () => getSshDirectory(sessionId));
   const closeLink = useCallback(() => setLink(undefined), []);
   const { host, info, status, input, transfer } = useTerminalSession({ cwd: tab.cwd, visible, api,
-    session: tab.session, onLink: setLink });
+    session: tab.session, npmScript: tab.npmScript, onExit, onLink: setLink });
   const content = <>
     <div ref={host} className={styles.screen} aria-label={info?.shell ?? translate("client.projectBrowser.terminal")} />
     {dropError && <div className={styles.status} role="alert">{translate(dropError)}</div>}

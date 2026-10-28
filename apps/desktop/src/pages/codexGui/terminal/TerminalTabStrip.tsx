@@ -15,7 +15,8 @@ export function TerminalTabStrip({ tabs, selected, select, remove, translate }: 
   const [open, setOpen] = useState(false);
   useEffect(() => { if (!hidden.length) setOpen(false); }, [hidden.length]);
   const label = (tab: TerminalTab) => tab.session?.ssh ? sshLabel(tab.session.ssh)
-    : tab.cwd || `${translate('client.projectBrowser.terminal')} ${tabs.indexOf(tab) + 1}`;
+    : (tab.npmScript ?? tab.session?.npmScript) ? `npm run ${tab.npmScript ?? tab.session?.npmScript}`
+      : tab.cwd || `${translate('client.projectBrowser.terminal')} ${tabs.indexOf(tab) + 1}`;
   const closeLabel = (tab: TerminalTab) => translate('client.terminal.closeTab', { number: tabs.indexOf(tab) + 1 });
   const choose = (id: string) => { overflow.reveal(id); select(id); setOpen(false); };
   return <div ref={overflow.bar} className={styles.tabsBar}>

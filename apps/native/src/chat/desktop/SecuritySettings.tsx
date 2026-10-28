@@ -6,6 +6,7 @@ import { t, useLanguage } from '../../i18n';
 import { createThemedStyles } from '../../theme/styles';
 import { useDisplaySettingsStyles } from './displaySettingsStyles';
 import { AutoUnlockSettings } from './AutoUnlockSettings';
+import { textMetrics } from '../../theme/text';
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
 interface ClipboardActions { busy: boolean; status: string; copy: () => void; paste: () => void }
@@ -38,11 +39,12 @@ export function SecuritySettings(props: SecuritySettingsProps & { clipboardActio
       <Pressable style={panel.close} onPress={close} accessibilityRole="button" accessibilityLabel={t("client.remoteDesktop.closeSecurityOptions")}>
         <MaterialCommunityIcons name="close" size={22} color="#aab6c9" /></Pressable>
     </View>
+    {notice && <View style={s.notice}>
+      <Text style={s.noticeText} accessibilityRole="alert">{displayError(notice.message)}</Text>
+      <Pressable accessibilityRole="button" disabled={saving} onPress={notice.run} style={[s.choice, s.noticeAction]}>
+        <Text style={s.noticeActionText}>{displayText(notice.label)}</Text></Pressable></View>}
     <ScrollView style={panel.scroll} contentContainerStyle={panel.content} keyboardShouldPersistTaps="handled"
       nestedScrollEnabled accessibilityLabel={t("client.remoteDesktop.securitySettings")}>
-      {notice && <View><Text style={s.description} accessibilityRole="alert">{displayError(notice.message)}</Text>
-        <Pressable accessibilityRole="button" disabled={saving} onPress={notice.run} style={s.choice}>
-          <Text style={s.text}>{displayText(notice.label)}</Text></Pressable></View>}
       <AutoUnlockSettings {...props} />
       <Toggle icon="lock-outline" title="client.remoteDesktop.lockWhenDisconnected" checked={value.lockOnDisconnect}
         disabled={disabled || !supported} change={() => { void update({ lockOnDisconnect: !value.lockOnDisconnect }); }}
@@ -87,6 +89,10 @@ export function SecuritySettings(props: SecuritySettingsProps & { clipboardActio
 }
 
 const useStyles = createThemedStyles(() => ({
+  notice: { flexShrink: 0, maxWidth: 400, paddingHorizontal: 14, paddingBottom: 14, gap: 6 },
+  noticeText: { color: '#eef3fc', ...textMetrics(12, 20) },
+  noticeAction: { flex: 0, alignSelf: 'flex-start' },
+  noticeActionText: { color: '#eef3fc', ...textMetrics(13, 20) },
   feedback: { flexShrink: 0, padding: 10, borderTopWidth: 1, borderTopColor: '#394354' },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 12,
     backgroundColor: '#ffffff07', borderWidth: 1, borderColor: '#394354', borderRadius: 12 },

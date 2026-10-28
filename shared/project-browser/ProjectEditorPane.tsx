@@ -8,12 +8,16 @@ import type { useTabActions } from './useTabActions';
 import { frameStyle, type EditorFrame } from './editorLayout';
 import type { BrowserHost } from './entryActions';
 import type { ProjectPreviewRenderer } from './preview';
+import type { ProjectBlame } from './protocol';
+import { BrowserFullscreenButton } from './browserFullscreen';
 
 export interface EditorPaneOptions {
   store: ProjectDocuments; connected: boolean; t: BrowserTranslate;
   actions: ReturnType<typeof useTabActions>; back: () => void; settings: () => void; settingsOpen: boolean;
   quoteSelection?: BrowserHost['quoteSelection'];
   renderPreview?: ProjectPreviewRenderer;
+  runScripts?: boolean;
+  blame?: (path: string, revision: string) => Promise<ProjectBlame>;
 }
 
 export function ProjectEditorPane({ group, frame, options }: {
@@ -50,13 +54,16 @@ export function ProjectEditorPane({ group, frame, options }: {
           disabled={!connected || !isDirty(active) || active.document.readOnly
             || active.loading || active.saving || blocked}
           onClick={save}><Save size={16} aria-hidden="true" /></button>}
+        <BrowserFullscreenButton t={t} className="pf-fullscreen-heading" />
       </div>
     </header>
     {!active && <div className="pf-empty"><FileSearch size={36} /><p>{t("client.projectBrowser.selectAFileToViewItsContents")}</p></div>}
     {tabs.map(tab => <ProjectFilePanel key={tab.path} tab={tab} active={tab.path === group.activePath}
       connected={connected} edit={text => store.edit(tab.path, text)}
+      prepareScript={options.runScripts ? async () => connected && !blocked && await store.saveAll([tab.path]) : undefined}
       quoteSelection={options.quoteSelection}
       renderPreview={options.renderPreview}
+      blame={options.blame}
       openFile={path => { void store.open(path, group.id); }}
       save={() => { if (connected && !blocked) void store.save(tab.path); }} t={t} />)}
   </section>;
