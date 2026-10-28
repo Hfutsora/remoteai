@@ -71,6 +71,14 @@
 .lounge-toolbar > button { display: grid; place-items: center; background: transparent; border: 0; padding: 4px;
   color: var(--lounge-text); cursor: pointer; border-radius: 6px; }
 .lounge-toolbar > button:hover { background: var(--lounge-line); }
+.lounge-emoji-control { position: relative; }
+.lounge-emoji-control > button { display: grid; place-items: center; border: 0; padding: 4px;
+  border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.lounge-emoji-control > button:hover { background: var(--lounge-line); }
+.lounge-emoji-panel { position: absolute; z-index: 10; left: 0; bottom: calc(100% + 8px); padding: 8px;
+  max-width: min(400px, calc(100vw - 28px)); max-height: min(240px, 35dvh); overflow: auto;
+  background: var(--lounge-paper); color: var(--lounge-text); border: 1px solid var(--lounge-line);
+  border-radius: 10px; box-shadow: 0 4px 18px #0002; }
 .lounge-toolbar > .lounge-history-button { margin-left: auto; }
 .lounge-toolbar > span { font-size: 12px; color: var(--lounge-muted); }
 .lounge-composer textarea { display: block; resize: none; width: 100%; box-sizing: border-box; min-height: 82px;

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowDown, Coffee, X } from 'lucide-react';
-import { Modal } from 'antd';
+import { ArrowDown, Ban, Coffee, Users, X } from 'lucide-react';
+import { Drawer, Modal } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
 import { localeForLanguage } from '../localization/language';
@@ -14,7 +14,11 @@ import { LoungeMessageBody } from './LoungeMessageBody';
 import { LoungeHistory } from './LoungeHistory';
 import { LoungeMessageMenu } from './LoungeMessageMenu';
 import { quoteMessage, type LoungeReply } from './reply';
+import { LoungePeople } from './LoungePeople';
+import { LoungeBlockDialog } from './LoungeBlockDialog';
+import { contactStatus } from './contacts';
 import './lounge.css';
+import './people.css';
 
 export function LoungePage({ controller, onLogin, mobile = false }: {
   controller: LoungeController; onLogin?: () => void; mobile?: boolean;
@@ -28,7 +32,11 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [reply, setReply] = useState<LoungeReply>();
-  useEffect(() => setReply(undefined), [controller]);
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [blocking, setBlocking] = useState<LoungeAccount>();
+  const contact = state.contacts.find(value => value.user.id === state.conversation);
+  const select = (user?: LoungeAccount) => { controller.selectConversation(user); setPeopleOpen(false); setAtBottom(true); };
+  useEffect(() => setReply(undefined), [controller, state.conversation]);
   const quote = (message: LoungeMessage) => { setReply(quoteMessage(message)); setHistoryOpen(false); };
   const [now, setNow] = useState(Date.now);
   const mutedUntil = state.policy.mutedUntil;
@@ -39,17 +47,27 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
     return () => clearInterval(timer);
   }, [muted, mutedUntil]);
   useEffect(() => {
-    controller.setViewing(atBottom && !historyOpen && !avatarOpen);
+    controller.setViewing(atBottom && !historyOpen && !avatarOpen && !peopleOpen);
     return () => controller.setViewing(false);
-  }, [controller, atBottom, historyOpen, avatarOpen]);
+  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen]);
   useLayoutEffect(() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; },
     [state.messages, atBottom]);
   const scrollBottom = () => { setAtBottom(true); if (list.current) list.current.scrollTop = list.current.scrollHeight; };
   const signedOut = state.status === 'signed-out';
-  return <section className="lounge-page">
-    <header className="lounge-heading"><div><Coffee size={21} /><h1>{t('client.lounge.title')}</h1></div>
+  return <section className="lounge-layout">
+    <aside className="lounge-sidebar"><LoungePeople state={state} select={select} block={setBlocking} /></aside>
+    <section className="lounge-page">
+    <header className="lounge-heading"><div className="lounge-heading-title">
+      <button className="lounge-people-toggle" type="button" aria-label={t('client.lounge.people')}
+        onClick={() => setPeopleOpen(true)}><Users size={21} /></button>
+      {!contact && <Coffee size={21} />}<h1>{contact?.user.account ?? t('client.lounge.title')}</h1></div>
       <div className="lounge-heading-actions"><span className={`lounge-connection is-${state.status}`} role="status">
         <i />{t(`client.lounge.${state.status}`)}</span>
+        {contact && <span className="lounge-peer-status">{t(contactStatus(contact))}</span>}
+        {contact && state.directAvailable && <button type="button" className="lounge-block-button"
+          aria-label={t(state.blocked.includes(contact.user.id) ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')}
+          title={t(state.blocked.includes(contact.user.id) ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')}
+          onClick={() => setBlocking(contact.user)}><Ban size={18} /></button>}
         {state.policy.moderator && state.onlineCount !== undefined && <span className="lounge-online-count">
           {t('client.lounge.onlineCount', { count: state.onlineCount })}</span>}
         {state.user && <button type="button" className="lounge-avatar-trigger" onClick={() => setAvatarOpen(true)}
@@ -61,8 +79,8 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
         if (node) setAtBottom(node.scrollHeight - node.clientHeight - node.scrollTop < 48);
       }}>
       {!state.messages.length && <div className="lounge-empty"><Coffee size={40} />
-        <h2>{t(signedOut ? 'client.lounge.signIn' : 'client.lounge.empty')}</h2>
-        <p>{t('client.lounge.ephemeral')}</p>
+        <h2>{t(signedOut ? 'client.lounge.signIn' : contact ? 'client.lounge.directEmpty' : 'client.lounge.empty')}</h2>
+        <p>{t(contact ? 'client.lounge.directHint' : 'client.lounge.ephemeral')}</p>
         {signedOut && onLogin && <button type="button" onClick={onLogin}>{t('client.lounge.login')}</button>}
       </div>}
       {state.messages.map((message, index) => {
@@ -73,7 +91,9 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
           {showTime && <div className="lounge-time"><time dateTime={message.sentAt}>
             {new Intl.DateTimeFormat(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' })
               .format(new Date(message.sentAt))}</time></div>}
-          <LoungeMessageMenu message={message} reply={quote}>
+          <LoungeMessageMenu message={message} reply={quote} blocked={state.blocked.includes(message.sender.id)}
+            direct={!own && state.directAvailable ? () => select(message.sender) : undefined}
+            block={!own && state.directAvailable ? () => setBlocking(message.sender) : undefined}>
           <article className={`lounge-message${own ? ' is-own' : ''}`} tabIndex={0}>
             <LoungeAvatar user={message.sender} />
             <div className="lounge-message-main">
@@ -95,11 +115,15 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
       time: new Intl.DateTimeFormat(localeForLanguage(language), { dateStyle: 'short', timeStyle: 'short' })
         .format(new Date(mutedUntil!)),
     })}</p>}
+    {!!state.conversation && state.status === 'connected' && !state.directAvailable
+      && <p className="lounge-mute-notice" role="status">{t('client.lounge.directUpgrade')}</p>}
     {state.historyError && <p className="lounge-history-warning" role="alert">{t('client.lounge.historySaveFailed')}
       <button type="button" onClick={() => void controller.retryHistory()}>{t('client.lounge.historyRetry')}</button></p>}
-    <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted} mobile={mobile}
+    <LoungeComposer key={`${state.user?.id ?? 'guest'}:${state.conversation}`}
+      connected={state.status === 'connected' && !muted && (!state.conversation || state.directAvailable)} mobile={mobile}
       reply={reply} cancelReply={sent => setReply(current => !sent || current === sent ? undefined : current)}
-      send={draft => controller.send(draft)} onHistory={() => setHistoryOpen(true)} />
+      send={draft => controller.send({ ...draft, to: state.conversation || undefined })}
+      onHistory={() => setHistoryOpen(true)} />
     <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller}
       preview={setPreview} reply={quote} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
@@ -110,5 +134,12 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
       title={t('client.lounge.previewImage')} closeIcon={<X size={20} />} onCancel={() => setPreview(undefined)}>
       {preview && <img className="lounge-preview" src={preview} alt={t('client.lounge.image')} />}
     </Modal>
+    {blocking && <LoungeBlockDialog user={blocking} blocked={state.blocked.includes(blocking.id)}
+      controller={controller} close={() => setBlocking(undefined)} />}
+    <Drawer open={peopleOpen} width="min(320px, 100vw)" placement="left" title={t('client.lounge.people')}
+      onClose={() => setPeopleOpen(false)} styles={{ body: { padding: 0 } }}>
+      <LoungePeople state={state} select={select} block={setBlocking} />
+    </Drawer>
+    </section>
   </section>;
 }

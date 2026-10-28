@@ -9,6 +9,7 @@ import { pickLoungeImages } from './images';
 import { useLoungeStyles } from './styles';
 import type { LoungeReply } from '../../../../shared/lounge/reply';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
+import { sendError } from '../../../../shared/lounge/contacts';
 
 export function LoungeComposer({ connected, send, onHistory, reply, cancelReply }: {
   connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void;
@@ -48,8 +49,7 @@ export function LoungeComposer({ connected, send, onHistory, reply, cancelReply 
       if (reply) cancelReply(reply);
     }
     catch (failure) {
-      setError(failure instanceof Error && failure.message === 'client.lounge.muted'
-        ? failure.message : 'client.lounge.sendFailed');
+      setError(sendError(failure));
     } finally { locked.current = false; setBusy(false); }
   };
   return <View style={styles.composer}>

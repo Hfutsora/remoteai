@@ -24,8 +24,9 @@ interface Props {
   message: Message; own?: boolean; manage?: (user: LoungeAccount) => void;
   preview: (uri: string) => void; onImageLoad?: () => void;
   reply?: (message: Message) => void;
+  direct?: () => void; block?: () => void; blocked?: boolean;
 }
-export function LoungeMessage({ message, own, manage, preview, onImageLoad, reply }: Props) {
+export function LoungeMessage({ message, own, manage, preview, onImageLoad, reply, direct, block, blocked }: Props) {
   const styles = useLoungeStyles();
   const [menu, setMenu] = useState(false);
   const openMenu = reply ? () => setMenu(true) : undefined;
@@ -47,6 +48,7 @@ export function LoungeMessage({ message, own, manage, preview, onImageLoad, repl
           onLongPress={openMenu} onLoad={onImageLoad} />)}
       </Pressable>
     </View>
-    {menu && reply && <LoungeMessageActions message={message} reply={reply} close={() => setMenu(false)} />}
+    {menu && reply && <LoungeMessageActions message={message} reply={reply} close={() => setMenu(false)}
+      direct={direct} block={block} blocked={blocked} />}
   </View>;
 }

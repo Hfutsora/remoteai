@@ -44,12 +44,17 @@
   .lounge-active .mobile-tabbar { display: none; }
   .lounge-active .primary-page-track { flex-direction: column; }
   .lounge-active .discovery-back { flex-shrink: 0; align-self: flex-start; }
-  .lounge-active .lounge-page { min-height: 0; height: 0; padding-bottom: env(safe-area-inset-bottom); }
+  .lounge-active .lounge-layout { min-height: 0; height: 0; }
+  .lounge-active .lounge-page { min-height: 0; height: 100%; padding-bottom: env(safe-area-inset-bottom); }
   .lounge-active .lounge-heading { padding: 8px 14px; gap: 8px; }
   .lounge-active .lounge-heading > div { flex-wrap: wrap; }
   .lounge-active .lounge-heading h1 { overflow-wrap: anywhere; }
+  .lounge-active .lounge-heading { flex-direction: column; align-items: stretch; }
+  .lounge-active .lounge-heading > .lounge-heading-title { flex-wrap: nowrap; }
+  .lounge-active .lounge-heading-actions { justify-content: flex-end; }
   .lounge-active .lounge-composer { min-height: 0; }
-  .lounge-active .lounge-toolbar > button { min-width: 44px; min-height: 44px; }
+  .lounge-active .lounge-toolbar > button,
+  .lounge-active .lounge-emoji-control > button { min-width: 44px; min-height: 44px; }
   .lounge-active .lounge-composer textarea { min-height: 48px; font-size: 16px; }
   .lounge-active .lounge-composer footer small { display: none; }
   .discovery-active .main-content,

@@ -6,7 +6,7 @@ const SEARCH_DELAY_MS = 250;
 
 /** Shared paged search; stale account, query and page results must never replace the current view. */
 export function useLoungeHistory(controller: LoungeController, open: boolean) {
-  const { historyRevision } = useSyncExternalStore(controller.subscribe, controller.snapshot);
+  const { historyRevision, conversation } = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState({ query: '', cursors: [] as HistoryCursor[] });
   const [attempt, setAttempt] = useState(0);
@@ -15,7 +15,7 @@ export function useLoungeHistory(controller: LoungeController, open: boolean) {
   useEffect(() => {
     const timer = setTimeout(() => setSearch({ query, cursors: [] }), SEARCH_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [query, controller]);
+  }, [query, controller, conversation]);
   useEffect(() => {
     if (!open) return;
     let active = true;
@@ -27,7 +27,7 @@ export function useLoungeHistory(controller: LoungeController, open: boolean) {
       if (active) setResult({ owner: controller, search, page: { messages: [] }, loading: false, error: true });
     });
     return () => { active = false; };
-  }, [controller, open, search, historyRevision, attempt]);
+  }, [controller, open, search, historyRevision, attempt, conversation]);
   const current = result?.owner === controller && result.search === search && search.query === query ? result : undefined;
   return {
     query, setQuery, messages: current?.page.messages ?? [], loading: !current || current.loading,

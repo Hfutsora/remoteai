@@ -9,8 +9,10 @@ export async function setupLounge(page: Page, web = false) {
   let connections = 0;
   let authentications = 0;
   let ticketsAvailable = true;
+  let blocked = false;
   const moderation: { userId: string; minutes: number }[] = [];
-  const sent: { text: string; images: string[]; avatar?: string; reply?: LoungeReply }[] = [];
+  const sent: { text: string; images: string[]; avatar?: string; reply?: LoungeReply; to?: string }[] = [];
+  const bob = { id: 'bob', account: 'bob@example.test' };
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
   await page.route('https://lounge.test/**', route => {
@@ -27,13 +29,22 @@ export async function setupLounge(page: Page, web = false) {
     route.onMessage(raw => {
       const frame = JSON.parse(String(raw));
       if (frame.type === 'authenticate') {
-        route.send(JSON.stringify({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' } }));
+        route.send(JSON.stringify({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' },
+          direct: true, blocked: blocked ? [bob] : [] }));
         authentications++;
       }
       if (frame.type === 'ping') route.send('{"type":"pong"}');
+      if (frame.type === 'watch') route.send(JSON.stringify({ type: 'contacts',
+        contacts: frame.watch.map((id: string) => ({ id, online: true })) }));
+      if (frame.type === 'block') {
+        blocked = frame.blocked;
+        route.send(JSON.stringify({ type: 'privacy', blocked: blocked ? [bob] : [] }));
+        route.send(JSON.stringify({ type: 'updated', id: frame.id }));
+      }
       if (frame.type === 'message') {
         sent.push(frame);
         route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
+          ...(frame.to ? { recipient: bob } : {}),
           sentAt: new Date().toISOString() }));
       }
       if (frame.type === 'moderate') {
@@ -67,6 +78,9 @@ export async function setupLounge(page: Page, web = false) {
       type: 'policy', policy: { moderator, mutedUntil }, ...(moderator ? { onlineCount: 2 } : {}),
     })),
     presence: (onlineCount: number) => socket.send(JSON.stringify({ type: 'presence', onlineCount })),
+    contact: (online: boolean | null) => socket.send(JSON.stringify({ type: 'contacts', contacts: [{ id: 'bob', online }] })),
+    private: (text: string) => socket.send(JSON.stringify({ type: 'message', id: crypto.randomUUID(), text, images: [],
+      sender: bob, recipient: { id: 'alice', account: 'alice@example.test' }, sentAt: new Date().toISOString() })),
     ready: () => expect.poll(() => authentications).toBeGreaterThan(0),
     close: () => socket.close({ code: 1001 }),
     push: (text: string, images: string[] = []) => socket.send(JSON.stringify({ type: 'message',

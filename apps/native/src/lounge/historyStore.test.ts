@@ -29,6 +29,17 @@ const store = () => nativeLoungeHistory('https://cloud.test/', 'Alice@example.te
 const message = (id: string): LoungeMessage => ({ type: 'message', id, text: `hello ${id}`, images: [],
   sender: { id: 'bob', account: 'Bob@example.test' }, sentAt: '2026-10-28T00:00:00Z' });
 
+it('keeps group and private searches separate and persists contacts without their online status', async () => {
+  const history = nativeLoungeHistory('https://cloud.test', 'direct');
+  const privateMessage = { ...message('secret'), conversation: 'bob', recipient: { id: 'alice', account: 'Alice' } };
+  await history.save(message('group')); await history.save(privateMessage);
+  await history.saveContact!({ user: privateMessage.sender, direct: true, online: true });
+  const data = state.db!.export(); state.db!.close(); state.db = new SQL.Database(data);
+  expect((await history.page({ query: '', conversation: '' })).messages.map(value => value.id)).toEqual(['group']);
+  expect((await history.page({ query: '', conversation: 'bob' })).messages).toEqual([privateMessage]);
+  expect(await history.contacts!()).toEqual([{ user: privateMessage.sender, direct: true }]);
+});
+
 it('preserves messages, images and avatars after reopening, without duplicating or sharing between accounts', async () => {
   const received = { ...message('picture'), images: ['data:image/png;base64,AAAA'],
     reply: { id: 'old', senderId: 'other', account: 'other@example.test', text: 'quoted-only', imageCount: 1 },

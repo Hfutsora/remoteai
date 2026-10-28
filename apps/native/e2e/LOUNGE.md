@@ -25,6 +25,7 @@ node apps/native/e2e/lounge-test.mjs
 
 The runner verifies discovery unread badges, sending, search, mute actions, foreground delivery,
 long-press quote replies, cancellation, locally restored quotes, moderator-only presence,
+private messages, contact lists, one-way blocking, hidden presence and offline private history,
 language changes and session cleanup at system font scales 1.0 and 1.3. It also restarts the app
 with the ticket endpoint unavailable and searches a uniquely sent message, proving local persistence
 without server replay or historical unread counts. It restores the previous
@@ -47,6 +48,9 @@ Pop-Location
 The browser suite uses bundled Chromium and includes 320px/390px mobile Web discovery, multiline
 input, mixed messages, history, moderation and a reduced viewport for keyboard layout. It also
 regresses desktop local/remote/Web chat because the controller and browser composer are shared.
+`playwright.lounge-compat.config.ts` also checks repeated emoji opening, caret insertion,
+keyboard dismissal and touch selection in bundled Chromium and WebKit. This does not replace
+testing the reported macOS Chrome version on macOS hardware.
 Native unit tests cover image byte limits, temporary image cleanup, 48px avatar crops, picker
 cancellation, lifecycle behavior without DOM globals, and SQLite restart/account isolation, literal
 search, pagination beyond 200 messages and image-heavy page bounds. Server deployment remains separate and

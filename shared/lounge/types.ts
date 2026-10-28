@@ -1,6 +1,7 @@
 import { avatarData, type LoungeAvatarStore } from './avatar';
 import type { LoungeHistoryStore } from './archive';
 import { parseReply, type LoungeReply } from './reply';
+import { parseAccount, type LoungeContact } from './contacts';
 
 export const MAX_TEXT = 4000;
 export const MAX_IMAGES = 3;
@@ -12,11 +13,14 @@ export interface LoungeAccount { id: string; account: string; avatar?: string }
 export interface LoungeMessage {
   type: 'message'; id: string; sender: LoungeAccount; text: string; images: string[]; sentAt: string;
   reply?: LoungeReply;
+  recipient?: LoungeAccount;
+  conversation?: string;
 }
-export interface LoungeDraft { text: string; images: string[]; reply?: LoungeReply }
+export interface LoungeDraft { text: string; images: string[]; reply?: LoungeReply; to?: string }
 export interface LoungePolicy { moderator: boolean; mutedUntil: string | null }
 export interface LoungeSession {
   baseUrl: string;
+  account?: string;
   authorize: () => Promise<{ ticket: string }>;
   avatars?: LoungeAvatarStore;
   history?: LoungeHistoryStore;
@@ -30,6 +34,11 @@ export interface LoungeSnapshot {
   historyRevision: number;
   historyError: boolean;
   onlineCount?: number;
+  contacts: LoungeContact[];
+  blocked: string[];
+  directAvailable: boolean;
+  conversation: string;
+  unreadByConversation: Record<string, number>;
 }
 
 export function imageData(value: unknown): value is string {
@@ -47,8 +56,11 @@ export function parseMessage(value: unknown): LoungeMessage | undefined {
     || typeof item.sentAt !== 'string' || !Number.isFinite(Date.parse(item.sentAt))) return;
   const images = item.images ?? [];
   if (images.length > MAX_IMAGES || !images.every(imageData)) return;
+  const recipient = parseAccount(item.recipient);
+  if (item.recipient && !recipient) return;
   const sender = { ...item.sender, avatar: avatarData(item.sender.avatar) ? item.sender.avatar : undefined };
-  return { ...item, sender, images, reply: parseReply(item.reply) } as LoungeMessage;
+  return { ...item, sender, images, recipient, reply: parseReply(item.reply),
+    conversation: typeof item.conversation === 'string' ? item.conversation : undefined } as LoungeMessage;
 }
 
 export function initials(account: string) { return Array.from(account).slice(0, 2).join('').toUpperCase(); }

@@ -37,7 +37,7 @@ function avatarStore(baseUrl: string): LoungeAvatarStore {
 
 export function useNativeLounge(session: AuthSession | null) {
   const controller = useMemo(() => new LoungeController(session ? {
-    baseUrl: session.baseUrl, avatars: avatarStore(session.baseUrl),
+    baseUrl: session.baseUrl, account: session.email, avatars: avatarStore(session.baseUrl),
     history: nativeLoungeHistory(session.baseUrl, session.email),
     authorize: async () => {
       const response = await authorizedRequest(session, '/lounge/ticket', { method: 'POST' });

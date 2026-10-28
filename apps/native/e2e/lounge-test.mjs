@@ -22,6 +22,7 @@ const image = 'data:image/png;base64,' + (await readFile(path.join(root,
 const sent = [];
 const moderated = [];
 let online = true;
+let blocked = false;
 const server = createServer((request, response) => {
   response.writeHead(online ? 200 : 503, { 'content-type': 'application/json' });
   response.end(JSON.stringify({ ticket: 'fixture-ticket' }));
@@ -36,13 +37,22 @@ sockets.on('connection', socket => socket.on('message', raw => {
   const frame = JSON.parse(String(raw));
   if (frame.type === 'authenticate') {
     socket.send(JSON.stringify({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' },
-      policy: { moderator: true, mutedUntil: null }, onlineCount: 2 }));
+      policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true,
+      blocked: blocked ? [{ id: 'bob', account: 'bob@example.test' }] : [] }));
     socket.send(JSON.stringify(incoming('真机中文测试：忙里偷闲，聊点轻松的 ☕', [image])));
   }
   if (frame.type === 'ping') socket.send('{"type":"pong"}');
+  if (frame.type === 'watch') socket.send(JSON.stringify({ type: 'contacts',
+    contacts: frame.watch.map(id => ({ id, online: true })) }));
+  if (frame.type === 'block') {
+    blocked = frame.blocked;
+    socket.send(JSON.stringify({ type: 'privacy', blocked: blocked ? [{ id: 'bob', account: 'bob@example.test' }] : [] }));
+    socket.send(JSON.stringify({ type: 'updated', id: frame.id }));
+  }
   if (frame.type === 'message') {
     sent.push(frame);
     socket.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
+      ...(frame.to ? { recipient: { id: 'bob', account: 'bob@example.test' } } : {}),
       sentAt: new Date().toISOString() }));
   }
   if (frame.type === 'moderate') {
@@ -58,7 +68,7 @@ async function nodes() {
 }
 async function find(label) {
   for (let attempt = 0; attempt < 8; attempt++) {
-    const node = (await nodes()).find(value => {
+    const node = (await nodes()).sort((a, b) => Number(b.clickable === 'true') - Number(a.clickable === 'true')).find(value => {
       if (value.text !== label && value['content-desc'] !== label) return false;
       const [left, top, right, bottom] = [...value.bounds.matchAll(/\d+/g)].map(number => Number(number[0]));
       return right > left && bottom > top;
@@ -106,6 +116,7 @@ try {
   await adb('install', '-r', path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
   for (const scale of [1, 1.3]) {
     online = true;
+    blocked = false;
     const unique = `Hello-native-${Date.now()}`;
     const sentBefore = sent.length;
     const moderatedBefore = moderated.length;
@@ -131,6 +142,24 @@ try {
     await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`history-${scale}`);
     await find('回复 bob@example.test');
     await tap('返回聊天'); await find('Draft');
+    await tap('用户列表'); await screenshot(`people-${scale}`);
+    await longPress('与 bob@example.test 私聊'); await tap('发起私聊'); await find('在线');
+    await tap('消息'); await adb('shell', 'input', 'text', `Private-${unique}`); await tap('发送');
+    await assertEventually(() => sent.at(-1)?.to === 'bob', 'Private recipient');
+    await hideKeyboard(); await screenshot(`private-${scale}`);
+    await tap('屏蔽此人'); await screenshot(`block-confirm-${scale}`); await tap('屏蔽此人');
+    await find('取消屏蔽'); await find('在线');
+    broadcast({ ...incoming('blocked-private'), recipient: { id: 'alice', account: 'alice@example.test' } });
+    broadcast(incoming('blocked-group'));
+    await tap('消息'); await adb('shell', 'input', 'text', 'blocker-outbound'); await tap('发送');
+    await assertEventually(() => sent.at(-1)?.text === 'blocker-outbound', 'Blocker may initiate private chat');
+    await hideKeyboard();
+    assert.ok(!(await nodes()).some(node => node.text === 'blocked-private'), 'Block filters private messages');
+    await tap('取消屏蔽'); await tap('取消屏蔽'); await find('屏蔽此人');
+    broadcast({ type: 'contacts', contacts: [{ id: 'bob', online: null }] }); await find('在线状态不可见');
+    await screenshot(`private-hidden-${scale}`);
+    await tap('用户列表'); await tap('群聊');
+    assert.ok(!(await nodes()).some(node => node.text === 'blocked-group'), 'Block filters new group messages');
     broadcast(incoming('管理入口测试')); await find('管理入口测试');
     await tap('管理 bob@example.test 的发言权限'); await find('禁言时长（分钟）');
     await screenshot(`moderation-${scale}`); await tap('禁言');
@@ -159,6 +188,9 @@ try {
     await adb('shell', 'input', 'text', unique); await find('本页 1 条记录'); await find(unique);
     await find('回复 bob@example.test');
     await hideKeyboard(); await screenshot(`offline-restart-${scale}`);
+    await tap('返回聊天'); await tap('用户列表'); await tap('与 bob@example.test 私聊');
+    await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', `Private-${unique}`);
+    await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`private-offline-${scale}`);
     assert.equal(sockets.clients.size, 0, 'Search must work without a connection');
     console.log(`PASS native lounge at font scale ${scale}: history survives offline restart; discovery, send, moderation`);
   }

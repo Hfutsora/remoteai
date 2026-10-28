@@ -3,6 +3,7 @@ import { historyKey, historyPage, historyPageLimit, historyScope, historyText, h
   messageBytes, RECENT_BYTE_LIMIT, type HistoryQuery, type LoungeHistoryStore,
 } from '../../../../shared/lounge/archive';
 import { parseMessage, type LoungeMessage } from '../../../../shared/lounge/types';
+import { mergeContact, parseContact, type LoungeContact } from '../../../../shared/lounge/contacts';
 
 let database: Promise<SQLiteDatabase> | undefined;
 let pending: Promise<unknown> = Promise.resolve();
@@ -12,7 +13,9 @@ CREATE TABLE IF NOT EXISTS messages (
   scope TEXT NOT NULL, key TEXT NOT NULL, time INTEGER NOT NULL,
   search TEXT NOT NULL, content TEXT NOT NULL, PRIMARY KEY (scope, key)
 );
-CREATE INDEX IF NOT EXISTS timeline ON messages(scope, time, key);`;
+CREATE INDEX IF NOT EXISTS timeline ON messages(scope, time, key);
+CREATE TABLE IF NOT EXISTS contacts(scope TEXT NOT NULL, id TEXT NOT NULL, content TEXT NOT NULL,
+  PRIMARY KEY(scope, id));`;
 
 async function open() {
   const { openDatabaseAsync } = await import('expo-sqlite');
@@ -37,6 +40,10 @@ async function search(db: SQLiteDatabase, scope: string, query: HistoryQuery) {
   const conditions = ['scope = ?', ...terms.map(() => "search LIKE ? ESCAPE '\\'")];
   const parameters: (string | number)[] = [scope,
     ...terms.map(term => `%${term.replace(/[\\%_]/g, '\\$&')}%`)];
+  if (query.conversation !== undefined) {
+    conditions.push("COALESCE(json_extract(content, '$.conversation'), '') = ?");
+    parameters.push(query.conversation);
+  }
   if (query.before) {
     conditions.push('(time < ? OR (time = ? AND key < ?))');
     parameters.push(query.before.time, query.before.time, query.before.key);
@@ -67,5 +74,17 @@ export function nativeLoungeHistory(baseUrl: string, account: string): LoungeHis
         scope, historyKey(message), Date.parse(message.sentAt), historyText(message), JSON.stringify(message));
     }),
     page: query => withDatabase(db => search(db, scope, query)),
+    contacts: () => withDatabase(async db => {
+      const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM contacts WHERE scope = ?', scope);
+      return rows.map(row => parseContact(JSON.parse(row.content))).filter((value): value is LoungeContact => !!value);
+    }),
+    saveContact: contact => withDatabase(async db => {
+      const previous = await db.getFirstAsync<{ content: string }>(
+        'SELECT content FROM contacts WHERE scope = ? AND id = ?', scope, contact.user.id);
+      const saved = previous && parseContact(JSON.parse(previous.content));
+      const [value] = mergeContact(saved ? [saved] : [], contact);
+      await db.runAsync('INSERT OR REPLACE INTO contacts(scope, id, content) VALUES (?, ?, ?)',
+        scope, value.user.id, JSON.stringify({ user: value.user, direct: value.direct }));
+    }),
   };
 }

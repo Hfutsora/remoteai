@@ -49,6 +49,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     relay.push('quoted-original', [pixel]);
     const original = rows.filter({ hasText: 'quoted-original' });
     await original.click({ button: 'right' });
+    await expect(page.getByRole('menuitem', { name: '发起私聊' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '屏蔽此人' })).toBeVisible();
     await page.getByRole('menuitem', { name: '引用回复' }).click();
     await expect(page.locator('.lounge-reply-draft')).toContainText('quoted-original');
     await input.fill('keep draft');
@@ -58,6 +60,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     const originalBounds = (await original.boundingBox())!;
     await original.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'touch', button: 0,
       isPrimary: true, clientX: originalBounds.x + 10, clientY: originalBounds.y + 10 });
+    await expect(page.getByRole('menuitem', { name: '发起私聊' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '屏蔽此人' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: '引用回复' })).toBeVisible();
     await original.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', isPrimary: true });
     await page.getByRole('menuitem', { name: '引用回复' }).click();

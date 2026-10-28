@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ClipboardEvent } from 'react';
-import { History, ImagePlus, Send, Smile, X } from 'lucide-react';
-import { Popover } from 'antd';
+import { History, ImagePlus, Send, X } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
 import { prepareImage } from './images';
-import { LOUNGE_EMOJI } from './emoji';
+import { LoungeEmojiPicker } from './LoungeEmojiPicker';
+import { sendError } from './contacts';
 import type { LoungeReply } from './reply';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
 
@@ -18,7 +18,6 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [emojiOpen, setEmojiOpen] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const adding = useRef(false);
@@ -51,8 +50,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
       if (reply) cancelReply(reply);
     }
     catch (failure) {
-      setError(failure instanceof Error && failure.message === 'client.lounge.muted'
-        ? failure.message : 'client.lounge.sendFailed');
+      setError(sendError(failure));
     }
     finally { submitting.current = false; setBusy(false); textarea.current?.focus(); }
   };
@@ -60,7 +58,6 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
     const { start, end } = selection.current;
     setText(value => value.slice(0, start) + emoji + value.slice(end));
     selection.current = { start: start + emoji.length, end: start + emoji.length };
-    setEmojiOpen(false);
     requestAnimationFrame(() => {
       textarea.current?.focus(); textarea.current?.setSelectionRange(start + emoji.length, start + emoji.length);
     });
@@ -77,12 +74,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   return <section className="lounge-composer" onDragOver={event => event.preventDefault()}
     onDrop={event => { event.preventDefault(); void addImages(Array.from(event.dataTransfer.files)); }}>
     <div className="lounge-toolbar">
-      <Popover trigger="click" open={emojiOpen} onOpenChange={setEmojiOpen} placement="topLeft"
-        styles={{ root: { maxWidth: 400 } }} content={<div className="lounge-emoji-picker">
-          {LOUNGE_EMOJI.map(emoji => <button key={emoji} type="button" onClick={() => insertEmoji(emoji)}>{emoji}</button>)}
-        </div>}>
-        <button type="button" disabled={busy} aria-label={t('client.lounge.emoji')}><Smile size={22} /></button>
-      </Popover>
+      <LoungeEmojiPicker disabled={busy} insert={insertEmoji} />
       <button type="button" disabled={busy || processing} aria-label={t('client.lounge.addImage')}
         title={t(mobile ? 'client.lounge.mobileImageHint' : 'client.lounge.imageHint')}
         onClick={() => picker.current?.click()}><ImagePlus size={22} /></button>

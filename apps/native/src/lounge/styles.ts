@@ -10,6 +10,8 @@ export const useLoungeStyles = createThemedStyles(color => ({
   text: { ...textMetrics(16, 25), color: color('#24262c', 'ink'), flexShrink: 1 },
   link: { ...textMetrics(14, 22), color: color('#168da2', 'info'), flexShrink: 1 },
   list: { padding: 14, flexGrow: 1 },
+  peopleList: { flexGrow: 0, flexShrink: 1 },
+  person: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, gap: 12 },
   message: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 20 },
   own: { flexDirection: 'row-reverse' },

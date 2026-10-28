@@ -10,7 +10,7 @@ export function useWebLounge(session: AuthSession | null) {
   const baseUrl = session?.baseUrl;
   const email = session?.email;
   const controller = useMemo(() => new LoungeController(baseUrl && email ? {
-    baseUrl, avatars: browserAvatarStore(baseUrl), history: browserLoungeHistory(baseUrl, email), authorize: async () => {
+    baseUrl, account: email, avatars: browserAvatarStore(baseUrl), history: browserLoungeHistory(baseUrl, email), authorize: async () => {
       const current = getActiveSession();
       if (current?.baseUrl !== baseUrl || current.email !== email) throw new Error('client.lounge.signIn');
       return apiJson<{ ticket: string }>('/lounge/ticket', { method: 'POST' });

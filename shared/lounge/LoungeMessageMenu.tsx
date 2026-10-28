@@ -3,12 +3,20 @@ import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import { displayText as t } from '../localization/messages';
 import type { LoungeMessage } from './types';
 
-export function LoungeMessageMenu({ message, reply, children }: {
+export function LoungeMessageMenu({ message, reply, children, direct, block, blocked }: {
   message: LoungeMessage; reply: (message: LoungeMessage) => void;
+  direct?: () => void; block?: () => void; blocked?: boolean;
   children: ReactElement<HTMLAttributes<HTMLElement>>;
 }) {
   const [open, setOpen] = useState(false);
   return <ThreadContextMenu open={open} onOpenChange={setOpen}
-    menu={{ items: [{ key: 'reply', label: t('client.lounge.quoteReply') }],
-      onClick: () => { setOpen(false); reply(message); } }}>{children}</ThreadContextMenu>;
+    menu={{ items: [{ key: 'reply', label: t('client.lounge.quoteReply') },
+      ...(direct ? [{ key: 'direct', label: t('client.lounge.directChat') }] : []),
+      ...(block ? [{ key: 'block', label: t(blocked ? 'client.lounge.unblockUser' : 'client.lounge.blockUser') }] : [])],
+      onClick: ({ key }) => {
+        setOpen(false);
+        if (key === 'direct') direct?.();
+        else if (key === 'block') block?.();
+        else reply(message);
+      } }}>{children}</ThreadContextMenu>;
 }
