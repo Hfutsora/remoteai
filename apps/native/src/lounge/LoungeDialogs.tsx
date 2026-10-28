@@ -1,6 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import type { LoungeController } from '../../../../shared/lounge/controller';
 import { MAX_MUTE_MINUTES, type LoungeAccount } from '../../../../shared/lounge/types';
 import { displayText, t } from '../i18n';
@@ -92,13 +91,4 @@ export function LoungeModeration({ user, controller, close }: {
     </View>
     {error && <Text accessibilityRole="alert" style={styles.error}>{t('client.lounge.moderationFailed')}</Text>}
   </Dialog>;
-}
-
-export function LoungePreview({ uri, close }: { uri: string; close: () => void }) {
-  const styles = useLoungeStyles();
-  return <Modal animationType="fade" onRequestClose={close}><SafeAreaView style={styles.page}>
-    <Pressable accessibilityRole="button" style={styles.iconButton} onPress={close}>
-      <Text style={styles.link}>{t('client.lounge.backToChat')}</Text></Pressable>
-    <Image source={{ uri }} accessibilityLabel={t('client.lounge.image')} resizeMode="contain" style={styles.preview} />
-  </SafeAreaView></Modal>;
 }

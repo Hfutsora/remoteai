@@ -43,6 +43,11 @@ They cover server save failures, successful saves, external profile updates, res
 reconnection with stale caches, and the translated settings copy. Server tests separately validate
 48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
+Set `LOUNGE_IMAGE_ONLY=1` to verify image previews with real two-finger pinch gestures, single-finger
+panning, back navigation and previews above history at both font scales. The gesture runner compares
+image pixels before and after each gesture and checks that the preview stays open. It requires
+`ANDROID_HOME` and a JDK, and stores screenshots alongside the other lounge captures.
+
 The runner verifies discovery unread badges, sending, search, mute actions, foreground delivery,
 long-press quote replies, cancellation, locally restored quotes, moderator-only presence,
 private messages, contact lists, one-way blocking, hidden presence and offline private history,

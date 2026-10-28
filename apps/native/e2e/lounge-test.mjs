@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 import WebSocket from 'ws';
 import { verifyNativeAvatar } from './lounge-avatar-check.mjs';
+import { verifyNativeImage } from './lounge-image-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -154,6 +155,10 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('聊天');
+    if (process.env.LOUNGE_IMAGE_ONLY === '1') {
+      await verifyNativeImage({ adb, tap, find, screenshot, output, scale });
+      continue;
+    }
     if (process.env.LOUNGE_AVATAR_ONLY === '1') {
       await verifyNativeAvatar({ tap, find, screenshot, image, scale, saves: () => avatarSaves,
         fail: value => { rejectAvatar = value; },

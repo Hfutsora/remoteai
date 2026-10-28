@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react';
-import { Modal } from 'antd';
 import { ArrowDown, Ban, ChevronLeft, Info, MessagesSquare, UserRound } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
@@ -8,6 +7,7 @@ import { useMobileLounge, type MobileLounge } from './useMobileLounge';
 import { contactStatus } from './contacts';
 import { LoungeComposer } from './LoungeComposer';
 import { LoungeHistory } from './LoungeHistory';
+import { LoungePreview } from './LoungePreview';
 import { LoungeAvatarSettings } from './LoungeAvatarSettings';
 import { LoungeModeration } from './LoungeModeration';
 import { LoungeBlockDialog } from './LoungeBlockDialog';
@@ -59,10 +59,8 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
       close={() => model.setModerating(undefined)} />}
     {model.blocking && <LoungeBlockDialog user={model.blocking} blocked={state.blocked.includes(model.blocking.id)}
       controller={controller} close={() => model.setBlocking(undefined)} />}
-    <Modal open={!!model.preview} footer={null} centered title={t('client.lounge.previewImage')}
-      onCancel={() => model.setPreview(undefined)}>
-      {model.preview && <img className="lounge-preview" src={model.preview} alt={t('client.lounge.image')} />}
-    </Modal>
+    {model.preview && <LoungePreview key={model.preview} uri={model.preview}
+      close={() => model.setPreview(undefined)} />}
   </section>;
 }
 

@@ -7,7 +7,7 @@ import type { LoungeAccount, LoungeMessage as Message } from '../../../../shared
 import { t } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { LoungeMessage } from './LoungeMessage';
-import { LoungePreview } from './LoungeDialogs';
+import { LoungePreview } from './LoungePreview';
 import { useLoungeStyles } from './styles';
 
 export function LoungeHistory({ controller, close, reply, direct }: {

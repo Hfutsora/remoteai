@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowDown, Ban, Coffee, Users, X } from 'lucide-react';
-import { Drawer, Modal } from 'antd';
+import { ArrowDown, Ban, Coffee, Users } from 'lucide-react';
+import { Drawer } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
 import { localeForLanguage } from '../localization/language';
@@ -12,6 +12,7 @@ import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeAvatarSettings } from './LoungeAvatarSettings';
 import { LoungeMessageBody } from './LoungeMessageBody';
 import { LoungeHistory } from './LoungeHistory';
+import { LoungePreview } from './LoungePreview';
 import { quoteMessage, type LoungeReply } from './reply';
 import { LoungePeople } from './LoungePeople';
 import { LoungeBlockDialog } from './LoungeBlockDialog';
@@ -137,10 +138,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
       close={() => setAvatarOpen(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}
       close={() => setModerating(undefined)} />}
-    <Modal open={!!preview} footer={null} width="min(900px, 90vw)" centered destroyOnClose
-      title={t('client.lounge.previewImage')} closeIcon={<X size={20} />} onCancel={() => setPreview(undefined)}>
-      {preview && <img className="lounge-preview" src={preview} alt={t('client.lounge.image')} />}
-    </Modal>
+    {preview && <LoungePreview key={preview} uri={preview} close={() => setPreview(undefined)} />}
     {blocking && <LoungeBlockDialog user={blocking} blocked={state.blocked.includes(blocking.id)}
       controller={controller} close={() => setBlocking(undefined)} />}
     <Drawer open={peopleOpen} width="min(320px, 100vw)" placement="left" title={t('client.lounge.people')}

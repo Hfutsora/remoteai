@@ -55,7 +55,6 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8 },
   field: { ...textMetrics(16, 26), color: color('#24262c', 'ink'), borderWidth: 1,
     borderColor: color('#e6e8ec', 'border'), paddingHorizontal: 12, borderRadius: 8 },
-  preview: { flex: 1, width: '100%' },
   badgeWrap: { position: 'relative' },
   badge: { position: 'absolute', right: -14, top: -10, backgroundColor: '#e54d57', borderRadius: 12,
     minWidth: 20, paddingHorizontal: 4, alignItems: 'center' },
