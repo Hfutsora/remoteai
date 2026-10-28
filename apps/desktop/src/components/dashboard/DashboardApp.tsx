@@ -46,6 +46,8 @@ import { TokenUsageDashboard } from "../TokenUsageDashboard";
 import { TotpPage } from "../../pages/TotpPage";
 import { LogDiagnosticsPage, type LogDiagnosticsTab } from "../../pages/LogDiagnosticsPage";
 import { DownloadsPage } from "../../pages/DownloadsPage";
+import { LoungePage } from "../../../../../shared/lounge/LoungePage";
+import { useDesktopLounge } from "../../lounge/useDesktopLounge";
 import { authenticatedDownloadOwner } from "../../downloads/useDesktopDownloads";
 import logDiagnosticsStyles from "../../pages/LogDiagnosticsPage/index.module.less";
 import { CloudLoginModal } from "../modals/CloudLoginModal";
@@ -188,6 +190,7 @@ type SystemMenuAction =
   | "proxy-sessions"
   | "log-diagnostics"
   | "downloads"
+  | "lounge"
   | "totp"
   | "system-prompts"
   | "settings"
@@ -296,6 +299,10 @@ export function DashboardApp() {
   useOfficialModelRefreshNotification(notify, t);
   const thirdPartyAppIntegration = useThirdPartyAppIntegration(notify, t);
   const cloud = useCloudAuth(notify, t);
+  const lounge = useDesktopLounge(cloud.state);
+  useEffect(() => {
+    if (!cloud.state.authenticated && !cloud.loading && page === "lounge") setPage("codexGui");
+  }, [cloud.state.authenticated, cloud.loading, page]);
   const totpManager = useTotpEntries({
     cloudAuthenticated: cloud.state.authenticated,
     notify,
@@ -1020,6 +1027,9 @@ export function DashboardApp() {
       case "downloads":
         setPage("downloads");
         break;
+      case "lounge":
+        setPage("lounge");
+        break;
       case "system-prompts":
         setPage("systemPrompts");
         break;
@@ -1199,7 +1209,9 @@ export function DashboardApp() {
   const accountToolbox = (
     <AccountToolbox t={t}
       onSystemPrompts={isAccountManagementPage(page) ? () => setPage("systemPrompts") : undefined}
-      navigation={sidebarNavigationEnabled ? undefined : { page, onPageChange: setPage, downloadOwner }}>
+      navigation={sidebarNavigationEnabled ? undefined : {
+        page, onPageChange: setPage, downloadOwner,
+        loungeUnread: lounge.state.unread, loungeAvailable: cloud.state.authenticated }}>
       {(page === "accounts" || page === "providers") && <>
         {titlebarProxyRunning && <CloudRecycleBin t={t} disabled={!cloud.state.authenticated}
           triggerClassName="refresh-all" />}
@@ -1287,10 +1299,13 @@ export function DashboardApp() {
             </button>
             <DashboardNavigation collapsed={navigationStyle.sidebarCollapsed}
               downloadOwner={downloadOwner}
+              loungeUnread={lounge.state.unread}
+              loungeAvailable={cloud.state.authenticated}
               onPageChange={setPage} page={page} t={t} variant="sidebar" />
           </aside>
         )}
-        <header className="app-menu" hidden={sidebarNavigationEnabled && (page === "codexGui" || page === "coze")}>
+        <header className="app-menu" hidden={sidebarNavigationEnabled &&
+          (page === "codexGui" || page === "coze" || page === "lounge")}>
           {!sidebarNavigationEnabled && (
             <button type="button" className="brand" onClick={openRepository}
               aria-label={t("help.github")} title={t("help.github")}>
@@ -1310,6 +1325,7 @@ export function DashboardApp() {
         </header>
 
         <main className={page === "accounts" ? "accounts-main"
+          : page === "lounge" ? "lounge-desktop-main"
           : page === "codexGui" ? codexGuiStyles.main
           : page === "coze" ? cozeStyles.main
           : page === "providers" ? "providers-main"
@@ -1319,7 +1335,7 @@ export function DashboardApp() {
             : page === "dreamSkin" ? "dream-skin-main"
               : page === "sessions" ? "sessions-main"
               : page === "codexConfig" ? codexConfigStyles.main : undefined}>
-          {!['tokens', 'dreamSkin', 'codexGui', 'coze', 'logDiagnostics', 'downloads'].includes(page) && (
+          {!['tokens', 'dreamSkin', 'codexGui', 'coze', 'logDiagnostics', 'downloads', 'lounge'].includes(page) && (
           <>
           {isAccountManagementPage(page) ? (
             <AccountManagementToolbar section={page} onSectionChange={setPage} t={t}
@@ -1392,6 +1408,7 @@ export function DashboardApp() {
 
           {page === "totp" && <TotpPage accounts={manager.accounts} manager={totpManager} t={t} />}
           {page === "downloads" && <DownloadsPage auth={cloud.state} />}
+          {page === "lounge" && <LoungePage controller={lounge.controller} onLogin={openCloudLogin} />}
           {page === "logDiagnostics" && <LogDiagnosticsPage activeTab={diagnosticsTab}
             onTabChange={setDiagnosticsTab} language={language} t={t}
             onExportLogs={() => void exportLogs()} exportingLogs={exportingLogs} />}

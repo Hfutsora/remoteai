@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Dialog, Form, Input, PullToRefresh, SafeArea, SpinLoading, TabBar, Toast } from "antd-mobile";
 import { Dropdown, Tooltip, type MenuProps } from "antd";
 import { ChevronRight, CircleGauge, Compass, LayoutDashboard, LogOut, Menu, MonitorCog,
-  MessageSquare, PanelLeftClose, PanelLeftOpen, RefreshCw, Server, Settings, ShieldCheck, Sparkles } from "lucide-react";
+  Download, MessageSquare, PanelLeftClose, PanelLeftOpen, RefreshCw, Server, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { defaultApiBaseUrl, deviceStatusWebSocketUrl, getActiveSession, parseDeviceStatusMessage } from "./api";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { bootstrapApp, clearAuthError, clearDataError, deviceSocketMessage, pageChanged, refreshAll,
@@ -28,6 +28,9 @@ import { isDiscoveryPage, primaryNavigationPage } from '../../../shared/navigati
 import { AccountsPage } from "./accounts/AccountsPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { DownloadManagerPage } from './downloads/DownloadManagerPage';
+import { LoungePage } from '../../../shared/lounge/LoungePage';
+import { LoungeIcon } from '../../../shared/lounge/LoungeIcon';
+import { useWebLounge } from './lounge/useWebLounge';
 import { downloadOwner } from './downloads/manager';
 import { loadRefreshMinutes, REFRESH_INTERVAL_EVENT } from "./settings/refreshInterval";
 import { useTotpVault } from "./useTotpVault";
@@ -276,6 +279,7 @@ function AppShell() {
   const [menuVisible, setMenuVisible] = usePanelVisibility('main-menu');
   const dispatch = useAppDispatch();
   const { session } = useAppSelector((state) => state.auth);
+  const lounge = useWebLounge(session);
   const { page, profile, devices, refreshing, error } = useAppSelector((state) => state.data);
   const lastRefreshRef = useRef(Date.now());
   const totpManager = useTotpVault(session);
@@ -349,7 +353,7 @@ function AppShell() {
     { key: "logout", label: t("client.app.signOut"), danger: true, icon: <LogOut size={16} />, onClick: () => void dispatch(signOut()) },
   ];
 
-  const pageDescriptions: Record<Exclude<AppPage, 'chat' | 'downloads' | 'token-summary'>, string> = {
+  const pageDescriptions: Record<Exclude<AppPage, 'chat' | 'downloads' | 'lounge' | 'token-summary'>, string> = {
     accounts: t("client.app.welcomeBackYourAccountsAtAGlance"),
     discover: t('client.discovery.title'),
     devices: t("client.app.viewAndControlYourDesktopDevices"), totp: t("client.app.manageAndSyncYour2faCodes"), settings: t("client.app.managePreferencesAndAccountSecurity"),
@@ -357,6 +361,7 @@ function AppShell() {
   const downloadScope = session ? downloadOwner(session) : undefined;
   const discoveryPage = <DiscoveryPage owner={downloadScope} onOpen={destination => dispatch(pageChanged(destination))} />;
   const otherPages = {
+    lounge: <LoungePage controller={lounge.controller} />,
     discover: discoveryPage, 'token-summary': discoveryPage,
     downloads: session && <DownloadManagerPage owner={downloadOwner(session)}
       onBack={() => dispatch(pageChanged('discover'))} />,
@@ -366,6 +371,7 @@ function AppShell() {
   const pageTitle = page === 'devices' ? t('client.app.devices')
     : page === 'totp' ? t('client.discovery.twoFactor') : navItems.find(item => item.key === page)?.label;
   const shellClass = ['app-shell', page === 'chat' && 'chat-active',
+    page === 'lounge' && 'lounge-active',
     (page === 'discover' || page === 'token-summary') && 'discovery-active',
     !menuVisible && 'main-menu-collapsed'].filter(Boolean).join(' ');
   const MenuToggleIcon = menuVisible ? PanelLeftClose : PanelLeftOpen;
@@ -387,7 +393,23 @@ function AppShell() {
             ? <DownloadCountIcon owners={[downloadScope]}><item.icon size={19} /></DownloadCountIcon>
             : <item.icon size={19} />}<span>{item.label}</span>
         </button>
-      </Tooltip>)}</nav>
+      </Tooltip>)}
+        <Tooltip placement="right" title={menuVisible ? undefined : t('client.lounge.title')}>
+          <button type="button" aria-label={t('client.lounge.title')}
+            aria-current={page === 'lounge' ? 'page' : undefined}
+            className={page === 'lounge' ? 'active' : ''} onClick={() => dispatch(pageChanged('lounge'))}>
+            <LoungeIcon unread={lounge.state.unread} /><span>{t('client.lounge.title')}</span>
+          </button>
+        </Tooltip>
+        <Tooltip placement="right" title={menuVisible ? undefined : t('client.downloads.downloads')}>
+          <button type="button" aria-label={t('client.downloads.downloads')}
+            aria-current={page === 'downloads' ? 'page' : undefined}
+            className={page === 'downloads' ? 'active' : ''} onClick={() => dispatch(pageChanged('downloads'))}>
+            <DownloadCountIcon owners={[downloadScope]}><Download size={19} /></DownloadCountIcon>
+            <span>{t('client.downloads.downloads')}</span>
+          </button>
+        </Tooltip>
+      </nav>
       <div className="sidebar-live"><span><i />  {t("client.app.connected")}</span><p>{t("client.app.manageYourAccountsAndDevices")}</p></div>
       <Tooltip placement="right" title={menuVisible ? undefined : t("client.app.accountMenu")}>
         <Dropdown menu={{ items: userMenu }} trigger={["click"]}>
@@ -401,7 +423,8 @@ function AppShell() {
       </Tooltip>
     </aside>
     <div className="content-shell">
-      {page !== 'chat' && page !== 'downloads' && page !== 'token-summary' && <header className="desktop-topbar"><div>
+      {page !== 'chat' && page !== 'downloads' && page !== 'lounge' && page !== 'token-summary'
+        && <header className="desktop-topbar"><div>
         <span>{pageTitle}</span><strong>{pageDescriptions[page]}</strong></div>
         <div><Tooltip title={t("client.app.refreshAllData")}><button className="icon-button" type="button"
           onClick={() => void dispatch(refreshAll())}>
