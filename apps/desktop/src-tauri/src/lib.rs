@@ -69,6 +69,7 @@ mod provider_discovery;
 mod provider_models;
 mod provider_platform;
 mod providers;
+mod quota_display;
 mod remote_chat;
 mod remote_command;
 mod remote_control;
@@ -634,6 +635,8 @@ pub fn run() {
             main_window::set_close_to_tray,
             client_integration::set_non_proxy_enhancements,
             floating_bubble::set_floating_bubble,
+            quota_display::get_quota_display_status,
+            quota_display::set_quota_display_all_accounts,
             pet_dock::get_pet_dock_status,
             pet_dock::set_pet_dock_enabled,
             pet_dock::set_pet_dock_labels_visible,

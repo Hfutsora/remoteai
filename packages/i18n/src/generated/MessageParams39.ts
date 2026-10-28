@@ -87,6 +87,7 @@ export interface MessageParams39 {
   "settings.networkProxy.title": Record<string, never>;
   "settings.openFolder": Record<string, never>;
   "settings.petDock.active": Record<string, never>;
+  "settings.petDock.averageHint": Record<string, never>;
   "settings.petDock.cloudHint": Record<string, never>;
   "settings.petDock.description": Record<string, never>;
   "settings.petDock.disabled": Record<string, never>;
@@ -111,6 +112,13 @@ export interface MessageParams39 {
   "settings.proxyTransport.redirects": Record<string, never>;
   "settings.proxyTransport.retries": Record<string, never>;
   "settings.proxyTransport.title": Record<string, never>;
+  "settings.quotaDisplay.average": Record<string, never>;
+  "settings.quotaDisplay.compact": Record<string, never>;
+  "settings.quotaDisplay.hint": Record<string, never>;
+  "settings.quotaDisplay.short": Record<string, never>;
+  "settings.quotaDisplay.stale": Record<string, never>;
+  "settings.quotaDisplay.summary": { "primary": string | number; "secondary": string | number; "total": string | number };
+  "settings.quotaDisplay.unsupported": Record<string, never>;
   "settings.responseHeaderTimeout.description": Record<string, never>;
   "settings.responseHeaderTimeout.duration": Record<string, never>;
   "settings.responseHeaderTimeout.title": Record<string, never>;
@@ -192,12 +200,4 @@ export interface MessageParams39 {
   "skills.delete.confirmDescription": Record<string, never>;
   "skills.delete.confirmTitle": { "name": string | number };
   "skills.deleting": Record<string, never>;
-  "skills.detail.close": Record<string, never>;
-  "skills.disabled": Record<string, never>;
-  "skills.downloads": { "count": string | number };
-  "skills.edit": Record<string, never>;
-  "skills.empty": Record<string, never>;
-  "skills.enabled": Record<string, never>;
-  "skills.field.description": Record<string, never>;
-  "skills.field.package": Record<string, never>;
 }
