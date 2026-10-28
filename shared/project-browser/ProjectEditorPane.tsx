@@ -9,6 +9,7 @@ import { frameStyle, type EditorFrame } from './editorLayout';
 import type { BrowserHost } from './entryActions';
 import type { ProjectPreviewRenderer } from './preview';
 import type { ProjectBlame } from './protocol';
+import { BrowserFullscreenButton } from './browserFullscreen';
 
 export interface EditorPaneOptions {
   store: ProjectDocuments; connected: boolean; t: BrowserTranslate;
@@ -53,6 +54,7 @@ export function ProjectEditorPane({ group, frame, options }: {
           disabled={!connected || !isDirty(active) || active.document.readOnly
             || active.loading || active.saving || blocked}
           onClick={save}><Save size={16} aria-hidden="true" /></button>}
+        <BrowserFullscreenButton t={t} className="pf-fullscreen-heading" />
       </div>
     </header>
     {!active && <div className="pf-empty"><FileSearch size={36} /><p>{t("client.projectBrowser.selectAFileToViewItsContents")}</p></div>}

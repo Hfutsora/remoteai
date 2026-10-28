@@ -53,9 +53,10 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [generation, setGeneration] = useState(0);
   const currentGeneration = useRef(generation);
-  const recover = () => { setReady(false); setGeneration(++currentGeneration.current); };
+  const recover = () => { setReady(false); setFullscreen(false); setGeneration(++currentGeneration.current); };
   const mode = useThemeMode();
   const source = useWebviewSource(html, { mode, background: color('#fff', 'surface'),
     foreground: color('#202c29', 'ink'), variables: { '--panel': color('#fff', 'surface') } });
@@ -97,7 +98,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
     supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
     <SafeAreaProvider><SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
+        <View style={[styles.header, fullscreen && styles.hidden]}>
           <Ionicons name="folder-open-outline" size={21} color={color('#202c29', 'ink')} />
           <View style={styles.heading}>
             <Text style={styles.title}>{title ?? t("client.projectBrowser.browseFiles")}</Text>
@@ -124,6 +125,9 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
             } catch (error) { setError(displayError(error)); return; }
             if (isNativeSshBrowserAction(message)) { ssh?.onAction(message); return; }
             if (message.type === 'ready') { setReady(true); update(); return; }
+            if (message.type === 'fullscreen' && 'active' in message && typeof message.active === 'boolean') {
+              setFullscreen(message.active); return;
+            }
             if (message.type === 'snapshot' || message.type === 'closed') {
               if (message.type === 'snapshot' && (!('cwd' in message) || message.cwd !== cwd)) return;
               if ('snapshot' in message && message.snapshot && typeof message.snapshot === 'object'
@@ -145,7 +149,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
               .then(reply => { if (reply) emit(reply); });
           }}
           onError={() => {
-            setReady(false); setError('client.projectBrowser.theFileBrowserCouldNotLoadPleaseReopenIt');
+            setReady(false); setFullscreen(false); setError('client.projectBrowser.theFileBrowserCouldNotLoadPleaseReopenIt');
           }} />}
         {!!error && <Text accessibilityRole="alert" style={styles.error}>{displayError(error)}</Text>}
         {children}
@@ -157,6 +161,7 @@ export function ProjectBrowser({ client, cwd, connected, active, onClose, title,
 const useStyles = createThemedStyles(color => ({
   screen: { flex: 1, backgroundColor: color('#fff', 'surface') },
   fill: { flex: 1 },
+  hidden: { display: 'none' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, minHeight: 60,
     borderBottomWidth: 1, borderBottomColor: color('#dfe5e1', 'border') },
   heading: { flex: 1, minWidth: 0 },
