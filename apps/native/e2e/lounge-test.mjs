@@ -37,7 +37,7 @@ sockets.on('connection', socket => socket.on('message', raw => {
   const frame = JSON.parse(String(raw));
   if (frame.type === 'authenticate') {
     socket.send(JSON.stringify({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' },
-      policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true,
+      policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
       blocked: blocked ? [{ id: 'bob', account: 'bob@example.test' }] : [] }));
     socket.send(JSON.stringify(incoming('真机中文测试：忙里偷闲，聊点轻松的 ☕', [image])));
   }
@@ -54,7 +54,11 @@ sockets.on('connection', socket => socket.on('message', raw => {
     socket.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
       ...(frame.to ? { recipient: { id: 'bob', account: 'bob@example.test' } } : {}),
       sentAt: new Date().toISOString() }));
+    if (frame.to) socket.send(JSON.stringify({ type: 'receipt', id: frame.id, from: frame.to,
+      to: 'alice', status: 'delivered' }));
   }
+  if (frame.type === 'receipt') socket.send(JSON.stringify({ type: 'receipt-confirm', id: frame.id,
+    from: frame.to, to: 'alice', status: frame.status }));
   if (frame.type === 'moderate') {
     moderated.push(frame); socket.send(JSON.stringify({ type: 'moderated', id: frame.id }));
   }
@@ -162,6 +166,9 @@ try {
     await longPress('与 bob@example.test 私聊'); await tap('发起私聊'); await find('在线');
     await tap('消息'); await adb('shell', 'input', 'text', `Private-${unique}`); await tap('发送');
     await assertEventually(() => sent.at(-1)?.to === 'bob', 'Private recipient');
+    await find('对方已收到');
+    broadcast({ type: 'receipt', id: sent.at(-1).id, from: 'bob', to: 'alice', status: 'read' });
+    await find('对方已阅读');
     await hideKeyboard(); await screenshot(`private-${scale}`);
     await tap('屏蔽此人'); await screenshot(`block-confirm-${scale}`); await tap('屏蔽此人');
     await find('取消屏蔽'); await find('在线');
@@ -206,7 +213,8 @@ try {
     await hideKeyboard(); await screenshot(`offline-restart-${scale}`);
     await tap('返回聊天'); await tap('用户列表'); await tap('与 bob@example.test 私聊');
     await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', `Private-${unique}`);
-    await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`private-offline-${scale}`);
+    await find('本页 1 条记录'); await find('对方已阅读');
+    await hideKeyboard(); await screenshot(`private-offline-${scale}`);
     assert.equal(sockets.clients.size, 0, 'Search must work without a connection');
     console.log(`PASS native lounge at font scale ${scale}: history survives offline restart; discovery, send, moderation`);
   }

@@ -42,9 +42,9 @@ export function LoungePage({ controller }: { controller: LoungeController }) {
     return () => clearInterval(timer);
   }, [muted, mutedUntil]);
   useEffect(() => {
-    controller.setViewing(atBottom && !history && !avatar && !preview && !moderating && !people);
+    controller.setViewing(atBottom && !history && !avatar && !preview && !moderating && !people && !blocking);
     return () => controller.setViewing(false);
-  }, [controller, atBottom, history, avatar, preview, moderating, people]);
+  }, [controller, atBottom, history, avatar, preview, moderating, people, blocking]);
   // Keep the newest message at offset zero, including when Android resumes a paused layout.
   const scrollBottom = () => { if (atBottom) list.current?.scrollToOffset({ offset: 0, animated: false }); };
   return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

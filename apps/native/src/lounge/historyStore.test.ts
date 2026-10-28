@@ -29,6 +29,26 @@ const store = () => nativeLoungeHistory('https://cloud.test/', 'Alice@example.te
 const message = (id: string): LoungeMessage => ({ type: 'message', id, text: `hello ${id}`, images: [],
   sender: { id: 'bob', account: 'Bob@example.test' }, sentAt: '2026-10-28T00:00:00Z' });
 
+it('persists receipt state and selects unfinished local jobs without resending completed messages', async () => {
+  const history = nativeLoungeHistory('https://cloud.test', 'receipts');
+  const outgoing: LoungeMessage = { ...message('pending'), recipient: { id: 'other', account: 'other' }, receipts: true,
+    delivery: { direction: 'outgoing', status: 'pending', retry: true, attemptedAt: Date.now() } };
+  await history.save(outgoing);
+  const data = state.db!.export(); state.db!.close(); state.db = new SQL.Database(data);
+  expect((await history.page({ query: '', pendingOnly: true })).messages).toHaveLength(1);
+  expect((await history.get!('["bob","pending"]'))?.delivery?.status).toBe('pending');
+  await history.save({ ...outgoing, delivery: { ...outgoing.delivery!, status: 'read' } });
+  await history.save(outgoing);
+  expect((await history.get!('["bob","pending"]'))?.delivery?.status).toBe('read');
+  expect((await history.page({ query: '', pendingOnly: true })).messages).toHaveLength(0);
+  const received: LoungeMessage = { ...outgoing, id: 'incoming',
+    delivery: { direction: 'incoming', status: 'read', confirmed: 'delivered' } };
+  await history.save(received);
+  expect((await history.page({ query: '', pendingOnly: true })).messages.map(value => value.id)).toEqual(['incoming']);
+  await history.save({ ...received, delivery: { ...received.delivery!, confirmed: 'read' } });
+  expect((await history.page({ query: '', pendingOnly: true })).messages).toHaveLength(0);
+});
+
 it('keeps group and private searches separate and persists contacts without their online status', async () => {
   const history = nativeLoungeHistory('https://cloud.test', 'direct');
   const privateMessage = { ...message('secret'), conversation: 'bob', recipient: { id: 'alice', account: 'Alice' } };

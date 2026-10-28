@@ -4,6 +4,7 @@ import { historyKey, historyPage, historyPageLimit, historyScope, historyText, h
 } from '../../../../shared/lounge/archive';
 import { parseMessage, type LoungeMessage } from '../../../../shared/lounge/types';
 import { mergeContact, parseContact, type LoungeContact } from '../../../../shared/lounge/contacts';
+import { mergeDelivery } from '../../../../shared/lounge/delivery';
 
 let database: Promise<SQLiteDatabase> | undefined;
 let pending: Promise<unknown> = Promise.resolve();
@@ -38,6 +39,11 @@ function withDatabase<T>(operation: (db: SQLiteDatabase) => Promise<T>): Promise
 async function search(db: SQLiteDatabase, scope: string, query: HistoryQuery) {
   const terms = historyTerms(query.query);
   const conditions = ['scope = ?', ...terms.map(() => "search LIKE ? ESCAPE '\\'")];
+  if (query.pendingOnly) conditions.push(`(
+    (json_extract(content, '$.delivery.direction') = 'outgoing'
+      AND json_extract(content, '$.delivery.status') = 'pending' AND json_extract(content, '$.delivery.retry') = 1)
+    OR (json_extract(content, '$.delivery.direction') = 'incoming'
+      AND json_extract(content, '$.delivery.status') != COALESCE(json_extract(content, '$.delivery.confirmed'), '')))`);
   const parameters: (string | number)[] = [scope,
     ...terms.map(term => `%${term.replace(/[\\%_]/g, '\\$&')}%`)];
   if (query.conversation !== undefined) {
@@ -70,10 +76,19 @@ export function nativeLoungeHistory(baseUrl: string, account: string): LoungeHis
   const scope = historyScope(baseUrl, account);
   return {
     save: message => withDatabase(async db => {
+      const previous = message.delivery ? await db.getFirstAsync<{ content: string }>(
+        'SELECT content FROM messages WHERE scope = ? AND key = ?', scope, historyKey(message)) : undefined;
+      const delivery = mergeDelivery(previous ? parseMessage(JSON.parse(previous.content))?.delivery : undefined,
+        message.delivery);
       await db.runAsync('INSERT OR REPLACE INTO messages(scope, key, time, search, content) VALUES (?, ?, ?, ?, ?)',
-        scope, historyKey(message), Date.parse(message.sentAt), historyText(message), JSON.stringify(message));
+        scope, historyKey(message), Date.parse(message.sentAt), historyText(message), JSON.stringify({ ...message, delivery }));
     }),
     page: query => withDatabase(db => search(db, scope, query)),
+    get: key => withDatabase(async db => {
+      const row = await db.getFirstAsync<{ content: string }>(
+        'SELECT content FROM messages WHERE scope = ? AND key = ?', scope, key);
+      return row ? parseMessage(JSON.parse(row.content)) : undefined;
+    }),
     contacts: () => withDatabase(async db => {
       const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM contacts WHERE scope = ?', scope);
       return rows.map(row => parseContact(JSON.parse(row.content))).filter((value): value is LoungeContact => !!value);

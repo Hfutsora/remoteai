@@ -2,6 +2,7 @@ import { displayText as t } from '../localization/messages';
 import type { LoungeMessage } from './types';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
 import { LoungeMessageMenu, type LoungeMessageMenuActions } from './LoungeMessageMenu';
+import { LoungeDeliveryStatus } from './LoungeDeliveryStatus';
 
 export function LoungeMessageBody({ message, preview, onImageLoad, actions }: {
   message: LoungeMessage; preview: (source: string) => void; onImageLoad?: () => void;
@@ -16,5 +17,6 @@ export function LoungeMessageBody({ message, preview, onImageLoad, actions }: {
       <img src={source} alt={t('client.lounge.image')} onLoad={onImageLoad} />
     </button>)}
   </div>;
-  return actions ? <LoungeMessageMenu message={message} {...actions}>{bubble}</LoungeMessageMenu> : bubble;
+  return <>{actions ? <LoungeMessageMenu message={message} {...actions}>{bubble}</LoungeMessageMenu> : bubble}
+    <LoungeDeliveryStatus delivery={message.delivery} /></>;
 }

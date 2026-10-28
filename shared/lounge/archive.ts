@@ -5,13 +5,16 @@ export const HISTORY_PAGE_SIZE = 50;
 export const RECENT_MESSAGE_LIMIT = 200;
 export const RECENT_BYTE_LIMIT = 24 * 1024 * 1024;
 export interface HistoryCursor { time: number; key: string }
-export interface HistoryQuery { query: string; before?: HistoryCursor; limit?: number; conversation?: string }
+export interface HistoryQuery {
+  query: string; before?: HistoryCursor; limit?: number; conversation?: string; pendingOnly?: boolean;
+}
 export interface HistoryPage { messages: LoungeMessage[]; next?: HistoryCursor }
 export interface LoungeHistoryStore {
   save(message: LoungeMessage): Promise<void>;
   page(query: HistoryQuery): Promise<HistoryPage>;
   contacts?(): Promise<LoungeContact[]>;
   saveContact?(contact: LoungeContact): Promise<void>;
+  get?(key: string): Promise<LoungeMessage | undefined>;
 }
 
 export const historyScope = (baseUrl: string, account: string) =>

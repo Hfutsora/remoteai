@@ -6,6 +6,7 @@ import { useLoungeStyles } from './styles';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
 import { LoungeMessageActions } from './LoungeMessageActions';
 import { LoungeImage } from './LoungeImage';
+import { LoungeDeliveryStatus } from './LoungeDeliveryStatus';
 
 export function LoungeAvatar({ user }: { user: LoungeAccount }) {
   const styles = useLoungeStyles();
@@ -47,6 +48,7 @@ export function LoungeMessage({ message, own, manage, preview, onImageLoad, repl
         {message.images.map((uri, index) => <LoungeImage key={index} uri={uri} preview={preview}
           onLongPress={openMenu} onLoad={onImageLoad} />)}
       </Pressable>
+      <LoungeDeliveryStatus delivery={message.delivery} />
     </View>
     {menu && reply && <LoungeMessageActions message={message} reply={reply} close={() => setMenu(false)}
       direct={direct} block={block} blocked={blocked} />}

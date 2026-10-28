@@ -3,12 +3,13 @@ import { historyKey, historyPage, historyPageLimit, historyScope, historyText, h
   type HistoryQuery, type LoungeHistoryStore } from './archive';
 import { parseMessage, type LoungeMessage } from './types';
 import { mergeContact, parseContact, type LoungeContact } from './contacts';
+import { mergeDelivery, needsDeliveryWork } from './delivery';
 
 const DATABASE = 'remoteai-lounge-history-v1';
 const META = 'metadata';
 const CONTENT = 'content';
 const CONTACTS = 'contacts';
-interface Metadata { scope: string; key: string; time: number; search: string; conversation?: string }
+interface Metadata { scope: string; key: string; time: number; search: string; conversation?: string; pending?: boolean }
 let opening: Promise<IDBDatabase> | undefined;
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -47,9 +48,16 @@ async function save(scope: string, message: LoungeMessage) {
   const transaction = database.transaction([META, CONTENT], 'readwrite');
   const finished = complete(transaction);
   const key = historyKey(message);
-  transaction.objectStore(META).put({ scope, key, time: Date.parse(message.sentAt), search: historyText(message),
-    conversation: message.conversation ?? '' });
-  transaction.objectStore(CONTENT).put(message, [scope, key]);
+  const content = transaction.objectStore(CONTENT);
+  const write = (delivery = message.delivery) => {
+    transaction.objectStore(META).put({ scope, key, time: Date.parse(message.sentAt), search: historyText(message),
+      conversation: message.conversation ?? '', pending: needsDeliveryWork(delivery) });
+    content.put({ ...message, delivery }, [scope, key]);
+  };
+  if (message.delivery) {
+    const previous = content.get([scope, key]);
+    previous.onsuccess = () => write(mergeDelivery(parseMessage(previous.result)?.delivery, message.delivery));
+  } else write();
   await finished;
 }
 
@@ -67,6 +75,7 @@ async function search(scope: string, query: HistoryQuery) {
     const row = cursor.result;
     if (!row || values.length > historyPageLimit(query) || bytes > RECENT_BYTE_LIMIT) return;
     const metadata = row.value as Metadata;
+    if (query.pendingOnly && !metadata.pending) { row.continue(); return; }
     if (query.conversation !== undefined && (metadata.conversation ?? '') !== query.conversation) {
       row.continue(); return;
     }
@@ -86,7 +95,17 @@ async function search(scope: string, query: HistoryQuery) {
 export function browserLoungeHistory(baseUrl: string, account: string): LoungeHistoryStore {
   const scope = historyScope(baseUrl, account);
   return { save: message => save(scope, message), page: query => search(scope, query),
-    contacts: () => contacts(scope), saveContact: contact => saveContact(scope, contact) };
+    contacts: () => contacts(scope), saveContact: contact => saveContact(scope, contact),
+    get: key => get(scope, key) };
+}
+
+async function get(scope: string, key: string) {
+  const db = await openDatabase();
+  const tx = db.transaction(CONTENT); const done = complete(tx);
+  const request = tx.objectStore(CONTENT).get([scope, key]);
+  let message: LoungeMessage | undefined;
+  request.onsuccess = () => { message = parseMessage(request.result); };
+  await done; return message;
 }
 
 async function contacts(scope: string) {

@@ -10,8 +10,11 @@ export async function setupLounge(page: Page, web = false) {
   let authentications = 0;
   let ticketsAvailable = true;
   let blocked = false;
+  let acknowledge = true;
+  let contactOnline: boolean | null = true;
+  const receipts: { type: string; id: string; to: string; status: string }[] = [];
   const moderation: { userId: string; minutes: number }[] = [];
-  const sent: { text: string; images: string[]; avatar?: string; reply?: LoungeReply; to?: string }[] = [];
+  const sent: { id: string; text: string; images: string[]; avatar?: string; reply?: LoungeReply; to?: string }[] = [];
   const bob = { id: 'bob', account: 'bob@example.test' };
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
@@ -30,12 +33,12 @@ export async function setupLounge(page: Page, web = false) {
       const frame = JSON.parse(String(raw));
       if (frame.type === 'authenticate') {
         route.send(JSON.stringify({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' },
-          direct: true, blocked: blocked ? [bob] : [] }));
+          direct: true, receipts: true, blocked: blocked ? [bob] : [] }));
         authentications++;
       }
       if (frame.type === 'ping') route.send('{"type":"pong"}');
       if (frame.type === 'watch') route.send(JSON.stringify({ type: 'contacts',
-        contacts: frame.watch.map((id: string) => ({ id, online: true })) }));
+        contacts: frame.watch.map((id: string) => ({ id, online: id === 'bob' ? contactOnline : true })) }));
       if (frame.type === 'block') {
         blocked = frame.blocked;
         route.send(JSON.stringify({ type: 'privacy', blocked: blocked ? [bob] : [] }));
@@ -46,7 +49,12 @@ export async function setupLounge(page: Page, web = false) {
         route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
           ...(frame.to ? { recipient: bob } : {}),
           sentAt: new Date().toISOString() }));
+        if (frame.to && acknowledge) route.send(JSON.stringify({ type: 'receipt', id: frame.id,
+          from: frame.to, to: 'alice', status: 'delivered' }));
       }
+      if (frame.type === 'receipt') route.send(JSON.stringify({ type: 'receipt-confirm', id: frame.id,
+        from: frame.to, to: 'alice', status: frame.status }));
+      if (frame.type === 'receipt' || frame.type === 'receipt-confirm') receipts.push(frame);
       if (frame.type === 'moderate') {
         moderation.push(frame);
         route.send(JSON.stringify({ type: 'moderated', id: frame.id }));
@@ -72,16 +80,24 @@ export async function setupLounge(page: Page, web = false) {
     } });
   }, web);
   return {
-    sent, moderation, count: () => connections,
+    sent, moderation, receipts, count: () => connections,
+    acknowledge: (enabled: boolean) => { acknowledge = enabled; },
+    receipt: (id: string, status: 'delivered' | 'read') => socket.send(JSON.stringify({
+      type: 'receipt', id, from: 'bob', to: 'alice', status })),
     offline: () => { ticketsAvailable = false; },
     policy: (moderator: boolean, mutedUntil: string | null = null) => socket.send(JSON.stringify({
       type: 'policy', policy: { moderator, mutedUntil }, ...(moderator ? { onlineCount: 2 } : {}),
     })),
     presence: (onlineCount: number) => socket.send(JSON.stringify({ type: 'presence', onlineCount })),
-    contact: (online: boolean | null) => socket.send(JSON.stringify({ type: 'contacts', contacts: [{ id: 'bob', online }] })),
-    private: (text: string, sender = bob) => socket.send(JSON.stringify({ type: 'message',
-      id: crypto.randomUUID(), text, images: [], sender,
-      recipient: { id: 'alice', account: 'alice@example.test' }, sentAt: new Date().toISOString() })),
+    contact: (online: boolean | null) => {
+      contactOnline = online;
+      socket.send(JSON.stringify({ type: 'contacts', contacts: [{ id: 'bob', online }] }));
+    },
+    private: (text: string, sender = bob, id = crypto.randomUUID()) => {
+      socket.send(JSON.stringify({ type: 'message', id, text, images: [], sender,
+        recipient: { id: 'alice', account: 'alice@example.test' }, receipts: true, sentAt: new Date().toISOString() }));
+      return id;
+    },
     ready: () => expect.poll(() => authentications).toBeGreaterThan(0),
     close: () => socket.close({ code: 1001 }),
     push: (text: string, images: string[] = []) => socket.send(JSON.stringify({ type: 'message',

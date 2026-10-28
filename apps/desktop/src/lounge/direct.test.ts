@@ -18,7 +18,7 @@ class Socket {
   send = vi.fn(); close() {}
   constructor() { Socket.instances.push(this); }
   frame(value: unknown) { this.onmessage?.({ data: JSON.stringify(value) }); }
-  ready(direct = true) { this.frame({ type: 'ready', user: alice, direct, blocked: [] }); }
+  ready(direct = true) { this.frame({ type: 'ready', user: alice, direct, receipts: true, blocked: [] }); }
 }
 const controllers: LoungeController[] = [];
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
@@ -60,6 +60,7 @@ it('enforces one-way blocks for new incoming content while retaining history and
   socket.frame({ type: 'contacts', contacts: [{ id: bob.id, online: true }] });
   expect(controller.snapshot().contacts[0].online).toBe(true);
   const sending = controller.send({ text: 'outbound', images: [], to: bob.id });
+  await sending;
   const frame = JSON.parse(socket.send.mock.calls.at(-1)![0]);
   expect(frame.to).toBe(bob.id);
   socket.frame({ ...message(frame.id), sender: alice, recipient: bob, text: frame.text }); await sending;

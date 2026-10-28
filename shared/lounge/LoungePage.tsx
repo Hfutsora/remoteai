@@ -46,9 +46,9 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
     return () => clearInterval(timer);
   }, [muted, mutedUntil]);
   useEffect(() => {
-    controller.setViewing(atBottom && !historyOpen && !avatarOpen && !peopleOpen);
+    controller.setViewing(atBottom && !historyOpen && !avatarOpen && !peopleOpen && !preview && !moderating && !blocking);
     return () => controller.setViewing(false);
-  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen]);
+  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen, preview, moderating, blocking]);
   useLayoutEffect(() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; },
     [state.messages, atBottom]);
   const scrollBottom = () => { setAtBottom(true); if (list.current) list.current.scrollTop = list.current.scrollHeight; };

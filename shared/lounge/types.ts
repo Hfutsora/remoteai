@@ -2,6 +2,7 @@ import { avatarData, type LoungeAvatarStore } from './avatar';
 import type { LoungeHistoryStore } from './archive';
 import { parseReply, type LoungeReply } from './reply';
 import { parseAccount, type LoungeContact } from './contacts';
+import { parseDelivery, type LoungeDelivery } from './delivery';
 
 export const MAX_TEXT = 4000;
 export const MAX_IMAGES = 3;
@@ -15,6 +16,8 @@ export interface LoungeMessage {
   reply?: LoungeReply;
   recipient?: LoungeAccount;
   conversation?: string;
+  receipts?: boolean;
+  delivery?: LoungeDelivery;
 }
 export interface LoungeDraft { text: string; images: string[]; reply?: LoungeReply; to?: string }
 export interface LoungePolicy { moderator: boolean; mutedUntil: string | null }
@@ -60,6 +63,7 @@ export function parseMessage(value: unknown): LoungeMessage | undefined {
   if (item.recipient && !recipient) return;
   const sender = { ...item.sender, avatar: avatarData(item.sender.avatar) ? item.sender.avatar : undefined };
   return { ...item, sender, images, recipient, reply: parseReply(item.reply),
+    receipts: item.receipts === true || undefined, delivery: parseDelivery(item.delivery),
     conversation: typeof item.conversation === 'string' ? item.conversation : undefined } as LoungeMessage;
 }
 
