@@ -2,11 +2,13 @@
 (() => {
   'use strict';
   const KEY = '__remoteAiPetDock';
-  if (window[KEY]?.version === 12) return;
+  if (window[KEY]?.version === 15) return;
   window[KEY]?.destroy();
   // i18n:pet-dock:start
     const petDockCopy = {
     "zh": {
+        "averageFiveHour": "5小时平均",
+        "averageWeekly": "周剩余平均",
       "fiveHour": "5小时剩余",
       "weekly": "本周剩余",
       "remaining": "剩余额度",
@@ -18,6 +20,8 @@
       "unavailable": "部分数据不可用"
     },
     "en": {
+        "averageFiveHour": "5h average",
+        "averageWeekly": "Week average",
       "fiveHour": "5h left",
       "weekly": "Week left",
       "remaining": "Balance",
@@ -29,6 +33,8 @@
       "unavailable": "Some data unavailable"
     },
     "ru": {
+        "averageFiveHour": "Сред. 5 ч",
+        "averageWeekly": "Сред. нед.",
       "fiveHour": "Ост. 5 ч",
       "weekly": "Ост. нед.",
       "remaining": "Остаток",
@@ -40,6 +46,8 @@
       "unavailable": "Данные недоступны"
     },
     "ja": {
+        "averageFiveHour": "5時間平均",
+        "averageWeekly": "週間平均",
       "fiveHour": "5時間残量",
       "weekly": "週間残量",
       "remaining": "残高",
@@ -57,8 +65,21 @@
   style.id = 'remoteai-pet-dock-style';
   style.textContent = `
     [data-remoteai-dock-toolbar] { visibility:hidden!important; pointer-events:none!important; }
-    [data-remoteai-dock-mascot-host] { z-index:1!important; }
-    [data-remoteai-dock-tray] { translate:0 var(--remoteai-dock-tray-shift,0px)!important; z-index:2!important; }
+    [data-remoteai-dock-mascot-host] { z-index:1!important; anchor-name:--remoteai-dock-mascot; user-select:none; }
+    [data-remoteai-dock-tray] {
+      translate:0 var(--remoteai-dock-tray-shift,0px)!important; z-index:2!important; pointer-events:none!important;
+    }
+    [data-remoteai-dock-tray] > [data-avatar-overlay-size="notification-tray"] { pointer-events:auto!important; }
+    [data-remoteai-dock-anchored] {
+      position-anchor:--remoteai-dock-mascot; position-try-fallbacks:--remoteai-dock-above;
+      inset:auto!important; position-area:bottom; justify-self:anchor-center; align-self:start;
+      margin:var(--remoteai-dock-tray-gap) 8px 0;
+      height:var(--remoteai-dock-tray-height)!important; transform:none!important; translate:none!important;
+    }
+    [data-remoteai-dock-anchored] > [data-avatar-overlay-size="notification-tray"] {
+      top:0!important; transform:none!important;
+    }
+    @position-try --remoteai-dock-above { position-area:top; align-self:end; margin-top:0; margin-bottom:8px; }
     #remoteai-pet-dock { position:absolute; width:224px; height:72px; z-index:0;
       pointer-events:none; user-select:none; font-family:Arial,'Microsoft YaHei',sans-serif;
       background-size:100% 100%; background-repeat:no-repeat; color:#e7fcff; }
@@ -144,7 +165,7 @@
     setStyle(dock, 'width', `${width}px`);
     setStyle(dock, 'height', `${height}px`);
     styleMetrics(width, height);
-    placeTray(hostRect.top + (y + height + Math.max(5, 8 * baseScale)) * scaleY);
+    placeTray(hostRect.top + (y + height + Math.max(5, 8 * baseScale)) * scaleY, rect);
   }
   function styleMetrics(width, height) {
     setStyle(dock, '--ra-text-offset', `${Math.max(1.5, 3.2 * baseScale)}px`);
@@ -159,17 +180,30 @@
     setStyle(dock.querySelector('.ra-stale'), 'top', `${height - Math.max(6, 8 * baseScale)}px`);
     setStyle(dock.querySelector('.ra-stale'), 'font-size', `${Math.max(6, 8 * baseScale)}px`);
   }
-  function placeTray(desiredTop) {
+  function clearTrayStyles(element) {
+    for (const suffix of ['shift', 'gap', 'height']) {
+      element?.style.removeProperty(`--remoteai-dock-tray-${suffix}`);
+    }
+  }
+  function placeTray(desiredTop, mascotRect) {
     const tray = document.querySelector('[data-avatar-overlay-size="notification-tray"]');
     const nextHost = tray?.parentElement;
     if (trayHost !== nextHost) {
-      if (trayHost) trayHost.style.removeProperty('--remoteai-dock-tray-shift');
+      clearTrayStyles(trayHost);
       trayHost = nextHost;
       lastShift = 0;
     }
     if (tray && trayHost) {
       mark(trayHost, 'data-remoteai-dock-tray');
       const trayRect = tray.getBoundingClientRect();
+      // Anchors follow native drag transforms in layout, before the next JS animation frame.
+      // Only the actual card surface receives input; its displaced outer box stays transparent.
+      if (CSS.supports('position-area', 'bottom') && CSS.supports('position-try-fallbacks', '--above')) {
+        setStyle(trayHost, '--remoteai-dock-tray-gap', `${desiredTop - mascotRect.bottom}px`);
+        setStyle(trayHost, '--remoteai-dock-tray-height', `${Math.max(trayRect.height, tray.scrollHeight)}px`);
+        mark(trayHost, 'data-remoteai-dock-anchored');
+        return;
+      }
       const naturalTop = trayRect.top - lastShift;
       // Replace the former toolbar space, retaining the real activity cards and all their handlers.
       const shift = desiredTop - naturalTop;
@@ -201,8 +235,8 @@
     dock.dataset.stale = String(!!next.stale || !!next.error);
     copy = petDockCopy[next.language] ?? petDockCopy.en;
     const fallback = {
-      left: { label: copy.fiveHour, value: next.fiveHour ? `${Math.round(next.fiveHour.remaining)}%` : '--', percent: next.fiveHour?.remaining },
-      right: { label: copy.weekly, value: next.weekly ? `${Math.round(next.weekly.remaining)}%` : '--', percent: next.weekly?.remaining },
+      left: { label: next.average ? copy.averageFiveHour : copy.fiveHour, value: next.fiveHour ? `${Math.round(next.fiveHour.remaining)}%` : '--', percent: next.fiveHour?.remaining },
+      right: { label: next.average ? copy.averageWeekly : copy.weekly, value: next.weekly ? `${Math.round(next.weekly.remaining)}%` : '--', percent: next.weekly?.remaining },
     };
     const display = next.kind === 'api' ? {
       left: { label: copy.remaining, value: formatBalance(next.remaining),
@@ -247,7 +281,7 @@
     clearInterval(watchdog);
     dock.remove();
     style.remove();
-    if (trayHost) trayHost.style.removeProperty('--remoteai-dock-tray-shift');
+    clearTrayStyles(trayHost);
     for (const [element, attrs] of marked) {
       for (const [name, original] of attrs) {
         if (original === null) element.removeAttribute(name); else element.setAttribute(name, original);
@@ -266,6 +300,6 @@
       toolbarHidden: [...document.querySelectorAll('[data-quick-chat-presentation]')].every(e => getComputedStyle(e).visibility === 'hidden'),
       dockCount: document.querySelectorAll('#remoteai-pet-dock').length };
   }
-  window[KEY] = { version: 12, update, destroy, inspect };
+  window[KEY] = { version: 15, update, destroy, inspect };
   tick();
 })();

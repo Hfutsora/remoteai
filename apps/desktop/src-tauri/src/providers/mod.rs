@@ -1,6 +1,7 @@
 mod catalog_storage;
 mod group_accounts;
 mod group_display_names;
+mod model_order;
 pub(crate) use group_accounts::refresh_labels as refresh_group_account_labels;
 mod reasoning_defaults;
 pub(crate) use reasoning_defaults::known_model_reasoning_efforts;
@@ -29,6 +30,7 @@ mod tests {
     include!("tests/proxy_config.rs");
     include!("tests/presets.rs");
     include!("tests/model_catalog.rs");
+    include!("tests/model_order.rs");
     include!("tests/catalog_storage.rs");
     include!("tests/model_refresh.rs");
     include!("tests/reasoning_defaults.rs");

@@ -1,13 +1,15 @@
-import { Button, Switch } from 'antd';
+import { Button, Switch, Tooltip } from 'antd';
 import { PawPrint } from 'lucide-react';
 import { usePetDock } from '../../../../../shared/pet-dock/usePetDock';
 import { petDockApi } from '../../api/petDock';
+import { useQuotaDisplay } from '../../hooks/useQuotaDisplay';
 import type { Translate } from '../../i18n';
 import styles from './PetDockSettingsCard.module.less';
 
 export function PetDockSettingsCard({ t }: { t: Translate }) {
   const { status, saving, error, update, updateLabels, refresh } = usePetDock(petDockApi);
-  const unavailable = !status || saving || status.state === 'unsupported';
+  const average = useQuotaDisplay();
+  const unavailable = !status || saving || average.saving || status.state === 'unsupported';
   return <section className="settings-card">
     <div className="settings-icon"><PawPrint size={23} /></div>
     <div className="settings-card-content">
@@ -39,6 +41,17 @@ export function PetDockSettingsCard({ t }: { t: Translate }) {
             checkedChildren={t('settings.autoRefresh.on')} unCheckedChildren={t('settings.autoRefresh.off')}
             onChange={(showLabels) => void updateLabels(showLabels)} />
         </div>
+        <Tooltip title={t(average.error ? 'settings.petDock.saveError' : 'settings.quotaDisplay.hint')}
+          styles={{ root: { maxWidth: 400 } }}>
+          <div className={`settings-field ${styles.toggle}`}>
+            <label htmlFor="quota-display-all-accounts">{t('settings.quotaDisplay.compact')}</label>
+            <Switch id="quota-display-all-accounts" checked={average.status?.enabled ?? false}
+              aria-label={t('settings.quotaDisplay.average')} loading={!average.status || average.saving}
+              disabled={!average.supported || !average.status || average.saving || saving}
+              checkedChildren={t('settings.autoRefresh.on')} unCheckedChildren={t('settings.autoRefresh.off')}
+              onChange={(enabled) => void average.update(enabled)} />
+          </div>
+        </Tooltip>
       </div>
     </div>
   </section>;

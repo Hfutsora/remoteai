@@ -158,11 +158,12 @@ fn provider_group_model_refresh_request(
 }
 
 fn codex_visible_models(provider: &ProviderProfile) -> Vec<String> {
-    if provider.model_selection_controlled_by_codex {
-        provider.models.clone()
-    } else {
-        vec![CODEX_SWITCH_CONTROL_MODEL.to_string()]
+    if !provider.model_selection_controlled_by_codex {
+        return vec![CODEX_SWITCH_CONTROL_MODEL.to_string()];
     }
+    let mut models = provider.models.clone();
+    model_order::sort_models(&mut models);
+    models
 }
 
 pub(crate) fn codex_image_input_models(provider: &ProviderProfile) -> Vec<String> {
