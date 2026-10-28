@@ -75,7 +75,7 @@ export class LoungeController {
     this.unsubscribe = undefined;
     this.disconnect();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
-      status: this.session ? 'connecting' : 'signed-out', historyError: false });
+      status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
   private canRead() { return this.viewing && this.runtime.isVisible(); }
@@ -147,7 +147,7 @@ export class LoungeController {
       clearTimeout(pending.timer); pending.reject(new Error('client.lounge.sendFailed'));
     }
     this.pending.clear();
-    if (this.running) this.update({ status: 'connecting' });
+    if (this.running) this.update({ status: 'connecting', onlineCount: undefined });
   }
   private receive(data: unknown) {
     if (typeof data !== 'string' || data.length > MAX_FRAME_BYTES) return;
@@ -156,6 +156,10 @@ export class LoungeController {
     if (!frame || typeof frame !== 'object') return;
     this.received = Date.now();
     if (frame.type === 'policy' || frame.type === 'ready') this.receivePolicy(frame.policy);
+    if (['policy', 'ready', 'presence'].includes(String(frame.type)) && this.state.policy.moderator) {
+      const count = frame.onlineCount;
+      if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) this.update({ onlineCount: count });
+    }
     if (frame.type === 'moderated' || frame.type === 'rejected') {
       const pending = this.pending.get(String(frame.id));
       if (!pending) return;
@@ -260,7 +264,8 @@ export class LoungeController {
     const value = input as Record<string, unknown>;
     if (typeof value.moderator !== 'boolean' || value.mutedUntil !== null &&
       (typeof value.mutedUntil !== 'string' || !Number.isFinite(Date.parse(value.mutedUntil)))) return;
-    this.update({ policy: { moderator: value.moderator, mutedUntil: value.mutedUntil as string | null } });
+    this.update({ policy: { moderator: value.moderator, mutedUntil: value.mutedUntil as string | null },
+      onlineCount: value.moderator ? this.state.onlineCount : undefined });
   }
   private submit(frame: Record<string, unknown>): Promise<void> {
     const socket = this.socket;

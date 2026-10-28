@@ -1,13 +1,16 @@
-import { useRef, useState, type ClipboardEvent } from 'react';
+import { useEffect, useRef, useState, type ClipboardEvent } from 'react';
 import { History, ImagePlus, Send, Smile, X } from 'lucide-react';
 import { Popover } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
 import { prepareImage } from './images';
 import { LOUNGE_EMOJI } from './emoji';
+import type { LoungeReply } from './reply';
+import { LoungeReplyPreview } from './LoungeReplyPreview';
 
-export function LoungeComposer({ connected, send, onHistory, mobile = false }: {
+export function LoungeComposer({ connected, send, onHistory, mobile = false, reply, cancelReply }: {
   connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void; mobile?: boolean;
+  reply?: LoungeReply; cancelReply: (sent?: LoungeReply) => void;
 }) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -21,6 +24,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false }: {
   const adding = useRef(false);
   const submitting = useRef(false);
   const selection = useRef({ start: 0, end: 0 });
+  useEffect(() => { if (reply) textarea.current?.focus(); }, [reply]);
 
   const addImages = async (files: File[]) => {
     if (!files.length || adding.current || submitting.current) return;
@@ -42,7 +46,10 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false }: {
     if (!connected || submitting.current || adding.current || !text.trim() && !images.length) return;
     if ([...text].length > MAX_TEXT) { setError('client.lounge.tooLong'); return; }
     submitting.current = true; setBusy(true); setError('');
-    try { await send({ text, images }); setText(''); setImages([]); setNotice(''); }
+    try {
+      await send({ text, images, reply }); setText(''); setImages([]); setNotice('');
+      if (reply) cancelReply(reply);
+    }
     catch (failure) {
       setError(failure instanceof Error && failure.message === 'client.lounge.muted'
         ? failure.message : 'client.lounge.sendFailed');
@@ -85,6 +92,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false }: {
       <button type="button" className="lounge-history-button" onClick={onHistory}
         aria-label={t('client.lounge.history')} title={t('client.lounge.history')}><History size={22} /></button>
     </div>
+    {reply && <LoungeReplyPreview reply={reply} cancel={() => cancelReply()} />}
     {!!images.length && <div className="lounge-attachments">{images.map((image, index) => <div key={index}>
       <img src={image} alt={t('client.lounge.image')} />
       <button type="button" disabled={busy || processing} aria-label={t('client.lounge.removeImage')}

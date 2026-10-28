@@ -31,11 +31,13 @@ const message = (id: string): LoungeMessage => ({ type: 'message', id, text: `he
 
 it('preserves messages, images and avatars after reopening, without duplicating or sharing between accounts', async () => {
   const received = { ...message('picture'), images: ['data:image/png;base64,AAAA'],
+    reply: { id: 'old', senderId: 'other', account: 'other@example.test', text: 'quoted-only', imageCount: 1 },
     sender: { id: 'bob', account: 'Bob@example.test', avatar: 'data:image/png;base64,AAAA' } };
   await store().save(received); await store().save(received);
   const data = state.db!.export(); state.db!.close(); state.db = new SQL.Database(data);
   const restored = await nativeLoungeHistory('https://cloud.test', 'alice@example.test').page({ query: '' });
   expect(restored.messages).toEqual([received]);
+  expect((await store().page({ query: 'quoted-only' })).messages).toEqual([received]);
   expect(await nativeLoungeHistory('https://other.test', 'alice@example.test').page({ query: '' }))
     .toEqual({ messages: [] });
   expect(await nativeLoungeHistory('https://cloud.test', 'other@example.test').page({ query: '' }))
