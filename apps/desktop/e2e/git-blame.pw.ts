@@ -42,10 +42,11 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.keyboard.press('Control+z');
     await expect(gutter.locator('.pf-blame-label').first()).toContainText('Alice 中文');
     await gutter.locator('.pf-blame-label').first().hover();
-    const tooltip = gutter.locator('.pf-blame-tooltip').first();
+    const tooltip = editor.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
     expect((await tooltip.boundingBox())!.width).toBeLessThanOrEqual(400);
     await page.mouse.move(20, 20);
+    await expect(tooltip).toBeHidden();
     await page.screenshot({ path: info.outputPath(`git-blame-${mode}.png`) });
     await editor.getByRole('button', { name: '全部折叠', exact: true }).click();
     await expect(gutter.locator('.pf-blame-label')).toHaveCount(1);
@@ -107,7 +108,10 @@ for (const mode of ['local', 'remote', 'web']) {
     await expect(editor.locator('.pf-editor')).toHaveAttribute('data-plain-text', 'true');
     await (await menu(page, editor)).click();
     await expect(editor.locator('.pf-blame-gutter')).toContainText('Alice 中文');
+    await editor.locator('.pf-blame-label').first().hover();
+    await expect(editor.getByRole('tooltip')).toBeVisible();
     await editor.locator('.cm-scroller').evaluate(element => { element.scrollTop = 2000; });
+    await expect(editor.getByRole('tooltip')).toBeHidden();
     await expect(editor.locator('.pf-blame-label').first()).toBeVisible();
     expect(await editor.locator('.pf-blame-label').count()).toBeLessThan(100);
   });
