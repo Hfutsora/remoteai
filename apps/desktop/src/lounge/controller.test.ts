@@ -39,6 +39,19 @@ beforeEach(async () => {
 afterEach(() => { controller.stop(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('application lifetime lounge', () => {
+  it('shows current online counts only with moderator permission and clears stale counts', async () => {
+    const socket = Socket.instances[0]; socket.ready();
+    socket.frame({ type: 'presence', onlineCount: 5 });
+    expect(controller.snapshot().onlineCount).toBeUndefined();
+    socket.frame({ type: 'policy', policy: { moderator: true, mutedUntil: null }, onlineCount: 5 });
+    expect(controller.snapshot().onlineCount).toBe(5);
+    socket.frame({ type: 'presence', onlineCount: 6 });
+    expect(controller.snapshot().onlineCount).toBe(6); expect(controller.snapshot().unread).toBe(0);
+    socket.frame({ type: 'policy', policy: { moderator: false, mutedUntil: null } });
+    expect(controller.snapshot().onlineCount).toBeUndefined();
+    socket.frame({ type: 'policy', policy: { moderator: true, mutedUntil: null }, onlineCount: 6 });
+    socket.onclose?.(); expect(controller.snapshot().onlineCount).toBeUndefined();
+  });
   it('saves only the selected avatar and includes it with new messages across reconnects', async () => {
     const avatar = 'data:image/png;base64,AAAA';
     const socket = Socket.instances[0]; socket.ready();

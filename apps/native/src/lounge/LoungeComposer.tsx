@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from '../../../../shared/lounge/types';
@@ -7,9 +7,12 @@ import { displayText, t } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { pickLoungeImages } from './images';
 import { useLoungeStyles } from './styles';
+import type { LoungeReply } from '../../../../shared/lounge/reply';
+import { LoungeReplyPreview } from './LoungeReplyPreview';
 
-export function LoungeComposer({ connected, send, onHistory }: {
+export function LoungeComposer({ connected, send, onHistory, reply, cancelReply }: {
   connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void;
+  reply?: LoungeReply; cancelReply: (sent?: LoungeReply) => void;
 }) {
   const styles = useLoungeStyles();
   const color = useThemeColor();
@@ -22,6 +25,7 @@ export function LoungeComposer({ connected, send, onHistory }: {
   const [notice, setNotice] = useState(false);
   const locked = useRef(false);
   const input = useRef<TextInput>(null);
+  useEffect(() => { if (reply) input.current?.focus(); }, [reply]);
   const selection = useRef({ start: 0, end: 0 });
   const addImages = async () => {
     if (locked.current) return;
@@ -39,7 +43,10 @@ export function LoungeComposer({ connected, send, onHistory }: {
     if (locked.current || !connected || !text.trim() && !images.length) return;
     if ([...text].length > MAX_TEXT) { setError('client.lounge.tooLong'); return; }
     locked.current = true; setBusy(true); setError('');
-    try { await send({ text, images }); setText(''); setImages([]); setNotice(false); }
+    try {
+      await send({ text, images, reply }); setText(''); setImages([]); setNotice(false);
+      if (reply) cancelReply(reply);
+    }
     catch (failure) {
       setError(failure instanceof Error && failure.message === 'client.lounge.muted'
         ? failure.message : 'client.lounge.sendFailed');
@@ -60,6 +67,7 @@ export function LoungeComposer({ connected, send, onHistory }: {
         style={styles.iconButton} onPress={onHistory}>
         <Ionicons name="time-outline" size={24} color={color('#838892', 'muted')} /></Pressable>
     </View>
+    {reply && <LoungeReplyPreview reply={reply} cancel={() => cancelReply()} />}
     {emojiOpen && <View style={styles.emoji}>{LOUNGE_EMOJI.map(emoji => <Pressable key={emoji}
       accessibilityRole="button" accessibilityLabel={emoji} style={styles.iconButton} onPress={() => {
         const { start, end } = selection.current;

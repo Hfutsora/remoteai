@@ -1,5 +1,6 @@
 import { expect, type Page, type WebSocketRoute } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import type { LoungeReply } from '../../../shared/lounge/reply';
 
 export const pixel = 'data:image/png;base64,'
   + readFileSync(new URL('../src-tauri/icons/32x32.png', import.meta.url)).toString('base64');
@@ -9,7 +10,7 @@ export async function setupLounge(page: Page, web = false) {
   let authentications = 0;
   let ticketsAvailable = true;
   const moderation: { userId: string; minutes: number }[] = [];
-  const sent: { text: string; images: string[]; avatar?: string }[] = [];
+  const sent: { text: string; images: string[]; avatar?: string; reply?: LoungeReply }[] = [];
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
   await page.route('https://lounge.test/**', route => {
@@ -63,8 +64,9 @@ export async function setupLounge(page: Page, web = false) {
     sent, moderation, count: () => connections,
     offline: () => { ticketsAvailable = false; },
     policy: (moderator: boolean, mutedUntil: string | null = null) => socket.send(JSON.stringify({
-      type: 'policy', policy: { moderator, mutedUntil },
+      type: 'policy', policy: { moderator, mutedUntil }, ...(moderator ? { onlineCount: 2 } : {}),
     })),
+    presence: (onlineCount: number) => socket.send(JSON.stringify({ type: 'presence', onlineCount })),
     ready: () => expect.poll(() => authentications).toBeGreaterThan(0),
     close: () => socket.close({ code: 1001 }),
     push: (text: string, images: string[] = []) => socket.send(JSON.stringify({ type: 'message',

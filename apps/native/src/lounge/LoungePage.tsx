@@ -8,6 +8,7 @@ import { LoungeComposer } from './LoungeComposer';
 import { LoungeAvatarSettings, LoungeModeration, LoungePreview } from './LoungeDialogs';
 import { LoungeHistory } from './LoungeHistory';
 import { useLoungeStyles } from './styles';
+import { quoteMessage, type LoungeReply } from '../../../../shared/lounge/reply';
 
 export function LoungePage({ controller }: { controller: LoungeController }) {
   useLanguage();
@@ -16,6 +17,9 @@ export function LoungePage({ controller }: { controller: LoungeController }) {
   const list = useRef<FlatList<Message>>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [history, setHistory] = useState(false);
+  const [reply, setReply] = useState<LoungeReply>();
+  useEffect(() => setReply(undefined), [controller]);
+  const quote = (message: Message) => { setReply(quoteMessage(message)); setHistory(false); };
   const [avatar, setAvatar] = useState(false);
   const [preview, setPreview] = useState<string>();
   const [moderating, setModerating] = useState<LoungeAccount>();
@@ -38,6 +42,8 @@ export function LoungePage({ controller }: { controller: LoungeController }) {
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>{t('client.lounge.title')}</Text>
         <Text style={styles.muted}>{t(`client.lounge.${state.status}`)}</Text>
+        {state.policy.moderator && state.onlineCount !== undefined && <Text style={styles.muted}>
+          {t('client.lounge.onlineCount', { count: state.onlineCount })}</Text>}
       </View>
       {state.user && <Pressable accessibilityRole="button" accessibilityLabel={t('client.lounge.avatarSettings')}
         onPress={() => setAvatar(true)}><LoungeAvatar user={state.user} /></Pressable>}
@@ -48,6 +54,7 @@ export function LoungePage({ controller }: { controller: LoungeController }) {
       onLayout={scrollBottom} onContentSizeChange={scrollBottom} scrollEventThrottle={32}
       onScroll={({ nativeEvent: event }) => setAtBottom(event.contentOffset.y < 48)}
       renderItem={({ item }) => <LoungeMessage message={item} own={item.sender.id === state.user?.id}
+        reply={quote}
         manage={state.policy.moderator ? setModerating : undefined} preview={setPreview} onImageLoad={scrollBottom} />}
       ListEmptyComponent={<View style={styles.empty}><Text style={styles.title}>{t('client.lounge.empty')}</Text>
         <Text style={styles.muted}>{t('client.lounge.ephemeral')}</Text></View>} />
@@ -62,8 +69,9 @@ export function LoungePage({ controller }: { controller: LoungeController }) {
       <Pressable accessibilityRole="button" onPress={() => void controller.retryHistory()} style={styles.iconButton}>
         <Text style={styles.link}>{t('client.lounge.historyRetry')}</Text></Pressable></View>}
     <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted}
+      reply={reply} cancelReply={sent => setReply(current => !sent || current === sent ? undefined : current)}
       send={draft => controller.send(draft)} onHistory={() => setHistory(true)} />
-    {history && <LoungeHistory controller={controller} close={() => setHistory(false)} />}
+    {history && <LoungeHistory controller={controller} close={() => setHistory(false)} reply={quote} />}
     {avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatar(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}

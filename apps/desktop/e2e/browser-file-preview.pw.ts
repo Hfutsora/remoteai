@@ -28,6 +28,9 @@ async function checkPreviews(page: Page) {
   await expect(panel(page).getByRole('heading', { name: 'Edited preview' })).toBeVisible();
   await row(page, 'page.html').click();
   await expect(panel(page).frameLocator('iframe').getByRole('heading', { name: 'HTML preview' })).toBeVisible();
+  await expect(panel(page).frameLocator('iframe').getByRole('heading')).toHaveCSS('color', 'rgb(17, 119, 85)');
+  await expect.poll(() => panel(page).frameLocator('iframe').getByAltText('HTML asset')
+    .evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(200);
   expect(await page.evaluate(() => document.body.dataset.escaped)).toBeUndefined();
   await row(page, 'image.svg').click();
   await expect.poll(() => panel(page).locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(200);

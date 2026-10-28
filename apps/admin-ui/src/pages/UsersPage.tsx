@@ -3,6 +3,7 @@ import { Avatar, Badge, Button, Input, Select, Space, Table, Tag, Tooltip, Typog
 import type { TableColumnsType, TablePaginationConfig } from "antd";
 import { Database, Edit3, KeyRound, Link2, MessagesSquare, Plus, RefreshCw, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { LoungeUserModal, type LoungeAdminApi } from './LoungeUserModal';
+import { LoungePresence } from './LoungePresence';
 import { translateMessage } from '../../../../shared/localization/messages';
 import { labelForRole } from "../i18n";
 import { useI18n } from "../i18n-context";
@@ -148,6 +149,7 @@ export function UsersPage({
       {loungeUser && <LoungeUserModal key={loungeUser.id} user={loungeUser} api={api}
         self={loungeUser.id === profile?.id} close={() => setLoungeUser(undefined)} />}
       <h1 className="page-title">{t("users.title")}</h1>
+      <LoungePresence api={api} />
       <div className="summary-grid">
         <div className="metric"><span>{t("users.total")}</span><strong>{users.total}</strong></div>
         <div className="metric"><span>{t("users.activeCurrentPage")}</span><strong>{activeVisibleUsers}</strong></div>

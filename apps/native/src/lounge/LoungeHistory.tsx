@@ -3,13 +3,16 @@ import { FlatList, Modal, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLoungeHistory } from '../../../../shared/lounge/useLoungeHistory';
 import type { LoungeController } from '../../../../shared/lounge/controller';
+import type { LoungeMessage as Message } from '../../../../shared/lounge/types';
 import { t } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { LoungeMessage } from './LoungeMessage';
 import { LoungePreview } from './LoungeDialogs';
 import { useLoungeStyles } from './styles';
 
-export function LoungeHistory({ controller, close }: { controller: LoungeController; close: () => void }) {
+export function LoungeHistory({ controller, close, reply }: {
+  controller: LoungeController; close: () => void; reply: (message: Message) => void;
+}) {
   const styles = useLoungeStyles();
   const color = useThemeColor();
   const history = useLoungeHistory(controller, true);
@@ -33,7 +36,8 @@ export function LoungeHistory({ controller, close }: { controller: LoungeControl
     </View>
     <FlatList data={history.messages} keyExtractor={item => `${item.sender.id}:${item.id}`}
       contentContainerStyle={styles.list}
-      keyboardShouldPersistTaps="handled" renderItem={({ item }) => <LoungeMessage message={item} preview={setPreview} />}
+      keyboardShouldPersistTaps="handled"
+      renderItem={({ item }) => <LoungeMessage message={item} preview={setPreview} reply={reply} />}
       ListEmptyComponent={!history.loading && !history.error ? <Text style={styles.muted}>{t(history.query.trim()
         ? 'client.lounge.historyNoResults' : 'client.lounge.historyEmpty')}</Text> : null} />
     <View style={styles.header}>

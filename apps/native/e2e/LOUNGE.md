@@ -1,6 +1,6 @@
 # Mobile lounge verification
 
-The production native and mobile Web entry is Discover → Watercooler. Native uses the shared
+The production native and mobile Web entry is Discover → Online Chat. Native uses the shared
 controller with an AppState lifecycle adapter and Expo image handling. Account avatars and
 received messages are saved locally; SQLite history survives restart and supports paged search. The
 connection stays mounted while navigating other pages. Mobile operating systems may suspend
@@ -24,6 +24,7 @@ node apps/native/e2e/lounge-test.mjs
 ```
 
 The runner verifies discovery unread badges, sending, search, mute actions, foreground delivery,
+long-press quote replies, cancellation, locally restored quotes, moderator-only presence,
 language changes and session cleanup at system font scales 1.0 and 1.3. It also restarts the app
 with the ticket endpoint unavailable and searches a uniquely sent message, proving local persistence
 without server replay or historical unread counts. It restores the previous

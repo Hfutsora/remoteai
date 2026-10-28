@@ -57,7 +57,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await relay.ready();
     relay.push('先收到的消息');
     await expect(page.locator('.lounge-nav-badge')).toHaveText('1');
-    const menu = page.getByRole('button', { name: '闲聊摸鱼', exact: true });
+    const menu = page.getByRole('button', { name: '在线交流', exact: true });
     const downloads = page.getByRole('button', { name: '下载管理', exact: true }).first();
     const menuBox = await menu.boundingBox();
     const downloadBox = await downloads.boundingBox();
@@ -94,7 +94,7 @@ for (const mode of ['local', 'remote', 'web']) {
 test('compresses photos larger than 1 MB before sending, and switches offline translations in dark mode', async ({ page }) => {
   const relay = await setupLounge(page);
   await page.goto('/e2e/lounge-harness.html?dark'); await relay.ready();
-  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await page.getByRole('button', { name: '在线交流', exact: true }).click();
   const data = await page.evaluate(async () => {
     const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 1200;
     const context = canvas.getContext('2d')!;
@@ -125,7 +125,7 @@ test('moderators can mute and unmute an account; mute updates disable sending wi
     await page.goto('/e2e/lounge-harness.html'); await relay.ready();
     relay.policy(true);
     relay.push('可以管理这位用户');
-    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await page.getByRole('button', { name: '在线交流', exact: true }).click();
     await page.getByRole('button', { name: '管理 bob@example.test 的发言权限' }).click();
     await page.getByRole('spinbutton', { name: '禁言时长（分钟）' }).fill('30');
     await page.getByRole('button', { name: /^禁\s*言$/ }).click();
@@ -153,6 +153,7 @@ test('admin user settings grant lounge moderation and save an explicit mute dura
   await page.getByRole('button', { name: /^保\s*存$/ }).click();
   await expect.poll(() => page.evaluate(() => window.loungeAdminFixture.writes))
     .toEqual([{ moderator: true, minutes: 120 }]);
+  await expect(page.getByText('在线交流：7 人在线', { exact: true })).toBeVisible();
 });
 
 for (const mode of ['local', 'remote', 'web']) {
@@ -160,7 +161,7 @@ for (const mode of ['local', 'remote', 'web']) {
     const relay = await setupLounge(page, mode === 'web');
     await page.goto(mode === 'web' ? 'http://127.0.0.1:1486/web/' : `/e2e/lounge-harness.html?mode=${mode}`);
     await relay.ready();
-    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await page.getByRole('button', { name: '在线交流', exact: true }).click();
     await page.getByRole('button', { name: '设置头像', exact: true }).click();
     await page.locator('.lounge-avatar-settings input[type=file]').setInputFiles({ name: 'avatar.png',
       mimeType: 'image/png', buffer: Buffer.from(pixel.split(',')[1], 'base64') });
@@ -204,7 +205,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
     await page.reload();
     await expect.poll(relay.count).toBe(2);
-    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await page.getByRole('button', { name: '在线交流', exact: true }).click();
     await expect(page.locator('.lounge-heading .lounge-avatar img')).toBeVisible();
     await page.getByRole('button', { name: '设置头像', exact: true }).click();
     await page.getByRole('button', { name: '恢复默认头像' }).click();
@@ -218,7 +219,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await expect(page.locator('.lounge-history-message .lounge-image img')).toBeVisible();
     await page.evaluate(() => sessionStorage.setItem('lounge-test-offline', '1'));
     relay.offline(); await page.reload();
-    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await page.getByRole('button', { name: '在线交流', exact: true }).click();
     await expect(page.getByText('喝杯咖啡 ☕', { exact: true })).toBeVisible();
     await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
     await historyButton.click(); await search.fill('hello');
@@ -232,7 +233,7 @@ test('durable history searches beyond the recent 200 and isolates accounts with 
   await page.goto('/e2e/lounge-harness.html'); await relay.ready();
   relay.push('old-only-keyword', [pixel]);
   for (let index = 0; index < 210; index++) relay.push(`bulk-${index}`);
-  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await page.getByRole('button', { name: '在线交流', exact: true }).click();
   await expect(page.locator('.lounge-message')).toHaveCount(200);
   await expect(page.getByText('old-only-keyword', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '历史记录', exact: true }).click();
@@ -250,11 +251,11 @@ test('durable history searches beyond the recent 200 and isolates accounts with 
   await expect(page.locator('.lounge-history-message')).toHaveCount(1);
   await expect(page.locator('.lounge-history-message .lounge-image img')).toBeVisible();
   await page.goto('/e2e/lounge-harness.html?account=other@example.test');
-  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await page.getByRole('button', { name: '在线交流', exact: true }).click();
   await page.getByRole('button', { name: '历史记录', exact: true }).click();
   await expect(page.getByText('暂时没有聊天记录')).toBeVisible();
   await page.goto('/e2e/lounge-harness.html');
-  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await page.getByRole('button', { name: '在线交流', exact: true }).click();
   await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
   await page.getByRole('button', { name: '历史记录', exact: true }).click();
   await search.fill('old-only');

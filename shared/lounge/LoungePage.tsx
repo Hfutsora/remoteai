@@ -4,7 +4,7 @@ import { Modal } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
 import { localeForLanguage } from '../localization/language';
-import { type LoungeAccount } from './types';
+import { type LoungeAccount, type LoungeMessage } from './types';
 import type { LoungeController } from './controller';
 import { LoungeComposer } from './LoungeComposer';
 import { LoungeModeration } from './LoungeModeration';
@@ -12,6 +12,8 @@ import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeAvatarSettings } from './LoungeAvatarSettings';
 import { LoungeMessageBody } from './LoungeMessageBody';
 import { LoungeHistory } from './LoungeHistory';
+import { LoungeMessageMenu } from './LoungeMessageMenu';
+import { quoteMessage, type LoungeReply } from './reply';
 import './lounge.css';
 
 export function LoungePage({ controller, onLogin, mobile = false }: {
@@ -25,6 +27,9 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
   const [moderating, setModerating] = useState<LoungeAccount>();
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [reply, setReply] = useState<LoungeReply>();
+  useEffect(() => setReply(undefined), [controller]);
+  const quote = (message: LoungeMessage) => { setReply(quoteMessage(message)); setHistoryOpen(false); };
   const [now, setNow] = useState(Date.now);
   const mutedUntil = state.policy.mutedUntil;
   const muted = !!mutedUntil && Date.parse(mutedUntil) > now;
@@ -45,6 +50,8 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
     <header className="lounge-heading"><div><Coffee size={21} /><h1>{t('client.lounge.title')}</h1></div>
       <div className="lounge-heading-actions"><span className={`lounge-connection is-${state.status}`} role="status">
         <i />{t(`client.lounge.${state.status}`)}</span>
+        {state.policy.moderator && state.onlineCount !== undefined && <span className="lounge-online-count">
+          {t('client.lounge.onlineCount', { count: state.onlineCount })}</span>}
         {state.user && <button type="button" className="lounge-avatar-trigger" onClick={() => setAvatarOpen(true)}
           aria-label={t('client.lounge.avatarSettings')} title={t('client.lounge.avatarSettings')}>
           <LoungeAvatar user={state.user} /></button>}</div></header>
@@ -66,7 +73,8 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
           {showTime && <div className="lounge-time"><time dateTime={message.sentAt}>
             {new Intl.DateTimeFormat(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' })
               .format(new Date(message.sentAt))}</time></div>}
-          <article className={`lounge-message${own ? ' is-own' : ''}`}>
+          <LoungeMessageMenu message={message} reply={quote}>
+          <article className={`lounge-message${own ? ' is-own' : ''}`} tabIndex={0}>
             <LoungeAvatar user={message.sender} />
             <div className="lounge-message-main">
               {state.policy.moderator && !own ? <button type="button" className="lounge-account lounge-account-action"
@@ -77,6 +85,7 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
                 onImageLoad={() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; }} />
             </div>
           </article>
+          </LoungeMessageMenu>
         </div>;
       })}
     </div>
@@ -89,8 +98,10 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
     {state.historyError && <p className="lounge-history-warning" role="alert">{t('client.lounge.historySaveFailed')}
       <button type="button" onClick={() => void controller.retryHistory()}>{t('client.lounge.historyRetry')}</button></p>}
     <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted} mobile={mobile}
+      reply={reply} cancelReply={sent => setReply(current => !sent || current === sent ? undefined : current)}
       send={draft => controller.send(draft)} onHistory={() => setHistoryOpen(true)} />
-    <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller} preview={setPreview} />
+    <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller}
+      preview={setPreview} reply={quote} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatarOpen(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}
