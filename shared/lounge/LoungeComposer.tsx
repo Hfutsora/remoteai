@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type ReactNode } from 'react';
-import { ArrowUp, History, ImagePlus, Plus, Send, X } from 'lucide-react';
+import { ArrowUp, History, ImagePlus, Keyboard, Plus, Send, Smile, X } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
 import { prepareImage } from './images';
@@ -9,6 +9,8 @@ import type { LoungeReply } from './reply';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
 import { useComposerDraft, type ComposerDraftState } from './useComposerDraft';
 import { MobileLoungeSheet } from './MobileLoungeSheet';
+import { MobileLoungeEmojiPanel, useMobileEmojiHeight } from './MobileLoungeEmojiPanel';
+import { insertLoungeEmoji } from './emoji';
 
 export function LoungeComposer({ connected, send, onHistory, mobile = false, reply, cancelReply,
   draftState, extraActions, onOverlayChange }: {
@@ -21,18 +23,27 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   const [extras, setExtras] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   useEffect(() => {
-    onOverlayChange?.(extras || emojiOpen);
+    onOverlayChange?.(extras || !mobile && emojiOpen);
     return () => onOverlayChange?.(false);
-  }, [extras, emojiOpen, onOverlayChange]);
+  }, [extras, emojiOpen, mobile, onOverlayChange]);
   const [busy, setBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const emojiHeight = useMobileEmojiHeight(mobile, textarea);
   const picker = useRef<HTMLInputElement>(null);
   const adding = useRef(false);
   const submitting = useRef(false);
-  const selection = useRef({ start: 0, end: 0 });
+  const selection = useRef({ start: text.length, end: text.length });
+  useEffect(() => {
+    if (!mobile || !emojiOpen) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setEmojiOpen(false);
+    };
+    document.addEventListener('keydown', escape);
+    return () => document.removeEventListener('keydown', escape);
+  }, [mobile, emojiOpen]);
   useEffect(() => { if (reply) textarea.current?.focus(); }, [reply]);
   useEffect(() => {
     if (!mobile || !textarea.current) return;
@@ -71,12 +82,20 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
     finally { submitting.current = false; setBusy(false); }
   };
   const insertEmoji = (emoji: string) => {
-    const { start, end } = selection.current;
-    setText(value => value.slice(0, start) + emoji + value.slice(end));
-    selection.current = { start: start + emoji.length, end: start + emoji.length };
+    const next = insertLoungeEmoji(text, selection.current, emoji);
+    selection.current = next.selection;
+    setText(next.text);
     requestAnimationFrame(() => {
-      textarea.current?.focus(); textarea.current?.setSelectionRange(start + emoji.length, start + emoji.length);
+      if (!mobile) textarea.current?.focus();
+      textarea.current?.setSelectionRange(next.selection.start, next.selection.end);
     });
+  };
+  const toggleEmoji = () => {
+    if (emojiOpen) { setEmojiOpen(false); textarea.current?.focus(); return; }
+    if (textarea.current) selection.current = {
+      start: textarea.current.selectionStart, end: textarea.current.selectionEnd,
+    };
+    textarea.current?.blur(); setExtras(false); setEmojiOpen(true);
   };
   const paste = (event: ClipboardEvent) => {
     const files = Array.from(event.clipboardData.files).filter(file => file.type.startsWith('image/'));
@@ -90,7 +109,12 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   return <section className="lounge-composer" onDragOver={event => event.preventDefault()}
     onDrop={event => { event.preventDefault(); void addImages(Array.from(event.dataTransfer.files)); }}>
     <div className="lounge-toolbar">
-      <LoungeEmojiPicker disabled={busy} insert={insertEmoji} onOpenChange={setEmojiOpen} />
+      {mobile ? <div className="lounge-emoji-control">
+        <button type="button" disabled={busy} aria-label={t('client.lounge.emoji')}
+          aria-expanded={emojiOpen} aria-controls={emojiOpen ? 'lounge-mobile-emoji' : undefined}
+          onPointerDown={event => event.preventDefault()} onClick={toggleEmoji}>
+          {emojiOpen ? <Keyboard size={22} /> : <Smile size={22} />}</button>
+      </div> : <LoungeEmojiPicker disabled={busy} insert={insertEmoji} onOpenChange={setEmojiOpen} />}
       {!mobile && <button type="button" disabled={busy || processing} aria-label={t('client.lounge.addImage')}
         title={t(mobile ? 'client.lounge.mobileImageHint' : 'client.lounge.imageHint')}
         onClick={() => picker.current?.click()}><ImagePlus size={22} /></button>}
@@ -107,10 +131,11 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
         onClick={() => setImages(value => value.filter((_, position) => position !== index))}><X size={14} /></button>
     </div>)}</div>}
     <textarea ref={textarea} rows={mobile ? 1 : undefined} value={text}
+      onFocus={() => { if (mobile) setEmojiOpen(false); }}
       aria-label={t('client.lounge.message')}
       placeholder={t(mobile ? 'client.lounge.mobilePlaceholder' : 'client.lounge.placeholder')}
       onChange={event => setText(event.target.value)}
-      onSelect={event => { selection.current = { start: event.currentTarget.selectionStart,
+      onSelect={event => { if (mobile && emojiOpen) return; selection.current = { start: event.currentTarget.selectionStart,
         end: event.currentTarget.selectionEnd }; }} onPaste={paste}
       onKeyDown={event => {
         if (!mobile && event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
@@ -120,7 +145,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
     {error && <p className="lounge-composer-error" role="alert">{t(error)}</p>}
     {notice && <p className="lounge-composer-notice">{t(notice)}</p>}
     {mobile && <button type="button" className="lounge-more" aria-label={t('client.lounge.more')}
-      onClick={() => setExtras(true)}><Plus size={24} /></button>}
+      onClick={() => { textarea.current?.blur(); setEmojiOpen(false); setExtras(true); }}><Plus size={24} /></button>}
     <footer>{!mobile && <small>{t('client.lounge.sendHint')}</small>}
       <button className="lounge-send" type="button" onClick={() => void submit()}
         onPointerDown={event => {
@@ -130,6 +155,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
         disabled={!connected || busy || processing || !text.trim() && !images.length}>
         {mobile ? <ArrowUp size={22} /> : <><Send size={16} />{t(busy ? 'client.lounge.sending' : 'client.lounge.send')}</>}
       </button></footer>
+    {mobile && emojiOpen && <MobileLoungeEmojiPanel height={emojiHeight} insert={insertEmoji} />}
     {mobile && extras && <MobileLoungeSheet title={t('client.lounge.more')} close={() => setExtras(false)}>
       <div className="lounge-extra-actions">
         <button type="button" disabled={busy || processing} onClick={() => {

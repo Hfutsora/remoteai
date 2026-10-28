@@ -80,6 +80,16 @@
 .lounge-mobile .lounge-reply-draft { grid-column: 1 / -1; grid-row: 1; margin: 0; }
 .lounge-mobile .lounge-attachments { grid-column: 1 / -1; grid-row: 2; }
 .lounge-mobile .lounge-composer-error, .lounge-mobile .lounge-composer-notice { grid-column: 1 / -1; margin: 0; }
+.lounge-mobile .lounge-composer-error { grid-row: 5; }
+.lounge-mobile .lounge-composer-notice { grid-row: 6; }
+.lounge-mobile .lounge-emoji-control > button[aria-expanded="true"] { color: var(--lounge-blue); }
+.lounge-mobile-emoji { grid-column: 1 / -1; grid-row: 7; min-height: 0; overflow-y: auto;
+  overscroll-behavior: contain; margin: 0 -10px -10px; background: var(--lounge-paper); }
+.lounge-mobile-emoji-content { padding: 14px 12px 12px; }
+.lounge-mobile-emoji-content > p { margin: 0 0 8px; font-size: 13px; line-height: 24px; color: var(--lounge-muted); }
+.lounge-mobile-emoji-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.lounge-mobile-emoji-grid button { min-width: 0; min-height: 52px; border: 0; padding: 6px 0;
+  background: transparent; font-size: 28px; line-height: 36px; touch-action: manipulation; }
 .lounge-mobile .lounge-jump { position: static; align-self: center; margin: 4px; flex-shrink: 0; }
 .lounge-chat-list { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .lounge-mobile-heading .lounge-new-chat { margin-left: auto; color: var(--lounge-blue); font-size: 12px; }

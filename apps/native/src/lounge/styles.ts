@@ -47,8 +47,6 @@ export const useLoungeStyles = createLoungeStyles(color => ({
     borderRadius: 14 },
   error: { ...textMetrics(13, 21), color: color('#dc5454', 'danger'), maxWidth: 400 },
   notice: { paddingHorizontal: 16, paddingVertical: 4, maxWidth: 400 },
-  emoji: { flexDirection: 'row', flexWrap: 'wrap', maxWidth: 400 },
-  emojiText: { ...textMetrics(24, 32) },
   overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16, backgroundColor: '#0008' },
   dialog: { width: '100%', maxWidth: 400, maxHeight: '90%', borderRadius: 16, padding: 20,
     backgroundColor: color('#fff', 'surface'), gap: 12 },

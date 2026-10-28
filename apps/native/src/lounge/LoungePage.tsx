@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackHandler, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { LoungeController } from '../../../../shared/lounge/controller';
@@ -24,6 +24,7 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
   const model = useMobileLounge(controller);
   const { state, contact } = model;
   const list = useRef<FlatList<Message>>(null);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const scrollBottom = () => { if (model.atBottom) list.current?.scrollToOffset({ offset: 0, animated: false }); };
   const back = () => {
     if (model.chats) model.closeChats();
@@ -34,7 +35,8 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => { back(); return true; });
     return () => subscription.remove();
   }, [model.chats, model.fromChats, onBack]);
-  return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+  return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}>
     {model.chats ? <LoungeChats model={model} controller={controller} /> : <>
       <LoungeHeading model={model} back={back} />
       <FlatList key={`thread:${state.conversation}`} ref={list} inverted data={[...state.messages].reverse()}
@@ -78,6 +80,7 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
         <Text style={styles.retentionText}>{t(contact ? 'client.lounge.directRetention' : 'client.lounge.retention')}</Text>
       </Pressable>
       <LoungeComposer key={`composer:${state.conversation}`} draftState={model.draftState} reply={model.draftState.draft.reply}
+        viewportHeight={viewportHeight}
         onOverlayChange={model.setComposerOverlay}
         cancelReply={model.cancelReply}
         connected={state.status === 'connected' && !model.muted && (!state.conversation || state.directAvailable)}

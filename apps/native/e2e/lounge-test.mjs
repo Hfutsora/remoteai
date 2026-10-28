@@ -9,6 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import WebSocket from 'ws';
 import { verifyNativeAvatar } from './lounge-avatar-check.mjs';
 import { verifyNativeImage } from './lounge-image-check.mjs';
+import { verifyNativeEmoji } from './lounge-emoji-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -83,7 +84,8 @@ async function nodes() {
   await adb('shell', 'uiautomator', 'dump', '/sdcard/lounge-layout.xml');
   const xml = await adb('shell', 'cat', '/sdcard/lounge-layout.xml');
   return [...xml.matchAll(/<node\b([^>]*)>/g)].map(match => Object.fromEntries(
-    [...match[1].matchAll(/([\w-]+)="([^"]*)"/g)].map(attribute => [attribute[1], attribute[2]])));
+    [...match[1].matchAll(/([\w-]+)="([^"]*)"/g)].map(attribute => [attribute[1], attribute[2]
+      .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))])));
 }
 async function find(label) {
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -155,6 +157,10 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('聊天');
+    if (process.env.LOUNGE_EMOJI_ONLY === '1') {
+      await verifyNativeEmoji({ adb, tap, find, nodes, screenshot, scale, sent });
+      continue;
+    }
     if (process.env.LOUNGE_IMAGE_ONLY === '1') {
       await verifyNativeImage({ adb, tap, find, screenshot, output, scale });
       continue;
