@@ -47,14 +47,20 @@ fn configure(command: &mut CommandBuilder) {
 
 // Invoke npm's JS entry directly: npm.cmd would reinterpret metacharacters in a script name.
 // npm installs npm-cli.js next to its Windows launchers, including npm installed through nvm.
+// Exact application lookups can return multiple installations; use the first PATH match.
+// Node reads the script name from the environment because Windows PowerShell strips native argument quotes.
 #[cfg(windows)]
 const WINDOWS_RUN: &str = r#"$ErrorActionPreference = 'Stop';
-$npm = (Get-Command npm.cmd -CommandType Application -ErrorAction Stop).Source;
+$npm = (Get-Command npm.cmd -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source;
 $directory = Split-Path -LiteralPath $npm;
 $cli = Join-Path $directory 'node_modules/npm/bin/npm-cli.js';
 $node = Join-Path $directory 'node.exe';
-if (!(Test-Path -LiteralPath $node)) { $node = (Get-Command node.exe -CommandType Application).Source };
-& $node $cli run -- $env:REMOTE_AI_NPM_SCRIPT;
+if (!(Test-Path -LiteralPath $node)) {
+  $node = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+};
+$env:REMOTE_AI_NPM_CLI_PATH = $cli;
+$run = 'process.argv.push(process.env.REMOTE_AI_NPM_SCRIPT);require(process.env.REMOTE_AI_NPM_CLI_PATH)';
+& $node -e $run $cli run --;
 exit $LASTEXITCODE"#;
 
 #[cfg(not(windows))]
@@ -99,3 +105,7 @@ pub(super) fn stop_tree(id: u32) -> std::io::Result<()> {
 #[cfg(test)]
 #[path = "npm_tests.rs"]
 mod tests;
+
+#[cfg(all(test, windows))]
+#[path = "npm_windows_tests.rs"]
+mod windows_tests;
