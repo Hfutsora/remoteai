@@ -211,6 +211,52 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.getByRole('button', { name: /^保\s*存$/ }).click();
     await expect(page.locator('.lounge-heading .lounge-avatar')).toHaveText('AL');
     await historyButton.click();
-    await expect(page.getByText('暂时没有聊天记录')).toBeVisible();
+    await search.fill('hello');
+    await expect(page.locator('.lounge-history-message')).toHaveCount(1);
+    await expect(page.locator('.lounge-history-message .lounge-avatar img')).toBeVisible();
+    await search.fill('咖啡');
+    await expect(page.locator('.lounge-history-message .lounge-image img')).toBeVisible();
+    await page.evaluate(() => sessionStorage.setItem('lounge-test-offline', '1'));
+    relay.offline(); await page.reload();
+    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await expect(page.getByText('喝杯咖啡 ☕', { exact: true })).toBeVisible();
+    await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
+    await historyButton.click(); await search.fill('hello');
+    await expect(page.locator('.lounge-history-message')).toContainText('HELLO 我的头像');
+    expect(relay.count()).toBe(2);
   });
 }
+
+test('durable history searches beyond the recent 200 and isolates accounts with cursor pagination', async ({ page }) => {
+  const relay = await setupLounge(page);
+  await page.goto('/e2e/lounge-harness.html'); await relay.ready();
+  relay.push('old-only-keyword', [pixel]);
+  for (let index = 0; index < 210; index++) relay.push(`bulk-${index}`);
+  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await expect(page.locator('.lounge-message')).toHaveCount(200);
+  await expect(page.getByText('old-only-keyword', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '历史记录', exact: true }).click();
+  await expect(page.locator('.lounge-history-message')).toHaveCount(50);
+  const first = await page.locator('.lounge-history-message .lounge-text').allTextContents();
+  await page.getByRole('button', { name: '下一页' }).click();
+  await expect.poll(() => page.locator('.lounge-history-message .lounge-text').first().textContent())
+    .not.toBe(first[0]);
+  const second = await page.locator('.lounge-history-message .lounge-text').allTextContents();
+  expect(second.some(text => first.includes(text))).toBe(false);
+  await page.getByRole('button', { name: '上一页' }).click();
+  await expect(page.locator('.lounge-history-message .lounge-text').first()).toHaveText(first[0]);
+  const search = page.getByRole('textbox', { name: '搜索消息或账户' });
+  await search.fill('ＢＯＢ old-only');
+  await expect(page.locator('.lounge-history-message')).toHaveCount(1);
+  await expect(page.locator('.lounge-history-message .lounge-image img')).toBeVisible();
+  await page.goto('/e2e/lounge-harness.html?account=other@example.test');
+  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await page.getByRole('button', { name: '历史记录', exact: true }).click();
+  await expect(page.getByText('暂时没有聊天记录')).toBeVisible();
+  await page.goto('/e2e/lounge-harness.html');
+  await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+  await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
+  await page.getByRole('button', { name: '历史记录', exact: true }).click();
+  await search.fill('old-only');
+  await expect(page.locator('.lounge-history-message')).toContainText('old-only-keyword');
+});
