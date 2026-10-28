@@ -85,8 +85,9 @@ pub(super) fn stop_tree(id: u32) -> std::io::Result<()> {
 #[cfg(not(windows))]
 pub(super) fn stop_tree(id: u32) -> std::io::Result<()> {
     // portable-pty creates a new session whose process group is this child's PID.
+    // End option parsing so procps kill treats the negative ID as a process group, not a signal.
     let status = std::process::Command::new("/bin/kill")
-        .args(["-KILL", &format!("-{id}")])
+        .args(["-KILL", "--", &format!("-{id}")])
         .status()?;
     if status.success() {
         Ok(())
