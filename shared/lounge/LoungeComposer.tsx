@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ClipboardEvent } from 'react';
-import { History, ImagePlus, Send, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ClipboardEvent, type ReactNode } from 'react';
+import { ArrowUp, History, ImagePlus, Plus, Send, X } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
 import { prepareImage } from './images';
@@ -7,13 +7,23 @@ import { LoungeEmojiPicker } from './LoungeEmojiPicker';
 import { sendError } from './contacts';
 import type { LoungeReply } from './reply';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
+import { useComposerDraft, type ComposerDraftState } from './useComposerDraft';
+import { MobileLoungeSheet } from './MobileLoungeSheet';
 
-export function LoungeComposer({ connected, send, onHistory, mobile = false, reply, cancelReply }: {
+export function LoungeComposer({ connected, send, onHistory, mobile = false, reply, cancelReply,
+  draftState, extraActions, onOverlayChange }: {
   connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void; mobile?: boolean;
   reply?: LoungeReply; cancelReply: (sent?: LoungeReply) => void;
+  draftState?: ComposerDraftState; extraActions?: (close: () => void) => ReactNode;
+  onOverlayChange?: (open: boolean) => void;
 }) {
-  const [text, setText] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const { text, setText, images, setImages, clear } = useComposerDraft(draftState);
+  const [extras, setExtras] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  useEffect(() => {
+    onOverlayChange?.(extras || emojiOpen);
+    return () => onOverlayChange?.(false);
+  }, [extras, emojiOpen, onOverlayChange]);
   const [busy, setBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +34,11 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   const submitting = useRef(false);
   const selection = useRef({ start: 0, end: 0 });
   useEffect(() => { if (reply) textarea.current?.focus(); }, [reply]);
+  useEffect(() => {
+    if (!mobile || !textarea.current) return;
+    textarea.current.style.height = '0px';
+    textarea.current.style.height = `${Math.min(132, Math.max(44, textarea.current.scrollHeight))}px`;
+  }, [mobile, text]);
 
   const addImages = async (files: File[]) => {
     if (!files.length || adding.current || submitting.current) return;
@@ -46,8 +61,8 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
     if ([...text].length > MAX_TEXT) { setError('client.lounge.tooLong'); return; }
     submitting.current = true; setBusy(true); setError('');
     try {
-      await send({ text, images, reply }); setText(''); setImages([]); setNotice('');
-      if (reply) cancelReply(reply);
+      await send({ text, images, reply }); clear(); setNotice('');
+      if (reply && !draftState) cancelReply(reply);
     }
     catch (failure) {
       setError(sendError(failure));
@@ -74,15 +89,15 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   return <section className="lounge-composer" onDragOver={event => event.preventDefault()}
     onDrop={event => { event.preventDefault(); void addImages(Array.from(event.dataTransfer.files)); }}>
     <div className="lounge-toolbar">
-      <LoungeEmojiPicker disabled={busy} insert={insertEmoji} />
-      <button type="button" disabled={busy || processing} aria-label={t('client.lounge.addImage')}
+      <LoungeEmojiPicker disabled={busy} insert={insertEmoji} onOpenChange={setEmojiOpen} />
+      {!mobile && <button type="button" disabled={busy || processing} aria-label={t('client.lounge.addImage')}
         title={t(mobile ? 'client.lounge.mobileImageHint' : 'client.lounge.imageHint')}
-        onClick={() => picker.current?.click()}><ImagePlus size={22} /></button>
+        onClick={() => picker.current?.click()}><ImagePlus size={22} /></button>}
       <input ref={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
         onChange={event => { void addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
       {processing && <span role="status">{t('client.lounge.preparingImage')}</span>}
-      <button type="button" className="lounge-history-button" onClick={onHistory}
-        aria-label={t('client.lounge.history')} title={t('client.lounge.history')}><History size={22} /></button>
+      {!mobile && <button type="button" className="lounge-history-button" onClick={onHistory}
+        aria-label={t('client.lounge.history')} title={t('client.lounge.history')}><History size={22} /></button>}
     </div>
     {reply && <LoungeReplyPreview reply={reply} cancel={() => cancelReply()} />}
     {!!images.length && <div className="lounge-attachments">{images.map((image, index) => <div key={index}>
@@ -90,7 +105,8 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
       <button type="button" disabled={busy || processing} aria-label={t('client.lounge.removeImage')}
         onClick={() => setImages(value => value.filter((_, position) => position !== index))}><X size={14} /></button>
     </div>)}</div>}
-    <textarea ref={textarea} value={text} disabled={busy} aria-label={t('client.lounge.message')}
+    <textarea ref={textarea} rows={mobile ? 1 : undefined} value={text} disabled={busy}
+      aria-label={t('client.lounge.message')}
       placeholder={t(mobile ? 'client.lounge.mobilePlaceholder' : 'client.lounge.placeholder')}
       onChange={event => setText(event.target.value)}
       onSelect={event => { selection.current = { start: event.currentTarget.selectionStart,
@@ -102,10 +118,23 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
       }} />
     {error && <p className="lounge-composer-error" role="alert">{t(error)}</p>}
     {notice && <p className="lounge-composer-notice">{t(notice)}</p>}
-    <footer><small>{t('client.lounge.sendHint')}</small>
+    {mobile && <button type="button" className="lounge-more" aria-label={t('client.lounge.more')}
+      onClick={() => setExtras(true)}><Plus size={24} /></button>}
+    <footer>{!mobile && <small>{t('client.lounge.sendHint')}</small>}
       <button className="lounge-send" type="button" onClick={() => void submit()}
+        aria-label={t(busy ? 'client.lounge.sending' : 'client.lounge.send')}
         disabled={!connected || busy || processing || !text.trim() && !images.length}>
-        <Send size={16} />{t(busy ? 'client.lounge.sending' : 'client.lounge.send')}
+        {mobile ? <ArrowUp size={22} /> : <><Send size={16} />{t(busy ? 'client.lounge.sending' : 'client.lounge.send')}</>}
       </button></footer>
+    {mobile && extras && <MobileLoungeSheet title={t('client.lounge.more')} close={() => setExtras(false)}>
+      <div className="lounge-extra-actions">
+        <button type="button" disabled={busy || processing} onClick={() => {
+          setExtras(false); picker.current?.click();
+        }}><ImagePlus size={24} />{t('client.lounge.addImage')}</button>
+        <button type="button" onClick={() => { setExtras(false); onHistory(); }}>
+          <History size={24} />{t('client.lounge.history')}</button>
+        {extraActions?.(() => setExtras(false))}
+      </div>
+    </MobileLoungeSheet>}
   </section>;
 }

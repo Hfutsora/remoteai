@@ -75,6 +75,13 @@ export class LoungeController {
     });
   }
   snapshot = () => this.state;
+  /** Latest locally available message for a conversation-list preview. */
+  conversationPreview(conversation: string) {
+    for (let index = this.recent.length - 1; index >= 0; index--) {
+      const message = this.recent[index];
+      if ((message.conversation ?? '') === conversation) return message;
+    }
+  }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
   private update(value: Partial<LoungeSnapshot>) {
     this.state = { ...this.state, ...value };

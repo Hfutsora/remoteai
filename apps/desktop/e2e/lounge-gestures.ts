@@ -22,6 +22,8 @@ export async function expectNoMenuOutsideBubble(page: Page, row: Locator) {
   await expect(menu).toBeHidden();
   await row.dispatchEvent('pointerup', pointer);
   for (const target of [row.locator('.lounge-avatar'), row.locator('.lounge-account')]) {
+    // The compact mobile layout omits the current user's avatar and name.
+    if (!await target.count()) continue;
     await target.click({ button: 'right' });
     await expect(menu).toBeHidden();
   }

@@ -4,11 +4,14 @@ import { displayText as t } from '../localization/messages';
 import { LOUNGE_EMOJI } from './emoji';
 
 /** A native button owns the toggle; opening never depends on focus or a cloned popup trigger. */
-export function LoungeEmojiPicker({ disabled, insert }: { disabled: boolean; insert: (emoji: string) => void }) {
+export function LoungeEmojiPicker({ disabled, insert, onOpenChange }: {
+  disabled: boolean; insert: (emoji: string) => void; onOpenChange?: (open: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
+  useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {

@@ -105,6 +105,7 @@ async function longPressBesideMessage(label) {
 async function screenshot(name) {
   await adb('shell', 'screencap', '-p', '/sdcard/lounge-result.png');
   await adb('pull', '/sdcard/lounge-result.png', path.join(output, `${name}.png`));
+  console.log(`Captured native lounge: ${name}`);
 }
 async function hideKeyboard() {
   const state = await adb('shell', 'dumpsys', 'input_method');
@@ -136,15 +137,16 @@ try {
     await adb('shell', 'am', 'force-stop', app);
     await adb('shell', 'pm', 'clear', app);
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
-    await find('在线交流'); await find('1'); await screenshot(`discovery-${scale}`);
-    await tap('在线交流'); await find('已连接');
+    await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
+    await find('1'); await screenshot(`discovery-${scale}`);
+    await tap('在线交流'); await find('聊天');
     await find('真机中文测试：忙里偷闲，聊点轻松的 ☕'); await screenshot(`chat-${scale}`);
     await longPressBesideMessage('真机中文测试：忙里偷闲，聊点轻松的 ☕');
-    await tap('用户列表'); await find('暂无私聊，可从群聊消息菜单发起。');
+    await tap('聊天'); await find('新聊天');
     assert.ok(!(await nodes()).some(node => node['content-desc'] === '与 bob@example.test 私聊'),
       'Group participants must not appear in the private chat list');
-    await screenshot(`people-empty-${scale}`); await tap('关闭用户列表');
-    await find('在线 2 人'); broadcast({ type: 'presence', onlineCount: 3 }); await find('在线 3 人');
+    await screenshot(`people-empty-${scale}`); await tap('返回聊天');
+    await find('2 人在线'); broadcast({ type: 'presence', onlineCount: 3 }); await find('3 人在线');
     await longPress('真机中文测试：忙里偷闲，聊点轻松的 ☕'); await find('引用回复');
     await screenshot(`message-actions-${scale}`); await tap('引用回复'); await find('回复 bob@example.test');
     await tap('取消引用'); await hideKeyboard();
@@ -156,13 +158,13 @@ try {
     assert.equal(sent.at(-1).reply?.imageCount, 1);
     await tap('消息'); await adb('shell', 'input', 'text', 'Draft');
     await hideKeyboard();
-    await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', unique);
+    await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', unique);
     await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`history-${scale}`);
     await find('回复 bob@example.test');
     await tap('返回聊天'); await find('Draft');
     broadcast(incoming('私聊入口测试'));
     await longPress('私聊入口测试'); await tap('发起私聊');
-    await tap('用户列表'); await screenshot(`people-${scale}`);
+    await tap('聊天'); await screenshot(`people-${scale}`);
     await longPress('与 bob@example.test 私聊'); await tap('发起私聊'); await find('在线');
     await tap('消息'); await adb('shell', 'input', 'text', `Private-${unique}`); await tap('发送');
     await assertEventually(() => sent.at(-1)?.to === 'bob', 'Private recipient');
@@ -181,28 +183,28 @@ try {
     await tap('消息'); await adb('shell', 'input', 'text', 'free-chat'); await tap('发送');
     await assertEventually(() => sent.at(-1).text === 'free-chat', 'Later private messages do not need another reply');
     await hideKeyboard(); await screenshot(`private-${scale}`);
-    await tap('屏蔽此人'); await screenshot(`block-confirm-${scale}`); await tap('屏蔽此人');
-    await find('取消屏蔽'); await find('在线');
+    await tap('添加内容'); await tap('屏蔽此人'); await screenshot(`block-confirm-${scale}`); await tap('屏蔽此人');
+    await find('在线');
     broadcast({ ...incoming('blocked-private'), recipient: { id: 'alice', account: 'alice@example.test' } });
     broadcast(incoming('blocked-group'));
     await tap('消息'); await adb('shell', 'input', 'text', 'blocker-outbound'); await tap('发送');
     await assertEventually(() => sent.at(-1)?.text === 'blocker-outbound', 'Blocker may initiate private chat');
     await hideKeyboard();
     assert.ok(!(await nodes()).some(node => node.text === 'blocked-private'), 'Block filters private messages');
-    await tap('取消屏蔽'); await tap('取消屏蔽'); await find('屏蔽此人');
+    await tap('添加内容'); await tap('取消屏蔽'); await tap('取消屏蔽');
     broadcast({ type: 'contacts', contacts: [{ id: 'bob', online: null }] }); await find('在线状态不可见');
     await screenshot(`private-hidden-${scale}`);
-    await tap('用户列表'); await tap('群聊');
+    await tap('聊天'); await tap('群聊');
     assert.ok(!(await nodes()).some(node => node.text === 'blocked-group'), 'Block filters new group messages');
     broadcast(incoming('管理入口测试')); await find('管理入口测试');
     await tap('管理 bob@example.test 的发言权限'); await find('禁言时长（分钟）');
     await screenshot(`moderation-${scale}`); await tap('禁言');
     await assertEventually(() => moderated.length > moderatedBefore, 'Moderation ack');
-    await tap('设置头像'); await find('选择图片'); await screenshot(`avatar-${scale}`); await tap('取消');
+    await tap('添加内容'); await tap('设置头像'); await find('选择图片'); await screenshot(`avatar-${scale}`); await tap('取消');
     broadcast({ type: 'policy', policy: { moderator: false, mutedUntil: new Date(Date.now() + 60000).toISOString() } });
     await delay(500); await screenshot(`muted-${scale}`);
-    assert.ok(!(await nodes()).some(node => node.text === '在线 3 人'), 'Ordinary users cannot see presence');
-    await adb('shell', 'input', 'keyevent', '4'); await find('在线交流');
+    assert.ok(!(await nodes()).some(node => node.text === '3 人在线'), 'Ordinary users cannot see presence');
+    await tap('聊天'); await tap('返回聊天'); await tap('返回发现'); await find('在线交流');
     broadcast(incoming('后台未读消息')); await find('1');
     await tap('在线交流'); await find('后台未读消息');
     await adb('shell', 'input', 'keyevent', '3');
@@ -210,7 +212,7 @@ try {
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('切回应用后收到');
     await adb('shell', 'input', 'keyevent', '4'); await tap('English'); await tap('Online Chat');
-    await find('Chat history'); await screenshot(`english-${scale}`);
+    await find('Chats'); await screenshot(`english-${scale}`);
     await adb('shell', 'input', 'keyevent', '4'); await tap('Sign out fixture'); await find('Signed out fixture');
     await assertEventually(() => sockets.clients.size === 0, 'Sign out closes socket');
     online = false;
@@ -218,12 +220,12 @@ try {
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('在线交流');
     assert.ok(!(await nodes()).some(node => node.text === '1'), 'Restored messages must not add unread');
-    await tap('在线交流'); await tap('历史记录'); await tap('搜索消息或账户');
+    await tap('在线交流'); await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户');
     await adb('shell', 'input', 'text', unique); await find('本页 1 条记录'); await find(unique);
     await find('回复 bob@example.test');
     await hideKeyboard(); await screenshot(`offline-restart-${scale}`);
-    await tap('返回聊天'); await tap('用户列表'); await tap('与 bob@example.test 私聊');
-    await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', `Private-${unique}`);
+    await tap('返回聊天'); await tap('聊天'); await tap('与 bob@example.test 私聊');
+    await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', `Private-${unique}`);
     await find('本页 1 条记录'); await find('对方已阅读');
     await hideKeyboard(); await screenshot(`private-offline-${scale}`);
     assert.equal(sockets.clients.size, 0, 'Search must work without a connection');

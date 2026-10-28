@@ -8,10 +8,11 @@ import { LoungeMessageActions } from './LoungeMessageActions';
 import { LoungeImage } from './LoungeImage';
 import { LoungeDeliveryStatus } from './LoungeDeliveryStatus';
 
-export function LoungeAvatar({ user }: { user: LoungeAccount }) {
+export function LoungeAvatar({ user, small = false }: { user: LoungeAccount; small?: boolean }) {
   const styles = useLoungeStyles();
-  return user.avatar ? <Image source={{ uri: user.avatar }} style={styles.avatar} />
-    : <View style={styles.avatar}><Text style={styles.initials}>{initials(user.account)}</Text></View>;
+  return user.avatar ? <Image source={{ uri: user.avatar }} style={[styles.avatar, small && styles.messageAvatar]} />
+    : <View style={[styles.avatar, small && styles.messageAvatar]}>
+      <Text style={small ? styles.messageName : styles.initials}>{initials(user.account)}</Text></View>;
 }
 
 export function LoungeUnread({ count, children }: { count: number; children: ReactNode }) {
@@ -32,22 +33,22 @@ export function LoungeMessage({ message, own, manage, preview, onImageLoad, repl
   const [menu, setMenu] = useState(false);
   const openMenu = reply ? () => setMenu(true) : undefined;
   return <View style={[styles.message, own && styles.own]}>
-    <LoungeAvatar user={message.sender} />
+    {!own && <LoungeAvatar user={message.sender} small />}
     <View style={[styles.messageMain, own && styles.ownMain]}>
-      {manage && !own ? <Pressable accessibilityRole="button"
+      {!own && (manage ? <Pressable accessibilityRole="button"
         accessibilityLabel={t('client.lounge.manageUser', { account: message.sender.account })}
         onPress={() => manage(message.sender)}>
-        <Text style={styles.link}>{message.sender.account}</Text>
-      </Pressable> : <Text style={styles.muted}>{message.sender.account}</Text>}
-      <Text style={styles.muted}>{new Date(message.sentAt).toLocaleString(getLocale(),
-        { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+        <Text style={styles.messageName}>{message.sender.account}</Text>
+      </Pressable> : <Text style={styles.messageName}>{message.sender.account}</Text>)}
       <Pressable onLongPress={openMenu} style={[styles.bubble, own && styles.ownBubble,
         !message.text.trim() && !message.reply && styles.imageOnly]}>
         {message.reply && <LoungeReplyPreview reply={message.reply} />}
-        {!!message.text && <Text selectable={!reply} onLongPress={openMenu} style={styles.text}>{message.text}</Text>}
+        {!!message.text && <Text selectable={!reply} onLongPress={openMenu} style={styles.messageText}>{message.text}</Text>}
         {message.images.map((uri, index) => <LoungeImage key={index} uri={uri} preview={preview}
           onLongPress={openMenu} onLoad={onImageLoad} />)}
       </Pressable>
+      <Text style={styles.messageTime}>{new Date(message.sentAt).toLocaleTimeString(getLocale(),
+        { hour: '2-digit', minute: '2-digit' })}</Text>
       <LoungeDeliveryStatus delivery={message.delivery} />
     </View>
     {menu && reply && <LoungeMessageActions message={message} reply={reply} close={() => setMenu(false)}

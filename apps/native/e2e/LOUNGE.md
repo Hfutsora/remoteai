@@ -7,6 +7,20 @@ connection stays mounted while navigating other pages. Mobile operating systems 
 the app in the background; returning resumes or reconnects without downloading missed messages.
 The lounge does not request notifications or send system alerts.
 
+## Mobile layout
+
+The chat header combines back navigation, the conversation title, member status and the Chats entry.
+Private chat accounts stay on one line with an ellipsis for overflow; presence is shown underneath.
+Chats opens a full-page searchable list with local message previews, drafts and unread badges; opening
+the list does not mark other conversations as read. Text, image attachments, quoted replies and scroll
+positions are retained when switching conversations within the page. The compact composer grows with
+multiline input; its add-content sheet contains images, history, avatar settings and blocking.
+
+The member sheet lists locally known participants, including people encountered in group messages.
+Only authorized moderators receive the server's total online count. Other users see Members, and unknown
+or hidden contact presence is never inferred. The information sheet distinguishes group offline behavior
+from direct-message retry behavior. Light and dark themes follow the app preference.
+
 ## Physical Android
 
 The isolated `com.codexswitch.mobile.loungetest` application renders the production discovery,

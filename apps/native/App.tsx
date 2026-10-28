@@ -1291,9 +1291,9 @@ function AppContent() {
       onLogout={handleLogout} totpManager={totpManager} />,
     }}>
     {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('discover')} />}
-    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary'
+    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary' && activePage !== 'lounge'
       && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
-    {activePage === 'lounge' && <LoungePage controller={lounge.controller} />}
+    {activePage === 'lounge' && <LoungePage controller={lounge.controller} onBack={() => setActivePage('discover')} />}
     {activePage === 'devices'
         ? <DeviceManagementPage session={session} accounts={accounts} providers={providers} devices={devices}
           refreshing={syncingServer} deletingDeviceId={deletingDeviceId}

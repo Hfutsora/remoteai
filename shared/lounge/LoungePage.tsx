@@ -18,8 +18,16 @@ import { LoungeBlockDialog } from './LoungeBlockDialog';
 import { contactStatus } from './contacts';
 import './lounge.css';
 import './people.css';
+import { MobileLoungePage } from './MobileLoungePage';
 
-export function LoungePage({ controller, onLogin, mobile = false }: {
+export function LoungePage(props: {
+  controller: LoungeController; onLogin?: () => void; mobile?: boolean; onBack?: () => void;
+}) {
+  return props.mobile ? <MobileLoungePage key={props.controller.snapshot().user?.id} {...props} />
+    : <DesktopLoungePage {...props} />;
+}
+
+function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   controller: LoungeController; onLogin?: () => void; mobile?: boolean;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);

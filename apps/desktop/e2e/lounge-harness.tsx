@@ -34,7 +34,8 @@ function Fixture() {
           loungeAvailable={auth.authenticated}
           variant="sidebar" t={(key, values) => translate(language, key, values)} />
       </aside>
-      <main className="lounge-desktop-main">{page === 'lounge' ? <LoungePage controller={lounge.controller} />
+      <main className="lounge-desktop-main">{page === 'lounge' ? <LoungePage controller={lounge.controller}
+        mobile={parameters.has('mobile')} onBack={() => setPage('accounts')} />
         : <div style={{ padding: 32 }} data-testid="other-page">{parameters.get('mode') ?? 'local'}</div>}</main>
     </div>
   </ConfigProvider>;

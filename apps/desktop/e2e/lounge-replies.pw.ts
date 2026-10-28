@@ -1,3 +1,4 @@
+import { openLoungeAction } from './lounge-mobile-actions';
 import { expect, test, type Locator } from '@playwright/test';
 import { setupLounge, pixel } from './lounge-support';
 import { expectNoMenuOutsideBubble } from './lounge-gestures';
@@ -80,12 +81,12 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await aligned(response, true);
     await expectNoMenuOutsideBubble(page, response);
     relay.presence(99); await expect(page.locator('.lounge-online-count')).toHaveCount(0);
-    relay.policy(true); await expect(page.locator('.lounge-online-count')).toHaveText('在线 2 人');
-    relay.presence(3); await expect(page.locator('.lounge-online-count')).toHaveText('在线 3 人');
+    relay.policy(true); await expect(page.locator('.lounge-online-count')).toHaveText(mode === 'mobile' ? '2 人在线' : '在线 2 人');
+    relay.presence(3); await expect(page.locator('.lounge-online-count')).toHaveText(mode === 'mobile' ? '3 人在线' : '在线 3 人');
     await page.screenshot({ path: `../../.codex-tmp/lounge-presence-${mode}.png` });
     relay.policy(false); await expect(page.locator('.lounge-online-count')).toHaveCount(0);
     await page.screenshot({ path: `../../.codex-tmp/lounge-replies-${mode}.png` });
-    await page.getByRole('button', { name: '历史记录', exact: true }).click();
+    await openLoungeAction(page, '历史记录');
     await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('reply-text');
     await expect(page.locator('.lounge-history-message .lounge-reply')).toContainText('quoted-original');
     await page.reload();
@@ -93,7 +94,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
     } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
-    await page.getByRole('button', { name: '历史记录', exact: true }).click();
+    await openLoungeAction(page, '历史记录');
     await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('reply-text');
     const stored = page.locator('.lounge-history-message');
     await expect(stored.locator('.lounge-reply')).toContainText('quoted-original');

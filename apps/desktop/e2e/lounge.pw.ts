@@ -1,3 +1,4 @@
+import { openLoungeAction } from './lounge-mobile-actions';
 import { expect, test } from '@playwright/test';
 import { pixel, setupLounge } from './lounge-support';
 import type {} from './lounge-harness';
@@ -27,7 +28,7 @@ for (const width of [390, 320]) {
     await page.getByRole('button', { name: '发送', exact: true }).click();
     await expect(input).toHaveValue(''); expect(relay.sent[0].images).toHaveLength(1);
     await input.fill('保留草稿');
-    await page.getByRole('button', { name: '历史记录', exact: true }).click();
+    await openLoungeAction(page, '历史记录');
     await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('Mobile');
     await expect(page.locator('.lounge-history-message')).toHaveCount(1);
     await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-history-${width}.png`, animations: 'disabled' });
@@ -236,8 +237,9 @@ test('durable history searches beyond the recent 200 and isolates accounts with 
   await page.getByRole('button', { name: '在线交流', exact: true }).click();
   await expect(page.locator('.lounge-message')).toHaveCount(200);
   await expect(page.getByText('old-only-keyword', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '历史记录', exact: true }).click();
-  await expect(page.locator('.lounge-history-message')).toHaveCount(50);
+  await openLoungeAction(page, '历史记录');
+  // Receiving the burst does not mean its serialized local archive writes have finished.
+  await expect(page.locator('.lounge-history-message')).toHaveCount(50, { timeout: 15_000 });
   const first = await page.locator('.lounge-history-message .lounge-text').allTextContents();
   await page.getByRole('button', { name: '下一页' }).click();
   await expect.poll(() => page.locator('.lounge-history-message .lounge-text').first().textContent())
@@ -252,12 +254,12 @@ test('durable history searches beyond the recent 200 and isolates accounts with 
   await expect(page.locator('.lounge-history-message .lounge-image img')).toBeVisible();
   await page.goto('/e2e/lounge-harness.html?account=other@example.test');
   await page.getByRole('button', { name: '在线交流', exact: true }).click();
-  await page.getByRole('button', { name: '历史记录', exact: true }).click();
+  await openLoungeAction(page, '历史记录');
   await expect(page.getByText('暂时没有聊天记录')).toBeVisible();
   await page.goto('/e2e/lounge-harness.html');
   await page.getByRole('button', { name: '在线交流', exact: true }).click();
   await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
-  await page.getByRole('button', { name: '历史记录', exact: true }).click();
+  await openLoungeAction(page, '历史记录');
   await search.fill('old-only');
   await expect(page.locator('.lounge-history-message')).toContainText('old-only-keyword');
 });

@@ -1,3 +1,4 @@
+import { openLoungeAction } from './lounge-mobile-actions';
 import { expect, test } from '@playwright/test';
 import { setupLounge } from './lounge-support';
 
@@ -14,7 +15,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
         await page.locator('.discovery-lounge').click();
       } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     };
-    const people = async () => { if (mobile) await page.getByRole('button', { name: '用户列表', exact: true }).click(); };
+    const people = async () => { if (mobile) await page.getByRole('button', { name: /^聊天/ }).click(); };
     const selectBob = async () => {
       await people();
       await page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).filter({ visible: true }).click();
@@ -56,7 +57,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await expect.poll(() => relay.receipts.some(frame => frame.id === incoming && frame.status === 'read')).toBe(true);
     await page.reload(); await enter(); relay.private('deduplicated-private', undefined, incoming);
     await selectBob(); await expect(page.getByText('deduplicated-private', { exact: true })).toHaveCount(1);
-    await page.getByRole('button', { name: '历史记录', exact: true }).click();
+    await openLoungeAction(page, '历史记录');
     await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('ack-retry');
     await expect(page.locator('.lounge-history').getByRole('img', { name: '对方已阅读', exact: true })).toBeVisible();
   });

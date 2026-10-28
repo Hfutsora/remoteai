@@ -366,7 +366,8 @@ function AppShell() {
   const discoveryPage = <DiscoveryPage owner={downloadScope} loungeUnread={lounge.state.unread}
     onOpen={destination => dispatch(pageChanged(destination))} />;
   const otherPages = {
-    lounge: <LoungePage controller={lounge.controller} mobile={!desktopLayout} />,
+    lounge: <LoungePage controller={lounge.controller} mobile={!desktopLayout}
+      onBack={() => dispatch(pageChanged('discover'))} />,
     discover: discoveryPage, 'token-summary': discoveryPage,
     downloads: session && <DownloadManagerPage owner={downloadOwner(session)}
       onBack={() => dispatch(pageChanged('discover'))} />,
@@ -444,7 +445,7 @@ function AppShell() {
             closeTokenSummary={() => dispatch(pageChanged('discover'))} />,
           accounts: otherPages.accounts, discover: discoveryPage, settings: otherPages.settings,
         }}>
-        {isDiscoveryPage(page) && page !== 'downloads' && page !== 'token-summary'
+        {isDiscoveryPage(page) && page !== 'downloads' && page !== 'token-summary' && page !== 'lounge'
           && <DiscoveryBackButton onBack={() => dispatch(pageChanged('discover'))} />}
         {page !== 'chat' && page !== 'accounts' && page !== 'discover' && page !== 'settings' && otherPages[page]}
         </PrimaryPagePager>
