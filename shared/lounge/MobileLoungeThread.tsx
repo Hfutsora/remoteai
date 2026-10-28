@@ -42,7 +42,8 @@ export function MobileLoungeThread({ model }: { model: MobileLounge }) {
     {state.messages.map(message => {
       const own = message.sender.id === state.user?.id;
       return <article key={`${message.sender.id}:${message.id}`} className={`lounge-message${own ? ' is-own' : ''}`}>
-        {!own && <LoungeAvatar user={message.sender} />}
+        {!own && <LoungeAvatar user={message.sender}
+          onDirect={state.directAvailable ? () => model.select(message.sender) : undefined} />}
         <div className="lounge-message-main">
           {!own && (state.policy.moderator ? <button type="button" className="lounge-account lounge-account-action"
             aria-label={t('client.lounge.manageUser', { account: message.sender.account })}

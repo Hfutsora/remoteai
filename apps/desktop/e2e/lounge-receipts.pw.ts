@@ -18,7 +18,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     const people = async () => { if (mobile) await page.getByRole('button', { name: /^聊天/ }).click(); };
     const selectBob = async () => {
       await people();
-      await page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).filter({ visible: true }).click();
+      await page.locator('.lounge-person, .lounge-chat-row')
+        .and(page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true })).filter({ visible: true }).click();
       if (mobile) await expect(page.locator('.ant-drawer-mask:visible')).toHaveCount(0);
     };
     await relay.ready(); await enter(); relay.push('start-private');

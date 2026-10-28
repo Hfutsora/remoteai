@@ -95,7 +95,8 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
     </>}
     {model.sheet === 'members' && <LoungeMembers model={model} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
-    {model.history && <LoungeHistory controller={controller} close={() => model.setHistory(false)} reply={model.quote} />}
+    {model.history && <LoungeHistory controller={controller} close={() => model.setHistory(false)}
+      reply={model.quote} direct={model.select} />}
     {model.avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => model.setAvatar(false)} />}
     {model.moderating && state.policy.moderator && <LoungeModeration user={model.moderating} controller={controller}

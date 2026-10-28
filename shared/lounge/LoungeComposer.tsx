@@ -17,7 +17,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
   draftState?: ComposerDraftState; extraActions?: (close: () => void) => ReactNode;
   onOverlayChange?: (open: boolean) => void;
 }) {
-  const { text, setText, images, setImages, clear } = useComposerDraft(draftState);
+  const { text, setText, images, setImages, clearSent } = useComposerDraft(draftState);
   const [extras, setExtras] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   useEffect(() => {
@@ -60,14 +60,15 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
     if (!connected || submitting.current || adding.current || !text.trim() && !images.length) return;
     if ([...text].length > MAX_TEXT) { setError('client.lounge.tooLong'); return; }
     submitting.current = true; setBusy(true); setError('');
+    const sent = { text, images, reply };
     try {
-      await send({ text, images, reply }); clear(); setNotice('');
+      await send(sent); clearSent(sent); setNotice('');
       if (reply && !draftState) cancelReply(reply);
     }
     catch (failure) {
       setError(sendError(failure));
     }
-    finally { submitting.current = false; setBusy(false); textarea.current?.focus(); }
+    finally { submitting.current = false; setBusy(false); }
   };
   const insertEmoji = (emoji: string) => {
     const { start, end } = selection.current;
@@ -105,7 +106,7 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
       <button type="button" disabled={busy || processing} aria-label={t('client.lounge.removeImage')}
         onClick={() => setImages(value => value.filter((_, position) => position !== index))}><X size={14} /></button>
     </div>)}</div>}
-    <textarea ref={textarea} rows={mobile ? 1 : undefined} value={text} disabled={busy}
+    <textarea ref={textarea} rows={mobile ? 1 : undefined} value={text}
       aria-label={t('client.lounge.message')}
       placeholder={t(mobile ? 'client.lounge.mobilePlaceholder' : 'client.lounge.placeholder')}
       onChange={event => setText(event.target.value)}
@@ -122,6 +123,9 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
       onClick={() => setExtras(true)}><Plus size={24} /></button>}
     <footer>{!mobile && <small>{t('client.lounge.sendHint')}</small>}
       <button className="lounge-send" type="button" onClick={() => void submit()}
+        onPointerDown={event => {
+          if (event.button === 0 && document.activeElement === textarea.current) event.preventDefault();
+        }}
         aria-label={t(busy ? 'client.lounge.sending' : 'client.lounge.send')}
         disabled={!connected || busy || processing || !text.trim() && !images.length}>
         {mobile ? <ArrowUp size={22} /> : <><Send size={16} />{t(busy ? 'client.lounge.sending' : 'client.lounge.send')}</>}

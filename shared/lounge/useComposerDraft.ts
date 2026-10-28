@@ -18,6 +18,12 @@ export function useComposerDraft(external?: ComposerDraftState) {
     text: typeof value === 'function' ? value(latest.current.text) : value });
   const setImages = (value: SetStateAction<string[]>) => change({ ...latest.current,
     images: typeof value === 'function' ? value(latest.current.images) : value });
-  const clear = () => change({ text: '', images: [] });
-  return { text: draft.text, images: draft.images, setText, setImages, clear };
+  const clearSent = (sent: LoungeDraft) => {
+    const current = latest.current;
+    // The input stays editable during delivery; retain anything changed after Send was pressed.
+    change({ text: current.text === sent.text ? '' : current.text,
+      images: current.images === sent.images ? [] : current.images,
+      reply: current.reply === sent.reply ? undefined : current.reply });
+  };
+  return { text: draft.text, images: draft.images, setText, setImages, clearSent };
 }

@@ -18,7 +18,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await relay.ready(); await enter(); relay.push('opening-limit-contact');
     if (mobile && await page.getByRole('button', { name: '成员', exact: true }).isVisible()) {
       await page.getByRole('button', { name: '成员', exact: true }).click();
-      await page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
+      await page.locator('.lounge-mobile-sheet')
+        .getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
     } else {
       await page.locator('.lounge-bubble').filter({ hasText: 'opening-limit-contact' }).click({ button: 'right' });
       await page.getByRole('menuitem', { name: '发起私聊' }).click();

@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { Button, Drawer, Input } from 'antd';
 import { Search } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
@@ -7,12 +8,13 @@ import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeMessageBody } from './LoungeMessageBody';
 import { useLoungeHistory } from './useLoungeHistory';
 import type { LoungeController } from './controller';
-import type { LoungeMessage } from './types';
+import type { LoungeAccount, LoungeMessage } from './types';
 
-export function LoungeHistory({ controller, open, close, preview, reply }: {
+export function LoungeHistory({ controller, open, close, preview, reply, direct }: {
   controller: LoungeController; open: boolean; close: () => void; preview: (source: string) => void;
-  reply: (message: LoungeMessage) => void;
+  reply: (message: LoungeMessage) => void; direct: (user: LoungeAccount) => void;
 }) {
+  const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const history = useLoungeHistory(controller, open);
   const format = new Intl.DateTimeFormat(localeForLanguage(getInterfaceLanguage()), {
     dateStyle: 'short', timeStyle: 'short',
@@ -33,14 +35,18 @@ export function LoungeHistory({ controller, open, close, preview, reply }: {
       {!history.loading && !history.error && !history.messages.length && <p className="lounge-history-empty">
         {t(history.query.trim()
         ? 'client.lounge.historyNoResults' : 'client.lounge.historyEmpty')}</p>}
-      {history.messages.map(message => <article key={`${message.sender.id}:${message.id}`}
-        className="lounge-history-message">
-        <LoungeAvatar user={message.sender} />
-        <div className="lounge-history-message-main"><div className="lounge-account">{message.sender.account}</div>
-          <time dateTime={message.sentAt}>{format.format(new Date(message.sentAt))}</time>
-          <LoungeMessageBody message={message} preview={preview} actions={{ reply }} />
-        </div>
-      </article>)}
+      {history.messages.map(message => {
+        const startDirect = state.directAvailable && message.sender.id !== state.user?.id
+          ? () => { close(); direct(message.sender); } : undefined;
+        return <article key={`${message.sender.id}:${message.id}`}
+          className="lounge-history-message">
+          <LoungeAvatar user={message.sender} onDirect={startDirect} />
+          <div className="lounge-history-message-main"><div className="lounge-account">{message.sender.account}</div>
+            <time dateTime={message.sentAt}>{format.format(new Date(message.sentAt))}</time>
+            <LoungeMessageBody message={message} preview={preview} actions={{ reply, direct: startDirect }} />
+          </div>
+        </article>;
+      })}
     </div>
     <nav className="lounge-history-pagination" aria-label={t('client.lounge.history')}>
       <Button onClick={history.previous} disabled={history.loading || !history.hasPrevious}>

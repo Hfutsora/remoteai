@@ -22,7 +22,7 @@ export function LoungeComposer({ connected, send, onHistory, reply, cancelReply,
 }) {
   const styles = useLoungeStyles();
   const color = useLoungeColor();
-  const { text, setText, images, setImages, clear } = useComposerDraft(draftState);
+  const { text, setText, images, setImages, clearSent } = useComposerDraft(draftState);
   const [busy, setBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -54,8 +54,9 @@ export function LoungeComposer({ connected, send, onHistory, reply, cancelReply,
     if (locked.current || !connected || !text.trim() && !images.length) return;
     if ([...text].length > MAX_TEXT) { setError('client.lounge.tooLong'); return; }
     locked.current = true; setBusy(true); setError('');
+    const sent = { text, images, reply };
     try {
-      await send({ text, images, reply }); clear(); setNotice(false);
+      await send(sent); clearSent(sent); setNotice(false);
     }
     catch (failure) {
       setError(sendError(failure));
@@ -82,7 +83,7 @@ export function LoungeComposer({ connected, send, onHistory, reply, cancelReply,
         disabled={busy} style={styles.iconButton}
         onPress={() => { Keyboard.dismiss(); setEmojiOpen(true); }}>
         <Ionicons name="happy-outline" size={24} color={color('#687c89', 'muted')} /></Pressable>
-    <TextInput ref={input} multiline value={text} onChangeText={setText} editable={!busy}
+    <TextInput ref={input} multiline value={text} onChangeText={setText}
       style={[styles.input, { height: inputHeight }]}
       onContentSizeChange={event => setInputHeight(Math.max(44, Math.min(132, event.nativeEvent.contentSize.height)))}
       onSelectionChange={event => { selection.current = event.nativeEvent.selection; }}

@@ -52,7 +52,7 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
     {model.sheet === 'members' && <MobileLoungeMembers model={model} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     <LoungeHistory open={model.history} close={() => model.setHistory(false)} controller={controller}
-      preview={model.setPreview} reply={model.quote} />
+      preview={model.setPreview} reply={model.quote} direct={model.select} />
     {model.avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => model.setAvatar(false)} />}
     {model.moderating && <LoungeModeration user={model.moderating} controller={controller}

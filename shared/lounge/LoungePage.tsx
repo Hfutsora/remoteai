@@ -99,7 +99,8 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
             {new Intl.DateTimeFormat(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' })
               .format(new Date(message.sentAt))}</time></div>}
           <article className={`lounge-message${own ? ' is-own' : ''}`}>
-            <LoungeAvatar user={message.sender} />
+            <LoungeAvatar user={message.sender}
+              onDirect={!own && state.directAvailable ? () => select(message.sender) : undefined} />
             <div className="lounge-message-main">
               {state.policy.moderator && !own ? <button type="button" className="lounge-account lounge-account-action"
                 aria-label={t('client.lounge.manageUser', { account: message.sender.account })}
@@ -131,7 +132,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
       send={draft => controller.send({ ...draft, to: state.conversation || undefined })}
       onHistory={() => setHistoryOpen(true)} />
     <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller}
-      preview={setPreview} reply={quote} />
+      preview={setPreview} reply={quote} direct={select} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatarOpen(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}

@@ -8,11 +8,19 @@ import { LoungeMessageActions } from './LoungeMessageActions';
 import { LoungeImage } from './LoungeImage';
 import { LoungeDeliveryStatus } from './LoungeDeliveryStatus';
 
-export function LoungeAvatar({ user, small = false }: { user: LoungeAccount; small?: boolean }) {
+const MESSAGE_AVATAR_TOUCH_PADDING = 7;
+
+export function LoungeAvatar({ user, small = false, onDirect }: {
+  user: LoungeAccount; small?: boolean; onDirect?: () => void;
+}) {
   const styles = useLoungeStyles();
-  return user.avatar ? <Image source={{ uri: user.avatar }} style={[styles.avatar, small && styles.messageAvatar]} />
+  const avatar = user.avatar ? <Image source={{ uri: user.avatar }}
+    style={[styles.avatar, small && styles.messageAvatar]} />
     : <View style={[styles.avatar, small && styles.messageAvatar]}>
       <Text style={small ? styles.messageName : styles.initials}>{initials(user.account)}</Text></View>;
+  return onDirect ? <Pressable accessibilityRole="button" onPress={onDirect}
+    hitSlop={small ? MESSAGE_AVATAR_TOUCH_PADDING : 0}
+    accessibilityLabel={t('client.lounge.directWith', { account: user.account })}>{avatar}</Pressable> : avatar;
 }
 
 export function LoungeUnread({ count, children }: { count: number; children: ReactNode }) {
@@ -33,7 +41,7 @@ export function LoungeMessage({ message, own, manage, preview, onImageLoad, repl
   const [menu, setMenu] = useState(false);
   const openMenu = reply ? () => setMenu(true) : undefined;
   return <View style={[styles.message, own && styles.own]}>
-    {!own && <LoungeAvatar user={message.sender} small />}
+    {!own && <LoungeAvatar user={message.sender} small onDirect={direct} />}
     <View style={[styles.messageMain, own && styles.ownMain]}>
       {!own && (manage ? <Pressable accessibilityRole="button"
         accessibilityLabel={t('client.lounge.manageUser', { account: message.sender.account })}
