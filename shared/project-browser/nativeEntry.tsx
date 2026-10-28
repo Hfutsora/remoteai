@@ -82,6 +82,7 @@ function render(settings: BrowserSettings) {
       treeOptions={nativeSshTreeOptions({ ...settings, connected: settings.connected && !closing }, send)}
       connected={settings.connected && !closing} t={text => settings.labels[text] ?? displayText(text)}
       initialSnapshot={settings.snapshot} runScripts={!!settings.scripts}
+      onFullscreenChange={active => send({ type: 'fullscreen', active })}
       onSnapshot={snapshot => send({ type: 'snapshot', cwd: settings.cwd, snapshot })}
       preferences={{ delay: autoSaveDelay(settings.autoSaveDelay),
         change: delay => { send({ type: 'preferences', delay }); render({ ...settings, autoSaveDelay: delay }); } }}

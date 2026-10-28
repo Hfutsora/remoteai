@@ -65,7 +65,7 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload, 
       {!files.loaded && <div className="ssh-project-loading" role="status">
         {files.busy ? <Spin /> : <Button onClick={() => void files.load()}>{t('client.terminal.retry')}</Button>}
       </div>}
-      {files.loaded && <ProjectBrowser client={client} cwd="/" connected t={t} host={host} onClose={() => {}}
+      {files.loaded && <ProjectBrowser client={client} cwd="/" connected active={active} t={t} host={host} onClose={() => {}}
         renderPreview={renderPreview}
         treeOptions={{ root: files.path, showHidden: hidden, revision: files.entries,
           renderMenuExtras: (entry, close) => entry.directory && <button type="button" role="menuitem"

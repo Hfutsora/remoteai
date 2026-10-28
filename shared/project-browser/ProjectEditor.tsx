@@ -17,6 +17,7 @@ import { PROJECT_PLAIN_TEXT_THRESHOLD } from './protocol';
 import { useNpmScriptButtons } from './useNpmScriptButtons';
 import { useGitBlame, type BlameSource } from './useGitBlame';
 import { GutterMenu } from './GutterMenu';
+import { BrowserFullscreenButton } from './browserFullscreen';
 
 interface Props {
   text: string; path: string; readOnly: boolean; t: BrowserTranslate;
@@ -129,6 +130,7 @@ export function ProjectEditor(props: Props) {
       {languageError && <span role="status">{props.t("client.projectBrowser.syntaxHighlightingIsUnavailable")}</span>}
       {props.blame && <button type="button" aria-label={props.t('client.gitBlame.annotate')}
         aria-pressed={blame.enabled} onClick={blame.toggle}><GitCommitHorizontal size={16} /></button>}
+      <BrowserFullscreenButton t={props.t} />
     </div>
     {plainText && <p className="pf-notice" role="status">{props.t('client.projectBrowser.largePlainText')}</p>}
     {blame.notice && <p className="pf-notice pf-blame-notice" role="status">{blame.notice}</p>}

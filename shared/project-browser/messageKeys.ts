@@ -2,6 +2,8 @@ import type { MessageKey } from '@remoteai/i18n';
 
 /** Labels sent to the offline native file-browser WebView. */
 export const messageKeys = [
+  'client.projectBrowser.enterFullscreen',
+  'client.projectBrowser.exitFullscreen',
   "client.npmScripts.run",
   "client.npmScripts.stop",
   "client.npmScripts.invalid",

@@ -18,6 +18,7 @@ import type { BrowserHost } from './entryActions';
 import './treeActions.css';
 import './editorWorkspace.css';
 import type { ProjectPreviewRenderer } from './preview';
+import { BrowserFullscreenButton, BrowserFullscreenContext, useBrowserFullscreen } from './browserFullscreen';
 
 export interface ProjectBrowserHandle {
   requestClose: () => void; saveActive: () => void; snapshot: () => DocumentsSnapshot;
@@ -31,13 +32,16 @@ interface Props {
   treeOptions?: ProjectTreeOptions;
   renderPreview?: ProjectPreviewRenderer;
   runScripts?: boolean;
+  active?: boolean;
+  onFullscreenChange?: (active: boolean) => void;
 }
 
 export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function ProjectBrowser(
   { client, cwd, connected, t, onClose, preferences: suppliedPreferences, initialSnapshot, host: actionsHost,
-    treeOptions, renderPreview, onSnapshot, runScripts }, ref,
+    treeOptions, renderPreview, onSnapshot, runScripts, active = true, onFullscreenChange }, ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
+  const fullscreen = useBrowserFullscreen({ host, visible: active, onChange: onFullscreenChange });
   const file = useProjectDocument(client, cwd, initialSnapshot);
   useEffect(() => {
     if (!onSnapshot) return;
@@ -64,11 +68,23 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
     setShowFile(true); void file.open(path);
   };
   const save = () => { if (connected && !actions.pending && !actions.rename) void file.save(); };
-  useImperativeHandle(ref, () => ({ requestClose: onClose, saveActive: save, snapshot: file.store.getSnapshot }));
+  useImperativeHandle(ref, () => ({ requestClose: fullscreen.active ? fullscreen.exit : onClose,
+    saveActive: save, snapshot: file.store.getSnapshot }));
   const pendingPath = actions.pending?.paths[0];
   const pendingTab = file.store.get(pendingPath);
-  return <div ref={host} className="pf-browser" data-show-file={showFile} data-narrow={split.narrow}
+  return <BrowserFullscreenContext.Provider value={fullscreen}>
+  <div ref={host} className="pf-browser" data-show-file={showFile} data-narrow={split.narrow}
+    data-fullscreen={fullscreen.active} onKeyDown={event => {
+      if (event.key !== 'Escape' || event.defaultPrevented || !fullscreen.active) return;
+      event.preventDefault(); event.stopPropagation(); fullscreen.exit();
+    }}
     style={{ '--pf-tree-width': `${split.width}px` } as CSSProperties} onKeyDownCapture={event => {
+      if (event.key === 'Escape' && fullscreen.active && event.target instanceof Element
+        && !event.defaultPrevented && !event.target.closest('[role=menu], [role=alertdialog]')
+        && event.target.closest('.cm-editor')
+        && !event.target.closest('.cm-editor')?.querySelector('.cm-search')) {
+        event.preventDefault(); event.stopPropagation(); fullscreen.exit(); return;
+      }
       if (event.altKey || !(event.ctrlKey || event.metaKey) || actions.rename || actions.pending) return;
       if (event.key.toLowerCase() === 's') { event.preventDefault(); event.stopPropagation(); save(); }
       if (event.ctrlKey && event.key === 'F4' && file.activePath) {
@@ -93,6 +109,7 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
           back: () => setShowFile(false), settings: () => setSettingsOpen(!settingsOpen), settingsOpen }} />
       </section>
     </div>
+    {fullscreen.active && !showFile && <div className="pf-tree-fullscreen"><BrowserFullscreenButton t={t} /></div>}
     {actions.feedback && <p className="pf-feedback" role="status">{remoteErrorText(actions.feedback)}</p>}
     {actions.error && !actions.rename && <p className="pf-feedback" role="alert">{remoteErrorText(actions.error)}</p>}
     {pendingPath && <PendingChanges saving={pendingTab?.saving ?? false} connected={connected}
@@ -100,5 +117,5 @@ export const ProjectBrowser = forwardRef<ProjectBrowserHandle, Props>(function P
       discard={actions.discard} save={() => { void actions.savePending(); }} />}
     {actions.rename && <TreeActionDialog prompt={actions.rename} busy={actions.busy} connected={connected}
       error={actions.error} confirm={name => { void actions.confirmRename(name); }} cancel={actions.cancelRename} t={t} />}
-  </div>;
+  </div></BrowserFullscreenContext.Provider>;
 });
