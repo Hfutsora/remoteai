@@ -3,6 +3,53 @@ import { pixel, setupLounge } from './lounge-support';
 import type {} from './lounge-harness';
 import type {} from './lounge-admin-harness';
 
+for (const width of [390, 320]) {
+  test(`mobile web ${width}: discovery, unread, touch composer, history and moderation`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const relay = await setupLounge(page, true);
+    await page.goto('http://127.0.0.1:1486/web/'); await relay.ready();
+    relay.push('手机收到的新消息');
+    await expect(page.locator('.mobile-lounge-badge')).toHaveText('1');
+    await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
+    const entry = page.locator('.discovery-lounge');
+    await expect(entry.locator('.lounge-nav-badge')).toHaveText('1');
+    await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-discovery-${width}.png` });
+    await entry.click();
+    await expect(page.getByText('手机收到的新消息')).toBeVisible();
+    await expect(page.locator('.mobile-lounge-badge')).toHaveCount(0);
+    await expect(page.locator('.mobile-tabbar')).toBeHidden();
+    const input = page.getByRole('textbox', { name: '消息', exact: true });
+    await input.fill('Mobile draft'); await input.press('Enter'); await input.press('A');
+    expect(relay.sent).toHaveLength(0);
+    await expect(input).toHaveValue('Mobile draft\nA');
+    await page.locator('.lounge-composer input[type=file]').setInputFiles({ name: 'image.png', mimeType: 'image/png',
+      buffer: Buffer.from(pixel.split(',')[1], 'base64') });
+    await page.getByRole('button', { name: '发送', exact: true }).click();
+    await expect(input).toHaveValue(''); expect(relay.sent[0].images).toHaveLength(1);
+    await input.fill('保留草稿');
+    await page.getByRole('button', { name: '历史记录', exact: true }).click();
+    await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('Mobile');
+    await expect(page.locator('.lounge-history-message')).toHaveCount(1);
+    await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-history-${width}.png`, animations: 'disabled' });
+    await page.locator('.ant-drawer-close').click(); await expect(input).toHaveValue('保留草稿');
+    relay.policy(true);
+    await page.getByRole('button', { name: '管理 bob@example.test 的发言权限' }).click();
+    await page.getByRole('spinbutton').fill('30'); await page.getByRole('button', { name: /^禁\s*言$/ }).click();
+    await expect.poll(() => relay.moderation.length).toBe(1);
+    relay.policy(false, new Date(Date.now() + 60000).toISOString());
+    await expect(page.getByRole('button', { name: '发送', exact: true })).toBeDisabled();
+    relay.policy(false); await relay.close(); await expect.poll(relay.count).toBe(2);
+    await page.setViewportSize({ width, height: 450 });
+    await expect(page.locator('.lounge-page')).toBeVisible();
+    const sendBox = await page.getByRole('button', { name: '发送', exact: true }).boundingBox();
+    expect(sendBox!.y + sendBox!.height).toBeLessThanOrEqual(450);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-keyboard-${width}.png` });
+    await page.getByRole('button', { name: '返回发现' }).click();
+    await expect(entry).toBeVisible();
+  });
+}
+
 for (const mode of ['local', 'remote', 'web']) {
   test(`${mode}: background connection, unread badge, mixed content and recovery`, async ({ page }) => {
     const relay = await setupLounge(page, mode === 'web');

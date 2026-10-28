@@ -1,6 +1,7 @@
 import { MAX_FRAME_BYTES, parseMessage, type LoungeDraft, type LoungeMessage,
   type LoungeSession, type LoungeSnapshot } from './types';
 import { avatarData } from './avatar';
+import { browserLoungeRuntime, type LoungeRuntime } from './runtime';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -42,8 +43,9 @@ export class LoungeController {
   private retry?: ReturnType<typeof setTimeout>;
   private heartbeat?: ReturnType<typeof setInterval>;
   private pending = new Map<string, Pending>();
+  private unsubscribe?: () => void;
 
-  constructor(private readonly session?: LoungeSession) {
+  constructor(private readonly session?: LoungeSession, private readonly runtime: LoungeRuntime = browserLoungeRuntime) {
     this.state = { status: session ? 'connecting' : 'signed-out', messages: [], unread: 0,
       policy: { moderator: false, mutedUntil: null } };
   }
@@ -57,9 +59,7 @@ export class LoungeController {
   start() {
     if (this.running || !this.session) return;
     this.running = true;
-    window.addEventListener('online', this.wake);
-    window.addEventListener('focus', this.wake);
-    document.addEventListener('visibilitychange', this.wake);
+    this.unsubscribe = this.runtime.subscribe(this.wake);
     this.heartbeat = setInterval(this.tick, HEARTBEAT_MS);
     void this.connect();
   }
@@ -69,15 +69,14 @@ export class LoungeController {
     this.connecting = false;
     clearTimeout(this.retry);
     clearInterval(this.heartbeat);
-    window.removeEventListener('online', this.wake);
-    window.removeEventListener('focus', this.wake);
-    document.removeEventListener('visibilitychange', this.wake);
+    this.unsubscribe?.();
+    this.unsubscribe = undefined;
     this.disconnect();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
       status: this.session ? 'connecting' : 'signed-out' });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
-  private canRead() { return this.viewing && document.visibilityState === 'visible' && document.hasFocus(); }
+  private canRead() { return this.viewing && this.runtime.isVisible(); }
   private markRead() { if (this.canRead() && this.state.unread) this.update({ unread: 0 }); }
   private wake = () => {
     this.markRead();
@@ -109,7 +108,7 @@ export class LoungeController {
       if (!this.running || generation !== this.generation) return;
       const url = new URL(`${this.session.baseUrl.replace(/\/+$/, '')}/lounge/socket`);
       url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-      const socket = new WebSocket(url);
+      const socket = new WebSocket(url.toString());
       this.socket = socket;
       this.received = Date.now();
       this.renewalStarted = Date.now();
@@ -219,7 +218,7 @@ export class LoungeController {
     const socket = this.socket;
     if (this.state.status !== 'connected' || !socket || socket.readyState !== WebSocket.OPEN
       || socket.bufferedAmount > MAX_FRAME_BYTES) return Promise.reject(new Error('client.lounge.sendFailed'));
-    const id = crypto.randomUUID();
+    const id = this.runtime.randomId();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id); reject(new Error('client.lounge.sendFailed'));

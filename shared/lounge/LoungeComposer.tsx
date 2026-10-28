@@ -4,12 +4,10 @@ import { Popover } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
 import { prepareImage } from './images';
+import { LOUNGE_EMOJI } from './emoji';
 
-const EMOJI = ['😀', '😂', '🥹', '😊', '😍', '😎', '🤔', '😅', '😭', '😴', '🙃', '🤫',
-  '👍', '👏', '🙌', '🙏', '❤️', '🎉', '🔥', '✨', '☕', '🍉', '🐟', '🚀'];
-
-export function LoungeComposer({ connected, send, onHistory }: {
-  connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void;
+export function LoungeComposer({ connected, send, onHistory, mobile = false }: {
+  connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void; mobile?: boolean;
 }) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -74,12 +72,13 @@ export function LoungeComposer({ connected, send, onHistory }: {
     <div className="lounge-toolbar">
       <Popover trigger="click" open={emojiOpen} onOpenChange={setEmojiOpen} placement="topLeft"
         styles={{ root: { maxWidth: 400 } }} content={<div className="lounge-emoji-picker">
-          {EMOJI.map(emoji => <button key={emoji} type="button" onClick={() => insertEmoji(emoji)}>{emoji}</button>)}
+          {LOUNGE_EMOJI.map(emoji => <button key={emoji} type="button" onClick={() => insertEmoji(emoji)}>{emoji}</button>)}
         </div>}>
         <button type="button" disabled={busy} aria-label={t('client.lounge.emoji')}><Smile size={22} /></button>
       </Popover>
       <button type="button" disabled={busy || processing} aria-label={t('client.lounge.addImage')}
-        title={t('client.lounge.imageHint')} onClick={() => picker.current?.click()}><ImagePlus size={22} /></button>
+        title={t(mobile ? 'client.lounge.mobileImageHint' : 'client.lounge.imageHint')}
+        onClick={() => picker.current?.click()}><ImagePlus size={22} /></button>
       <input ref={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
         onChange={event => { void addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
       {processing && <span role="status">{t('client.lounge.preparingImage')}</span>}
@@ -92,11 +91,12 @@ export function LoungeComposer({ connected, send, onHistory }: {
         onClick={() => setImages(value => value.filter((_, position) => position !== index))}><X size={14} /></button>
     </div>)}</div>}
     <textarea ref={textarea} value={text} disabled={busy} aria-label={t('client.lounge.message')}
-      placeholder={t('client.lounge.placeholder')} onChange={event => setText(event.target.value)}
+      placeholder={t(mobile ? 'client.lounge.mobilePlaceholder' : 'client.lounge.placeholder')}
+      onChange={event => setText(event.target.value)}
       onSelect={event => { selection.current = { start: event.currentTarget.selectionStart,
         end: event.currentTarget.selectionEnd }; }} onPaste={paste}
       onKeyDown={event => {
-        if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
+        if (!mobile && event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
           event.preventDefault(); void submit();
         }
       }} />

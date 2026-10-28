@@ -24,6 +24,7 @@ import { RemoteModelSwitchSheet } from "./components/RemoteModelSwitchSheet";
 import { TotpPage } from "./components/TotpPage";
 import { DownloadCountIcon } from './downloads/DownloadCountIcon';
 import { DiscoveryBackButton, DiscoveryPage } from './discovery/DiscoveryPage';
+import { DiscoveryIcon } from './discovery/DiscoveryIcon';
 import { isDiscoveryPage, primaryNavigationPage } from '../../../shared/navigation/discovery';
 import { AccountsPage } from "./accounts/AccountsPage";
 import { SettingsPage } from "./settings/SettingsPage";
@@ -37,7 +38,8 @@ import { useTotpVault } from "./useTotpVault";
 import { ChatPage } from "./chat/ChatPage";
 import { PrimaryPagePager } from './navigation/PrimaryPagePager';
 import type { PrimaryPage } from '../../../shared/navigation/pageSwipe';
-import { usePanelVisibility } from "./useDesktopLayout";
+import { useDesktopLayout, usePanelVisibility } from "./useDesktopLayout";
+import { useChatViewport } from './chat/useChatViewport';
 import { AgreementConsent } from '../../../shared/legal/AgreementConsent';
 import { useAgreementConsent } from '../../../shared/legal/useAgreementConsent';
 
@@ -281,9 +283,11 @@ function AppShell() {
   const { session } = useAppSelector((state) => state.auth);
   const lounge = useWebLounge(session);
   const { page, profile, devices, refreshing, error } = useAppSelector((state) => state.data);
+  const desktopLayout = useDesktopLayout();
+  useChatViewport(page === 'lounge' && !desktopLayout);
   const lastRefreshRef = useRef(Date.now());
   const totpManager = useTotpVault(session);
-  const activeNavigationPage = primaryNavigationPage(page);
+  const activeNavigationPage = desktopLayout && page === 'lounge' ? page : primaryNavigationPage(page);
   const changePrimaryPage = useCallback((next: PrimaryPage) => { dispatch(pageChanged(next)); }, [dispatch]);
   const openAccounts = useCallback(() => changePrimaryPage('accounts'), [changePrimaryPage]);
 
@@ -359,9 +363,10 @@ function AppShell() {
     devices: t("client.app.viewAndControlYourDesktopDevices"), totp: t("client.app.manageAndSyncYour2faCodes"), settings: t("client.app.managePreferencesAndAccountSecurity"),
   };
   const downloadScope = session ? downloadOwner(session) : undefined;
-  const discoveryPage = <DiscoveryPage owner={downloadScope} onOpen={destination => dispatch(pageChanged(destination))} />;
+  const discoveryPage = <DiscoveryPage owner={downloadScope} loungeUnread={lounge.state.unread}
+    onOpen={destination => dispatch(pageChanged(destination))} />;
   const otherPages = {
-    lounge: <LoungePage controller={lounge.controller} />,
+    lounge: <LoungePage controller={lounge.controller} mobile={!desktopLayout} />,
     discover: discoveryPage, 'token-summary': discoveryPage,
     downloads: session && <DownloadManagerPage owner={downloadOwner(session)}
       onBack={() => dispatch(pageChanged('discover'))} />,
@@ -449,7 +454,7 @@ function AppShell() {
       <TabBar activeKey={activeNavigationPage}>
         {navItems.map(item => <TabBar.Item key={item.key} title={item.label}
           icon={item.key === 'discover'
-            ? <DownloadCountIcon owners={[downloadScope]}><item.icon size={21} /></DownloadCountIcon>
+            ? <DiscoveryIcon owner={downloadScope} unread={lounge.state.unread} />
             : <item.icon size={21} />}
           onClick={() => dispatch(pageChanged(item.key))} />)}
       </TabBar><SafeArea position="bottom" />

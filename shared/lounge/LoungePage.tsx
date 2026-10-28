@@ -14,7 +14,9 @@ import { LoungeMessageBody } from './LoungeMessageBody';
 import { LoungeHistory } from './LoungeHistory';
 import './lounge.css';
 
-export function LoungePage({ controller, onLogin }: { controller: LoungeController; onLogin?: () => void }) {
+export function LoungePage({ controller, onLogin, mobile = false }: {
+  controller: LoungeController; onLogin?: () => void; mobile?: boolean;
+}) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const language = useSyncExternalStore(subscribeInterfaceLanguage, getInterfaceLanguage);
   const list = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ export function LoungePage({ controller, onLogin }: { controller: LoungeControll
       time: new Intl.DateTimeFormat(localeForLanguage(language), { dateStyle: 'short', timeStyle: 'short' })
         .format(new Date(mutedUntil!)),
     })}</p>}
-    <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted}
+    <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted} mobile={mobile}
       send={draft => controller.send(draft)} onHistory={() => setHistoryOpen(true)} />
     <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} messages={state.messages} preview={setPreview} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}

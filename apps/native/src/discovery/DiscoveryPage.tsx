@@ -6,16 +6,19 @@ import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
 import { textMetrics } from '../theme/text';
 import { DownloadCountIcon } from '../downloads/DownloadCountIcon';
+import { LoungeUnread } from '../lounge/LoungeMessage';
 
 const entryIcons = {
+  lounge: 'cafe-outline',
   devices: 'server-outline',
   totp: 'shield-checkmark-outline',
   downloads: 'download-outline',
   'token-summary': 'bar-chart-outline',
 } as const;
 
-export function DiscoveryPage({ owner, onOpen }: {
+export function DiscoveryPage({ owner, loungeUnread = 0, onOpen }: {
   owner?: string;
+  loungeUnread?: number;
   onOpen: (page: DiscoveryDestination) => void;
 }) {
   useLanguage();
@@ -34,8 +37,10 @@ export function DiscoveryPage({ owner, onOpen }: {
           ? <DownloadCountIcon owner={owner}>
             <Ionicons name="download-outline" size={25} color={color('#07b775', 'accent')} />
           </DownloadCountIcon>
-          : <Ionicons name={entryIcons[entry.page]} size={25}
-            color={entry.page === 'devices' ? color('#3984db', 'info') : color('#07b775', 'accent')} />}
+          : <LoungeUnread count={entry.page === 'lounge' ? loungeUnread : 0}>
+            <Ionicons name={entryIcons[entry.page]} size={25}
+              color={entry.page === 'devices' ? color('#3984db', 'info') : color('#07b775', 'accent')} />
+          </LoungeUnread>}
         <Text style={styles.label}>{t(entry.label)}</Text>
         <Ionicons name="chevron-forward" size={20} color={color('#b2b2b2', 'muted')} />
       </Pressable>)}
