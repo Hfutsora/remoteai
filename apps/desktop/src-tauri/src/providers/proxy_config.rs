@@ -193,5 +193,6 @@ fn provider_group_catalog_data(providers: &[ProviderProfile]) -> ProviderGroupCa
             data.context_windows.insert(display_name, context_window);
         }
     }
+    model_order::sort_group_models(&mut data.models, providers);
     data
 }
