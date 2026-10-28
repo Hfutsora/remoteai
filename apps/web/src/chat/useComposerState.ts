@@ -1,4 +1,5 @@
 import { displayError } from '../i18n/index';
+import { modelSelectionError } from '../../../desktop/src/pages/codexGui/modelSelection';
 import { t } from '../i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useChatDraft } from '../../../../shared/remote-chat/client/useChatDraft';
@@ -20,18 +21,19 @@ export function useComposerState(props: ComposerProps) {
   const { threadId, active, ready, sending, settingsBusy, compacting, selection, send, goals, running } = props;
   const goalMode = useGoalMode(threadId, sending);
   const [pausing, setPausing] = useState(false);
+  const [dictationBusy, setDictationBusy] = useState(false);
   const [error, setError] = useState('');
   const attachments = useComposerAttachments({ threadId, sending });
   const dropTarget = useRef<HTMLDivElement>(null);
   const quotes = useChatQuotes();
   const disabled = !ready || settingsBusy || compacting;
-  const draft = useChatDraft({ threadId, sending, disabled: disabled || attachments.busy, selection, send,
+  const draft = useChatDraft({ threadId, sending, disabled: disabled || attachments.busy || dictationBusy, selection, send,
     recovered: props.recoveredEdit, consumeRecovered: props.consumeRecoveredEdit });
   const menu = useComposerMenu({ draft, scope: `${threadId ?? ''}:${props.cwd}`, active,
     refresh: props.catalog.refresh, compact: props.compact });
   const hasContent = draft.hasContent || attachments.items.length > 0 || Boolean(quotes?.quotes.length);
   const queueEditor = useQueueEditor({ threadId, queue: props.queue,
-    disabled: !active || disabled || sending || draft.picking || attachments.busy || hasContent,
+    disabled: !active || disabled || sending || draft.picking || attachments.busy || dictationBusy || hasContent,
     restore: message => {
       draft.restore({ ...message, attachments: [] }); attachments.restore(message.attachments ?? []);
       menu.setSelection({ start: message.text.length, end: message.text.length });
@@ -72,8 +74,9 @@ export function useComposerState(props: ComposerProps) {
   const compact = !goalMode.enabled && !props.goal && !draft.text.length && !hasContent && !busy;
   const action = composerAction({ running: running && !hasContent,
     interrupted: !!props.interrupted && !goalMode.enabled, hasDraft: hasContent });
-  const actionDisabled = action === 'pause' ? !ready || pausing : disabled || busy || props.goalBusy
-    || (goalMode.enabled && running) || (action === 'send' && !hasContent);
+  const actionDisabled = dictationBusy || (action === 'pause' ? !ready || pausing : disabled || busy || props.goalBusy
+    || Boolean(modelSelectionError(props.models, selection))
+    || (goalMode.enabled && running) || (action === 'send' && !hasContent));
   useEffect(() => { if (active && ready && threadId) void goals.load(threadId); }, [goals, threadId, active, ready]);
   useEffect(() => { setError(''); }, [threadId]);
   useLayoutEffect(() => {
@@ -135,7 +138,7 @@ export function useComposerState(props: ComposerProps) {
     else goalMode.exit();
   };
   return { draft, attachments, goalMode, menu, queueEditor, busy, compact, action, actionDisabled, pausing,
-    drop, dropTarget,
+    drop, dropTarget, dictationBusy, setDictationBusy,
     hasQuotes: Boolean(quotes?.quotes.length),
     error: error || paste.error || attachments.error || draft.error, submit, removeGoal,
     paste: paste.paste, pasteKeyDown: paste.pasteKeyDown, readingClipboard: paste.reading };

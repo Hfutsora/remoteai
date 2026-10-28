@@ -16,9 +16,11 @@ import type { AuthSession } from '../types';
 import { palette, useStyles } from './styles';
 import { ProjectBrowser } from './ProjectBrowser';
 import type { DownloadClient } from '../../../../shared/remote-chat/downloads';
+import { useRemoteTerminalLauncher } from '../../../../shared/remote-chat/useRemoteTerminalLauncher';
 
 interface Props {
   client: GuiToolsClient; cwd: string; active: boolean; connected: boolean; deviceName?: string;
+  foreground?: boolean;
   scope: string; session?: AuthSession;
   downloads?: DownloadClient;
 }
@@ -27,21 +29,32 @@ export function ChatTools(props: Props) {
   const [mapping, setMapping] = useState(false);
   const [project, setProject] = useState<string>();
   const desktop = useDesktopLauncher();
+  // App backgrounding pauses live work without disposing stateful modal contents on Android.
+  const live = props.active && (props.foreground ?? true);
+  const terminalCwd = project ?? props.cwd;
+  const terminal = useRemoteTerminalLauncher({ client: props.client.terminal, cwd: terminalCwd,
+    connected: props.connected && live });
+  const terminalView = <ChatTerminal {...props} client={props.client.terminal} cwd={terminalCwd}
+    connected={props.connected && live} panel={terminal} hideTrigger />;
   return <>
-    <ProjectTools key={props.cwd} {...props} openMappings={() => setMapping(true)}
+    <ProjectTools key={props.cwd} {...props} connected={props.connected && live}
+      openMappings={() => setMapping(true)}
       openDesktop={desktop.open}
+      openTerminal={() => { Keyboard.dismiss(); terminal.toggle(); }}
       openFiles={() => setProject(value => value ?? props.cwd)} />
     {project && <ProjectBrowser client={props.client.projectBrowser} cwd={project}
-      active={props.active} connected={props.connected} onClose={() => setProject(undefined)} />}
+      active={props.active} connected={props.connected && live} onClose={() => setProject(undefined)}
+      scripts={terminal}>{terminalView}</ProjectBrowser>}
+    {!project && terminalView}
     <PortMappings client={props.client.files} scope={props.scope} connected={props.connected} session={props.session}
       active={props.active} deviceName={props.deviceName} open={mapping} close={() => setMapping(false)} />
-    {desktop.opened && <RemoteDesktop client={props.client.desktop} active={props.active}
+    {desktop.opened && <RemoteDesktop client={props.client.desktop} active={live}
       close={desktop.close} />}
   </>;
 }
 
 function ProjectTools({ client, ...props }: Props & {
-  openMappings: () => void; openFiles: () => void; openDesktop: () => void;
+  openMappings: () => void; openFiles: () => void; openDesktop: () => void; openTerminal: () => void;
 }) {
   const styles = useStyles();
   const color = useThemeColor();
@@ -49,9 +62,9 @@ function ProjectTools({ client, ...props }: Props & {
   useLanguage();
   const anchor = useRef<View>(null);
   const [menu, setMenu] = useState(false);
-  const [launchId, setLaunchId] = useState(0);
   const [git, setGit] = useState(false);
-  useEffect(() => { if (!props.active) setMenu(false); }, [props.active]);
+  useEffect(() => { if (!props.active || props.foreground === false) setMenu(false); },
+    [props.active, props.foreground]);
   return <>
     <Pressable ref={anchor} collapsable={false} accessibilityRole="button" accessibilityLabel={t("client.git.openTools")}
       accessibilityState={{ expanded: menu && props.active }}
@@ -73,7 +86,7 @@ function ProjectTools({ client, ...props }: Props & {
       <Pressable accessibilityRole="button" disabled={!props.connected}
         accessibilityState={{ disabled: !props.connected }}
         style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed, !props.connected && styles.disabled]}
-        onPress={() => { setMenu(false); setLaunchId(value => value + 1); }}>
+        onPress={() => { setMenu(false); props.openTerminal(); }}>
         <Ionicons name="terminal-outline" size={20} color={color(palette.ink, 'ink')} /><Text style={menuStyles.label}>{t("client.projectBrowser.terminal")}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" style={({ pressed }) => [menuStyles.item, pressed && menuStyles.pressed]}
@@ -89,7 +102,6 @@ function ProjectTools({ client, ...props }: Props & {
         <Text style={menuStyles.label}>{t("client.projectBrowser.browseFiles")}</Text>
       </Pressable>
     </ChatToolsPopover>}
-    <ChatTerminal {...props} client={client.terminal} launchId={launchId} hideTrigger />
     {git && <ChatGit {...props} client={client.git} onClose={() => setGit(false)} />}
   </>;
 }

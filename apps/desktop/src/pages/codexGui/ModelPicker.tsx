@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button, Input, Popover, Tooltip } from "antd";
 import { Check, ChevronLeft, ChevronRight, RefreshCw, RotateCcw, Search, Zap } from "lucide-react";
 import type { Model } from "./types";
-import { resolveModelSelection, type ModelSelection } from "./modelSelection";
+import { modelSelectionError, resolveModelSelection, type ModelSelection } from "./modelSelection";
 import styles from "./ModelPicker.module.less";
 import { GuiSpeedButton } from './GuiSpeedButton';
 import { EFFORT_LABELS, type RequestSpeed } from '../../../../../shared/remote-chat/composer';
@@ -70,6 +70,7 @@ function ModelList({ models, model, onSelect, onBack, onRefresh, refreshing }: {
 export function ModelPicker(props: ModelPickerProps) {
   const { models, onChange } = props;
   const { model, effort } = resolveModelSelection(models, props);
+  const unavailable = modelSelectionError(models, { model, effort });
   const disabled = props.disabled || !model;
   const [open, setOpen] = useState(false);
   const [choosingModel, setChoosingModel] = useState(false);
@@ -90,7 +91,7 @@ export function ModelPicker(props: ModelPickerProps) {
     EFFORT_ORDER.indexOf(left.reasoningEffort) - EFFORT_ORDER.indexOf(right.reasoningEffort));
   const index = Math.max(0, levels.findIndex((level) =>
     level.reasoningEffort === (effort || selected?.defaultReasoningEffort)));
-  // A successful refresh briefly blocks selections while reconciling saved settings.
+  // A source refresh briefly blocks selections until the new catalog is ready.
   useEffect(() => { if (props.disabled && props.error) setOpen(false); }, [props.disabled, props.error]);
   const changeOpen = (next: boolean) => {
     setOpen(next);
@@ -114,7 +115,8 @@ export function ModelPicker(props: ModelPickerProps) {
         </button>
         <Tooltip title={uiText("client.chat.resetToRecommendedReasoningEffort")} styles={{ root: { maxWidth: 400 } }}>
           <Button type="text" size="small" className={styles.reset} icon={<RotateCcw size={14} />}
-            disabled={effort === recommended.effort} aria-label={uiText("client.chat.resetToRecommendedReasoningEffort")}
+            disabled={!selected || effort === recommended.effort}
+            aria-label={uiText("client.chat.resetToRecommendedReasoningEffort")}
             onClick={() => onChange(recommended)} />
         </Tooltip>
       </div>
@@ -143,7 +145,9 @@ export function ModelPicker(props: ModelPickerProps) {
   return <Popover trigger="click" placement="topRight" arrow={false} open={open && !disabled}
     onOpenChange={changeOpen} content={panel} styles={{ root: { maxWidth: 400 },
       body: { padding: 0, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px rgb(0 0 0 / 8%)" } }}>
+    <Tooltip title={unavailable ? uiText(unavailable) : undefined} styles={{ root: { maxWidth: 400 } }}>
     <button type="button" className={styles.trigger} disabled={disabled} aria-expanded={open && !disabled}
+      data-model-unavailable={unavailable ? true : undefined}
       aria-label={uiText("client.conversation.modelAndReasoningEffort", { value1: modelLabel, value2: effortLabel })
         + requestSpeedSuffix(props.speed, displayText)}>
       <span className={styles.triggerModel}>{modelLabel}</span>
@@ -153,5 +157,6 @@ export function ModelPicker(props: ModelPickerProps) {
         {Array.from({ length: speedBolts }, (_, index) => <Zap key={index} size="1em" />)}
       </span>}
     </button>
+    </Tooltip>
   </Popover>;
 }

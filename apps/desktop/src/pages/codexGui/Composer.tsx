@@ -24,6 +24,7 @@ import { ImageAttachments } from "./ImageAttachments";
 import { useComposerDrop } from './useComposerDrop';
 import { IMAGE_TYPES, useComposerDraft } from "./useComposerDraft";
 import { ModelPicker } from "./ModelPicker";
+import { modelSelectionError } from "./modelSelection";
 import { useGuiRequestSpeed } from "./useGuiRequestSpeed";
 import { UsageStatus } from "./UsageStatus";
 import { DesktopUsageContext } from '../../../../../shared/chat/DesktopUsageContext';
@@ -95,7 +96,7 @@ export const Composer = forwardRef<ComposerHandle, {
   } }));
   const goal = state.selected ? state.goals?.[state.selected] : null;
   const canSend = !disabled && !reading && !state.modelSettingsLoading && !state.modelCatalogLoading
-    && state.models.length > 0 && hasDraft;
+    && !modelSelectionError(state.models, state.settings) && hasDraft;
   const send = async () => {
     if (!canSend || drop.isReading()) return;
     await sendDraft(goalMode.enabled, goalMode.exit);

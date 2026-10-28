@@ -69,8 +69,8 @@ pub(super) enum GitError {
     Worktree,
     #[error("操作未完成，请稍后重试。")]
     Operation,
-    #[error("此工作目录正在使用中，请等待当前任务或分支操作完成后重试。")]
-    WorkspaceBusy,
+    #[error(transparent)]
+    WorkspaceActivity(super::error::GuiError),
     #[error("文件信息无效，请刷新后重试。")]
     File,
     #[error("改动文件过多，请先在电脑上整理后重试。")]
@@ -370,5 +370,5 @@ async fn workspace_change(
     activity
         .change(key)
         .await
-        .map_err(|_| GitError::WorkspaceBusy.to_string())
+        .map_err(|error| error.to_string())
 }

@@ -49,9 +49,11 @@ import { changeRemoteProject } from './projectActions';
 import { readRemoteThreadList, completeRemoteThreadListWrite, receiveRemoteThreadListEvent } from './threadList';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
+import { RemoteDictation } from './dictation';
+import { DICTATION_OPERATION } from '../../../../shared/remote-chat/dictation';
 
 const OPERATIONS = new Set([
-  'projectFileRead', 'projectFileWrite', 'projectEntryAction',
+  'projectFileRead', 'projectFileBlame', 'projectFileWrite', 'projectEntryAction',
   'suggestNextPrompt',
   'guiGitGenerateMessage',
   'downloadOpen', 'downloadBrowse', 'previewOpen',
@@ -83,7 +85,8 @@ function terminalLinkRequest(request: RpcRequest): Cached['terminalLink'] {
 }
 const READ_OPERATIONS = new Set([
   'projectFileRead',
-  'guiFileApplications', 'guiFilePreviewClose', 'guiFilePreviewHost', 'guiResourceClose',
+  'projectFileBlame',
+  'guiFileApplications', 'guiFilePreviewClose', 'guiFilePreviewHost', 'guiFilePreviewText', 'guiResourceClose',
   'suggestNextPrompt',
   PROJECT_LIST_OPERATION,
   'downloadOpen', 'downloadBrowse', 'previewOpen',
@@ -118,6 +121,7 @@ function response(request: RpcRequest, data: unknown, mode: ConnectionMode): Rpc
 }
 
 export class ChatOperations {
+  private readonly dictation = new RemoteDictation();
   private readonly files = new RemoteFiles();
   attachMappingStreams(owner: string, link: import('../../../../shared/remote-chat/link').ChatLink) {
     this.files.attach(owner, link);
@@ -136,7 +140,8 @@ export class ChatOperations {
     const operation = (request.body as { operation?: string } | undefined)?.operation;
     const serialized = JSON.stringify([request.method, request.body]);
     // Retry matching must not retain SSH credentials or uploaded file contents in the response cache.
-    const fingerprint = typeof operation === 'string' && operation.startsWith('guiTerminalSsh')
+    const fingerprint = operation === DICTATION_OPERATION
+      || (typeof operation === 'string' && operation.startsWith('guiTerminalSsh'))
       ? bytesToHex(sha256(new TextEncoder().encode(serialized))) : serialized;
     const cacheKey = JSON.stringify([owner, request.id]);
     const cached = this.cache.get(cacheKey);
@@ -147,10 +152,7 @@ export class ChatOperations {
     this.pruneTerminalLink(request, owner);
     this.prune();
     if (this.cache.size >= 512) return Promise.reject(new Error('请求较多，请稍后重试。'));
-    const running = request.method === 'request' && GUI_FILE_OPERATIONS.has(operation ?? '')
-      ? this.files.request(object(request.body), owner)
-      : request.method === 'request' && operation === DESKTOP_OPERATION
-      ? this.desktop.request(request.body, owner) : this.run(request, mode, terminalOwner);
+    const running = this.dispatch(request, { mode, owner, terminalOwner });
     const result = running.then((data) => response(request, data, mode))
       .catch((error: unknown): RpcResponse => ({ kind: 'response', id: request.id, error: operationError(error) }));
     const readOnly = request.method === 'request' && (READ_OPERATIONS.has(operation ?? '')
@@ -172,6 +174,8 @@ export class ChatOperations {
       // Range reads are repeatable; caching their payloads would retain an entire file in memory.
       // Upload chunks retry fixed ranges; retaining every acknowledgement would cap large uploads at 512 requests.
       if (operation === 'videoRead' || operation === 'fileRead' || operation === 'projectFileRead'
+        || operation === 'projectFileBlame'
+        || operation === 'guiFilePreviewText'
         || (operation === 'projectFileWrite' && typeof object(request.body).upload === 'object'
           && object(request.body).upload !== null && !Array.isArray(object(request.body).upload)
           && !(object(request.body).upload as Record<string, unknown>).finish)
@@ -184,12 +188,23 @@ export class ChatOperations {
   }
 
   release(owner?: string) {
+    this.dictation.release(owner);
     this.files.release(owner);
     this.desktop.release(owner);
     if (owner === undefined) { this.titles.clear(); this.commandMetrics.clear(); }
     for (const key of this.cache.keys()) {
       if (owner === undefined || (JSON.parse(key) as string[])[0] === owner) this.cache.delete(key);
     }
+  }
+
+  private async dispatch(request: RpcRequest, options: { mode: ConnectionMode; owner: string; terminalOwner: string }) {
+    if (request.method === 'request') {
+      const body = object(request.body);
+      if (body.operation === DICTATION_OPERATION) return this.dictation.request(body, options.owner);
+      if (GUI_FILE_OPERATIONS.has(String(body.operation))) return this.files.request(body, options.owner);
+      if (body.operation === DESKTOP_OPERATION) return this.desktop.request(request.body, options.owner);
+    }
+    return this.run(request, options.mode, options.terminalOwner);
   }
 
   private pruneTerminalLink(request: RpcRequest, owner: string) {
@@ -310,7 +325,8 @@ export class ChatOperations {
       : await guiApi.request(body as unknown as Request);
     completeRemoteThreadListWrite(body, result);
     // File documents must stay byte-faithful; conversation image rewriting would corrupt embedded data URLs.
-    if (['projectFileRead', 'projectFileWrite', 'projectEntryAction'].includes(String(body.operation))) return result;
+    if (['projectFileRead', 'projectFileBlame', 'projectFileWrite', 'projectEntryAction']
+      .includes(String(body.operation))) return result;
     this.titles.completed(body, result);
     if (body.operation === 'skills') return composerCatalog(result as SkillsResponse, body);
     if (body.operation === 'list') {

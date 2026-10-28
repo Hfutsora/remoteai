@@ -11,6 +11,7 @@ import { deleteDownload, listDownloads, storeDownload } from './storage';
 import { transferDownload } from './transfer';
 import { monitorDownloadSpeed } from './downloadSpeed';
 import type { DownloadConnection, DownloadSource, DownloadTask } from './types';
+import { sshDownloadClient } from '../../../../shared/terminal/sshDownloadClient';
 
 const MAX_ACTIVE_DOWNLOADS = 2;
 const MAX_DOWNLOAD_RECORDS = 500;
@@ -35,6 +36,8 @@ export class WebDownloadManager {
     [...this.connections.values()].find(connection => connection.projectBrowser === client);
   connectionForGit = (git: NonNullable<DownloadConnection['git']>) =>
     [...this.connections.values()].find(connection => connection.git === git);
+  connectionForSsh = (ssh: NonNullable<DownloadConnection['ssh']>) =>
+    [...this.connections.values()].find(connection => connection.ssh === ssh);
   connectionForSource = (source: Pick<DownloadSource, 'owner' | 'deviceId'>) =>
     [...this.connections.values()].find(connection => connection.owner === source.owner
       && connection.deviceId === source.deviceId);
@@ -94,6 +97,7 @@ export class WebDownloadManager {
       && task.source.cwd === source.cwd
       && task.source.preview === source.preview
       && task.source.gitCommit === source.gitCommit
+      && task.source.sshSessionId === source.sshSessionId
       && ['queued', 'preparing', 'downloading', 'verifying', 'saving', 'paused'].includes(task.status));
     if (existing) { await this.resume(existing.id); return existing.id; }
     if (this.tasks.length >= MAX_DOWNLOAD_RECORDS) throw new Error('下载记录已满，请删除不再需要的记录后重试。');
@@ -187,7 +191,10 @@ export class WebDownloadManager {
     try {
       task = { ...task, status: 'preparing', preparation: undefined, completedAt: undefined };
       await this.persist(task);
-      await transferDownload({ task, client: connection.client, signal,
+      const client = task.source.sshSessionId ? connection.ssh
+        && sshDownloadClient(connection.ssh, task.source.sshSessionId) : connection.client;
+      if (!client) throw new Error('client.ssh.closed');
+      await transferDownload({ task, client, signal,
         mode: () => this.connectionForSource(task.source)?.mode ?? 'offline',
         update: speed.update });
       speed.stop();

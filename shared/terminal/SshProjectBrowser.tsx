@@ -19,8 +19,9 @@ import './sshProjectBrowser.css';
 import { browserFileRenderer } from '../file-preview/BrowserFilePreview';
 import { sshPreviewLoader } from '../file-preview/sshLoader';
 
-export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }: {
+export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload, download: managedDownload }: {
   api: SshApi; id: string; active: boolean; nativeDrop?: SshNativeDrop; pendingUpload?: PendingSshUpload;
+  download?: BrowserHost['download'];
 }) {
   const files = useSshFiles(api, id);
   const actions = useSshFileActions(files);
@@ -31,9 +32,9 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
   const { client, download } = useMemo(() => getSshProjectClient(api, id), [api, id]);
   const renderPreview = useMemo(() => browserFileRenderer(sshPreviewLoader(api, id)), [api, id]);
   const host = useMemo<BrowserHost>(() => ({
-    copyPath: path => navigator.clipboard.writeText(path), download, downloadDirectory: false,
+    copyPath: path => navigator.clipboard.writeText(path), download: managedDownload ?? download, downloadDirectory: false,
     entryActions: ['createFile', 'createFolder', 'rename', 'move', 'delete'],
-  }), [download]);
+  }), [download, managedDownload]);
   useEffect(() => {
     if (pendingUpload && !files.loaded && files.error) { pendingUpload.complete(); return; }
     if (!pendingUpload || accepted.current === pendingUpload || files.busy || !files.loaded) return;
@@ -64,7 +65,7 @@ export function SshProjectBrowser({ api, id, active, nativeDrop, pendingUpload }
       {!files.loaded && <div className="ssh-project-loading" role="status">
         {files.busy ? <Spin /> : <Button onClick={() => void files.load()}>{t('client.terminal.retry')}</Button>}
       </div>}
-      {files.loaded && <ProjectBrowser client={client} cwd="/" connected t={t} host={host} onClose={() => {}}
+      {files.loaded && <ProjectBrowser client={client} cwd="/" connected active={active} t={t} host={host} onClose={() => {}}
         renderPreview={renderPreview}
         treeOptions={{ root: files.path, showHidden: hidden, revision: files.entries,
           renderMenuExtras: (entry, close) => entry.directory && <button type="button" role="menuitem"

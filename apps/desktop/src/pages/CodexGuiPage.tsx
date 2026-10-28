@@ -38,7 +38,7 @@ import { useDreamSkin } from "./codexGui/useDreamSkin";
 import { FocusModeButton, type GuiFocusMode } from "./codexGui/FocusModeButton";
 import { useTerminalPanel } from "./codexGui/terminal/useTerminalPanel";
 import { terminalApi } from "./codexGui/terminal/api";
-import { TerminalLaunchContext } from '../../../../shared/terminal/TerminalLaunchContext';
+import { TerminalWorkspaceProvider } from '../../../../shared/terminal/TerminalWorkspaceProvider';
 import { MobileConnectionStatus } from "./codexGui/MobileConnectionStatus";
 import { AssistanceButton } from '../remoteAssistance/AssistanceButton';
 import { GUI_VIEW_TITLES, type GuiView } from "./codexGui/GuiNavigation";
@@ -119,7 +119,7 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
       return controller.send(text, [image]);
     } }}><DiffTextContext.Provider value={diffText}><WorkspaceOperationContext.Provider value={{ busy: Boolean(state.workspaceBusy),
     setBusy: controller.setWorkspaceBusy }}>
-    <TerminalLaunchContext.Provider value={isDesktopApp ? terminal.addInDirectory : undefined}>
+    <TerminalWorkspaceProvider panel={isDesktopApp ? terminal : undefined}>
     <DetailsWorkspace selected={state.selected} active={conversationActive}>
     <ChatFileReferencesProvider>
     <div className={`${styles.page} ${collapsed ? styles.collapsed : ""}`}
@@ -197,7 +197,7 @@ function Workspace({ active, accountPicker, windowControls, plugins, hostPicker,
     </div>
     </div>
   </ChatFileReferencesProvider></DetailsWorkspace>
-  </TerminalLaunchContext.Provider>
+  </TerminalWorkspaceProvider>
   </WorkspaceOperationContext.Provider></DiffTextContext.Provider></ImageAiContext.Provider>
   </DesktopUsageContext.Provider>;
 }

@@ -3,7 +3,9 @@ import type { SshApi } from './ssh';
 export interface TerminalSize { cols: number; rows: number }
 export interface TerminalInfo {
   id: string; cwd: string; shell: string; projectCwd?: string; ssh?: import('./ssh').SshRemote;
+  npmScript?: string; npmScriptCwd?: string; exited?: boolean;
 }
+export interface TerminalLaunchOptions { npmScript?: string }
 export interface TerminalAttachment extends TerminalInfo { detach?: () => void }
 export type TerminalEvent = { type: 'output'; data: number[] }
   | { type: 'exit'; code: number | null } | { type: 'error'; message: string }
@@ -17,7 +19,8 @@ export interface TerminalRead {
 export interface TerminalApi {
   ssh?: SshApi;
   resolveLink?: import('./links').ResolveTerminalLink;
-  open: (cwd: string, size: TerminalSize, onEvent: (event: TerminalEvent) => void) => Promise<TerminalAttachment>;
+  open: (cwd: string, size: TerminalSize, onEvent: (event: TerminalEvent) => void,
+    options?: TerminalLaunchOptions) => Promise<TerminalAttachment>;
   write: (id: string, data: string) => Promise<void>;
   writeBinary?: (id: string, data: number[]) => Promise<void>;
   binaryMode?: (id: string, token: string, enabled: boolean) => Promise<void>;

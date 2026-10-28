@@ -3,6 +3,7 @@ import { guiApi } from "./api";
 import { conversationSnapshot as conversation } from './conversationSnapshot';
 import { withSentMessage } from "./sentMessages";
 import { queueSendError } from "./queueSendError";
+import { modelSelectionError } from "./modelSelection";
 import type { GuiState, MessageInput, QueuedMessage, Settings, Thread, Turn } from "./types";
 
 const MAX_QUEUED_MESSAGES = 100;
@@ -114,6 +115,7 @@ export class MessageQueue {
       || state.compacting === threadId
       || this.pending.has(threadId)
       || state.conversations[threadId]?.activeTurn || !messages.length
+      || modelSelectionError(state.models, messages[0])
       || (!retry && messages.some(item => item.needsReview))) return;
     this.pending.add(threadId);
     const ids = new Set(messages.map((item) => item.id));
@@ -152,6 +154,7 @@ export class MessageQueue {
     const turnId = state.conversations[threadId]?.activeTurn;
     const item = this.list(threadId).find((entry) => entry.id === id);
     if (!this.host.active() || state.connection !== "ready" || !turnId || !item || item.busy
+      || state.modelCatalogLoading || modelSelectionError(state.models, item)
       || this.pending.has(threadId)) return;
     this.pending.add(threadId);
     const ids = new Set([id]);

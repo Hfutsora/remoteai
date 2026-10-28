@@ -16,7 +16,8 @@ use windows::{
         Foundation::HANDLE,
         System::Power::{
             PowerSettingRegisterNotification, PowerSettingUnregisterNotification,
-            DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, HPOWERNOTIFY, POWERBROADCAST_SETTING,
+            SetThreadExecutionState, DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, ES_DISPLAY_REQUIRED,
+            HPOWERNOTIFY, POWERBROADCAST_SETTING,
         },
         UI::WindowsAndMessaging::{DEVICE_NOTIFY_CALLBACK, PBT_POWERSETTINGCHANGE},
     },
@@ -30,6 +31,7 @@ const TRANSITION_TIMEOUT: Duration = Duration::from_secs(5);
 const RESTORE_OBSERVATION: Duration = Duration::from_secs(30);
 static DISPLAY_STATE: AtomicU32 = AtomicU32::new(UNKNOWN);
 static OFF_EVENTS: AtomicU32 = AtomicU32::new(0);
+static AWAKE_EVENTS: AtomicU32 = AtomicU32::new(0);
 
 unsafe extern "system" fn on_power_change(
     _context: *const c_void,
@@ -48,8 +50,11 @@ unsafe extern "system" fn on_power_change(
     // SAFETY: The validated notification contains all four bytes at Data.
     let state = unsafe { setting.Data.as_ptr().cast::<u32>().read_unaligned() };
     DISPLAY_STATE.store(state, Ordering::SeqCst);
+    println!("display-state={state}");
     if state == DISPLAY_OFF {
         OFF_EVENTS.fetch_add(1, Ordering::SeqCst);
+    } else {
+        AWAKE_EVENTS.fetch_add(1, Ordering::SeqCst);
     }
     0
 }
@@ -136,4 +141,66 @@ fn restored_monitor_stays_on() {
         assert_eq!(DISPLAY_STATE.load(Ordering::SeqCst), DISPLAY_ON);
         println!("cycle {cycle}: display restored and stayed on for {RESTORE_OBSERVATION:?}");
     }
+}
+
+#[test]
+#[ignore = "changes monitor power; run only on the explicitly selected test device"]
+fn manual_off_survives_windows_wake_requests() {
+    let _observer = PowerObserver::new();
+    let _restore_on_failure = RestoreDisplay;
+    screen_power::set(screen_power::Action::Off).unwrap();
+    wait_for(DISPLAY_OFF);
+    assert!(screen_power::is_off());
+    for _ in 0..3 {
+        let before = OFF_EVENTS.load(Ordering::SeqCst);
+        // SAFETY: the opt-in test simulates an external Windows wake request with a documented flag.
+        assert_ne!(unsafe { SetThreadExecutionState(ES_DISPLAY_REQUIRED) }.0, 0);
+        let deadline = Instant::now() + TRANSITION_TIMEOUT;
+        while OFF_EVENTS.load(Ordering::SeqCst) == before {
+            assert!(
+                Instant::now() < deadline,
+                "manual off was lost after a wake request"
+            );
+            thread::sleep(Duration::from_millis(50));
+        }
+        wait_for(DISPLAY_OFF);
+    }
+    screen_power::set(screen_power::Action::On).unwrap();
+    assert!(!screen_power::is_off());
+    wait_for(DISPLAY_ON);
+    thread::sleep(Duration::from_secs(3));
+    assert_eq!(DISPLAY_STATE.load(Ordering::SeqCst), DISPLAY_ON);
+}
+
+#[test]
+#[ignore = "live remote desktop test; requires CSW_SCREEN_POWER_TEST_DIR on the selected test device"]
+fn manual_off_during_remote_connection() {
+    let directory =
+        std::path::PathBuf::from(std::env::var_os("CSW_SCREEN_POWER_TEST_DIR").unwrap());
+    assert!(directory.is_dir());
+    let _observer = PowerObserver::new();
+    let _restore_on_failure = RestoreDisplay;
+    screen_power::set(screen_power::Action::Off).unwrap();
+    wait_for(DISPLAY_OFF);
+    let awake_events = AWAKE_EVENTS.load(Ordering::SeqCst);
+    std::fs::write(directory.join("ready"), b"off").unwrap();
+    let deadline = Instant::now() + Duration::from_secs(240);
+    while !directory.join("finish").is_file() {
+        assert!(
+            Instant::now() < deadline,
+            "remote viewer did not finish within four minutes"
+        );
+        thread::sleep(Duration::from_millis(100));
+    }
+    wait_for(DISPLAY_OFF);
+    assert_eq!(
+        AWAKE_EVENTS.load(Ordering::SeqCst),
+        awake_events,
+        "remote connection briefly woke the display"
+    );
+    assert!(
+        screen_power::is_off(),
+        "capture cleanup discarded the device's power choice"
+    );
+    println!("remote connection finished with explicit display-off ownership intact");
 }

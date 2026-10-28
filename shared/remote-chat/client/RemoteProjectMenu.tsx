@@ -7,9 +7,10 @@ import { projectActionReason, type ProjectAction } from './projectActions';
 import type { ChatController } from './controller';
 import type { ChatState } from './types';
 
-export function RemoteProjectMenu({ cwd, label, state, controller, translate, buttonClassName, children }: {
+export function RemoteProjectMenu({ cwd, label, state, controller, translate, buttonClassName,
+  showActionButton = true, children }: {
   cwd: string; label: string; state: ChatState; controller: Pick<ChatController, 'projectActions'>;
-  translate: MessageTranslator; buttonClassName: string; children: ReactElement;
+  translate: MessageTranslator; buttonClassName: string; showActionButton?: boolean; children: ReactElement;
 }) {
   const { message } = App.useApp();
   const pinned = Boolean(state.sidebar.pinnedProjects?.includes(cwd));
@@ -26,7 +27,8 @@ export function RemoteProjectMenu({ cwd, label, state, controller, translate, bu
   };
   return <ProjectContextMenu label={label} pinned={pinned} removing={state.projectActionBusy === cwd}
     pinDisabled={disabled} removeDisabled={disabled} onPin={() => void run(pinned ? 'unpin' : 'pin')}
-    onRemove={() => void run('remove')} translate={translate} buttonClassName={buttonClassName}>
+    onRemove={() => void run('remove')} translate={translate} buttonClassName={buttonClassName}
+    showActionButton={showActionButton}>
     {children}
   </ProjectContextMenu>;
 }

@@ -12,8 +12,9 @@ import "@xterm/xterm/css/xterm.css";
 import { bindSshDirectory } from '../../../../../../shared/terminal/sshDirectory';
 import { useZmodemTransfer } from '../../../../../../shared/terminal/useZmodemTransfer';
 
-export function useTerminalSession({ cwd, visible, api, session, onLink }: {
+export function useTerminalSession({ cwd, visible, api, session, npmScript, onExit, onLink }: {
   cwd: string; visible: boolean; api: TerminalApi; session?: TerminalInfo; onLink: (link: TerminalLinkTarget) => void;
+  npmScript?: string; onExit?: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal>();
@@ -22,6 +23,8 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
   const linkHandler = useRef(onLink);
   const transfer = useZmodemTransfer(api, session);
   linkHandler.current = onLink;
+  const exitHandler = useRef(onExit);
+  exitHandler.current = onExit;
   useEffect(() => {
     if (!host.current) return;
     const element = host.current;
@@ -42,8 +45,9 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
       if (directory) directory.output(data); else terminal.write(new Uint8Array(data));
     };
     const zmodem = transfer.bind(output);
-    const connection = connectTerminal({ api, cwd, session, size: { cols: terminal.cols, rows: terminal.rows },
+    const connection = connectTerminal({ api, cwd, session, npmScript, size: { cols: terminal.cols, rows: terminal.rows },
       onReady: (value) => { setInfo(value); setStatus(""); }, onError: setStatus,
+      onStartFailed: () => exitHandler.current?.(),
       onEvent: (event) => {
         if (event.type === "output") {
           if (zmodem) zmodem.output(event.data); else output(event.data);
@@ -56,6 +60,7 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
         }
         if (event.type === "error") setStatus(event.message);
         if (event.type === "exit") {
+          exitHandler.current?.();
           zmodem?.disconnect();
           directory?.disconnect();
           terminal.options.disableStdin = true;
@@ -84,7 +89,7 @@ export function useTerminalSession({ cwd, visible, api, session, onLink }: {
       zmodem?.dispose(); directory?.dispose(); input.dispose(); resize.dispose(); connection.dispose();
       terminal.dispose(); terminalRef.current = undefined;
     };
-  }, [cwd, api, session, transfer.bind]);
+  }, [cwd, api, session, npmScript, transfer.bind]);
   useEffect(() => { if (visible) terminalRef.current?.focus(); }, [visible]);
   return { host, info, status, transfer, input: (data: string) => terminalRef.current?.input(data, true) };
 }

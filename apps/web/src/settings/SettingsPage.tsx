@@ -22,6 +22,7 @@ import { ThemeSettingsRow } from './ThemeSettingsRow';
 import { profileRole } from '../i18n/profile';
 import './styles.css';
 import { AutoSaveSettings } from '../../../../shared/project-browser/AutoSaveSettings';
+import { JsonHighlightSettings } from '../../../../shared/file-preview/JsonHighlightSettings';
 import { useBrowserPreferences } from '../../../../shared/project-browser/useBrowserPreferences';
 import { GlobalFontSettings } from '../../../../shared/appearance/GlobalFontSettings';
 import { useGlobalFontSize } from '../../../../shared/appearance/fontSize';
@@ -64,7 +65,8 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
         <section className="settings-group">
           <SettingsRow label={t('client.appearance.globalFontSize')} value={`${fontSize}px`} icon={Type}
             onClick={() => setPanel('font')} />
-          <SettingsRow label={t("client.projectBrowser.autoSaveFiles")} icon={RefreshCw} onClick={() => setPanel('files')} />
+          <SettingsRow label={t("client.projectBrowser.fileBrowserSettings")} icon={RefreshCw}
+            onClick={() => setPanel('files')} />
           <SettingsRow label={t("client.settings.autoRefreshUsage")} value={t("client.settings.minutes", { value1: minutes })} icon={RefreshCw}
             onClick={() => setPanel('refresh')} />
           <SettingsRow label={t("client.app.2faKeys")} value={totpManager.cloudSyncEnabled ? t("client.settings.on") : t("client.settings.off")} icon={ShieldCheck}
@@ -88,10 +90,15 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
     </div>
     <AdaptiveSheet open={panel === 'petDock'} title={petDockText(getLanguage(), 'settings.petDock.title')}
       onClose={close} width={400}>
-      <div className="settings-sync"><p>{petDockText(getLanguage(), 'settings.petDock.cloudHint')}</p></div>
+      <div className="settings-sync">
+        <p>{petDockText(getLanguage(), 'settings.petDock.cloudHint')}</p>
+        <p>{petDockText(getLanguage(), 'settings.petDock.labelsHint')}</p>
+      </div>
     </AdaptiveSheet>
     <AdaptiveSheet open={panel === 'files'} title={t("client.projectBrowser.fileBrowserSettings")} onClose={close} width={400}>
-      <div className="settings-sync"><AutoSaveSettings preferences={filePreferences} t={displayText} /></div>
+      <div className="settings-sync"><div>
+        <AutoSaveSettings preferences={filePreferences} t={displayText} /><JsonHighlightSettings t={displayText} />
+      </div></div>
     </AdaptiveSheet>
     <AdaptiveSheet open={panel === 'font'} title={t('client.appearance.globalFontSize')} onClose={close} width={480}>
       <GlobalFontSettings t={t} />

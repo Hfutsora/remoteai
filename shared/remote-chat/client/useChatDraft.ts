@@ -25,6 +25,11 @@ export function useChatDraft({ threadId, sending, disabled, selection, send, rec
   const [content, setContent] = useState(emptySkillDraft);
   const { text } = content;
   const setText = (value: string) => setContent((draft) => editSkillDraft(draft, value));
+  const appendDictation = (value: string) => {
+    if (!value.trim()) return;
+    setContent(draft => ({ ...draft,
+      text: draft.text + (draft.text && !/\s$/.test(draft.text) ? '\n' : '') + value.trim() }));
+  };
   const insertSkill = (range: TextSelection, skill: Skill) =>
     setContent((draft) => insertDraftSkill(draft, range, skill));
   const removeText = (range: TextSelection, expected: string) => setContent((draft) => draft.text === expected
@@ -127,7 +132,8 @@ export function useChatDraft({ threadId, sending, disabled, selection, send, rec
     setImages((current) => current.map((image) => image === original ? { ...image, url } : image));
     setError('');
   };
-  return { text, setText, insertSkill, removeText, images, error, picking, addImages, removeImage, replaceImage, submit,
+  return { text, setText, appendDictation, insertSkill, removeText, images, error, picking,
+    addImages, removeImage, replaceImage, submit,
     restore, references, removeReference: (item: AttachmentReference) =>
       setReferences((value) => value.filter((reference) => reference !== item)),
     hasContent: Boolean(text.trim() || images.length || references.length) };

@@ -1,4 +1,4 @@
-import type { ProjectBrowserRequest, ProjectDocument } from '../../../shared/project-browser/protocol';
+import type { ProjectBlame, ProjectBrowserRequest, ProjectDocument } from '../../../shared/project-browser/protocol';
 import type { ProjectFilesResponse } from '../../../shared/remote-chat/projectFiles';
 import { mutateFixture } from './project-browser-mutations';
 import { fromByteArray, toByteArray } from 'base64-js';
@@ -20,6 +20,12 @@ const directories = new Set(['', 'src', 'nested', 'nested/子目录']);
 export const savedFiles: { path: string; text: string }[] = [];
 export let conflict = false;
 export function causeConflict() { conflict = true; }
+export function seedNpmScripts() {
+  documents['package.json'] = JSON.stringify({ name: 'npm-fixture', scripts: {
+    dev: 'node server.cjs', build: 'node build.cjs', failStart: 'node missing.cjs',
+  }, nested: { scripts: { hidden: 'not a script' } } }, null, 2);
+  documents['src/package.json'] = JSON.stringify({ scripts: { dev: 'node nested.cjs' } }, null, 2);
+}
 const uploads = new Map<string, Uint8Array>();
 const fileRevision = (path: string) => bytesToHex(sha256(utf8ToBytes(documents[path] ?? '')));
 export function seedLargeText(atThreshold = false) {
@@ -61,6 +67,26 @@ function searchFiles(cwd: string, query: string): ProjectFilesResponse {
 export async function browserRequest<T>(request: ProjectBrowserRequest): Promise<T> {
   const path = request.operation === 'projectFiles' ? request.directory ?? '' : request.path;
   const relative = path === request.cwd ? '' : path.replace(`${request.cwd}/`, '');
+  if (request.operation === 'projectFileBlame') {
+    const body = typeof document === 'undefined' ? undefined : document.body;
+    if (body) body.dataset.blameReads = String(Number(body.dataset.blameReads ?? 0) + 1);
+    const status = (body?.dataset.blameStatus ?? 'ready') as ProjectBlame['status'];
+    const ages = body?.dataset.blameAges?.split(',').map(Number);
+    const authors = ages ? ['Alice 中文', 'Bob', 'Carol', 'Dave'] : ['Alice 中文', 'Bob'];
+    const commits = authors.map((author, index) => ({
+      hash: String(index + 1).repeat(40), author,
+      time: ages ? Math.floor(Date.now() / 1000) - ages[index] * 86400 : 1_700_000_000 + index * 86400,
+      timezone: '+0800', summary: index ? 'Update content' : 'Initial content',
+    }));
+    const lines = (documents[relative] ?? '').split('\n');
+    const ranges = lines.length > 100 ? [{ start: 1, count: lines.length, commit: 0 }]
+      : lines.map((_, index) => ({ start: index + 1, count: 1, commit: index % commits.length }));
+    const result: ProjectBlame = { status, revision: fileRevision(relative), commits, ranges };
+    if (body?.dataset.blameDelay) {
+      await new Promise(resolve => setTimeout(resolve, Number(body.dataset.blameDelay)));
+    }
+    return result as T;
+  }
   if (request.operation === 'projectEntryAction') {
     return mutateFixture(request, { documents, directories, revisions }) as T;
   }

@@ -6,6 +6,7 @@ import { usePreviewFile } from './usePreviewFile';
 import { PreviewContent } from '../../apps/desktop/src/pages/codexGui/filePreview/PreviewContent';
 import { BrowserMarkdown } from './BrowserMarkdown';
 import { HtmlPreviewFrame } from './HtmlPreviewFrame';
+import { BrowserImagePreview } from './BrowserImagePreview';
 import './browserFilePreview.css';
 
 const PdfPreview = lazy(() => import('./PdfPreview'));
@@ -39,7 +40,8 @@ function BinaryPreview({ load, document, connected, active }: ProjectPreviewProp
   return <div className="browser-file-media" ref={host}>
     {kind === 'pdf' ? <Suspense fallback={<p role="status">{t('client.projectBrowser.loading')}</p>}>
       <PdfPreview file={result.file} name={name} /></Suspense>
-      : <PreviewContent source={false} data={{ sessionId: '', path: document.path, name, kind, text: null, url }} />}
+      : kind === 'image' ? <BrowserImagePreview src={url} name={name} />
+        : <PreviewContent source={false} data={{ sessionId: '', path: document.path, name, kind, text: null, url }} />}
   </div>;
 }
 
@@ -47,8 +49,8 @@ function BrowserFilePreview(props: ProjectPreviewProps & { load: PreviewLoader }
   const [source, setSource] = useState(false);
   const kind = filePreviewKind(props.document.path);
   const textDocument = (kind === 'html' || kind === 'markdown') && props.document.kind === 'text';
-  if (kind === 'image' && props.document.image) return <div className="pf-image">
-    <img src={props.document.image} alt={props.document.path.split(/[\\/]/).at(-1)} /></div>;
+  if (kind === 'image' && props.document.image) return <BrowserImagePreview src={props.document.image}
+    name={props.document.path.split(/[\\/]/).at(-1) ?? ''} />;
   // Every HTML preview has an opaque origin, including scripts written into an unsaved draft.
   if (!textDocument) return <BinaryPreview {...props} />;
   return <div className="browser-document-preview">

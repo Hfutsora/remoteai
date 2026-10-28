@@ -635,6 +635,7 @@ pub fn run() {
             floating_bubble::set_floating_bubble,
             pet_dock::get_pet_dock_status,
             pet_dock::set_pet_dock_enabled,
+            pet_dock::set_pet_dock_labels_visible,
             floating_bubble::set_privacy_mode,
             floating_bubble::set_hide_account_notes,
             floating_bubble::set_show_usage_network_errors,

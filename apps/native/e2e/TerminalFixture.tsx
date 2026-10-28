@@ -11,6 +11,7 @@ import type { GuiToolsClient } from '../../../shared/remote-chat/guiTools';
 import type { TerminalEvent, TerminalInfo } from '../../../shared/terminal/types';
 import { ChatTerminal } from '../src/chat/ChatTerminal';
 import { createSshFixture } from './sshFixture';
+import { AppearanceTools } from './AppearanceTools';
 
 function App() {
   const [fonts] = useFonts(Ionicons.font);
@@ -61,6 +62,7 @@ function App() {
       <Text style={{ flex: 1 }}>Chat · {computer}</Text>
       {fonts && <ChatTerminal key={computer} client={client} cwd={project} active connected deviceName={computer} />}
     </View>
+    <AppearanceTools />
     <Pressable accessibilityRole="button" accessibilityLabel="Switch computer" style={{ padding: 20 }}
       onPress={() => setComputer(value => value === 'Office' ? 'Home' : 'Office')}><Text>Switch computer</Text></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Switch project" style={{ padding: 20 }}

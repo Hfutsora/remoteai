@@ -3,6 +3,7 @@ import { act, type ComponentProps, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ChatComposer } from '../../../web/src/chat/ChatComposer';
+import { testModels } from '../pages/codexGui/testModels';
 import { draftImage, MAX_CHAT_IMAGE_CHARS } from '../../../../shared/remote-chat/attachments';
 import type { FileDropEvent } from '../../../../shared/chat/useFileDrop';
 
@@ -26,7 +27,8 @@ beforeEach(() => {
     disconnect = vi.fn();
   });
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
-  props = { models: [], selection: { model: 'astra', effort: 'high', access: 'workspace-write' },
+  props = { models: [{ ...testModels[0], id: 'astra', model: 'astra' }],
+    selection: { model: 'astra', effort: 'high', access: 'workspace-write' },
     connection: { deviceName: '测试电脑', chooseDevice: vi.fn(), client: {
       read: vi.fn().mockResolvedValue({ selection: { kind: 'none' }, choices: [], running: false }),
       select: vi.fn(), subscribe: vi.fn(() => vi.fn()),

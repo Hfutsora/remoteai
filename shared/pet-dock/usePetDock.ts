@@ -34,14 +34,14 @@ export function usePetDock(api: PetDockApi) {
     return () => { active.current = false; clearInterval(timer); };
   }, [refresh]);
 
-  const update = useCallback(async (enabled: boolean) => {
+  const save = useCallback(async (request: () => Promise<PetDockStatus>) => {
     if (writing.current) return;
     writing.current = true;
     revision.current += 1;
     setSaving(true);
     setError(null);
     try {
-      const next = await api.save(enabled);
+      const next = await request();
       if (active.current) setStatus(next);
     } catch {
       if (active.current) setError('saveError');
@@ -49,7 +49,10 @@ export function usePetDock(api: PetDockApi) {
       writing.current = false;
       if (active.current) setSaving(false);
     }
-  }, [api]);
+  }, []);
 
-  return { status, saving, error, update, refresh };
+  const update = useCallback((enabled: boolean) => save(() => api.save(enabled)), [api, save]);
+  const updateLabels = useCallback((showLabels: boolean) => save(() => api.saveLabels(showLabels)), [api, save]);
+
+  return { status, saving, error, update, updateLabels, refresh };
 }

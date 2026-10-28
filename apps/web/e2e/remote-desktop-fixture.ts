@@ -53,6 +53,8 @@ export const desktopTest = { inputs: [] as DesktopInput[], settings: [] as Deskt
   securityChanges: [] as object[], securityFail: false, securityNoop: false,
   inputFocus: null as DesktopInputFocus | null, inputFocusReads: 0,
   privacyChanges: [] as boolean[],
+  accessError: new URLSearchParams(location.search).get('access-error') ?? '',
+  privacyRequiresUnattended: new URLSearchParams(location.search).has('privacy-unattended'),
   resolutionChanges: [] as DesktopResolution[],
   privacyInstallationRequired: new URLSearchParams(location.search).has('privacy-install'),
   permissionRequired: (new URLSearchParams(location.search).has('permissions')
@@ -74,6 +76,7 @@ export const desktopTest = { inputs: [] as DesktopInput[], settings: [] as Deskt
   frames: 0, captures: 0, closed: 0, concurrent: 0, maxConcurrent: 0, errors: [] as string[] };
 
 async function frame(id: string, width: number) {
+  if (desktopTest.accessError) throw new Error(desktopTest.accessError);
   const capture = captures.get(id);
   if (!capture) throw new Error('Capture closed');
   const { canvas, display } = capture;
@@ -150,6 +153,7 @@ Object.defineProperty(window, '__TAURI_INTERNALS__', { value: {
     }
     if (command === 'remote_desktop_open') {
       desktopTest.captureAttempts += 1;
+      if (desktopTest.accessError) throw desktopTest.accessError;
       if (desktopTest.permissionRequired) {
         const permission = desktopTest.permissionRequired === 'screenRecording' ? '屏幕录制' : '辅助功能';
         throw new Error(`请在 Mac 的远程设置中开启${permission}权限，然后重新连接。`);
@@ -166,6 +170,7 @@ Object.defineProperty(window, '__TAURI_INTERNALS__', { value: {
     }
     if (command === 'remote_desktop_frame') return frame(args.id!, args.width!);
     if (command === 'remote_desktop_input') {
+      if (desktopTest.accessError) throw desktopTest.accessError;
       desktopTest.inputs.push(args.input!); desktopTest.inputDisplays.push(captures.get(args.id!)!.display.id); return;
     }
     if (command === 'remote_desktop_close') { captures.delete(args.id!); desktopTest.closed += 1; return; }
@@ -239,6 +244,9 @@ const host = new RemoteDesktopHost(privacyFixture || resolutionFixture || securi
       return { ...desktopTest.security };
     },
     privacy: async enabled => {
+      if (enabled && desktopTest.privacyRequiresUnattended) {
+        throw new Error('client.remoteDesktop.privacyRequiresUnattended');
+      }
       if (enabled && desktopTest.privacyInstallationRequired) {
         throw new Error('请在电脑上确认安装，完成后再点一次隐私屏。');
       }

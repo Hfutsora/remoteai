@@ -61,11 +61,13 @@ fn iteration(
     *was_enabled = true;
     let mut snapshot =
         load_snapshot(app, balance).unwrap_or_else(|_| data::unavailable("official"));
-    snapshot["language"] = serde_json::to_value(settings.language).unwrap_or_default();
     // A slow database read must not re-enable a dock after its switch was turned off.
-    if !crate::storage::read_app_settings(app)?.pet_dock_enabled {
+    let settings = crate::storage::read_app_settings(app)?;
+    if !settings.pet_dock_enabled {
         return Ok(());
     }
+    snapshot["language"] = serde_json::to_value(settings.language).unwrap_or_default();
+    snapshot["showLabels"] = settings.pet_dock_show_labels.into();
     set_state(sync(Some(&snapshot))?);
     Ok(())
 }

@@ -9,6 +9,8 @@ import type { ChatController } from './controller';
 import type { ChatProject, ChatState, Thread } from './types';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatThreadActions } from './ChatThreadActions';
+import { ChatProjectActions } from './ChatProjectActions';
+import { useProjectActions } from '../../../../shared/remote-chat/client/useProjectActions';
 import { useThreadActions } from '../../../../shared/remote-chat/client/useThreadActions';
 import { palette, useStyles } from './styles';
 
@@ -25,6 +27,7 @@ export function ChatThreads({ state, controller, newChat, openSearch, select, pr
   useLanguage();
   const [footerHeight, setFooterHeight] = useState(0);
   const actions = useThreadActions(state, controller);
+  const projectActions = useProjectActions(state, controller);
   return <View style={styles.fill}>
     <View style={listStyles.header}>
       <Text style={listStyles.heading}>{t("client.app.chat")}</Text>
@@ -38,8 +41,9 @@ export function ChatThreads({ state, controller, newChat, openSearch, select, pr
         style={listStyles.search}><Feather name="search" size={23} color={color(palette.ink, 'ink')} /></Pressable>
     </View>
     <ChatThreadList state={state} controller={controller} newChat={newChat} select={select}
-      openActions={actions.open} bottomInset={footerHeight} />
+      openActions={actions.open} openProjectActions={projectActions.open} bottomInset={footerHeight} />
     {active && <ChatThreadActions actions={actions} />}
+    {active && <ChatProjectActions actions={projectActions} />}
     <View style={listStyles.footer} pointerEvents="box-none"
       onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}>
       <Pressable accessibilityRole="button" accessibilityLabel={t("client.chat.newChat")} disabled={state.sending}

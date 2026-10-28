@@ -59,7 +59,8 @@ export class DesktopDisplaySession {
     catch (error) {
       // A broken privacy driver must not cause repeated locking through automatic reconnects.
       this.privacyRestore.failed = true;
-      if (!this.stopped) this.options.status(error instanceof Error ? error.message : '隐私屏未能切换，请重新连接后重试。');
+      if (!this.stopped) this.options.status(typeof error === 'string' ? error
+        : error instanceof Error ? error.message : 'client.remoteDesktop.privacyFailed');
     }
   }
 

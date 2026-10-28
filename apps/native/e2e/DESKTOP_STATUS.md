@@ -20,6 +20,8 @@ node apps/native/e2e/desktop-status-test.mjs
 ```
 
 Set `DESKTOP_STATUS_APK` to a saved fixture APK when other local builds share the Android output directory.
+Use `--access` to run only locked-session, unattended-access and privacy-failure notices, including the pinned
+notice in the production security panel after scrolling to and enabling privacy mode.
 
 The runner checks connection and reconnection messages, the retry action and multiline permission
 guidance in portrait and landscape at system font scales 1.0 and 1.3. It verifies

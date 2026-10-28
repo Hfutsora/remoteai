@@ -26,6 +26,7 @@ import { rememberTurnDetails } from "./turnDetailsStorage";
 import { trackProcessingApproval } from "./processingApprovals";
 import { initialState, savePreferences } from "./preferences";
 import { ThreadModelSettings } from "./threadModelSettings";
+import { modelSelectionError } from "./modelSelection";
 import { GuiModelCatalog } from "./modelCatalog";
 import { GuiThreadTitles } from "./threadTitles";
 import type { ApprovalReply, GuiEvent, GuiState, Model, Settings, Thread, Turn } from "./types";
@@ -243,10 +244,8 @@ export class GuiController {
 
   setModels = async (models: Model[]) => {
     if (this.disposed) return;
-    const previous = this.state.models;
     this.patch({ models });
     this.modelSettings.catalogChanged();
-    await this.modelSettings.reconcileCatalog(previous);
   };
 
   refresh = (more = false, force = !more) => this.lists.refresh(more, force);
@@ -335,6 +334,7 @@ export class GuiController {
     const { selected, settings, conversations } = this.state;
     const projectOverride = selected ? this.state.projectOverrides[selected] : undefined;
     if (this.state.modelCatalogLoading || this.state.modelSettingsLoading
+      || modelSelectionError(this.state.models, settings)
       || this.state.workspaceBusy || this.state.sending
       || this.state.deleting || this.state.compacting === selected
       || this.state.connection !== "ready" || this.state.archived

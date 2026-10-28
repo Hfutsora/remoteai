@@ -6,6 +6,9 @@ import { isMarkdownPath, type TextPreview } from '../../../../shared/remote-chat
 import type { FileClient } from '../../../../shared/remote-chat/fileDownload';
 import { isVideoPath } from '../../../../shared/remote-chat/video';
 import { ChatCodeBlock } from './ChatCodeBlock';
+import { ChatCopyButton } from './ChatCopyButton';
+import { JsonPreview } from '../../../../shared/file-preview/JsonPreview';
+import { isJsonPath } from '../../../../shared/file-preview/jsonHighlightLimit';
 import { ChatMarkdownPreview } from './ChatMarkdownPreview';
 import { ChatHtmlPreview, isHtmlPath } from './ChatHtmlPreview';
 import { ChatImage } from './ChatImage';
@@ -47,6 +50,8 @@ function TextFile({ path, context, line }: { path: string; context: FilePreviewC
     {isHtmlPath(path) ? <ChatHtmlPreview text={result.text} path={result.path}
       client={context.client} threadId={context.threadId!} />
       : isMarkdownPath(path) ? <ChatMarkdownPreview text={result.text} />
+      : isJsonPath(path) ? <><ChatCopyButton text={result.text} label={t('client.chat.copyFileContents')} />
+        <JsonPreview text={result.text} size={result.size} line={line} /></>
       : <ChatCodeBlock text={result.text} language={path.split('.').at(-1)} label={path.split(/[\\/]/).at(-1)}
         copyLabel={t("client.chat.copyFileContents")} />}</>;
 }

@@ -22,7 +22,8 @@ export async function changeDesktopDisplay(action: DisplayAction) {
     if (action.receiver.current === current) action.status('');
   } catch (error) {
     if (action.receiver.current === current) {
-      action.status(error instanceof Error ? error.message : '显示设置未能保存，请重试。');
+      action.status(typeof error === 'string' ? error
+        : error instanceof Error ? error.message : '显示设置未能保存，请重试。');
     }
   } finally { action.updating.current = false; action.saving(false); }
 }

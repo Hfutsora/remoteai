@@ -14,6 +14,13 @@ import { TerminalTabItem } from './TerminalTabItem';
 import { useTabOverflow } from './useTabOverflow';
 import { BottomSheet } from '../../components/BottomSheet';
 import { SheetGestureScrollView } from '../../components/SheetScrollGesture';
+import type { TerminalInfo } from '../../../../../shared/terminal/types';
+
+function terminalLabel(session: TerminalInfo, index: number) {
+  if (session.ssh) return sshLabel(session.ssh);
+  if (session.npmScript) return `npm run ${session.npmScript}`;
+  return t('client.mobile.terminal', { value1: index + 1 });
+}
 
 export function TerminalTabs({ panel, client, cwd, connected, active }: {
   panel: ReturnType<typeof useRemoteTerminalLauncher>; client: GuiToolsClient['terminal'];
@@ -39,8 +46,7 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
         onContentSizeChange={overflow.setContentWidth} scrollEventThrottle={16}
         onScroll={event => overflow.setScrollLeft(event.nativeEvent.contentOffset.x)}>
         {panel.tabs.map((tab, index) => {
-          const label = tab.session.ssh ? sshLabel(tab.session.ssh)
-            : t('client.mobile.terminal', { value1: index + 1 });
+          const label = terminalLabel(tab.session, index);
           return <TerminalTabItem key={tab.id} label={label} index={index} selected={tab.id === panel.selected}
             maxWidth={overflow.viewportWidth || 220} onLayout={event => overflow.layout(tab.id, event)}
             choose={() => panel.select(tab.id)} close={() => panel.remove(tab.id)} />;
@@ -70,8 +76,7 @@ export function TerminalTabs({ panel, client, cwd, connected, active }: {
     {more && active && <BottomSheet visible title={t('client.terminal.moreTabs')} maxWidth={400}
       onClose={() => setMore(false)}>
       <SheetGestureScrollView>{hidden.map(tab => <TerminalTabItem key={tab.id} menu
-        label={tab.session.ssh ? sshLabel(tab.session.ssh)
-          : t('client.mobile.terminal', { value1: panel.tabs.indexOf(tab) + 1 })}
+        label={terminalLabel(tab.session, panel.tabs.indexOf(tab))}
         index={panel.tabs.indexOf(tab)} selected={tab.id === panel.selected}
         choose={() => { panel.select(tab.id); setMore(false); }}
         close={() => panel.remove(tab.id)} />)}</SheetGestureScrollView>

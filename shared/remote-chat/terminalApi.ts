@@ -31,8 +31,8 @@ export function remoteTerminalApi(client: Omit<GuiToolsClient['terminal'], 'link
       if (resolveLink) return resolveLink(id, url);
       throw new Error('请在桌面端打开远程电脑的网页。');
     },
-    async open(cwd, size, onEvent) {
-      const info = await client.open(cwd, size);
+    async open(cwd, size, onEvent, options) {
+      const info = await client.open(cwd, size, undefined, options);
       return attach(info, size, onEvent);
     },
     attach,

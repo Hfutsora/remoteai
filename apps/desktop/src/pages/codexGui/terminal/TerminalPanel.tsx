@@ -22,6 +22,7 @@ import { sshError } from '../../../../../../shared/terminal/ssh';
 import { nativeSshUploadBatch, subscribeSshFileDrop } from './sshDrop';
 import { getSshDirectory, subscribeSshDirectory } from '../../../../../../shared/terminal/sshDirectory';
 import { ZmodemDialog } from '../../../../../../shared/terminal/ZmodemDialog';
+import { enqueueSshDownload } from '../../../../../web/src/downloads/sshDownload';
 
 const nativeDrop = { subscribe: subscribeSshFileDrop, read: nativeSshUploadBatch };
 
@@ -72,6 +73,7 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
     {notice && <div className={styles.status} role="alert">{translate(notice)}</div>}
     {!panel.tabs.length && empty}
     {panel.tabs.map((tab) => <TerminalPane key={tab.id} tab={tab} api={api} translate={translate} shortcuts={fill}
+      onExit={() => panel.exited?.(tab.id)}
       upload={async batch => {
         if (!tab.session) return;
         openFiles(tab.session.id);
@@ -80,21 +82,24 @@ export default function TerminalPanel({ panel, active, api, fill = false, transl
       visible={visible && panel.selected === tab.id} />)}
     {api.ssh && !fill && panel.tabs.filter(tab => tab.session?.ssh && fileTabs.includes(tab.session.id)).map(tab =>
       <SshFiles key={tab.id} info={tab.session!} api={api.ssh!} active={active} nativeDrop={nativeDrop}
+        download={file => enqueueSshDownload(api.ssh!, tab.session!.id, file)}
         pendingUpload={uploads.pending.find(value => value.id === tab.session!.id)} />)}
     {api.ssh && fill && panel.tabs.filter(tab => tab.session?.ssh && fileTabs.includes(tab.session.id)).map(tab =>
       <Drawer key={tab.id} open={visible && mobileFiles === tab.session!.id} placement="bottom" height="100%"
       rootClassName="ssh-files-drawer" title={translate('client.ssh.files')} onClose={() => setMobileFiles(undefined)}
       closable={{ 'aria-label': translate('client.ssh.backToTerminal'), placement: 'end' }}>
       <SshProjectBrowser id={tab.session!.id} api={api.ssh!} nativeDrop={nativeDrop}
+        download={file => enqueueSshDownload(api.ssh!, tab.session!.id, file)}
         active={visible && mobileFiles === tab.session!.id}
         pendingUpload={uploads.pending.find(value => value.id === tab.session!.id)} />
     </Drawer>)}
   </section>;
 }
 
-function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadPending }: {
+function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadPending, onExit }: {
   tab: TerminalTab; visible: boolean; api: TerminalApi; translate: (source: string) => string;
   shortcuts: boolean;
+  onExit: () => void;
   upload: (batch: SshUploadBatch) => Promise<void>; uploadPending: boolean;
 }) {
   const [link, setLink] = useState<TerminalLinkTarget>();
@@ -104,7 +109,7 @@ function TerminalPane({ tab, visible, api, translate, shortcuts, upload, uploadP
     () => getSshDirectory(sessionId));
   const closeLink = useCallback(() => setLink(undefined), []);
   const { host, info, status, input, transfer } = useTerminalSession({ cwd: tab.cwd, visible, api,
-    session: tab.session, onLink: setLink });
+    session: tab.session, npmScript: tab.npmScript, onExit, onLink: setLink });
   const content = <>
     <div ref={host} className={styles.screen} aria-label={info?.shell ?? translate("client.projectBrowser.terminal")} />
     {dropError && <div className={styles.status} role="alert">{translate(dropError)}</div>}
