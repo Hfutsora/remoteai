@@ -65,7 +65,8 @@ class BlameMarker extends GutterMarker {
     label.className = 'pf-blame-text'; label.textContent = text;
     element.append(label);
     element.dataset.commit = this.commit?.hash ?? '';
-    element.dataset.blameDetails = this.commit ? `${text}\n${this.commit.hash.slice(0, 12)}\n${this.commit.summary}` : text;
+    element.dataset.blameDetails = this.commit
+      ? `${text}\n${this.commit.hash.slice(0, 12)}\n${this.commit.summary}` : text;
     if (this.commit) {
       element.style.setProperty('--pf-blame-opacity', String(blameRecencyOpacity(this.commit.time, this.now)));
     }

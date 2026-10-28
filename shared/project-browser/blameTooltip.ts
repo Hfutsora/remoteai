@@ -48,7 +48,8 @@ export const blameTooltip = ViewPlugin.fromClass(class {
     this.tooltip.style.left = '0px';
     this.tooltip.style.top = '0px';
     const bounds = this.tooltip.getBoundingClientRect();
-    const left = Math.max(VIEWPORT_MARGIN, Math.min(event.clientX, viewport.clientWidth - bounds.width - VIEWPORT_MARGIN));
+    const left = Math.max(VIEWPORT_MARGIN,
+      Math.min(event.clientX, viewport.clientWidth - bounds.width - VIEWPORT_MARGIN));
     const top = Math.max(VIEWPORT_MARGIN,
       Math.min(event.clientY + POINTER_OFFSET, viewport.clientHeight - bounds.height - VIEWPORT_MARGIN));
     this.tooltip.style.left = `${left - bounds.left}px`;
