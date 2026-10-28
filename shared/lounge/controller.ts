@@ -10,6 +10,7 @@ import { LoungeDirectDelivery } from './directDelivery';
 import { LoungeDeliveryTransport } from './deliveryTransport';
 import { mergeDirectPermissions, type DirectPermission } from './directPermission';
 import { needsDeliveryWork } from './delivery';
+import { LoungeProfiles } from './profiles';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -51,6 +52,7 @@ export class LoungeController {
   private recent: LoungeMessage[] = [];
   private watched = '';
   private permissions = new Map<string, DirectPermission>();
+  private readonly profiles = new LoungeProfiles();
   private readonly delivery: LoungeDirectDelivery;
   private readonly transport = new LoungeDeliveryTransport();
 
@@ -84,7 +86,7 @@ export class LoungeController {
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
   private update(value: Partial<LoungeSnapshot>) {
-    this.state = { ...this.state, ...value };
+    this.state = this.profiles.decorate({ ...this.state, ...value });
     this.listeners.forEach(listener => listener());
   }
 
@@ -112,6 +114,7 @@ export class LoungeController {
     this.disconnect();
     this.recent = [];
     this.permissions.clear();
+    this.profiles.clear();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
       status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, conversation: '', unreadByConversation: {} });
@@ -193,6 +196,7 @@ export class LoungeController {
     }
     this.pending.clear();
     this.watched = '';
+    this.profiles.disconnect();
     if (this.running) this.update({ status: 'connecting', onlineCount: undefined,
       contacts: this.state.contacts.map(contact => ({ ...contact, online: undefined })) });
   }
@@ -202,6 +206,7 @@ export class LoungeController {
     try { frame = JSON.parse(data) as Record<string, unknown>; } catch { return; }
     if (!frame || typeof frame !== 'object') return;
     this.received = Date.now();
+    if (frame.type === 'profiles') { this.receiveProfiles(frame.profiles); return; }
     if (frame.type === 'direct-permissions') { mergeDirectPermissions(this.permissions, frame.states); return; }
     if (frame.type === 'rejected') this.delivery.reject(frame);
     if (frame.type === 'policy' || frame.type === 'ready') this.receivePolicy(frame.policy);
@@ -228,7 +233,9 @@ export class LoungeController {
       const user = frame.user as LoungeSnapshot['user'];
       if (!user || typeof user.id !== 'string' || typeof user.account !== 'string') return;
       this.authorized = Date.now(); this.attempt = 0; this.renewalStarted = 0;
-      this.update({ status: 'connected', user: { ...user, avatar: this.session?.avatars?.load(user.id) },
+      this.profiles.ready(user, frame.profiles === true);
+      this.profiles.cache(user, this.session?.avatars);
+      this.update({ status: 'connected', user, historyRevision: this.state.historyRevision + 1,
         directAvailable: frame.direct === true && frame.receipts === true,
         contacts: this.state.contacts.filter(contact => contact.user.id !== user.id) });
       this.syncWatch(); return;
@@ -320,7 +327,10 @@ export class LoungeController {
   async searchHistory(query: HistoryQuery): Promise<HistoryPage> {
     query = { ...query, conversation: query.conversation ?? (query.pendingOnly ? undefined : this.state.conversation) };
     await this.writes;
-    if (this.session?.history) return this.session.history.page(query);
+    if (this.session?.history) {
+      const page = await this.session.history.page(query);
+      return { ...page, messages: page.messages.map(this.profiles.message) };
+    }
     const recent = recentMessages([...this.recent, ...this.state.messages]);
     const matches = searchLoungeHistory(recent, query.query).filter(message => {
       if (query.conversation !== undefined && (message.conversation ?? '') !== query.conversation) return false;
@@ -332,7 +342,7 @@ export class LoungeController {
       const first = historyPosition(a); const second = historyPosition(b);
       return second.time - first.time || (first.key < second.key ? 1 : -1);
     });
-    return historyPage(matches, query);
+    return historyPage(matches.map(this.profiles.message), query);
   }
   async retryHistory() {
     await this.writes;
@@ -358,14 +368,21 @@ export class LoungeController {
     }
     return this.submit({ type: 'message', ...draft, avatar: this.state.user?.avatar ?? '' });
   }
-  setAvatar(avatar: string) {
-    const user = this.state.user;
-    if (!user || !this.session?.avatars) throw new Error('client.lounge.avatarSaveFailed');
+  async setAvatar(avatar: string): Promise<void> {
+    if (!this.state.user || !this.profiles.available) throw new Error('client.lounge.avatarSaveFailed');
     if (avatar && !avatarData(avatar)) throw new Error('client.lounge.imageFailed');
-    this.session.avatars.save(user.id, avatar);
-    const updated = { ...user, avatar: avatar || undefined };
-    this.update({ user: updated, messages: this.state.messages.map(message => message.sender.id === user.id
-      ? { ...message, sender: updated } : message) });
+    try { await this.submit({ type: 'avatar', avatar }); }
+    catch { throw new Error('client.lounge.avatarSaveFailed'); }
+  }
+  private receiveProfiles(input: unknown) {
+    if (!this.profiles.receive(input)) return;
+    this.recent = this.recent.map(this.profiles.message);
+    this.profiles.cache(this.state.user, this.session?.avatars);
+    const previous = this.state.contacts;
+    this.update({ historyRevision: this.state.historyRevision + 1 });
+    this.state.contacts.forEach((contact, index) => {
+      if (contact.user.avatar !== previous[index]?.user.avatar) this.persistContact(contact);
+    });
   }
   moderate(userId: string, minutes: number): Promise<void> {
     return this.submit({ type: 'moderate', userId, minutes });
@@ -426,7 +443,10 @@ export class LoungeController {
       ? { ...contact, online: statuses.get(contact.user.id) } : contact) });
   }
   private syncWatch() {
-    if (!this.state.directAvailable || this.state.status !== 'connected' || !this.socket) return;
+    if (this.state.status !== 'connected' || !this.socket) return;
+    try { this.profiles.watch(this.socket, this.state); }
+    catch { this.disconnect(); this.schedule(); return; }
+    if (!this.state.directAvailable) return;
     const ids = this.state.contacts.filter(contact => contact.direct).map(contact => contact.user.id);
     const watch = [...new Set([this.state.conversation, ...this.delivery.peers(), ...ids.reverse()].filter(Boolean))]
       .slice(0, 200);

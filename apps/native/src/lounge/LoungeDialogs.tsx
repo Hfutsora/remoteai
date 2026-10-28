@@ -39,9 +39,12 @@ export function LoungeAvatarSettings({ user, controller, close }: {
         ? failure.message : 'client.lounge.imageFailed');
     } finally { locked.current = false; setBusy(false); }
   };
-  const save = () => {
-    try { controller.setAvatar(avatar); close(); }
+  const save = async () => {
+    if (locked.current) return;
+    locked.current = true; setBusy(true); setError('');
+    try { await controller.setAvatar(avatar); close(); }
     catch { setError('client.lounge.avatarSaveFailed'); }
+    finally { locked.current = false; setBusy(false); }
   };
   return <Dialog title={t('client.lounge.avatarSettings')} close={busy ? () => {} : close}>
     <LoungeAvatar user={{ ...user, avatar }} />

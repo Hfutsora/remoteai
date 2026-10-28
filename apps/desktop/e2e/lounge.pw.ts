@@ -215,7 +215,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await historyButton.click();
     await search.fill('hello');
     await expect(page.locator('.lounge-history-message')).toHaveCount(1);
-    await expect(page.locator('.lounge-history-message .lounge-avatar img')).toBeVisible();
+    await expect(page.locator('.lounge-history-message .lounge-avatar')).toHaveText('AL');
     await search.fill('咖啡');
     await expect(page.locator('.lounge-history-message .lounge-image img')).toBeVisible();
     await page.evaluate(() => sessionStorage.setItem('lounge-test-offline', '1'));

@@ -21,9 +21,12 @@ export function LoungeAvatarSettings({ user, controller, close }: {
     catch (failure) { setError(failure instanceof Error ? failure.message : 'client.lounge.imageFailed'); }
     finally { working.current = false; setBusy(false); }
   };
-  const save = () => {
-    try { controller.setAvatar(avatar); close(); }
+  const save = async () => {
+    if (working.current) return;
+    working.current = true; setBusy(true); setError('');
+    try { await controller.setAvatar(avatar); close(); }
     catch { setError('client.lounge.avatarSaveFailed'); }
+    finally { working.current = false; setBusy(false); }
   };
   return <Modal open width={400} title={t('client.lounge.avatarSettings')} onCancel={close}
     closable={!busy} maskClosable={!busy} keyboard={!busy} footer={<>

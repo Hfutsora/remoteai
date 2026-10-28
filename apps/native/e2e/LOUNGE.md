@@ -1,8 +1,9 @@
 # Mobile lounge verification
 
 The production native and mobile Web entry is Discover → Online Chat. Native uses the shared
-controller with an AppState lifecycle adapter and Expo image handling. Account avatars and
-received messages are saved locally; SQLite history survives restart and supports paged search. The
+controller with an AppState lifecycle adapter and Expo image handling. Account avatars are saved on
+the server and synchronized across devices; received messages stay local. SQLite history survives restart
+and supports paged search. The
 connection stays mounted while navigating other pages. Mobile operating systems may suspend
 the app in the background; returning resumes or reconnects without downloading missed messages.
 The lounge does not request notifications or send system alerts.
@@ -36,6 +37,11 @@ Push-Location apps/native/android
 Pop-Location
 node apps/native/e2e/lounge-test.mjs
 ```
+
+Set `LOUNGE_AVATAR_ONLY=1` to run the focused avatar checks using the same fixture and font scales.
+They cover server save failures, successful saves, external profile updates, resets, fresh installs,
+reconnection with stale caches, and the translated settings copy. Server tests separately validate
+48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
 The runner verifies discovery unread badges, sending, search, mute actions, foreground delivery,
 long-press quote replies, cancellation, locally restored quotes, moderator-only presence,

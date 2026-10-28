@@ -12,6 +12,8 @@ export async function setupLounge(page: Page, web = false) {
   let blocked = false;
   let acknowledge = true;
   let contactOnline: boolean | null = true;
+  let avatar = '';
+  let rejectAvatar = false;
   const receipts: { type: string; id: string; to: string; status: string }[] = [];
   const moderation: { userId: string; minutes: number }[] = [];
   const sent: { id: string; text: string; images: string[]; avatar?: string; reply?: LoungeReply; to?: string }[] = [];
@@ -32,11 +34,21 @@ export async function setupLounge(page: Page, web = false) {
     route.onMessage(raw => {
       const frame = JSON.parse(String(raw));
       if (frame.type === 'authenticate') {
-        route.send(JSON.stringify({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' },
+        route.send(JSON.stringify({ type: 'ready', profiles: true,
+          user: { id: 'alice', account: 'alice@example.test', avatar },
           direct: true, receipts: true, blocked: blocked ? [bob] : [] }));
         authentications++;
       }
       if (frame.type === 'ping') route.send('{"type":"pong"}');
+      if (frame.type === 'avatar') {
+        if (rejectAvatar) route.send(JSON.stringify({ type: 'rejected', id: frame.id,
+          code: 'client.lounge.avatarSaveFailed' }));
+        else {
+          avatar = frame.avatar;
+          route.send(JSON.stringify({ type: 'profiles', profiles: [{ id: 'alice', avatar }] }));
+          route.send(JSON.stringify({ type: 'updated', id: frame.id }));
+        }
+      }
       if (frame.type === 'watch') route.send(JSON.stringify({ type: 'contacts',
         contacts: frame.watch.map((id: string) => ({ id, online: id === 'bob' ? contactOnline : true })) }));
       if (frame.type === 'block') {
@@ -81,6 +93,12 @@ export async function setupLounge(page: Page, web = false) {
   }, web);
   return {
     sent, moderation, receipts, count: () => connections,
+    avatar: (value: string) => {
+      avatar = value;
+      socket.send(JSON.stringify({ type: 'profiles', profiles: [{ id: 'alice', avatar }] }));
+    },
+    savedAvatar: () => avatar,
+    rejectAvatar: (reject: boolean) => { rejectAvatar = reject; },
     acknowledge: (enabled: boolean) => { acknowledge = enabled; },
     receipt: (id: string, status: 'delivered' | 'read') => socket.send(JSON.stringify({
       type: 'receipt', id, from: 'bob', to: 'alice', status })),

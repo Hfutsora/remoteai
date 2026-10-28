@@ -52,19 +52,63 @@ describe('application lifetime lounge', () => {
     socket.frame({ type: 'policy', policy: { moderator: true, mutedUntil: null }, onlineCount: 6 });
     socket.onclose?.(); expect(controller.snapshot().onlineCount).toBeUndefined();
   });
-  it('saves only the selected avatar and includes it with new messages across reconnects', async () => {
+  it('uses server avatars across devices and never lets stale local data undo a reset', async () => {
     const avatar = 'data:image/png;base64,AAAA';
-    const socket = Socket.instances[0]; socket.ready();
-    controller.setAvatar(avatar);
+    const socket = Socket.instances[0];
+    const ready = (value = '') => socket.frame({ type: 'ready', profiles: true,
+      user: { id: 'self', account: 'alice@example.test', avatar: value } });
+    ready();
+    const saving = controller.setAvatar(avatar);
+    const request = JSON.parse(socket.send.mock.calls.at(-1)![0]);
+    expect(request).toMatchObject({ type: 'avatar', avatar });
+    expect(controller.snapshot().user?.avatar).toBeUndefined();
+    socket.frame({ type: 'profiles', profiles: [{ id: 'self', avatar }] });
+    socket.frame({ type: 'updated', id: request.id }); await saving;
     expect(controller.snapshot().user?.avatar).toBe(avatar);
     const sending = controller.send({ text: 'private message', images: [] });
     const frame = JSON.parse(socket.send.mock.calls.at(-1)![0]);
     expect(frame.avatar).toBe(avatar);
     socket.message(frame.id, true); await sending;
-    socket.ready(); expect(controller.snapshot().user?.avatar).toBe(avatar);
+    ready(avatar); expect(controller.snapshot().user?.avatar).toBe(avatar);
     expect(JSON.stringify(localStorage)).not.toContain('private message');
-    controller.setAvatar('');
-    socket.ready(); expect(controller.snapshot().user?.avatar).toBeUndefined();
+    socket.frame({ type: 'profiles', profiles: [{ id: 'self', avatar: '' }] });
+    expect(controller.snapshot().user?.avatar).toBeUndefined();
+    browserAvatarStore('https://example.test').save('self', avatar);
+    ready(); expect(controller.snapshot().user?.avatar).toBeUndefined();
+    expect(browserAvatarStore('https://example.test').load('self')).toBeUndefined();
+  });
+  it('keeps the accepted profile when saving fails and refuses local-only saves', async () => {
+    const socket = Socket.instances[0]; socket.ready();
+    await expect(controller.setAvatar('')).rejects.toThrow('client.lounge.avatarSaveFailed');
+    const avatar = 'data:image/png;base64,AAAA';
+    socket.frame({ type: 'ready', profiles: true, user: { id: 'self', account: 'alice@example.test', avatar } });
+    const failed = controller.setAvatar('').catch(error => error.message);
+    const request = JSON.parse(socket.send.mock.calls.at(-1)![0]);
+    socket.frame({ type: 'rejected', id: request.id, code: 'client.lounge.avatarSaveFailed' });
+    expect(await failed).toBe('client.lounge.avatarSaveFailed');
+    expect(controller.snapshot().user?.avatar).toBe(avatar);
+    await expect(controller.setAvatar('https://tracker.test')).rejects.toThrow('client.lounge.imageFailed');
+    const disconnected = controller.setAvatar('').catch(error => error.message);
+    socket.onclose?.(); expect(await disconnected).toBe('client.lounge.avatarSaveFailed');
+  });
+  it('synchronizes known contact avatars in chat and history without changing message content', async () => {
+    const socket = Socket.instances[0];
+    socket.frame({ type: 'ready', profiles: true, user: { id: 'self', account: 'alice@example.test' } });
+    socket.message('original');
+    expect(JSON.parse(socket.send.mock.calls.at(-1)![0])).toEqual({ type: 'profile-watch', watch: ['other'] });
+    const avatar = 'data:image/png;base64,AAAA';
+    socket.frame({ type: 'profiles', profiles: [{ id: 'other', avatar }] });
+    expect(controller.snapshot().contacts[0].user.avatar).toBe(avatar);
+    expect(controller.snapshot().messages[0].sender.avatar).toBe(avatar);
+    expect((await controller.searchHistory({ query: '', limit: 50 })).messages[0].sender.avatar).toBe(avatar);
+    const messages = controller.snapshot().messages;
+    socket.frame({ type: 'profiles', profiles: [{ id: 'self', avatar }] });
+    socket.frame({ type: 'contacts', contacts: [{ id: 'other', online: true }] });
+    expect(controller.snapshot().messages).toBe(messages);
+    socket.frame({ type: 'profiles', profiles: [{ id: 'other', avatar: '' }] });
+    expect(controller.snapshot().messages[0].sender.avatar).toBeUndefined();
+    expect(controller.snapshot().messages[0].id).toBe('original');
+    expect(controller.snapshot().unread).toBe(1);
   });
   it('connects without opening the page, counts background messages, and clears only when visible', () => {
     const socket = Socket.instances[0];
