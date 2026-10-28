@@ -1,10 +1,12 @@
+import { avatarData, type LoungeAvatarStore } from './avatar';
+
 export const MAX_TEXT = 4000;
 export const MAX_IMAGES = 3;
 export const MAX_IMAGE_BYTES = 1024 * 1024;
 export const MAX_TOTAL_IMAGE_BYTES = 3 * 1024 * 1024;
 export const MAX_FRAME_BYTES = 6 * 1024 * 1024;
 export const MAX_MUTE_MINUTES = 30 * 24 * 60;
-export interface LoungeAccount { id: string; account: string }
+export interface LoungeAccount { id: string; account: string; avatar?: string }
 export interface LoungeMessage {
   type: 'message'; id: string; sender: LoungeAccount; text: string; images: string[]; sentAt: string;
 }
@@ -13,6 +15,7 @@ export interface LoungePolicy { moderator: boolean; mutedUntil: string | null }
 export interface LoungeSession {
   baseUrl: string;
   authorize: () => Promise<{ ticket: string }>;
+  avatars?: LoungeAvatarStore;
 }
 export interface LoungeSnapshot {
   status: 'signed-out' | 'connecting' | 'connected';
@@ -37,7 +40,8 @@ export function parseMessage(value: unknown): LoungeMessage | undefined {
     || typeof item.sentAt !== 'string' || !Number.isFinite(Date.parse(item.sentAt))) return;
   const images = item.images ?? [];
   if (images.length > MAX_IMAGES || !images.every(imageData)) return;
-  return { ...item, images } as LoungeMessage;
+  const sender = { ...item.sender, avatar: avatarData(item.sender.avatar) ? item.sender.avatar : undefined };
+  return { ...item, sender, images } as LoungeMessage;
 }
 
 export function initials(account: string) { return Array.from(account).slice(0, 2).join('').toUpperCase(); }

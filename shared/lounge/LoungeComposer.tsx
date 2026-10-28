@@ -1,5 +1,5 @@
 import { useRef, useState, type ClipboardEvent } from 'react';
-import { ImagePlus, Send, Smile, X } from 'lucide-react';
+import { History, ImagePlus, Send, Smile, X } from 'lucide-react';
 import { Popover } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
@@ -8,7 +8,9 @@ import { prepareImage } from './images';
 const EMOJI = ['😀', '😂', '🥹', '😊', '😍', '😎', '🤔', '😅', '😭', '😴', '🙃', '🤫',
   '👍', '👏', '🙌', '🙏', '❤️', '🎉', '🔥', '✨', '☕', '🍉', '🐟', '🚀'];
 
-export function LoungeComposer({ connected, send }: { connected: boolean; send: (draft: LoungeDraft) => Promise<void> }) {
+export function LoungeComposer({ connected, send, onHistory }: {
+  connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void;
+}) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -81,6 +83,8 @@ export function LoungeComposer({ connected, send }: { connected: boolean; send: 
       <input ref={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
         onChange={event => { void addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
       {processing && <span role="status">{t('client.lounge.preparingImage')}</span>}
+      <button type="button" className="lounge-history-button" onClick={onHistory}
+        aria-label={t('client.lounge.history')} title={t('client.lounge.history')}><History size={22} /></button>
     </div>
     {!!images.length && <div className="lounge-attachments">{images.map((image, index) => <div key={index}>
       <img src={image} alt={t('client.lounge.image')} />

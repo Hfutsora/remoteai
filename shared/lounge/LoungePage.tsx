@@ -4,10 +4,14 @@ import { Modal } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
 import { localeForLanguage } from '../localization/language';
-import { initials, type LoungeAccount } from './types';
+import { type LoungeAccount } from './types';
 import type { LoungeController } from './controller';
 import { LoungeComposer } from './LoungeComposer';
 import { LoungeModeration } from './LoungeModeration';
+import { LoungeAvatar } from './LoungeAvatar';
+import { LoungeAvatarSettings } from './LoungeAvatarSettings';
+import { LoungeMessageBody } from './LoungeMessageBody';
+import { LoungeHistory } from './LoungeHistory';
 import './lounge.css';
 
 export function LoungePage({ controller, onLogin }: { controller: LoungeController; onLogin?: () => void }) {
@@ -17,6 +21,8 @@ export function LoungePage({ controller, onLogin }: { controller: LoungeControll
   const [atBottom, setAtBottom] = useState(true);
   const [preview, setPreview] = useState<string>();
   const [moderating, setModerating] = useState<LoungeAccount>();
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [now, setNow] = useState(Date.now);
   const mutedUntil = state.policy.mutedUntil;
   const muted = !!mutedUntil && Date.parse(mutedUntil) > now;
@@ -25,15 +31,21 @@ export function LoungePage({ controller, onLogin }: { controller: LoungeControll
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [muted, mutedUntil]);
-  useEffect(() => { controller.setViewing(atBottom); return () => controller.setViewing(false); }, [controller, atBottom]);
+  useEffect(() => {
+    controller.setViewing(atBottom && !historyOpen && !avatarOpen);
+    return () => controller.setViewing(false);
+  }, [controller, atBottom, historyOpen, avatarOpen]);
   useLayoutEffect(() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; },
     [state.messages, atBottom]);
   const scrollBottom = () => { setAtBottom(true); if (list.current) list.current.scrollTop = list.current.scrollHeight; };
   const signedOut = state.status === 'signed-out';
   return <section className="lounge-page">
     <header className="lounge-heading"><div><Coffee size={21} /><h1>{t('client.lounge.title')}</h1></div>
-      <span className={`lounge-connection is-${state.status}`} role="status">
-        <i />{t(`client.lounge.${state.status}`)}</span></header>
+      <div className="lounge-heading-actions"><span className={`lounge-connection is-${state.status}`} role="status">
+        <i />{t(`client.lounge.${state.status}`)}</span>
+        {state.user && <button type="button" className="lounge-avatar-trigger" onClick={() => setAvatarOpen(true)}
+          aria-label={t('client.lounge.avatarSettings')} title={t('client.lounge.avatarSettings')}>
+          <LoungeAvatar user={state.user} /></button>}</div></header>
     <div className="lounge-conversation" ref={list} role="log" aria-live="off" aria-label={t('client.lounge.title')}
       onScroll={() => {
         const node = list.current;
@@ -53,20 +65,14 @@ export function LoungePage({ controller, onLogin }: { controller: LoungeControll
             {new Intl.DateTimeFormat(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' })
               .format(new Date(message.sentAt))}</time></div>}
           <article className={`lounge-message${own ? ' is-own' : ''}`}>
-            <span className="lounge-avatar" aria-hidden>{initials(message.sender.account)}</span>
+            <LoungeAvatar user={message.sender} />
             <div className="lounge-message-main">
               {state.policy.moderator && !own ? <button type="button" className="lounge-account lounge-account-action"
                 aria-label={t('client.lounge.manageUser', { account: message.sender.account })}
                 onClick={() => setModerating(message.sender)}>{message.sender.account}</button>
                 : <div className="lounge-account">{message.sender.account}</div>}
-              <div className={`lounge-bubble${!message.text.trim() && message.images.length ? ' image-only' : ''}`}>
-                {message.text && <div className="lounge-text">{message.text}</div>}
-                {message.images.map((source, imageIndex) => <button type="button" key={imageIndex}
-                  className="lounge-image" aria-label={t('client.lounge.previewImage')} onClick={() => setPreview(source)}>
-                  <img src={source} alt={t('client.lounge.image')}
-                    onLoad={() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; }} />
-                </button>)}
-              </div>
+              <LoungeMessageBody message={message} preview={setPreview}
+                onImageLoad={() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; }} />
             </div>
           </article>
         </div>;
@@ -79,7 +85,10 @@ export function LoungePage({ controller, onLogin }: { controller: LoungeControll
         .format(new Date(mutedUntil!)),
     })}</p>}
     <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted}
-      send={draft => controller.send(draft)} />
+      send={draft => controller.send(draft)} onHistory={() => setHistoryOpen(true)} />
+    <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} messages={state.messages} preview={setPreview} />
+    {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
+      close={() => setAvatarOpen(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}
       close={() => setModerating(undefined)} />}
     <Modal open={!!preview} footer={null} width="min(900px, 90vw)" centered destroyOnClose

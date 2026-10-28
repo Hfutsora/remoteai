@@ -107,3 +107,63 @@ test('admin user settings grant lounge moderation and save an explicit mute dura
   await expect.poll(() => page.evaluate(() => window.loungeAdminFixture.writes))
     .toEqual([{ moderator: true, minutes: 120 }]);
 });
+
+for (const mode of ['local', 'remote', 'web']) {
+  test(`${mode}: 48px avatar settings and searchable received history preserve the draft`, async ({ page }) => {
+    const relay = await setupLounge(page, mode === 'web');
+    await page.goto(mode === 'web' ? 'http://127.0.0.1:1486/web/' : `/e2e/lounge-harness.html?mode=${mode}`);
+    await relay.ready();
+    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await page.getByRole('button', { name: '设置头像', exact: true }).click();
+    await page.locator('.lounge-avatar-settings input[type=file]').setInputFiles({ name: 'avatar.png',
+      mimeType: 'image/png', buffer: Buffer.from(pixel.split(',')[1], 'base64') });
+    const preview = page.locator('.lounge-avatar-settings img');
+    await expect(preview).toBeVisible();
+    expect(await preview.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight]))
+      .toEqual([48, 48]);
+    await page.getByRole('button', { name: /^保\s*存$/ }).click();
+    const input = page.getByRole('textbox', { name: '消息', exact: true });
+    await input.fill('HELLO 我的头像');
+    await page.getByRole('button', { name: '发送', exact: true }).click();
+    await expect(page.locator('.lounge-message.is-own .lounge-avatar img')).toBeVisible();
+    expect(relay.sent[0].avatar).toMatch(/^data:image\/png;base64,/);
+    expect(Buffer.from(relay.sent[0].avatar!.split(',')[1], 'base64').length).toBeLessThanOrEqual(16 * 1024);
+    relay.push('喝杯咖啡 ☕', [pixel]);
+    await input.fill('尚未发送的草稿');
+    const historyButton = page.getByRole('button', { name: '历史记录', exact: true });
+    const bounds = await historyButton.boundingBox();
+    const composer = await page.locator('.lounge-composer').boundingBox();
+    expect(bounds!.x).toBeGreaterThan(composer!.x + composer!.width / 2);
+    await historyButton.click();
+    await expect.poll(async () => Math.round((await page.locator('.ant-drawer-content-wrapper').boundingBox())!.x))
+      .toBe(880);
+    const search = page.getByRole('textbox', { name: '搜索消息或账户' });
+    await search.fill('ＢＯＢ 咖啡');
+    await expect(page.locator('.lounge-history-message')).toHaveCount(1);
+    await expect(page.locator('.lounge-history-message')).toContainText('喝杯咖啡');
+    await page.locator('.lounge-history-message .lounge-image').click();
+    await expect(page.locator('.ant-modal .lounge-preview')).toBeVisible();
+    await page.locator('.ant-modal-close').click();
+    await expect(page.locator('.ant-modal .lounge-preview')).toBeHidden();
+    await search.fill('不存在的内容');
+    await expect(page.getByText('没有找到匹配的记录')).toBeVisible();
+    await search.fill('hello');
+    await expect(page.locator('.lounge-history-message .lounge-avatar img')).toBeVisible();
+    await page.screenshot({ path: `../../.codex-tmp/lounge-history-${mode}.png`, animations: 'disabled' });
+    relay.push('查看历史时收到');
+    await expect(page.locator('.lounge-nav-badge')).toHaveText('1');
+    await page.locator('.ant-drawer-close').click();
+    await expect(input).toHaveValue('尚未发送的草稿');
+    await expect(page.locator('.lounge-nav-badge')).toHaveCount(0);
+    await page.reload();
+    await expect.poll(relay.count).toBe(2);
+    await page.getByRole('button', { name: '闲聊摸鱼', exact: true }).click();
+    await expect(page.locator('.lounge-heading .lounge-avatar img')).toBeVisible();
+    await page.getByRole('button', { name: '设置头像', exact: true }).click();
+    await page.getByRole('button', { name: '恢复默认头像' }).click();
+    await page.getByRole('button', { name: /^保\s*存$/ }).click();
+    await expect(page.locator('.lounge-heading .lounge-avatar')).toHaveText('AL');
+    await historyButton.click();
+    await expect(page.getByText('暂时没有聊天记录')).toBeVisible();
+  });
+}

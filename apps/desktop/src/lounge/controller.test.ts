@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoungeController } from '../../../../shared/lounge/controller';
+import { browserAvatarStore } from '../../../../shared/lounge/avatar';
 
 class Socket {
   static OPEN = 1;
@@ -30,12 +31,28 @@ beforeEach(async () => {
   vi.spyOn(document, 'hasFocus').mockReturnValue(true);
   Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
   authorization = vi.fn(async () => ({ ticket: 'ticket' }));
-  controller = new LoungeController({ baseUrl: 'https://example.test', authorize: authorization });
+  localStorage.clear();
+  controller = new LoungeController({ baseUrl: 'https://example.test', authorize: authorization,
+    avatars: browserAvatarStore('https://example.test') });
   controller.start(); await settle();
 });
 afterEach(() => { controller.stop(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('application lifetime lounge', () => {
+  it('saves only the selected avatar and includes it with new messages across reconnects', async () => {
+    const avatar = 'data:image/png;base64,AAAA';
+    const socket = Socket.instances[0]; socket.ready();
+    controller.setAvatar(avatar);
+    expect(controller.snapshot().user?.avatar).toBe(avatar);
+    const sending = controller.send({ text: 'private message', images: [] });
+    const frame = JSON.parse(socket.send.mock.calls.at(-1)![0]);
+    expect(frame.avatar).toBe(avatar);
+    socket.message(frame.id, true); await sending;
+    socket.ready(); expect(controller.snapshot().user?.avatar).toBe(avatar);
+    expect(JSON.stringify(localStorage)).not.toContain('private message');
+    controller.setAvatar('');
+    socket.ready(); expect(controller.snapshot().user?.avatar).toBeUndefined();
+  });
   it('connects without opening the page, counts background messages, and clears only when visible', () => {
     const socket = Socket.instances[0];
     expect(String(socket.url)).toBe('wss://example.test/lounge/socket');

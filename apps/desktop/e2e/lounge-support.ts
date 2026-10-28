@@ -8,7 +8,7 @@ export async function setupLounge(page: Page, web = false) {
   let connections = 0;
   let authentications = 0;
   const moderation: { userId: string; minutes: number }[] = [];
-  const sent: { text: string; images: string[] }[] = [];
+  const sent: { text: string; images: string[]; avatar?: string }[] = [];
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
   await page.route('https://lounge.test/**', route => {
@@ -30,7 +30,7 @@ export async function setupLounge(page: Page, web = false) {
       if (frame.type === 'ping') route.send('{"type":"pong"}');
       if (frame.type === 'message') {
         sent.push(frame);
-        route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test' },
+        route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
           sentAt: new Date().toISOString() }));
       }
       if (frame.type === 'moderate') {

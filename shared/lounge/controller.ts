@@ -1,5 +1,6 @@
 import { MAX_FRAME_BYTES, parseMessage, type LoungeDraft, type LoungeMessage,
   type LoungeSession, type LoungeSnapshot } from './types';
+import { avatarData } from './avatar';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -9,6 +10,11 @@ const SEND_TIMEOUT_MS = 20_000;
 const MAX_MESSAGES = 200;
 const MAX_HISTORY_BYTES = 24 * 1024 * 1024;
 interface Pending { resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }
+
+function messageBytes(message: LoungeMessage) {
+  return (message.text.length + (message.sender.avatar?.length ?? 0)
+    + message.images.reduce((total, value) => total + value.length, 0)) * 2;
+}
 
 async function authorize(session: LoungeSession) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -161,7 +167,7 @@ export class LoungeController {
       const user = frame.user as LoungeSnapshot['user'];
       if (!user || typeof user.id !== 'string' || typeof user.account !== 'string') return;
       this.authorized = Date.now(); this.attempt = 0; this.renewalStarted = 0;
-      this.update({ status: 'connected', user }); return;
+      this.update({ status: 'connected', user: { ...user, avatar: this.session?.avatars?.load(user.id) } }); return;
     }
     const message = parseMessage(frame);
     if (!message || this.state.status !== 'connected') return;
@@ -174,12 +180,13 @@ export class LoungeController {
       if (pending) { clearTimeout(pending.timer); pending.resolve(); this.pending.delete(message.id); }
     }
     if (this.state.messages.some(item => item.id === message.id && item.sender.id === message.sender.id)) return;
-    const messages = [...this.state.messages, message].slice(-MAX_MESSAGES);
-    let size = messages.reduce((sum, item) => sum + item.text.length * 2
-      + item.images.reduce((total, value) => total + value.length * 2, 0), 0);
+    const previous = this.state.messages.map(item => item.sender.id === message.sender.id
+      ? { ...item, sender: message.sender } : item);
+    const messages = [...previous, message].slice(-MAX_MESSAGES);
+    let size = messages.reduce((sum, item) => sum + messageBytes(item), 0);
     while (size > MAX_HISTORY_BYTES && messages.length > 1) {
       const removed = messages.shift()!;
-      size -= removed.text.length * 2 + removed.images.reduce((total, value) => total + value.length * 2, 0);
+      size -= messageBytes(removed);
     }
     this.update({ messages, unread: this.canRead() ? 0 : this.state.unread + (own ? 0 : 1) });
   }
@@ -187,7 +194,16 @@ export class LoungeController {
     if (this.state.policy.mutedUntil && Date.parse(this.state.policy.mutedUntil) > Date.now()) {
       return Promise.reject(new Error('client.lounge.muted'));
     }
-    return this.submit({ type: 'message', ...draft });
+    return this.submit({ type: 'message', ...draft, avatar: this.state.user?.avatar ?? '' });
+  }
+  setAvatar(avatar: string) {
+    const user = this.state.user;
+    if (!user || !this.session?.avatars) throw new Error('client.lounge.avatarSaveFailed');
+    if (avatar && !avatarData(avatar)) throw new Error('client.lounge.imageFailed');
+    this.session.avatars.save(user.id, avatar);
+    const updated = { ...user, avatar: avatar || undefined };
+    this.update({ user: updated, messages: this.state.messages.map(message => message.sender.id === user.id
+      ? { ...message, sender: updated } : message) });
   }
   moderate(userId: string, minutes: number): Promise<void> {
     return this.submit({ type: 'moderate', userId, minutes });
