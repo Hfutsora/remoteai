@@ -1,6 +1,7 @@
 import { displayError } from '../i18n/index';
 import { t, useLanguage } from '../i18n';
 import { useEffect, useState } from 'react';
+import { Maximize, Minimize } from 'lucide-react';
 import { AdaptiveSheet } from '../components/AdaptiveSheet';
 import { isMarkdownPath, type TextPreview } from '../../../../shared/remote-chat/textPreview';
 import type { FileClient } from '../../../../shared/remote-chat/fileDownload';
@@ -21,6 +22,7 @@ import { PreviewTransferProgress } from '../../../../shared/chat/PreviewTransfer
 import { ChatDownloadFile, isDownloadOnlyFile } from './ChatDownloadFile';
 import { ChatFileContext } from './ChatFileLink';
 import { filePreviewError } from '../../../../shared/remote-chat/fileErrors';
+import './filePreview.css';
 
 export interface FilePreviewContext {
   client: FileClient; threadId: string | null; ready: boolean;
@@ -99,8 +101,15 @@ export function ChatFilePreview({ path, line, context, onClose }: {
   path: string; line?: number; context: FilePreviewContext; onClose: () => void;
 }) {
   useLanguage();
+  const [fullscreen, setFullscreen] = useState(false);
   if (isDownloadOnlyFile(path)) return <ChatDownloadFile path={path} context={context} onClose={onClose} />;
   return <AdaptiveSheet open truncateTitle title={path.split(/[\\/]/).at(-1) || t("client.projectBrowser.filePreview")}
+    className="chat-file-preview-sheet" mobileFullscreen={fullscreen}
+    titleAction={<button type="button" className="sheet-close chat-file-fullscreen-toggle"
+      aria-label={t(fullscreen ? 'client.projectBrowser.exitFullscreen' : 'client.projectBrowser.enterFullscreen')}
+      onClick={() => setFullscreen(value => !value)}>
+      {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+    </button>}
     width={800} onClose={onClose}>
     <ChatFilePreviewContent path={path} line={line} context={context} />
   </AdaptiveSheet>;

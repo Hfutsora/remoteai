@@ -5,7 +5,7 @@ import { Keyboard, Text } from 'react-native';
 import type { FileReference } from '../../../../shared/chat/fileReference';
 import { localImageSource } from '../../../../shared/chat/imageSources';
 import { isMarkdownPath, type TextPreview } from '../../../../shared/remote-chat/textPreview';
-import { BottomSheet } from '../components/BottomSheet';
+import { FilePreviewSheet } from './FilePreviewSheet';
 import { SheetScrollView } from '../components/SheetScrollView';
 import { ChatCodeBlock } from './ChatCodeBlock';
 import { ChatImageFilePreview } from './ChatImageFilePreview';
@@ -48,6 +48,7 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
   const binary = isDownloadOnlyFile(file.path);
   const html = isHtmlPath(file.path);
   const markdown = isMarkdownPath(file.path);
+  const rendered = Boolean(result && (html || markdown));
   const download = useManagedDownload({ client: files, threadId, ready, path: file.path });
   useEffect(() => {
     if (!threadId || !ready || binary) return;
@@ -60,7 +61,7 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
     });
     return () => { observer.abort(); };
   }, [threadId, ready, load, file.path, attempt, binary]);
-  return <BottomSheet fullWidthContent visible tall title={t("client.chat.files.39932f")} subtitle={file.path} onClose={close}
+  return <FilePreviewSheet path={file.path} previewable={!binary} close={close}
     actions={[
       ...(download.share ? [{ label: t("client.downloads.shareFile"), onPress: download.share,
         loading: download.sharing, disabled: download.busy }] : []),
@@ -68,8 +69,9 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
         tone: 'primary',
         disabled: download.sharing || (!download.busy && !download.completed && (!ready || !threadId)) },
     ...(error ? [{ label: t("client.mobile.retryPreview"), onPress: () => setAttempt(attempt + 1), disabled: !ready }] : [])]}>
-    <SheetScrollView style={{ flexShrink: 1 }}
-      contentContainerStyle={{ paddingBottom: result && (html || markdown) ? 0 : 20 }}>
+    {(!rendered || download.message || download.busy && download.detail) && <SheetScrollView
+      style={rendered || binary ? { flexGrow: 0, flexShrink: 1 } : { flex: 1 }}
+      contentContainerStyle={{ paddingBottom: rendered ? 0 : 20 }}>
       {!ready && !result && <Text style={styles.subtitle}>{t("client.mobile.connectToYourComputerToViewTheFile")}</Text>}
       {binary && <Text style={styles.subtitle}>{t("client.mobile.downloadTheFileToOpenItInACompatibleApp")}</Text>}
       {ready && !binary && !result && !error && <PreviewTransferProgress progress={progress} label={t("client.chat.loadingFile")} />}
@@ -83,10 +85,10 @@ function FilePreview({ file, threadId, ready, load, files, close }: PreviewProps
         <ChatCodeBlock text={result.text} label={t("client.mobile.fullText")} language={fileLanguage(file.path)}
           lineNumbers copyLabel={t("client.chat.copyFileContents")} />
       </>}
-    </SheetScrollView>
+    </SheetScrollView>}
     {result && html && <ChatHtmlPreview text={result.text} />}
     {result && markdown && <ChatMarkdownPreview text={result.text} line={file.line} />}
-  </BottomSheet>;
+  </FilePreviewSheet>;
 }
 
 function FilePreviewContent(props: PreviewProps) {

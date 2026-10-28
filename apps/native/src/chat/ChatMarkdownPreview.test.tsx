@@ -12,6 +12,7 @@ vi.mock('react', async importOriginal => ({
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));
 vi.mock('react-native', () => ({ Pressable: 'Button', Text: 'Text', View: 'View',
+  Platform: { OS: 'android' },
   StyleSheet: { create: <T,>(styles: T) => styles },
 }));
 vi.mock('../components/SheetScrollView', () => ({ SheetScrollView: 'ScrollView', SheetInset: 'Inset' }));

@@ -18,7 +18,7 @@ function canDragFrom(target: EventTarget | null, surface: HTMLElement) {
   return true;
 }
 
-export function useSheetDrag(onClose: () => void) {
+export function useSheetDrag(onClose: () => void, enabled = true) {
   const [surface, setSurface] = useState<HTMLDivElement | null>(null);
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -26,7 +26,7 @@ export function useSheetDrag(onClose: () => void) {
   latestClose.current = onClose;
 
   useEffect(() => {
-    if (!surface) return;
+    if (!surface || !enabled) return;
     let drag: Drag | null = null;
     let suppressClick = false;
     const reset = () => { drag = null; setOffset(0); setDragging(false); };
@@ -90,6 +90,7 @@ export function useSheetDrag(onClose: () => void) {
     window.addEventListener('mousemove', mouseMove);
     window.addEventListener('mouseup', mouseEnd);
     return () => {
+      reset();
       surface.removeEventListener('touchstart', touchStart);
       surface.removeEventListener('touchmove', touchMove);
       surface.removeEventListener('touchend', touchEnd);
@@ -99,7 +100,7 @@ export function useSheetDrag(onClose: () => void) {
       window.removeEventListener('mousemove', mouseMove);
       window.removeEventListener('mouseup', mouseEnd);
     };
-  }, [surface]);
+  }, [surface, enabled]);
   const style: CSSProperties = {
     // Popup's spring consumes transform props, so keep the live offset in a CSS variable.
     ['--sheet-drag-offset' as string]: `${offset}px`,
