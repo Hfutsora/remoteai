@@ -7,7 +7,6 @@ import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeMessageBody } from './LoungeMessageBody';
 import { useLoungeHistory } from './useLoungeHistory';
 import type { LoungeController } from './controller';
-import { LoungeMessageMenu } from './LoungeMessageMenu';
 import type { LoungeMessage } from './types';
 
 export function LoungeHistory({ controller, open, close, preview, reply }: {
@@ -34,14 +33,14 @@ export function LoungeHistory({ controller, open, close, preview, reply }: {
       {!history.loading && !history.error && !history.messages.length && <p className="lounge-history-empty">
         {t(history.query.trim()
         ? 'client.lounge.historyNoResults' : 'client.lounge.historyEmpty')}</p>}
-      {history.messages.map(message => <LoungeMessageMenu key={`${message.sender.id}:${message.id}`}
-        message={message} reply={reply}><article className="lounge-history-message" tabIndex={0}>
+      {history.messages.map(message => <article key={`${message.sender.id}:${message.id}`}
+        className="lounge-history-message">
         <LoungeAvatar user={message.sender} />
         <div className="lounge-history-message-main"><div className="lounge-account">{message.sender.account}</div>
           <time dateTime={message.sentAt}>{format.format(new Date(message.sentAt))}</time>
-          <LoungeMessageBody message={message} preview={preview} />
+          <LoungeMessageBody message={message} preview={preview} actions={{ reply }} />
         </div>
-      </article></LoungeMessageMenu>)}
+      </article>)}
     </div>
     <nav className="lounge-history-pagination" aria-label={t('client.lounge.history')}>
       <Button onClick={history.previous} disabled={history.loading || !history.hasPrevious}>

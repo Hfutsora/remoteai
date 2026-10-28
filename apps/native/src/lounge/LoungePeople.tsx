@@ -13,7 +13,7 @@ export function LoungePeople({ state, select, block, close }: {
   const styles = useLoungeStyles();
   const [query, setQuery] = useState('');
   const [actions, setActions] = useState<LoungeAccount>();
-  const contacts = state.contacts.filter(contact => contact.user.id !== state.user?.id
+  const contacts = state.contacts.filter(contact => contact.direct && contact.user.id !== state.user?.id
     && contact.user.account.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const choose = (user?: LoungeAccount) => { close(); select(user); };
   return <Modal transparent animationType="fade" onRequestClose={close}>

@@ -19,7 +19,21 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await enter(); relay.push('group-before-private');
     await people();
     const person = page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).filter({ visible: true });
-    await expect(person.locator('small')).toHaveCount(0);
+    await expect(person).toHaveCount(0);
+    await expect(page.getByText('暂无私聊，可从群聊消息菜单发起。').filter({ visible: true })).toBeVisible();
+    await page.reload(); await relay.ready(); await enter(); await people();
+    await expect(person).toHaveCount(0);
+    relay.private('unsolicited-private', { id: 'carol', account: 'carol@example.test' });
+    await expect(page.getByRole('button', { name: '与 carol@example.test 私聊', exact: true })
+      .filter({ visible: true })).toBeVisible();
+    await expect(person).toHaveCount(0);
+    if (mobile) await page.locator('.ant-drawer-close:visible').click();
+    await page.locator('.lounge-message').filter({ hasText: 'group-before-private' })
+      .locator('.lounge-bubble').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '发起私聊' }).click();
+    await people();
+    await expect(person).toBeVisible();
+    await expect(person.locator('small')).toHaveText('在线');
     if (mobile) {
       // Wait for the sliding drawer to settle before synthesizing viewport touch coordinates.
       await person.hover();

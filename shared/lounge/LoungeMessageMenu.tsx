@@ -3,9 +3,13 @@ import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import { displayText as t } from '../localization/messages';
 import type { LoungeMessage } from './types';
 
-export function LoungeMessageMenu({ message, reply, children, direct, block, blocked }: {
-  message: LoungeMessage; reply: (message: LoungeMessage) => void;
+export interface LoungeMessageMenuActions {
+  reply: (message: LoungeMessage) => void;
   direct?: () => void; block?: () => void; blocked?: boolean;
+}
+
+export function LoungeMessageMenu({ message, reply, children, direct, block, blocked }: LoungeMessageMenuActions & {
+  message: LoungeMessage;
   children: ReactElement<HTMLAttributes<HTMLElement>>;
 }) {
   const [open, setOpen] = useState(false);

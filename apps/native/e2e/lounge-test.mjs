@@ -90,6 +90,14 @@ async function longPress(label) {
   const x = String(Math.round((left + right) / 2)); const y = String(Math.round((top + bottom) / 2));
   await adb('shell', 'input', 'swipe', x, y, x, y, '750'); await delay(350);
 }
+async function longPressBesideMessage(label) {
+  const node = await find(label);
+  const [, top, , bottom] = [...node.bounds.matchAll(/\d+/g)].map(value => Number(value[0]));
+  const width = Number((await adb('shell', 'wm', 'size')).match(/(\d+)x\d+/)[1]);
+  const x = String(width - 5); const y = String(Math.round((top + bottom) / 2));
+  await adb('shell', 'input', 'swipe', x, y, x, y, '750'); await delay(350);
+  assert.ok(!(await nodes()).some(value => value.text === '引用回复'), 'Blank space cannot open the message menu');
+}
 async function screenshot(name) {
   await adb('shell', 'screencap', '-p', '/sdcard/lounge-result.png');
   await adb('pull', '/sdcard/lounge-result.png', path.join(output, `${name}.png`));
@@ -122,10 +130,16 @@ try {
     const moderatedBefore = moderated.length;
     await adb('shell', 'settings', 'put', 'system', 'font_scale', String(scale));
     await adb('shell', 'am', 'force-stop', app);
+    await adb('shell', 'pm', 'clear', app);
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('在线交流'); await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('已连接');
     await find('真机中文测试：忙里偷闲，聊点轻松的 ☕'); await screenshot(`chat-${scale}`);
+    await longPressBesideMessage('真机中文测试：忙里偷闲，聊点轻松的 ☕');
+    await tap('用户列表'); await find('暂无私聊，可从群聊消息菜单发起。');
+    assert.ok(!(await nodes()).some(node => node['content-desc'] === '与 bob@example.test 私聊'),
+      'Group participants must not appear in the private chat list');
+    await screenshot(`people-empty-${scale}`); await tap('关闭用户列表');
     await find('在线 2 人'); broadcast({ type: 'presence', onlineCount: 3 }); await find('在线 3 人');
     await longPress('真机中文测试：忙里偷闲，聊点轻松的 ☕'); await find('引用回复');
     await screenshot(`message-actions-${scale}`); await tap('引用回复'); await find('回复 bob@example.test');
@@ -142,6 +156,8 @@ try {
     await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`history-${scale}`);
     await find('回复 bob@example.test');
     await tap('返回聊天'); await find('Draft');
+    broadcast(incoming('私聊入口测试'));
+    await longPress('私聊入口测试'); await tap('发起私聊');
     await tap('用户列表'); await screenshot(`people-${scale}`);
     await longPress('与 bob@example.test 私聊'); await tap('发起私聊'); await find('在线');
     await tap('消息'); await adb('shell', 'input', 'text', `Private-${unique}`); await tap('发送');

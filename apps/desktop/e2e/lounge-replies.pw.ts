@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { setupLounge, pixel } from './lounge-support';
+import { expectNoMenuOutsideBubble } from './lounge-gestures';
 
 async function aligned(message: Locator, own: boolean) {
   const bounds = await message.evaluate(element => {
@@ -48,7 +49,9 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     }
     relay.push('quoted-original', [pixel]);
     const original = rows.filter({ hasText: 'quoted-original' });
-    await original.click({ button: 'right' });
+    await expectNoMenuOutsideBubble(page, original);
+    const bubble = original.locator('.lounge-bubble');
+    await bubble.click({ button: 'right' });
     await expect(page.getByRole('menuitem', { name: '发起私聊' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: '屏蔽此人' })).toBeVisible();
     await page.getByRole('menuitem', { name: '引用回复' }).click();
@@ -57,13 +60,13 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await page.getByRole('button', { name: '取消引用' }).click();
     await expect(input).toHaveValue('keep draft');
     await expect(page.getByRole('menuitem', { name: '引用回复' })).toBeHidden();
-    const originalBounds = (await original.boundingBox())!;
-    await original.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'touch', button: 0,
+    const originalBounds = (await bubble.boundingBox())!;
+    await bubble.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'touch', button: 0,
       isPrimary: true, clientX: originalBounds.x + 10, clientY: originalBounds.y + 10 });
     await expect(page.getByRole('menuitem', { name: '发起私聊' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: '屏蔽此人' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: '引用回复' })).toBeVisible();
-    await original.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', isPrimary: true });
+    await bubble.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', isPrimary: true });
     await page.getByRole('menuitem', { name: '引用回复' }).click();
     await input.fill('reply-text');
     await expect(page.getByRole('menuitem', { name: '引用回复' })).toBeHidden();
@@ -75,6 +78,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     const response = rows.filter({ hasText: 'reply-text' });
     await expect(response.locator('.lounge-reply')).toContainText('quoted-original');
     await aligned(response, true);
+    await expectNoMenuOutsideBubble(page, response);
     relay.presence(99); await expect(page.locator('.lounge-online-count')).toHaveCount(0);
     relay.policy(true); await expect(page.locator('.lounge-online-count')).toHaveText('在线 2 人');
     relay.presence(3); await expect(page.locator('.lounge-online-count')).toHaveText('在线 3 人');
@@ -93,7 +97,9 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('reply-text');
     const stored = page.locator('.lounge-history-message');
     await expect(stored.locator('.lounge-reply')).toContainText('quoted-original');
-    await stored.click({ button: 'right' }); await page.getByRole('menuitem', { name: '引用回复' }).click();
+    await expectNoMenuOutsideBubble(page, stored);
+    await stored.locator('.lounge-bubble').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: '引用回复' }).click();
     await expect(page.locator('.lounge-reply-draft')).toContainText('reply-text');
     await expect(page.locator('.lounge-reply-draft')).not.toContainText('quoted-original');
   });

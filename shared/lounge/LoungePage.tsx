@@ -12,7 +12,6 @@ import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeAvatarSettings } from './LoungeAvatarSettings';
 import { LoungeMessageBody } from './LoungeMessageBody';
 import { LoungeHistory } from './LoungeHistory';
-import { LoungeMessageMenu } from './LoungeMessageMenu';
 import { quoteMessage, type LoungeReply } from './reply';
 import { LoungePeople } from './LoungePeople';
 import { LoungeBlockDialog } from './LoungeBlockDialog';
@@ -91,10 +90,7 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
           {showTime && <div className="lounge-time"><time dateTime={message.sentAt}>
             {new Intl.DateTimeFormat(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' })
               .format(new Date(message.sentAt))}</time></div>}
-          <LoungeMessageMenu message={message} reply={quote} blocked={state.blocked.includes(message.sender.id)}
-            direct={!own && state.directAvailable ? () => select(message.sender) : undefined}
-            block={!own && state.directAvailable ? () => setBlocking(message.sender) : undefined}>
-          <article className={`lounge-message${own ? ' is-own' : ''}`} tabIndex={0}>
+          <article className={`lounge-message${own ? ' is-own' : ''}`}>
             <LoungeAvatar user={message.sender} />
             <div className="lounge-message-main">
               {state.policy.moderator && !own ? <button type="button" className="lounge-account lounge-account-action"
@@ -102,10 +98,12 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
                 onClick={() => setModerating(message.sender)}>{message.sender.account}</button>
                 : <div className="lounge-account">{message.sender.account}</div>}
               <LoungeMessageBody message={message} preview={setPreview}
+                actions={{ reply: quote, blocked: state.blocked.includes(message.sender.id),
+                  direct: !own && state.directAvailable ? () => select(message.sender) : undefined,
+                  block: !own && state.directAvailable ? () => setBlocking(message.sender) : undefined }}
                 onImageLoad={() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; }} />
             </div>
           </article>
-          </LoungeMessageMenu>
         </div>;
       })}
     </div>

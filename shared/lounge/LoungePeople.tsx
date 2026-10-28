@@ -11,7 +11,7 @@ export function LoungePeople({ state, select, block }: {
 }) {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<string>();
-  const contacts = state.contacts.filter(contact => contact.user.id !== state.user?.id
+  const contacts = state.contacts.filter(contact => contact.direct && contact.user.id !== state.user?.id
     && contact.user.account.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <nav className="lounge-people" aria-label={t('client.lounge.people')}>
     <h2>{t('client.lounge.people')}</h2>
