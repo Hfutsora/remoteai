@@ -86,9 +86,11 @@ export function LoungePage({ controller, onLogin, mobile = false }: {
       time: new Intl.DateTimeFormat(localeForLanguage(language), { dateStyle: 'short', timeStyle: 'short' })
         .format(new Date(mutedUntil!)),
     })}</p>}
+    {state.historyError && <p className="lounge-history-warning" role="alert">{t('client.lounge.historySaveFailed')}
+      <button type="button" onClick={() => void controller.retryHistory()}>{t('client.lounge.historyRetry')}</button></p>}
     <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted} mobile={mobile}
       send={draft => controller.send(draft)} onHistory={() => setHistoryOpen(true)} />
-    <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} messages={state.messages} preview={setPreview} />
+    <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller} preview={setPreview} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatarOpen(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}

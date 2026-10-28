@@ -7,12 +7,14 @@ export async function setupLounge(page: Page, web = false) {
   let socket: WebSocketRoute;
   let connections = 0;
   let authentications = 0;
+  let ticketsAvailable = true;
   const moderation: { userId: string; minutes: number }[] = [];
   const sent: { text: string; images: string[]; avatar?: string }[] = [];
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
   await page.route('https://lounge.test/**', route => {
     const path = new URL(route.request().url()).pathname;
+    if (path === '/lounge/ticket' && !ticketsAvailable) return route.fulfill({ status: 503, body: '{}' });
     const data = path === '/lounge/ticket' ? { ticket: 'fixture-ticket' }
       : path === '/auth/me' ? { id: 'alice', email: 'alice@example.test', role: 'user' }
         : path === '/devices' ? { devices: [] } : path === '/devices/providers' ? { providers: [] }
@@ -51,13 +53,15 @@ export async function setupLounge(page: Page, web = false) {
     } });
     if (!web) Object.defineProperty(window, '__TAURI_INTERNALS__', { value: {
       invoke: (command: string) => {
-        if (command === 'cloud_lounge_ticket') return Promise.resolve({ ticket: 'fixture-ticket' });
+        if (command === 'cloud_lounge_ticket') return sessionStorage.getItem('lounge-test-offline')
+          ? Promise.reject(new Error('offline')) : Promise.resolve({ ticket: 'fixture-ticket' });
         throw new Error(`Unexpected native operation: ${command}`);
       },
     } });
   }, web);
   return {
     sent, moderation, count: () => connections,
+    offline: () => { ticketsAvailable = false; },
     policy: (moderator: boolean, mutedUntil: string | null = null) => socket.send(JSON.stringify({
       type: 'policy', policy: { moderator, mutedUntil },
     })),

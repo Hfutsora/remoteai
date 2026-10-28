@@ -57,9 +57,13 @@ export function LoungePage({ controller }: { controller: LoungeController }) {
     </Pressable>}
     {muted && <View style={styles.notice}><Text style={styles.muted}>{t('client.lounge.mutedUntil',
       { time: new Date(mutedUntil!).toLocaleString(getLocale()) })}</Text></View>}
+    {state.historyError && <View style={styles.notice}>
+      <Text style={styles.muted}>{t('client.lounge.historySaveFailed')}</Text>
+      <Pressable accessibilityRole="button" onPress={() => void controller.retryHistory()} style={styles.iconButton}>
+        <Text style={styles.link}>{t('client.lounge.historyRetry')}</Text></Pressable></View>}
     <LoungeComposer key={state.user?.id ?? 'guest'} connected={state.status === 'connected' && !muted}
       send={draft => controller.send(draft)} onHistory={() => setHistory(true)} />
-    {history && <LoungeHistory messages={state.messages} close={() => setHistory(false)} />}
+    {history && <LoungeHistory controller={controller} close={() => setHistory(false)} />}
     {avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatar(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}

@@ -8,6 +8,7 @@ import type { LoungeRuntime } from '../../../../shared/lounge/runtime';
 import { useLounge } from '../../../../shared/lounge/useLounge';
 import { authorizedRequest } from '../api/client';
 import type { AuthSession } from '../types';
+import { nativeLoungeHistory } from './historyStore';
 
 export const nativeLoungeRuntime: LoungeRuntime = {
   randomId: randomUUID,
@@ -37,6 +38,7 @@ function avatarStore(baseUrl: string): LoungeAvatarStore {
 export function useNativeLounge(session: AuthSession | null) {
   const controller = useMemo(() => new LoungeController(session ? {
     baseUrl: session.baseUrl, avatars: avatarStore(session.baseUrl),
+    history: nativeLoungeHistory(session.baseUrl, session.email),
     authorize: async () => {
       const response = await authorizedRequest(session, '/lounge/ticket', { method: 'POST' });
       if (!response.ok) throw new Error('client.lounge.unavailable');

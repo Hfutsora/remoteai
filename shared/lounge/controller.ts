@@ -2,20 +2,16 @@ import { MAX_FRAME_BYTES, parseMessage, type LoungeDraft, type LoungeMessage,
   type LoungeSession, type LoungeSnapshot } from './types';
 import { avatarData } from './avatar';
 import { browserLoungeRuntime, type LoungeRuntime } from './runtime';
+import { historyPage, historyPosition, recentMessages, RECENT_MESSAGE_LIMIT,
+  type HistoryPage, type HistoryQuery } from './archive';
+import { searchLoungeHistory } from './history';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
 const AUTH_RENEW_MS = 4 * 60_000;
 const AUTH_TIMEOUT_MS = 15_000;
 const SEND_TIMEOUT_MS = 20_000;
-const MAX_MESSAGES = 200;
-const MAX_HISTORY_BYTES = 24 * 1024 * 1024;
 interface Pending { resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }
-
-function messageBytes(message: LoungeMessage) {
-  return (message.text.length + (message.sender.avatar?.length ?? 0)
-    + message.images.reduce((total, value) => total + value.length, 0)) * 2;
-}
 
 async function authorize(session: LoungeSession) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -26,7 +22,7 @@ async function authorize(session: LoungeSession) {
   } finally { clearTimeout(timer); }
 }
 
-/** Lives at the application root. All received content stays in this process's bounded memory. */
+/** Owns the live connection and recent messages; optional storage archives received content locally. */
 export class LoungeController {
   private state: LoungeSnapshot;
   private listeners = new Set<() => void>();
@@ -44,10 +40,13 @@ export class LoungeController {
   private heartbeat?: ReturnType<typeof setInterval>;
   private pending = new Map<string, Pending>();
   private unsubscribe?: () => void;
+  private lifecycle = 0;
+  private writes: Promise<void> = Promise.resolve();
+  private historyFailures = 0;
 
   constructor(private readonly session?: LoungeSession, private readonly runtime: LoungeRuntime = browserLoungeRuntime) {
     this.state = { status: session ? 'connecting' : 'signed-out', messages: [], unread: 0,
-      policy: { moderator: false, mutedUntil: null } };
+      policy: { moderator: false, mutedUntil: null }, historyRevision: 0, historyError: false };
   }
   snapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
@@ -59,12 +58,15 @@ export class LoungeController {
   start() {
     if (this.running || !this.session) return;
     this.running = true;
+    this.lifecycle++;
+    void this.restoreHistory();
     this.unsubscribe = this.runtime.subscribe(this.wake);
     this.heartbeat = setInterval(this.tick, HEARTBEAT_MS);
     void this.connect();
   }
   stop() {
     this.running = false;
+    this.lifecycle++;
     this.generation++;
     this.connecting = false;
     clearTimeout(this.retry);
@@ -73,7 +75,7 @@ export class LoungeController {
     this.unsubscribe = undefined;
     this.disconnect();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
-      status: this.session ? 'connecting' : 'signed-out' });
+      status: this.session ? 'connecting' : 'signed-out', historyError: false });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
   private canRead() { return this.viewing && this.runtime.isVisible(); }
@@ -181,13 +183,59 @@ export class LoungeController {
     if (this.state.messages.some(item => item.id === message.id && item.sender.id === message.sender.id)) return;
     const previous = this.state.messages.map(item => item.sender.id === message.sender.id
       ? { ...item, sender: message.sender } : item);
-    const messages = [...previous, message].slice(-MAX_MESSAGES);
-    let size = messages.reduce((sum, item) => sum + messageBytes(item), 0);
-    while (size > MAX_HISTORY_BYTES && messages.length > 1) {
-      const removed = messages.shift()!;
-      size -= messageBytes(removed);
-    }
+    const messages = recentMessages([...previous, message]);
     this.update({ messages, unread: this.canRead() ? 0 : this.state.unread + (own ? 0 : 1) });
+    this.archive(message);
+  }
+  private archive(message: LoungeMessage) {
+    const store = this.session?.history;
+    if (!store) return;
+    const lifecycle = this.lifecycle;
+    this.writes = this.writes.then(() => store.save(message)).then(() => {
+      if (this.running && lifecycle === this.lifecycle) {
+        this.update({ historyRevision: this.state.historyRevision + 1 });
+      }
+    }).catch(() => {
+      this.historyFailures++;
+      if (this.running && lifecycle === this.lifecycle) this.update({ historyError: true });
+    });
+  }
+  private async restoreHistory() {
+    const store = this.session?.history;
+    if (!store) return;
+    const lifecycle = this.lifecycle;
+    try {
+      const page = await store.page({ query: '', limit: RECENT_MESSAGE_LIMIT });
+      if (!this.running || lifecycle !== this.lifecycle) return;
+      this.update({ messages: recentMessages([...page.messages.reverse(), ...this.state.messages]) });
+      return true;
+    } catch {
+      if (this.running && lifecycle === this.lifecycle) this.update({ historyError: true });
+    }
+  }
+  async searchHistory(query: HistoryQuery): Promise<HistoryPage> {
+    await this.writes;
+    if (this.session?.history) return this.session.history.page(query);
+    const matches = searchLoungeHistory(this.state.messages, query.query).filter(message => {
+      const position = historyPosition(message);
+      return !query.before || position.time < query.before.time
+        || position.time === query.before.time && position.key < query.before.key;
+    }).sort((a, b) => {
+      const first = historyPosition(a); const second = historyPosition(b);
+      return second.time - first.time || (first.key < second.key ? 1 : -1);
+    });
+    return historyPage(matches, query);
+  }
+  async retryHistory() {
+    await this.writes;
+    const lifecycle = this.lifecycle;
+    const failures = this.historyFailures;
+    for (const message of this.state.messages) this.archive(message);
+    await this.writes;
+    const restored = await this.restoreHistory();
+    if (restored && this.running && lifecycle === this.lifecycle && failures === this.historyFailures) {
+      this.update({ historyError: false });
+    }
   }
   send(draft: LoungeDraft): Promise<void> {
     if (this.state.policy.mutedUntil && Date.parse(this.state.policy.mutedUntil) > Date.now()) {

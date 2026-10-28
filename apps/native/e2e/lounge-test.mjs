@@ -21,8 +21,9 @@ const image = 'data:image/png;base64,' + (await readFile(path.join(root,
   'apps/desktop/src-tauri/icons/32x32.png'))).toString('base64');
 const sent = [];
 const moderated = [];
+let online = true;
 const server = createServer((request, response) => {
-  response.writeHead(200, { 'content-type': 'application/json' });
+  response.writeHead(online ? 200 : 503, { 'content-type': 'application/json' });
   response.end(JSON.stringify({ ticket: 'fixture-ticket' }));
 });
 const sockets = new WebSocket.Server({ server, path: '/lounge/socket' });
@@ -94,6 +95,8 @@ try {
   await adb('reverse', 'tcp:1497', `tcp:${server.address().port}`);
   await adb('install', '-r', path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
   for (const scale of [1, 1.3]) {
+    online = true;
+    const unique = `Hello-native-${Date.now()}`;
     const sentBefore = sent.length;
     const moderatedBefore = moderated.length;
     await adb('shell', 'settings', 'put', 'system', 'font_scale', String(scale));
@@ -102,13 +105,13 @@ try {
     await find('闲聊摸鱼'); await find('1'); await screenshot(`discovery-${scale}`);
     await tap('闲聊摸鱼'); await find('已连接');
     await find('真机中文测试：忙里偷闲，聊点轻松的 ☕'); await screenshot(`chat-${scale}`);
-    await tap('消息'); await adb('shell', 'input', 'text', 'Hello-native'); await screenshot(`keyboard-${scale}`);
+    await tap('消息'); await adb('shell', 'input', 'text', unique); await screenshot(`keyboard-${scale}`);
     await tap('发送');
-    await assertEventually(() => sent.length > sentBefore && sent.at(-1).text === 'Hello-native', 'Send ack');
+    await assertEventually(() => sent.length > sentBefore && sent.at(-1).text === unique, 'Send ack');
     await tap('消息'); await adb('shell', 'input', 'text', 'Draft');
     await hideKeyboard();
-    await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', 'Hello-native');
-    await find('共 1 条记录'); await hideKeyboard(); await screenshot(`history-${scale}`);
+    await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', unique);
+    await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`history-${scale}`);
     await tap('返回聊天'); await find('Draft');
     await tap('管理 bob@example.test 的发言权限'); await find('禁言时长（分钟）');
     await screenshot(`moderation-${scale}`); await tap('禁言');
@@ -127,7 +130,16 @@ try {
     await find('Chat history'); await screenshot(`english-${scale}`);
     await adb('shell', 'input', 'keyevent', '4'); await tap('Sign out fixture'); await find('Signed out fixture');
     await assertEventually(() => sockets.clients.size === 0, 'Sign out closes socket');
-    console.log(`PASS native lounge at font scale ${scale}: discovery, send, history, moderation, foreground, language, logout`);
+    online = false;
+    await adb('shell', 'am', 'force-stop', app);
+    await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+    await find('闲聊摸鱼');
+    assert.ok(!(await nodes()).some(node => node.text === '1'), 'Restored messages must not add unread');
+    await tap('闲聊摸鱼'); await tap('历史记录'); await tap('搜索消息或账户');
+    await adb('shell', 'input', 'text', unique); await find('本页 1 条记录'); await find(unique);
+    await hideKeyboard(); await screenshot(`offline-restart-${scale}`);
+    assert.equal(sockets.clients.size, 0, 'Search must work without a connection');
+    console.log(`PASS native lounge at font scale ${scale}: history survives offline restart; discovery, send, moderation`);
   }
 } catch (error) {
   await screenshot('failed');

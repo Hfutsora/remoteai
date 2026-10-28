@@ -1,4 +1,5 @@
 import { avatarData, type LoungeAvatarStore } from './avatar';
+import type { LoungeHistoryStore } from './archive';
 
 export const MAX_TEXT = 4000;
 export const MAX_IMAGES = 3;
@@ -16,6 +17,7 @@ export interface LoungeSession {
   baseUrl: string;
   authorize: () => Promise<{ ticket: string }>;
   avatars?: LoungeAvatarStore;
+  history?: LoungeHistoryStore;
 }
 export interface LoungeSnapshot {
   status: 'signed-out' | 'connecting' | 'connected';
@@ -23,6 +25,8 @@ export interface LoungeSnapshot {
   user?: LoungeAccount;
   unread: number;
   policy: LoungePolicy;
+  historyRevision: number;
+  historyError: boolean;
 }
 
 export function imageData(value: unknown): value is string {

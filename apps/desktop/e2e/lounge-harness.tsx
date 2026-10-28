@@ -19,7 +19,8 @@ setGuiLanguage('zh');
 window.loungeFixture = { setLanguage: setGuiLanguage };
 declare global { interface Window { loungeFixture: { setLanguage: typeof setGuiLanguage } } }
 const auth: CloudAuthState = { enabled: true, authenticated: true, baseUrl: 'https://lounge.test',
-  userEmail: 'alice@example.test', userId: 'alice', lastSyncAt: null, sessionExpired: false };
+  userEmail: parameters.get('account') ?? 'alice@example.test', userId: 'alice',
+  lastSyncAt: null, sessionExpired: false };
 
 function Fixture() {
   const language = useGuiLanguage();
