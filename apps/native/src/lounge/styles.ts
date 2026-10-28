@@ -14,7 +14,8 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16, paddingBottom: 28, gap: 9 },
   message: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 20 },
   own: { flexDirection: 'row-reverse' },
-  messageMain: { flexShrink: 1, maxWidth: '78%', gap: 4, alignItems: 'flex-start' },
+  // Resolve the bubble's percentage limit against the row, not another shrink-to-content measurement.
+  messageMain: { flexShrink: 1, width: '78%', gap: 4, alignItems: 'flex-start' },
   ownMain: { alignItems: 'flex-end' },
   bubble: { paddingVertical: 10, paddingHorizontal: 13, borderRadius: 15, borderTopLeftRadius: 3,
     backgroundColor: color('#e9eef1', 'elevated'), maxWidth: '100%',
@@ -104,7 +105,7 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   selectedRow: { backgroundColor: color('#deebf7', 'infoSoft') },
   rowTitle: { ...textMetrics(14, 21), color: color('#202b33', 'ink'), fontWeight: '500' },
   rowMeta: { alignItems: 'flex-end', gap: 6 },
-  messageText: { ...textMetrics(14, 23), color: color('#202b33', 'ink') },
+  messageText: { ...textMetrics(14, 23), alignSelf: 'stretch', color: color('#202b33', 'ink') },
   messageTime: { ...textMetrics(9, 14), color: color('#687c89', 'muted') },
   messageName: { ...textMetrics(10, 15), color: color('#687c89', 'muted') },
   messageAvatar: { width: 30, height: 30, borderRadius: 11 },

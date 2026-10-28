@@ -43,6 +43,13 @@ They cover server save failures, successful saves, external profile updates, res
 reconnection with stale caches, and the translated settings copy. Server tests separately validate
 48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
+Set `LOUNGE_TEXT_ONLY=1` to check `hi`, short Chinese messages, longer words, explicit newlines,
+wrapped Chinese messages and back navigation at font scales 1.0 and 1.3. Inspect the screenshots in
+`.codex-tmp/lounge-text-<device serial>/` for complete glyphs; positive accessibility bounds alone
+do not establish that text is unclipped. `LOUNGE_TEST_APK` can select an isolated fixture APK when
+another build is using the default Android output directory. The mobile Web regression is
+`apps/desktop/e2e/lounge-text.pw.ts`, using the production Web entry at 320px and 390px.
+
 Set `LOUNGE_IMAGE_ONLY=1` to verify image previews with real two-finger pinch gestures, single-finger
 panning, back navigation and previews above history at both font scales. The gesture runner compares
 image pixels before and after each gesture and checks that the preview stays open. It requires

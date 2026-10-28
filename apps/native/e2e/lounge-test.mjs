@@ -10,12 +10,14 @@ import WebSocket from 'ws';
 import { verifyNativeAvatar } from './lounge-avatar-check.mjs';
 import { verifyNativeImage } from './lounge-image-check.mjs';
 import { verifyNativeEmoji } from './lounge-emoji-check.mjs';
+import { verifyNativeText } from './lounge-text-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
-const output = path.join(root, '.codex-tmp/lounge-android');
 const serial = process.env.ANDROID_SERIAL;
 assert.ok(serial, 'Set ANDROID_SERIAL to a physical test device');
+const output = path.join(root, process.env.LOUNGE_TEXT_ONLY === '1'
+  ? `.codex-tmp/lounge-text-${serial}` : '.codex-tmp/lounge-android');
 const app = 'com.codexswitch.mobile.loungetest';
 const adb = async (...args) => (await exec('adb', ['-s', serial, ...args], {
   encoding: 'utf8', timeout: 60_000, windowsHide: true, maxBuffer: 4 * 1024 * 1024,
@@ -143,7 +145,8 @@ try {
   await mkdir(output, { recursive: true });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   await adb('reverse', 'tcp:1497', `tcp:${server.address().port}`);
-  await adb('install', '-r', path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
+  await adb('install', '-r', process.env.LOUNGE_TEST_APK
+    ?? path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
   for (const scale of [1, 1.3]) {
     online = true;
     blocked = false;
@@ -156,7 +159,11 @@ try {
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
-    await tap('在线交流'); await find('聊天');
+    await tap('在线交流'); await find('真机中文测试：忙里偷闲，聊点轻松的 ☕');
+    if (process.env.LOUNGE_TEXT_ONLY === '1') {
+      await verifyNativeText({ adb, tap, find, screenshot, hideKeyboard, scale, broadcast, incoming });
+      continue;
+    }
     if (process.env.LOUNGE_EMOJI_ONLY === '1') {
       await verifyNativeEmoji({ adb, tap, find, nodes, screenshot, scale, sent });
       continue;
@@ -279,5 +286,8 @@ try {
   await adb('reverse', '--remove', 'tcp:1497');
   for (const socket of sockets.clients) socket.terminate();
   sockets.close(); server.close();
-  await adb('shell', 'am', 'start', '-W', '-n', 'com.codexswitch.mobile/com.codexswitch.mobile.MainActivity');
+  const packages = await adb('shell', 'pm', 'list', 'packages', 'com.codexswitch.mobile');
+  if (packages.split(/\r?\n/).includes('package:com.codexswitch.mobile')) {
+    await adb('shell', 'am', 'start', '-W', '-n', 'com.codexswitch.mobile/com.codexswitch.mobile.MainActivity');
+  }
 }
