@@ -5,7 +5,8 @@ import { t } from '../i18n';
 
 export function LoungeDeliveryStatus({ delivery }: { delivery?: LoungeDelivery }) {
   if (delivery?.direction !== 'outgoing') return null;
-  const name = delivery.status === 'read' ? 'checkmark-done' : delivery.status === 'delivered' ? 'checkmark' : 'time-outline';
+  const name = ({ read: 'checkmark-done', delivered: 'checkmark', pending: 'time-outline',
+    rejected: 'alert-circle-outline' } as const)[delivery.status];
   return <View accessible accessibilityRole="image" accessibilityLabel={t(deliveryLabel(delivery.status))}
     style={{ alignSelf: 'flex-end', paddingTop: 4 }}>
     <Ionicons name={name} size={15} color={delivery.status === 'read' ? '#28a36b' : '#8c939d'} />

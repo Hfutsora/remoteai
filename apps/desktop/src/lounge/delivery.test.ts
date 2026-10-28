@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LoungeDirectDelivery } from '../../../../shared/lounge/directDelivery';
 import { historyKey, historyPage } from '../../../../shared/lounge/archive';
-import { needsDeliveryWork } from '../../../../shared/lounge/delivery';
+import { mergeDelivery, needsDeliveryWork } from '../../../../shared/lounge/delivery';
 import type { LoungeMessage } from '../../../../shared/lounge/types';
 
 const alice = { id: 'alice', account: 'alice@example.test' };
@@ -26,6 +26,13 @@ function fixture(self = alice, rows = new Map<string, LoungeMessage>()) {
 }
 const message = (): LoungeMessage => ({ type: 'message', id: 'one', text: 'hello', images: [], sender: alice,
   recipient: bob, receipts: true, conversation: 'alice', sentAt: new Date().toISOString() });
+
+it('does not revive a rejected opening from a stale write by another window', () => {
+  const merged = mergeDelivery({ direction: 'outgoing', status: 'rejected', retry: false },
+    { direction: 'outgoing', status: 'pending', retry: true });
+  expect(merged?.status).toBe('rejected');
+  expect(needsDeliveryWork(merged)).toBe(false);
+});
 
 it('retries the same message after five seconds only while the peer is online, until a client receipt arrives', async () => {
   const { engine, state, transmit, rows } = fixture();

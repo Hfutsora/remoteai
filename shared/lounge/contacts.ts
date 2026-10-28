@@ -39,5 +39,5 @@ export function contactStatus(contact: LoungeContact) {
 }
 
 export const sendError = (error: unknown) => error instanceof Error
-  && ['client.lounge.muted', 'client.lounge.directUnavailable'].includes(error.message)
+  && ['client.lounge.muted', 'client.lounge.directUnavailable', 'client.lounge.awaitingReply'].includes(error.message)
   ? error.message : 'client.lounge.sendFailed';

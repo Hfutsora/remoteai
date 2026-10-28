@@ -8,6 +8,8 @@ import { searchLoungeHistory } from './history';
 import { mergeContact, messageConversation, parseAccount, type LoungeContact } from './contacts';
 import { LoungeDirectDelivery } from './directDelivery';
 import { LoungeDeliveryTransport } from './deliveryTransport';
+import { mergeDirectPermissions, type DirectPermission } from './directPermission';
+import { needsDeliveryWork } from './delivery';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -48,6 +50,7 @@ export class LoungeController {
   private historyFailures = 0;
   private recent: LoungeMessage[] = [];
   private watched = '';
+  private permissions = new Map<string, DirectPermission>();
   private readonly delivery: LoungeDirectDelivery;
   private readonly transport = new LoungeDeliveryTransport();
 
@@ -63,8 +66,9 @@ export class LoungeController {
       allowed: message => message.delivery?.direction === 'incoming'
         ? !this.state.blocked.includes(message.sender.id)
         : !this.state.policy.mutedUntil || Date.parse(this.state.policy.mutedUntil) <= Date.now(),
-      find: key => this.findMessage(key), page: query => this.session?.history?.get
-        ? this.session.history.page(query) : Promise.resolve({ messages: [] }),
+      find: key => this.findMessage(key), page: query => query.pendingOnly && !this.session?.history?.get
+        ? Promise.resolve({ messages: [] }) : this.searchHistory(query),
+      permission: peer => this.permissions.get(peer),
       publish: (message, fresh) => this.publishDirect(message, fresh),
       transmit: frame => this.state.status === 'connected' && this.transport.send(this.socket, frame),
       error: () => this.update({ historyError: true }),
@@ -100,6 +104,7 @@ export class LoungeController {
     this.unsubscribe = undefined;
     this.disconnect();
     this.recent = [];
+    this.permissions.clear();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
       status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, conversation: '', unreadByConversation: {} });
@@ -190,6 +195,8 @@ export class LoungeController {
     try { frame = JSON.parse(data) as Record<string, unknown>; } catch { return; }
     if (!frame || typeof frame !== 'object') return;
     this.received = Date.now();
+    if (frame.type === 'direct-permissions') { mergeDirectPermissions(this.permissions, frame.states); return; }
+    if (frame.type === 'rejected') this.delivery.reject(frame);
     if (frame.type === 'policy' || frame.type === 'ready') this.receivePolicy(frame.policy);
     if (['policy', 'ready', 'presence'].includes(String(frame.type)) && this.state.policy.moderator) {
       const count = frame.onlineCount;
@@ -205,7 +212,8 @@ export class LoungeController {
       if (!pending) return;
       clearTimeout(pending.timer); this.pending.delete(String(frame.id));
       if (frame.type !== 'rejected') pending.resolve();
-      else pending.reject(new Error(['client.lounge.muted', 'client.lounge.directUnavailable'].includes(String(frame.code))
+      else pending.reject(new Error(['client.lounge.muted', 'client.lounge.directUnavailable',
+        'client.lounge.awaitingReply'].includes(String(frame.code))
         ? String(frame.code) : 'client.lounge.actionFailed'));
       return;
     }
@@ -303,11 +311,13 @@ export class LoungeController {
     }
   }
   async searchHistory(query: HistoryQuery): Promise<HistoryPage> {
-    query = { ...query, conversation: query.conversation ?? this.state.conversation };
+    query = { ...query, conversation: query.conversation ?? (query.pendingOnly ? undefined : this.state.conversation) };
     await this.writes;
     if (this.session?.history) return this.session.history.page(query);
-    const matches = searchLoungeHistory(this.state.messages, query.query).filter(message => {
-      if ((message.conversation ?? '') !== query.conversation) return false;
+    const recent = recentMessages([...this.recent, ...this.state.messages]);
+    const matches = searchLoungeHistory(recent, query.query).filter(message => {
+      if (query.conversation !== undefined && (message.conversation ?? '') !== query.conversation) return false;
+      if (query.pendingOnly && !needsDeliveryWork(message.delivery)) return false;
       const position = historyPosition(message);
       return !query.before || position.time < query.before.time
         || position.time === query.before.time && position.key < query.before.key;

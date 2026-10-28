@@ -2,7 +2,8 @@ import { defineConfig } from '@playwright/test';
 import { testBrowserLaunchOptions } from '../../scripts/test-browser.mjs';
 
 export default defineConfig({
-  testDir: './e2e', testMatch: ['lounge.pw.ts', 'lounge-replies.pw.ts', 'lounge-direct.pw.ts', 'lounge-receipts.pw.ts'],
+  testDir: './e2e', testMatch: ['lounge.pw.ts', 'lounge-replies.pw.ts', 'lounge-direct.pw.ts', 'lounge-receipts.pw.ts',
+    'lounge-opening-limit.pw.ts'],
   workers: 1, timeout: 60_000,
   outputDir: '../../.codex-tmp/lounge-playwright',
   use: { baseURL: 'http://127.0.0.1:1487', launchOptions: testBrowserLaunchOptions(),

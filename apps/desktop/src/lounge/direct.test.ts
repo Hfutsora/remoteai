@@ -34,6 +34,41 @@ const message = (id: string, direct = false): LoungeMessage => ({ type: 'message
   recipient: direct ? alice : undefined, text: id, images: [], sentAt: new Date().toISOString() });
 afterEach(() => { controllers.splice(0).forEach(value => value.stop()); Socket.instances = []; vi.unstubAllGlobals(); });
 
+it('allows one opening message, rejects concurrent sends and ignores group messages and read receipts', async () => {
+  const { controller, socket } = await start(); socket.ready(); controller.selectConversation(bob);
+  const first = controller.send({ text: 'hello', images: [], to: bob.id });
+  const second = controller.send({ text: 'second', images: [], to: bob.id });
+  await first;
+  await expect(second).rejects.toThrow('client.lounge.awaitingReply');
+  const id = controller.snapshot().messages[0].id;
+  socket.frame({ type: 'receipt', id, from: bob.id, to: alice.id, status: 'read' });
+  socket.frame(message('group')); await settle();
+  await expect(controller.send({ text: 'still waiting', images: [], to: bob.id })).rejects.toThrow('awaitingReply');
+  socket.frame({ ...message('answer', true), receipts: true }); await settle();
+  await controller.send({ text: 'free one', images: [], to: bob.id });
+  await controller.send({ text: 'free two', images: [], to: bob.id });
+  expect(controller.snapshot().messages.map(item => item.text)).toEqual(['hello', 'answer', 'free one', 'free two']);
+});
+
+it('uses server permissions after switching devices and ignores stale permission snapshots', async () => {
+  const { controller, socket } = await start(); socket.ready(); controller.selectConversation(bob);
+  socket.frame({ type: 'direct-permissions', states: { [bob.id]: 'waiting' } });
+  await expect(controller.send({ text: 'second device', images: [], to: bob.id })).rejects.toThrow('awaitingReply');
+  socket.frame({ type: 'direct-permissions', states: { [bob.id]: 'open' } });
+  socket.frame({ type: 'direct-permissions', states: { [bob.id]: 'waiting' } });
+  await controller.send({ text: 'reply received on another device', images: [], to: bob.id });
+  expect(controller.snapshot().messages.at(-1)?.text).toBe('reply received on another device');
+});
+
+it('stops retrying an opening rejected during a race with another device', async () => {
+  const { controller, socket } = await start(); socket.ready(); controller.selectConversation(bob);
+  await controller.send({ text: 'racing another device', images: [], to: bob.id });
+  const id = controller.snapshot().messages[0].id;
+  socket.frame({ type: 'rejected', id, code: 'client.lounge.awaitingReply' }); await settle();
+  expect(controller.snapshot().messages[0].delivery?.status).toBe('rejected');
+  expect((await controller.searchHistory({ query: '', pendingOnly: true })).messages).toHaveLength(0);
+});
+
 it('isolates private timelines and unread counts without clearing other conversations', async () => {
   const { controller, socket } = await start(); socket.ready(); controller.setViewing(true);
   socket.frame(message('group')); socket.frame(message('private', true));

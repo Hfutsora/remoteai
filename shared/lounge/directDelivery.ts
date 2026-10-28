@@ -1,6 +1,7 @@
 import { historyKey, type HistoryPage, type HistoryQuery } from './archive';
 import { DIRECT_RETRY_MS, isReceiptStatus, needsDeliveryWork, receiptRank, type ReceiptStatus } from './delivery';
 import type { LoungeAccount, LoungeDraft, LoungeMessage } from './types';
+import { AWAITING_REPLY, checkDirectPermission, type DirectPermission } from './directPermission';
 
 interface DeliveryHost {
   self(): LoungeAccount | undefined;
@@ -13,6 +14,7 @@ interface DeliveryHost {
   publish(message: LoungeMessage, fresh: boolean): Promise<void>;
   transmit(frame: Record<string, unknown>): boolean;
   error(): void;
+  permission?(peer: string): DirectPermission | undefined;
 }
 interface DeliveryJob { peer: string; due: number }
 
@@ -72,12 +74,27 @@ export class LoungeDirectDelivery {
     const sender = this.host.self();
     if (!sender || !this.host.enabled()) throw new Error('client.lounge.directUnavailable');
     await this.run(async current => {
+      await checkDirectPermission({ self: sender.id, peer: recipient.id,
+        permission: this.host.permission?.(recipient.id), page: query => this.host.page(query) });
+      if (!current()) return;
       const message: LoungeMessage = { type: 'message', id, sender, recipient, text: draft.text,
         images: draft.images, reply: draft.reply, sentAt: new Date().toISOString(), conversation: recipient.id,
         receipts: true, delivery: { direction: 'outgoing', status: 'pending', retry: true, attemptedAt: Date.now() } };
       await this.host.publish(message, true);
       if (!current()) return;
       this.track(message); this.transmitMessage(message);
+    });
+  }
+
+  reject(frame: Record<string, unknown>) {
+    if (frame.code !== AWAITING_REPLY || typeof frame.id !== 'string' || !this.host.self()) return;
+    const key = JSON.stringify([this.host.self()!.id, frame.id]);
+    this.background(async current => {
+      const saved = await this.host.find(key);
+      if (!current() || saved?.delivery?.direction !== 'outgoing' || saved.delivery.status !== 'pending') return;
+      const message: LoungeMessage = { ...saved, delivery: { ...saved.delivery, status: 'rejected', retry: false } };
+      await this.host.publish(message, false);
+      if (current()) this.track(message);
     });
   }
 

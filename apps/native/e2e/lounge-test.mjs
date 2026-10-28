@@ -169,6 +169,17 @@ try {
     await find('对方已收到');
     broadcast({ type: 'receipt', id: sent.at(-1).id, from: 'bob', to: 'alice', status: 'read' });
     await find('对方已阅读');
+    const beforeReply = sent.length;
+    await tap('消息'); await adb('shell', 'input', 'text', 'waiting-draft'); await tap('发送');
+    await find('对方回复后才能继续发送。'); await find('waiting-draft');
+    assert.equal(sent.length, beforeReply, 'A read receipt must not unlock a second private message');
+    await hideKeyboard(); await screenshot(`opening-limit-${scale}`);
+    broadcast({ ...incoming('收到你的问候啦'), recipient: { id: 'alice', account: 'alice@example.test' }, receipts: true });
+    await find('收到你的问候啦'); await tap('发送');
+    await assertEventually(() => sent.length === beforeReply + 1 && sent.at(-1).text === 'waiting-draft',
+      'The retained draft can be sent after a reply');
+    await tap('消息'); await adb('shell', 'input', 'text', 'free-chat'); await tap('发送');
+    await assertEventually(() => sent.at(-1).text === 'free-chat', 'Later private messages do not need another reply');
     await hideKeyboard(); await screenshot(`private-${scale}`);
     await tap('屏蔽此人'); await screenshot(`block-confirm-${scale}`); await tap('屏蔽此人');
     await find('取消屏蔽'); await find('在线');
