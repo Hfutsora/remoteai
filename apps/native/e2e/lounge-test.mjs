@@ -199,7 +199,10 @@ try {
     }
     await tap('群聊'); await find('真机中文测试：忙里偷闲，聊点轻松的 ☕');
     if (process.env.LOUNGE_TEXT_ONLY === '1') {
-      await verifyNativeText({ adb, tap, find, screenshot, hideKeyboard, scale, broadcast, incoming });
+      await verifyNativeText({ adb, tap, find, screenshot, hideKeyboard, scale, broadcast, incoming, image,
+        fail: value => { rejectAvatar = value; }, saves: () => avatarSaves,
+        profile: value => { avatar = value; broadcast({ type: 'profiles', profiles: [{ id: 'alice', avatar }] }); },
+      });
       continue;
     }
     if (process.env.LOUNGE_EMOJI_ONLY === '1') {
@@ -243,7 +246,7 @@ try {
     await hideKeyboard();
     await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', unique);
     await find('本页 1 条记录'); await hideKeyboard(); await screenshot(`history-${scale}`);
-    await find('回复 bob@example.test');
+    await find('查看原消息');
     await tap('返回聊天'); await find('Draft');
     broadcast(incoming('私聊入口测试'));
     await longPress('私聊入口测试'); await tap('发起私聊');
@@ -308,7 +311,7 @@ try {
     await tap('在线交流'); await tap('群聊');
     await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户');
     await adb('shell', 'input', 'text', unique); await find('本页 1 条记录'); await find(unique);
-    await find('回复 bob@example.test');
+    await find('查看原消息');
     await hideKeyboard(); await screenshot(`offline-restart-${scale}`);
     await tap('返回聊天'); await tap('聊天'); await tap('与 bob@example.test 私聊');
     await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户'); await adb('shell', 'input', 'text', `Private-${unique}`);

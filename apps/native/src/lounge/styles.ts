@@ -1,5 +1,6 @@
 import { createLoungeStyles } from './theme';
 import { textMetrics } from '../theme/text';
+import { BUBBLE_HORIZONTAL_PADDING, MESSAGE_FONT_SIZE } from './messageLayout';
 
 export const useLoungeStyles = createLoungeStyles(color => ({
   page: { flex: 1, minHeight: 0, backgroundColor: color('#f5f7f8', 'canvas') },
@@ -17,14 +18,21 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   // Resolve the bubble's percentage limit against the row, not another shrink-to-content measurement.
   messageMain: { flexShrink: 1, width: '78%', gap: 4, alignItems: 'flex-start' },
   ownMain: { alignItems: 'flex-end' },
-  bubble: { paddingVertical: 10, paddingHorizontal: 13, borderRadius: 15, borderTopLeftRadius: 3,
+  bubble: { paddingVertical: 10, paddingHorizontal: BUBBLE_HORIZONTAL_PADDING, borderRadius: 15, borderTopLeftRadius: 3,
     backgroundColor: color('#e9eef1', 'elevated'), maxWidth: '100%',
     alignItems: 'flex-start' },
   ownBubble: { backgroundColor: color('#deebf7', 'infoSoft'), alignItems: 'flex-end',
     borderTopLeftRadius: 15, borderTopRightRadius: 3 },
   imageOnly: { padding: 0, backgroundColor: 'transparent' },
-  reply: { alignSelf: 'stretch', flexDirection: 'row', maxWidth: 400, gap: 6, padding: 8, marginBottom: 6,
-    borderLeftWidth: 3, borderLeftColor: color('#838892', 'muted'), backgroundColor: color('#eee', 'canvas') },
+  quotedBubble: { width: '100%' },
+  highlighted: { borderRadius: 15, backgroundColor: color('#fff0bd', 'infoSoft') },
+  reply: { alignSelf: 'stretch', flexDirection: 'row', maxWidth: 400, gap: 6, padding: 9, marginBottom: 8,
+    borderRadius: 7, backgroundColor: color('#dce4e9', 'canvas') },
+  replyContent: { flex: 1, minWidth: 0, gap: 6 },
+  replyHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  replyAccount: { ...textMetrics(12, 19), color: color('#687c89', 'muted'), flex: 1, minWidth: 0 },
+  replyText: { ...textMetrics(12, 19), color: color('#687c89', 'muted'), flexShrink: 0 },
+  replyImage: { width: 140, height: 100, maxWidth: '100%', borderRadius: 5 },
   avatar: { width: 42, height: 42, borderRadius: 15, backgroundColor: color('#deebf7', 'infoSoft'),
     alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   initials: { ...textMetrics(15, 24), color: color('#4b6c96', 'info'), fontWeight: '600' },
@@ -109,7 +117,8 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   selectedRow: { backgroundColor: color('#deebf7', 'infoSoft') },
   rowTitle: { ...textMetrics(14, 21), color: color('#202b33', 'ink'), fontWeight: '500' },
   rowMeta: { alignItems: 'flex-end', gap: 6 },
-  messageText: { ...textMetrics(14, 23), alignSelf: 'stretch', color: color('#202b33', 'ink') },
+  messageText: { ...textMetrics(MESSAGE_FONT_SIZE, 23), alignSelf: 'stretch', flexShrink: 0,
+    color: color('#202b33', 'ink') },
   messageTime: { ...textMetrics(9, 14), color: color('#687c89', 'muted') },
   messageName: { ...textMetrics(10, 15), color: color('#687c89', 'muted') },
   messageAvatar: { width: 30, height: 30, borderRadius: 11 },

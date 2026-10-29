@@ -9,11 +9,14 @@ import { useThemeColor } from '../theme/store';
 import { LoungeMessage } from './LoungeMessage';
 import { LoungePreview } from './LoungePreview';
 import { useLoungeStyles } from './styles';
+import type { LoungeReply } from '../../../../shared/lounge/reply';
+import type { LoungeNavigationError } from '../../../../shared/lounge/useLoungeNavigation';
 
-export function LoungeHistory({ controller, close, reply, direct, profile }: {
+export function LoungeHistory({ controller, close, reply, direct, profile, locate, navigationError }: {
   controller: LoungeController; close: () => void; reply: (message: Message) => void;
   direct: (user: LoungeAccount) => void;
   profile: (user: LoungeAccount) => void;
+  locate: (reference: LoungeReply) => void; navigationError?: LoungeNavigationError;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const styles = useLoungeStyles();
@@ -36,12 +39,14 @@ export function LoungeHistory({ controller, close, reply, direct, profile }: {
       {history.error && <View><Text style={styles.muted}>{t('client.lounge.historyLoadFailed')}</Text>
         <Pressable accessibilityRole="button" onPress={history.retry} style={styles.iconButton}>
           <Text style={styles.link}>{t('client.lounge.historyRetry')}</Text></Pressable></View>}
+      {navigationError && <Text accessibilityRole="alert" style={styles.error}>{t(navigationError)}</Text>}
     </View>
     <FlatList data={history.messages} keyExtractor={item => `${item.sender.id}:${item.id}`}
       contentContainerStyle={styles.list}
       keyboardShouldPersistTaps="handled"
       renderItem={({ item }) => <LoungeMessage message={item} preview={setPreview} reply={reply}
-        profile={item.sender.id !== state.user?.id ? () => profile(item.sender) : undefined}
+        controller={controller} locate={locate} own={item.sender.id === state.user?.id}
+        profile={() => profile(item.sender)}
         direct={state.directAvailable && item.sender.id !== state.user?.id
           ? () => { close(); direct(item.sender); } : undefined} />}
       ListEmptyComponent={!history.loading && !history.error ? <Text style={styles.muted}>{t(history.query.trim()

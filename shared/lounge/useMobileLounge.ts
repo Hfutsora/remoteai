@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { LoungeController } from './controller';
 import type { LoungeAccount, LoungeDraft, LoungeMessage } from './types';
-import { quoteMessage } from './reply';
+import { quoteMessage, type LoungeReply } from './reply';
+import { useLoungeNavigation } from './useLoungeNavigation';
 
 export type LoungeSheet = 'members' | 'about' | 'extras' | undefined;
 const EMPTY_DRAFT: LoungeDraft = { text: '', images: [] };
@@ -9,6 +10,7 @@ const EMPTY_DRAFT: LoungeDraft = { text: '', images: [] };
 /** Page-local navigation and drafts shared by native and mobile web. No chat content leaves the device. */
 export function useMobileLounge(controller: LoungeController) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
+  const navigation = useLoungeNavigation(controller, state);
   const [chats, setChats] = useState(true);
   const [sheet, setSheet] = useState<LoungeSheet>();
   const [drafts, setDrafts] = useState<Record<string, LoungeDraft>>({});
@@ -20,7 +22,8 @@ export function useMobileLounge(controller: LoungeController) {
   const [moderating, setModerating] = useState<LoungeAccount>();
   const [blocking, setBlocking] = useState<LoungeAccount>();
   const [profileUser, setProfile] = useState<LoungeAccount>();
-  const profile = profileUser && (state.contacts.find(value => value.user.id === profileUser.id)?.user ?? profileUser);
+  const profile = profileUser && (profileUser.id === state.user?.id ? state.user
+    : state.contacts.find(value => value.user.id === profileUser.id)?.user ?? profileUser);
   const [deleting, changeDeleting] = useState<LoungeAccount>();
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
@@ -34,6 +37,7 @@ export function useMobileLounge(controller: LoungeController) {
   const draft = drafts[conversation] ?? EMPTY_DRAFT;
   const contact = state.contacts.find(value => value.user.id === conversation);
   const select = (user?: LoungeAccount) => {
+    navigation.clear();
     controller.setViewing(false);
     controller.selectConversation(user);
     setAtBottom((offsets.current.get(user?.id ?? '') ?? 0) < 48);
@@ -51,13 +55,18 @@ export function useMobileLounge(controller: LoungeController) {
     finally { setDeleteBusy(false); }
   };
   const quote = (message: LoungeMessage) => { change({ ...draft, reply: quoteMessage(message) }); setHistory(false); };
+  const locate = async (reference: LoungeReply) => {
+    if (!await navigation.locate(reference)) return;
+    setHistory(false); setChats(false); setSheet(undefined); setAtBottom(false);
+  };
+  const latest = () => { navigation.clear(); setAtBottom(true); };
   const cancelReply = () => change({ ...draft, reply: undefined });
   useEffect(() => {
     controller.setViewing(atBottom && !chats && !sheet && !history && !avatar && !preview
-      && !moderating && !blocking && !profile && !deleting && !composerOverlay);
+      && !moderating && !blocking && !profile && !deleting && !composerOverlay && !navigation.focus);
     return () => controller.setViewing(false);
   }, [controller, atBottom, chats, sheet, history, avatar, preview, moderating, blocking,
-    profile, deleting, composerOverlay, conversation]);
+    profile, deleting, composerOverlay, conversation, navigation.focus]);
   useEffect(() => {
     if (!muted) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -66,7 +75,7 @@ export function useMobileLounge(controller: LoungeController) {
   return { state, contact, chats, setChats, sheet, setSheet, drafts, draftState: { draft, change },
     offsets, scrollPositions, history, setHistory, avatar, setAvatar, preview, setPreview, moderating, setModerating,
     blocking, setBlocking, profile, setProfile, deleting, setDeleting, deleteBusy, deleteError, deleteContact,
-    atBottom, setAtBottom, muted, select, quote, cancelReply, setComposerOverlay };
+    atBottom, setAtBottom, muted, select, quote, cancelReply, setComposerOverlay, navigation, locate, latest };
 }
 
 export type MobileLounge = ReturnType<typeof useMobileLounge>;

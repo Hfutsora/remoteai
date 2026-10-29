@@ -20,6 +20,9 @@ import { contactStatus } from './contacts';
 import './lounge.css';
 import './people.css';
 import { MobileLoungePage } from './MobileLoungePage';
+import { historyKey } from './archive';
+import { useLoungeNavigation } from './useLoungeNavigation';
+import { scrollToLoungeMessage } from './scrollToMessage';
 
 export function LoungePage(props: {
   controller: LoungeController; onLogin?: () => void; mobile?: boolean; onBack?: () => void;
@@ -32,6 +35,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   controller: LoungeController; onLogin?: () => void; mobile?: boolean;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
+  const navigation = useLoungeNavigation(controller, state);
   const language = useSyncExternalStore(subscribeInterfaceLanguage, getInterfaceLanguage);
   const list = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -43,7 +47,18 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [blocking, setBlocking] = useState<LoungeAccount>();
   const contact = state.contacts.find(value => value.user.id === state.conversation);
-  const select = (user?: LoungeAccount) => { controller.selectConversation(user); setPeopleOpen(false); setAtBottom(true); };
+  const select = (user?: LoungeAccount) => {
+    navigation.clear(); controller.selectConversation(user); setPeopleOpen(false); setAtBottom(true);
+  };
+  const locate = async (reference: LoungeReply) => {
+    if (!await navigation.locate(reference)) return;
+    setAtBottom(false); setHistoryOpen(false);
+  };
+  useLayoutEffect(() => {
+    if (!navigation.focus) return;
+    const frame = requestAnimationFrame(() => scrollToLoungeMessage(list.current, navigation.focus!.key));
+    return () => cancelAnimationFrame(frame);
+  }, [navigation.focus]);
   useEffect(() => setReply(undefined), [controller, state.conversation]);
   const quote = (message: LoungeMessage) => { setReply(quoteMessage(message)); setHistoryOpen(false); };
   const [now, setNow] = useState(Date.now);
@@ -55,12 +70,15 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
     return () => clearInterval(timer);
   }, [muted, mutedUntil]);
   useEffect(() => {
-    controller.setViewing(atBottom && !historyOpen && !avatarOpen && !peopleOpen && !preview && !moderating && !blocking);
+    controller.setViewing(atBottom && !navigation.focus && !historyOpen && !avatarOpen && !peopleOpen
+      && !preview && !moderating && !blocking);
     return () => controller.setViewing(false);
-  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen, preview, moderating, blocking]);
+  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen, preview, moderating, blocking, navigation.focus]);
   useLayoutEffect(() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; },
     [state.messages, atBottom]);
-  const scrollBottom = () => { setAtBottom(true); if (list.current) list.current.scrollTop = list.current.scrollHeight; };
+  const scrollBottom = () => {
+    navigation.clear(); setAtBottom(true); if (list.current) list.current.scrollTop = list.current.scrollHeight;
+  };
   const signedOut = state.status === 'signed-out';
   return <section className="lounge-layout">
     <aside className="lounge-sidebar"><LoungePeople state={state} select={select} block={setBlocking} /></aside>
@@ -84,22 +102,24 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
     <div className="lounge-conversation" ref={list} role="log" aria-live="off" aria-label={t('client.lounge.title')}
       onScroll={() => {
         const node = list.current;
-        if (node) setAtBottom(node.scrollHeight - node.clientHeight - node.scrollTop < 48);
+        if (node) setAtBottom(!navigation.focus && node.scrollHeight - node.clientHeight - node.scrollTop < 48);
       }}>
       {!state.messages.length && <div className="lounge-empty"><Coffee size={40} />
         <h2>{t(signedOut ? 'client.lounge.signIn' : contact ? 'client.lounge.directEmpty' : 'client.lounge.empty')}</h2>
         <p>{t(contact ? 'client.lounge.directHint' : 'client.lounge.ephemeral')}</p>
         {signedOut && onLogin && <button type="button" onClick={onLogin}>{t('client.lounge.login')}</button>}
       </div>}
-      {state.messages.map((message, index) => {
+      {navigation.messages.map((message, index) => {
         const own = message.sender.id === state.user?.id;
-        const previous = state.messages[index - 1];
+        const previous = navigation.messages[index - 1];
         const showTime = !previous || Date.parse(message.sentAt) - Date.parse(previous.sentAt) > 5 * 60_000;
         return <div key={`${message.sender.id}:${message.id}`}>
           {showTime && <div className="lounge-time"><time dateTime={message.sentAt}>
             {new Intl.DateTimeFormat(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' })
               .format(new Date(message.sentAt))}</time></div>}
-          <article className={`lounge-message${own ? ' is-own' : ''}`}>
+          <article data-lounge-message-key={historyKey(message)}
+            className={`lounge-message${own ? ' is-own' : ''}${navigation.highlight === historyKey(message)
+              ? ' is-highlighted' : ''}`}>
             <LoungeAvatar user={message.sender}
               onDirect={!own && state.directAvailable ? () => select(message.sender) : undefined} />
             <div className="lounge-message-main">
@@ -107,7 +127,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
                 aria-label={t('client.lounge.manageUser', { account: message.sender.account })}
                 onClick={() => setModerating(message.sender)}>{message.sender.account}</button>
                 : <div className="lounge-account">{message.sender.account}</div>}
-              <LoungeMessageBody message={message} preview={setPreview}
+              <LoungeMessageBody message={message} preview={setPreview} controller={controller} locate={locate}
                 actions={{ reply: quote, blocked: state.blocked.includes(message.sender.id),
                   direct: !own && state.directAvailable ? () => select(message.sender) : undefined,
                   block: !own && state.directAvailable ? () => setBlocking(message.sender) : undefined }}
@@ -117,7 +137,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
         </div>;
       })}
     </div>
-    {!atBottom && <button className="lounge-jump" type="button" onClick={scrollBottom}>
+    {(!atBottom || navigation.focus) && <button className="lounge-jump" type="button" onClick={scrollBottom}>
       <ArrowDown size={15} />{t('client.lounge.latest')}{state.unread > 0 && ` · ${state.unread}`}</button>}
     {muted && <p className="lounge-mute-notice" role="status">{t('client.lounge.mutedUntil', {
       time: new Intl.DateTimeFormat(localeForLanguage(language), { dateStyle: 'short', timeStyle: 'short' })
@@ -127,13 +147,14 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
       && <p className="lounge-mute-notice" role="status">{t('client.lounge.directUpgrade')}</p>}
     {state.historyError && <p className="lounge-history-warning" role="alert">{t('client.lounge.historySaveFailed')}
       <button type="button" onClick={() => void controller.retryHistory()}>{t('client.lounge.historyRetry')}</button></p>}
+    {navigation.error && <p className="lounge-mute-notice" role="status">{t(navigation.error)}</p>}
     <LoungeComposer key={`${state.user?.id ?? 'guest'}:${state.conversation}`}
       connected={state.status === 'connected' && !muted && (!state.conversation || state.directAvailable)} mobile={mobile}
       reply={reply} cancelReply={sent => setReply(current => !sent || current === sent ? undefined : current)}
       send={draft => controller.send({ ...draft, to: state.conversation || undefined })}
       onHistory={() => setHistoryOpen(true)} />
     <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller}
-      preview={setPreview} reply={quote} direct={select} />
+      preview={setPreview} reply={quote} direct={select} locate={locate} navigationError={navigation.error} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatarOpen(false)} />}
     {moderating && state.policy.moderator && <LoungeModeration user={moderating} controller={controller}

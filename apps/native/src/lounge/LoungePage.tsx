@@ -18,6 +18,8 @@ import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
 import { LoungeProfile } from './LoungeProfile';
 import { LoungeDeleteDialog } from './LoungeDeleteDialog';
+import { historyKey } from '../../../../shared/lounge/archive';
+import { useLoungeListFocus } from './useLoungeListFocus';
 
 export function LoungePage({ controller, onBack }: { controller: LoungeController; onBack: () => void }) {
   useLanguage();
@@ -26,6 +28,8 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
   const model = useMobileLounge(controller);
   const { state, contact } = model;
   const list = useRef<FlatList<Message>>(null);
+  const messages = [...model.navigation.messages].reverse();
+  const focus = useLoungeListFocus({ list, messages, focus: model.navigation.focus });
   const [viewportHeight, setViewportHeight] = useState(0);
   const scrollBottom = () => { if (model.atBottom) list.current?.scrollToOffset({ offset: 0, animated: false }); };
   const back = () => {
@@ -40,18 +44,20 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
     onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}>
     {model.chats ? <LoungeChats model={model} controller={controller} onBack={onBack} /> : <>
       <LoungeHeading model={model} back={back} />
-      <FlatList key={`thread:${state.conversation}`} ref={list} inverted data={[...state.messages].reverse()}
+      <FlatList key={`thread:${state.conversation}`} ref={list} inverted data={messages}
         contentContainerStyle={styles.list} style={styles.spacer} keyExtractor={item => `${item.sender.id}:${item.id}`}
-        keyboardShouldPersistTaps="handled" scrollEventThrottle={32} onContentSizeChange={scrollBottom}
-        onLayout={() => list.current?.scrollToOffset({
+        keyboardShouldPersistTaps="handled" scrollEventThrottle={32} onScrollToIndexFailed={focus.failed}
+        onContentSizeChange={() => { if (model.navigation.highlight) focus.reveal(); else scrollBottom(); }}
+        onLayout={() => !model.navigation.focus && list.current?.scrollToOffset({
           offset: model.offsets.current.get(state.conversation) ?? 0, animated: false,
         })} onScroll={({ nativeEvent: event }) => {
           model.offsets.current.set(state.conversation, event.contentOffset.y);
-          model.setAtBottom(event.contentOffset.y < 48);
+          model.setAtBottom(!model.navigation.focus && event.contentOffset.y < 48);
         }} renderItem={({ item }) => <LoungeMessage message={item} own={item.sender.id === state.user?.id}
           reply={model.quote} blocked={state.blocked.includes(item.sender.id)}
           direct={item.sender.id !== state.user?.id && state.directAvailable ? () => model.select(item.sender) : undefined}
-          profile={item.sender.id !== state.user?.id ? () => model.setProfile(item.sender) : undefined}
+          profile={() => model.setProfile(item.sender)} controller={controller} locate={model.locate}
+          highlighted={model.navigation.highlight === historyKey(item)}
           block={item.sender.id !== state.user?.id && state.directAvailable ? () => model.setBlocking(item.sender) : undefined}
           manage={state.policy.moderator ? model.setModerating : undefined}
           preview={model.setPreview} onImageLoad={scrollBottom} />}
@@ -65,8 +71,8 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
           })}><Text style={styles.chatsLabel}>{t(contact ? 'client.lounge.directGreeting' : 'client.lounge.greeting')}</Text>
           </Pressable>
         </View>} />
-      {!model.atBottom && <Pressable accessibilityRole="button" style={styles.iconButton} onPress={() => {
-        model.setAtBottom(true); list.current?.scrollToOffset({ offset: 0, animated: true });
+      {(!model.atBottom || model.navigation.focus) && <Pressable accessibilityRole="button" style={styles.iconButton} onPress={() => {
+        model.latest(); list.current?.scrollToOffset({ offset: 0, animated: true });
       }}><Text style={styles.link}>{t('client.lounge.latest')}</Text></Pressable>}
       {model.muted && <View style={styles.notice}><Text style={styles.muted}>{t('client.lounge.mutedUntil', {
         time: new Date(state.policy.mutedUntil!).toLocaleString(getLocale()),
@@ -77,6 +83,8 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
         {t('client.lounge.historySaveFailed')}</Text><Pressable accessibilityRole="button" style={styles.iconButton}
           onPress={() => void controller.retryHistory()}><Text style={styles.link}>{t('client.lounge.historyRetry')}</Text>
         </Pressable></View>}
+      {model.navigation.error && <View style={styles.notice}><Text accessibilityRole="alert" style={styles.muted}>
+        {t(model.navigation.error)}</Text></View>}
       <Pressable accessibilityRole="button" style={styles.retention} onPress={() => model.setSheet('about')}>
         <Ionicons name="information-circle-outline" size={13} color={color('#687c89', 'muted')} />
         <Text style={styles.retentionText}>{t(contact ? 'client.lounge.directRetention' : 'client.lounge.retention')}</Text>
@@ -102,15 +110,16 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
     {model.sheet === 'members' && <LoungeMembers model={model} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     {model.history && <LoungeHistory controller={controller} close={() => model.setHistory(false)}
-      reply={model.quote} direct={model.select} profile={model.setProfile} />}
-    {model.avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
+      reply={model.quote} direct={model.select} profile={model.setProfile} locate={model.locate}
+      navigationError={model.navigation.error} />}
+    {model.avatar && !model.profile && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => model.setAvatar(false)} />}
     {model.moderating && state.policy.moderator && <LoungeModeration user={model.moderating} controller={controller}
       close={() => model.setModerating(undefined)} />}
     {model.preview && <LoungePreview uri={model.preview} close={() => model.setPreview(undefined)} />}
     {model.blocking && <LoungeBlockDialog user={model.blocking} blocked={state.blocked.includes(model.blocking.id)}
       controller={controller} close={() => model.setBlocking(undefined)} />}
-    <LoungeProfile model={model} />
+    <LoungeProfile model={model} controller={controller} />
     <LoungeDeleteDialog model={model} />
   </KeyboardAvoidingView>;
 }

@@ -8,6 +8,8 @@ import { textMetrics } from '../theme/text';
 import { LoungeAvatar } from './LoungeMessage';
 import { useLoungeStyles } from './styles';
 import { createLoungeStyles, useLoungeColor } from './theme';
+import type { LoungeController } from '../../../../shared/lounge/controller';
+import { LoungeAvatarSettings } from './LoungeDialogs';
 
 const useProfileStyles = createLoungeStyles(color => ({
   cover: { height: 100, backgroundColor: color('#deebf7', 'infoSoft') },
@@ -24,10 +26,11 @@ const useProfileStyles = createLoungeStyles(color => ({
   sendText: { ...textMetrics(16, 24), color: color('#f5f7f8', 'canvas') },
 }));
 
-export function LoungeProfile({ model }: { model: MobileLounge }) {
+export function LoungeProfile({ model, controller }: { model: MobileLounge; controller: LoungeController }) {
   const styles = useLoungeStyles(); const profileStyles = useProfileStyles(); const color = useLoungeColor();
   const user = model.profile;
   if (!user) return null;
+  const own = user.id === model.state.user?.id;
   const contact = model.state.contacts.find(value => value.user.id === user.id);
   const canDelete = model.state.directResetAvailable && model.state.status === 'connected';
   return <Modal animationType="slide" onRequestClose={() => model.setProfile(undefined)}>
@@ -40,7 +43,8 @@ export function LoungeProfile({ model }: { model: MobileLounge }) {
       </View>
       <ScrollView style={styles.spacer}>
         <View style={profileStyles.cover} />
-        <View style={profileStyles.details}><LoungeAvatar user={user} size="profile" />
+        <View style={profileStyles.details}><LoungeAvatar user={user} size="profile"
+          onProfile={own ? () => model.setAvatar(true) : undefined} />
           <Text style={profileStyles.account}>{user.account}</Text>
           {contact?.direct && <View style={profileStyles.status}>
             <View style={[styles.onlineDot, (model.state.status !== 'connected' || contact.online !== true)
@@ -48,13 +52,17 @@ export function LoungeProfile({ model }: { model: MobileLounge }) {
         </View>
       </ScrollView>
       <View style={profileStyles.actions}>
-        <Pressable accessibilityRole="button" disabled={!canDelete} onPress={() => model.setDeleting(user)}
+        {own ? <Pressable accessibilityRole="button" style={profileStyles.send} onPress={() => model.setAvatar(true)}>
+          <Text style={profileStyles.sendText}>{t('client.lounge.editAvatar')}</Text>
+        </Pressable> : <><Pressable accessibilityRole="button" disabled={!canDelete} onPress={() => model.setDeleting(user)}
           style={[profileStyles.delete, !canDelete && styles.disabled]}>
           <Text style={profileStyles.deleteText}>{t('client.lounge.deleteChat')}</Text></Pressable>
         <Pressable accessibilityRole="button" disabled={!model.state.directAvailable} onPress={() => model.select(user)}
           style={[profileStyles.send, !model.state.directAvailable && styles.disabled]}>
-          <Text style={profileStyles.sendText}>{t('client.lounge.sendMessage')}</Text></Pressable>
+          <Text style={profileStyles.sendText}>{t('client.lounge.sendMessage')}</Text></Pressable></>}
       </View>
+      {own && model.avatar && <LoungeAvatarSettings user={user} controller={controller}
+        close={() => model.setAvatar(false)} />}
     </SafeAreaView>
   </Modal>;
 }

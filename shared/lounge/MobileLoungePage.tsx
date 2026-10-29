@@ -24,8 +24,8 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
   return <section className="lounge-page lounge-mobile">
     {model.chats ? <MobileLoungeChats model={model} controller={controller} onBack={onBack} /> : <>
       <MobileHeading model={model} />
-      <MobileLoungeThread key={`thread:${state.conversation}`} model={model} />
-      {!model.atBottom && <button className="lounge-jump" type="button" onClick={() => model.setAtBottom(true)}>
+      <MobileLoungeThread key={`thread:${state.conversation}`} model={model} controller={controller} />
+      {(!model.atBottom || model.navigation.focus) && <button className="lounge-jump" type="button" onClick={model.latest}>
         <ArrowDown size={16} />{t('client.lounge.latest')}</button>}
       {model.muted && <p className="lounge-mute-notice" role="status">{t('client.lounge.mutedUntil', {
         time: new Date(state.policy.mutedUntil!).toLocaleString(),
@@ -34,6 +34,7 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
         && <p className="lounge-mute-notice">{t('client.lounge.directUpgrade')}</p>}
       {state.historyError && <p className="lounge-history-warning" role="alert">{t('client.lounge.historySaveFailed')}
         <button type="button" onClick={() => void controller.retryHistory()}>{t('client.lounge.historyRetry')}</button></p>}
+      {model.navigation.error && <p className="lounge-mute-notice" role="status">{t(model.navigation.error)}</p>}
       <button type="button" className="lounge-retention" onClick={() => model.setSheet('about')}>
         <Info size={13} />{t(contact ? 'client.lounge.directRetention' : 'client.lounge.retention')}</button>
       <LoungeComposer key={`composer:${state.conversation}`} mobile draftState={model.draftState}
@@ -53,7 +54,8 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
     {model.sheet === 'members' && <MobileLoungeMembers model={model} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     <LoungeHistory open={model.history} close={() => model.setHistory(false)} controller={controller}
-      preview={model.setPreview} reply={model.quote} direct={model.select} profile={model.setProfile} />
+      preview={model.setPreview} reply={model.quote} direct={model.select} profile={model.setProfile}
+      locate={model.locate} navigationError={model.navigation.error} />
     {model.avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => model.setAvatar(false)} />}
     {model.moderating && <LoungeModeration user={model.moderating} controller={controller}

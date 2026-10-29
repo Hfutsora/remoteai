@@ -9,11 +9,13 @@ import { LoungeMessageBody } from './LoungeMessageBody';
 import { useLoungeHistory } from './useLoungeHistory';
 import type { LoungeController } from './controller';
 import type { LoungeAccount, LoungeMessage } from './types';
+import type { LoungeReply } from './reply';
 
-export function LoungeHistory({ controller, open, close, preview, reply, direct, profile }: {
+export function LoungeHistory({ controller, open, close, preview, reply, direct, profile, locate, navigationError }: {
   controller: LoungeController; open: boolean; close: () => void; preview: (source: string) => void;
   reply: (message: LoungeMessage) => void; direct: (user: LoungeAccount) => void;
   profile?: (user: LoungeAccount) => void;
+  locate?: (reference: LoungeReply) => void; navigationError?: string;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const history = useLoungeHistory(controller, open);
@@ -31,6 +33,7 @@ export function LoungeHistory({ controller, open, close, preview, reply, direct,
         : t('client.lounge.historyCount', { count: history.messages.length })}</span>
       {history.error && <p role="alert">{t('client.lounge.historyLoadFailed')}
         <Button type="link" onClick={history.retry}>{t('client.lounge.historyRetry')}</Button></p>}
+      {navigationError && <p role="status">{t(navigationError)}</p>}
     </div>
     <div className="lounge-history-list">
       {!history.loading && !history.error && !history.messages.length && <p className="lounge-history-empty">
@@ -42,10 +45,11 @@ export function LoungeHistory({ controller, open, close, preview, reply, direct,
         return <article key={`${message.sender.id}:${message.id}`}
           className="lounge-history-message">
           <LoungeAvatar user={message.sender} onDirect={startDirect}
-            onProfile={profile && message.sender.id !== state.user?.id ? () => profile(message.sender) : undefined} />
+            onProfile={profile ? () => profile(message.sender) : undefined} />
           <div className="lounge-history-message-main"><div className="lounge-account">{message.sender.account}</div>
             <time dateTime={message.sentAt}>{format.format(new Date(message.sentAt))}</time>
-            <LoungeMessageBody message={message} preview={preview} actions={{ reply, direct: startDirect }} />
+            <LoungeMessageBody message={message} preview={preview} actions={{ reply, direct: startDirect }}
+              controller={controller} locate={locate} />
           </div>
         </article>;
       })}

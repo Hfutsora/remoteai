@@ -138,8 +138,11 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     },
     ready: () => expect.poll(() => authentications).toBeGreaterThan(0),
     close: () => socket.close({ code: 1001 }),
-    push: (text: string, images: string[] = []) => socket.send(JSON.stringify({ type: 'message',
-      id: crypto.randomUUID(), text, images, sender: { id: 'bob', account: 'bob@example.test' },
-      sentAt: new Date().toISOString() })),
+    push: (text: string, images: string[] = [], reply?: LoungeReply) => {
+      const id = crypto.randomUUID();
+      socket.send(JSON.stringify({ type: 'message', id, text, images, reply, sender: bob,
+        sentAt: new Date().toISOString() }));
+      return { id, senderId: bob.id, account: bob.account, text, imageCount: images.length };
+    },
   };
 }

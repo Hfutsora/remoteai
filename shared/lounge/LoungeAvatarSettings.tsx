@@ -6,6 +6,8 @@ import { LoungeAvatar } from './LoungeAvatar';
 import type { LoungeAccount } from './types';
 import type { LoungeController } from './controller';
 
+const AVATAR_EDITOR_LAYER = 1200;
+
 export function LoungeAvatarSettings({ user, controller, close }: {
   user: LoungeAccount; controller: LoungeController; close: () => void;
 }) {
@@ -28,7 +30,7 @@ export function LoungeAvatarSettings({ user, controller, close }: {
     catch { setError('client.lounge.avatarSaveFailed'); }
     finally { working.current = false; setBusy(false); }
   };
-  return <Modal open width={400} title={t('client.lounge.avatarSettings')} onCancel={close}
+  return <Modal open width={400} zIndex={AVATAR_EDITOR_LAYER} title={t('client.lounge.avatarSettings')} onCancel={close}
     closable={!busy} maskClosable={!busy} keyboard={!busy} footer={<>
       <Button disabled={busy} onClick={close}>{t('client.lounge.cancel')}</Button>
       <Button type="primary" disabled={busy} onClick={save}>{t('client.lounge.save')}</Button>

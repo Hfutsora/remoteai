@@ -13,6 +13,7 @@ import { authorize, AUTH_TIMEOUT_MS } from './authorize';
 import { isCurrentDirect, removedConversation } from './removeConversation';
 import { needsDeliveryWork } from './delivery';
 import { LoungeProfiles } from './profiles';
+import type { LoungeReply } from './reply';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -334,9 +335,9 @@ export class LoungeController {
       if (this.running && lifecycle === this.lifecycle) this.update({ historyError: true });
     }
   }
-  async searchHistory(query: HistoryQuery): Promise<HistoryPage> {
+  async searchHistory(query: HistoryQuery, options: { committedOnly?: boolean } = {}): Promise<HistoryPage> {
     query = { ...query, conversation: query.conversation ?? (query.pendingOnly ? undefined : this.state.conversation) };
-    await this.writes;
+    if (!options.committedOnly) await this.writes;
     if (this.session?.history) {
       const page = await this.session.history.page(query);
       return { ...page, messages: page.messages.map(this.profiles.message) };
@@ -353,6 +354,12 @@ export class LoungeController {
       return second.time - first.time || (first.key < second.key ? 1 : -1);
     });
     return historyPage(matches.map(this.profiles.message), query);
+  }
+  async lookupMessage(reference: Pick<LoungeReply, 'id' | 'senderId'>, conversation = this.state.conversation) {
+    const key = JSON.stringify([reference.senderId, reference.id]);
+    const message = [...this.state.messages, ...this.recent].find(item => historyKey(item) === key)
+      ?? await this.session?.history?.get?.(key);
+    return message && (message.conversation ?? '') === conversation ? this.profiles.message(message) : undefined;
   }
   async retryHistory() {
     await this.writes;

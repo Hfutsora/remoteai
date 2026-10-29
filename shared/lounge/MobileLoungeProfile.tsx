@@ -11,6 +11,7 @@ const DELETE_LAYER = 1200;
 
 export function MobileLoungeProfile({ model }: { model: MobileLounge }) {
   const user = model.profile;
+  const own = user?.id === model.state.user?.id;
   const contact = model.state.contacts.find(value => value.user.id === user?.id);
   return <Drawer open={!!user} placement="right" width="100%" closable={false} zIndex={PROFILE_LAYER}
     title={t('client.lounge.profile')} rootClassName="lounge-profile-drawer" push={false}
@@ -22,16 +23,17 @@ export function MobileLoungeProfile({ model }: { model: MobileLounge }) {
       </header>
       <div className="lounge-profile-cover" aria-hidden />
       <div className="lounge-profile-details">
-        <LoungeAvatar user={user} /><h2>{user.account}</h2>
+        <LoungeAvatar user={user} onProfile={own ? () => model.setAvatar(true) : undefined} /><h2>{user.account}</h2>
         {contact?.direct && <p className="lounge-profile-status">
           <i className={model.state.status === 'connected' && contact.online === true ? 'is-online' : ''} />
           {t(contactStatus(contact))}</p>}
       </div>
       <footer className="lounge-profile-actions">
-        <button type="button" className="lounge-profile-delete" disabled={!model.state.directResetAvailable
+        {own ? <button type="button" className="lounge-profile-send" onClick={() => model.setAvatar(true)}>
+          {t('client.lounge.editAvatar')}</button> : <><button type="button" className="lounge-profile-delete" disabled={!model.state.directResetAvailable
           || model.state.status !== 'connected'} onClick={() => model.setDeleting(user)}>{t('client.lounge.deleteChat')}</button>
         <button type="button" className="lounge-profile-send" disabled={!model.state.directAvailable}
-          onClick={() => model.select(user)}>{t('client.lounge.sendMessage')}</button>
+          onClick={() => model.select(user)}>{t('client.lounge.sendMessage')}</button></>}
       </footer>
     </section>}
   </Drawer>;

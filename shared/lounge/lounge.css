@@ -62,14 +62,19 @@
   border-radius: 8px; object-fit: contain; object-position: left center; }
 .is-own .lounge-image img { margin-left: auto; object-position: right center; }
 .lounge-reply { max-width: 100%; align-self: stretch; display: flex; align-items: flex-start; gap: 8px;
-  border-left: 3px solid var(--lounge-muted); padding: 5px 9px; margin-bottom: 8px;
-  background: #8881; border-radius: 3px; color: var(--lounge-muted); font-size: 12px; }
-.lounge-reply > div { min-width: 0; flex: 1; }
+  padding: 9px; margin-bottom: 8px; background: #8882; border-radius: 7px;
+  color: var(--lounge-muted); font-size: 12px; line-height: 1.6; }
+.lounge-reply-content { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; text-align: start; }
+.lounge-reply-header { display: flex; align-items: flex-start; gap: 6px; }
+.lounge-reply-header .lounge-reply-account { flex: 1; min-width: 0; }
+.lounge-reply-header time, .lounge-reply-header svg { flex-shrink: 0; }
 .lounge-reply-account { overflow-wrap: anywhere; font-weight: 600; }
-.lounge-reply-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow: hidden; overflow-wrap: anywhere; white-space: pre-wrap; }
+.lounge-reply-text { display: block; overflow-wrap: anywhere; white-space: pre-wrap; }
+.lounge-reply-image { display: block; max-width: min(180px, 100%); max-height: 140px; border-radius: 5px; object-fit: contain; }
 .lounge-reply-draft { max-width: 400px; }
 .lounge-reply button { border: 0; background: transparent; color: inherit; padding: 4px; cursor: pointer; }
+.lounge-reply .lounge-reply-link { padding: 0; font: inherit; }
+.lounge-message.is-highlighted .lounge-bubble { outline: 2px solid #daa941; outline-offset: 3px; }
 .lounge-composer { flex: 0 0 auto; min-height: 180px; border-top: 1px solid var(--lounge-line); padding: 12px 24px 16px; }
 .lounge-toolbar { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
 .lounge-toolbar > button { display: grid; place-items: center; background: transparent; border: 0; padding: 4px;

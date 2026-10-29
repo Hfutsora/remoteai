@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest';
 import { LoungeController } from '../../../../shared/lounge/controller';
-import { historyPage, type LoungeHistoryStore } from '../../../../shared/lounge/archive';
+import { historyKey, historyPage, type LoungeHistoryStore } from '../../../../shared/lounge/archive';
 import type { LoungeMessage } from '../../../../shared/lounge/types';
 
 class Socket {
@@ -85,4 +85,43 @@ it('paginates the memory fallback without repeating equal-timestamp messages', a
   expect(first.messages).toHaveLength(2); expect(second.messages).toHaveLength(1);
   expect(new Set([...first.messages, ...second.messages].map(value => value.id)).size).toBe(3);
   expect(second.next).toBeUndefined();
+});
+
+it('resolves quote identities from local history without crossing conversations or senders', async () => {
+  const original = message('shared-id');
+  const privateMessage = { ...message('private-id'), conversation: 'carol' };
+  const rows = [original, privateMessage];
+  const store = { save: async () => {}, page: async () => ({ messages: [] }),
+    get: vi.fn(async (key: string) => rows.find(value => historyKey(value) === key)) };
+  const controller = start(store, true); await settle();
+  expect(await controller.lookupMessage({ id: original.id, senderId: 'bob' })).toEqual(original);
+  expect(await controller.lookupMessage({ id: original.id, senderId: 'carol' })).toBeUndefined();
+  expect(await controller.lookupMessage({ id: privateMessage.id, senderId: 'bob' })).toBeUndefined();
+  expect(await controller.lookupMessage({ id: privateMessage.id, senderId: 'bob' }, 'carol')).toEqual(privateMessage);
+  expect(await controller.lookupMessage({ id: 'missing', senderId: 'bob' })).toBeUndefined();
+});
+
+it('still locates live originals when their archive is unavailable', async () => {
+  const store = { save: async () => { throw new Error('disk full'); }, page: async () => ({ messages: [] }),
+    get: vi.fn(async () => { throw new Error('unavailable'); }) };
+  const controller = start(store); await settle();
+  Socket.instances[0].frame({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' } });
+  const original = message('live-original'); Socket.instances[0].frame(original); await settle();
+  expect(await controller.lookupMessage({ id: original.id, senderId: 'bob' })).toMatchObject(original);
+  expect(store.get).not.toHaveBeenCalled();
+});
+
+it('navigates persisted originals without waiting for unrelated incoming writes', async () => {
+  const original = message('old-original');
+  let release: () => void = () => {};
+  const store = { save: () => new Promise<void>(resolve => { release = resolve; }),
+    page: vi.fn(async () => ({ messages: [] as LoungeMessage[] })), get: async () => original };
+  const controller = start(store); await settle();
+  Socket.instances[0].frame({ type: 'ready', user: { id: 'alice', account: 'alice@example.test' } });
+  Socket.instances[0].frame(message('incoming')); await settle();
+  expect(await controller.lookupMessage({ id: original.id, senderId: 'bob' })).toEqual(original);
+  await controller.searchHistory({ query: '', before: { key: historyKey(original), time: 1 } },
+    { committedOnly: true });
+  expect(store.page).toHaveBeenLastCalledWith(expect.objectContaining({ before: { key: historyKey(original), time: 1 } }));
+  release(); await settle();
 });

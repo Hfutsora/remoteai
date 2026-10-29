@@ -30,7 +30,8 @@ for (const width of [320, 390]) {
       await page.getByRole('button', { name: '群聊', exact: true }).click();
       await page.addStyleTag({ content: `.lounge-mobile .lounge-text { font-size: ${14 * scale}px; }` });
       relay.push('开始私聊');
-      await page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
+      await page.getByRole('button', { name: '查看 bob@example.test 的资料', exact: true }).click();
+      await page.getByRole('button', { name: '发消息', exact: true }).click();
       relay.private('收到');
       const input = page.getByRole('textbox', { name: '消息', exact: true });
       for (const value of ['hi', '你好', 'Hi 你好 👋', '第一行\n第二行', '长消息需要完整换行，'.repeat(8)]) {

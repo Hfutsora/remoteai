@@ -1,4 +1,4 @@
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useState, type ReactNode } from 'react';
 import { initials, type LoungeAccount, type LoungeMessage as Message } from '../../../../shared/lounge/types';
 import { getLocale, t } from '../i18n';
@@ -7,6 +7,9 @@ import { LoungeReplyPreview } from './LoungeReplyPreview';
 import { LoungeMessageActions } from './LoungeMessageActions';
 import { LoungeImage } from './LoungeImage';
 import { LoungeDeliveryStatus } from './LoungeDeliveryStatus';
+import { messageMinimumWidth } from './messageLayout';
+import type { LoungeReply } from '../../../../shared/lounge/reply';
+import type { LoungeController } from '../../../../shared/lounge/controller';
 
 const MESSAGE_AVATAR_TOUCH_PADDING = 7;
 
@@ -42,22 +45,30 @@ interface Props {
   reply?: (message: Message) => void;
   direct?: () => void; block?: () => void; blocked?: boolean;
   profile?: () => void;
+  controller: LoungeController; locate?: (reference: LoungeReply) => void; highlighted?: boolean;
 }
-export function LoungeMessage({ message, own, manage, preview, onImageLoad, reply, direct, block, blocked, profile }: Props) {
+export function LoungeMessage({ message, own, manage, preview, onImageLoad, reply, direct, block, blocked,
+  profile, controller, locate, highlighted }: Props) {
   const styles = useLoungeStyles();
   const [menu, setMenu] = useState(false);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const { fontScale } = useWindowDimensions();
+  const minWidth = Math.min(availableWidth, messageMinimumWidth(message.text, fontScale));
   const openMenu = reply ? () => setMenu(true) : undefined;
-  return <View style={[styles.message, own && styles.own]}>
-    {!own && <LoungeAvatar user={message.sender} size="small" onDirect={direct} onProfile={profile} />}
-    <View style={[styles.messageMain, own && styles.ownMain]}>
-      {!own && (manage ? <Pressable accessibilityRole="button"
+  return <View style={[styles.message, own && styles.own, highlighted && styles.highlighted]}>
+    <LoungeAvatar user={message.sender} size="small" onDirect={direct} onProfile={profile} />
+    <View style={[styles.messageMain, own && styles.ownMain]}
+      onLayout={event => setAvailableWidth(event.nativeEvent.layout.width)}>
+      {!own && manage ? <Pressable accessibilityRole="button"
         accessibilityLabel={t('client.lounge.manageUser', { account: message.sender.account })}
         onPress={() => manage(message.sender)}>
         <Text style={styles.messageName}>{message.sender.account}</Text>
-      </Pressable> : <Text style={styles.messageName}>{message.sender.account}</Text>)}
+      </Pressable> : <Text style={styles.messageName}>{message.sender.account}</Text>}
       <Pressable onLongPress={openMenu} style={[styles.bubble, own && styles.ownBubble,
+        { minWidth }, message.reply && styles.quotedBubble,
         !message.text.trim() && !message.reply && styles.imageOnly]}>
-        {message.reply && <LoungeReplyPreview reply={message.reply} />}
+        {message.reply && <LoungeReplyPreview reply={message.reply} controller={controller}
+          locate={locate} onLongPress={openMenu} />}
         {!!message.text && <Text selectable={!reply} onLongPress={openMenu} style={styles.messageText}>{message.text}</Text>}
         {message.images.map((uri, index) => <LoungeImage key={index} uri={uri} preview={preview}
           onLongPress={openMenu} onLoad={onImageLoad} />)}
