@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { testText } from '../../../scripts/i18n-fixture.mjs';
 
 async function setup(page: Page, mode: string, failPin = false) {
-  const calls: { operation: string; cwd?: string; pinned?: boolean; threadId?: string; name?: string }[] = [];
+  const calls: { operation: string; cwd?: string; pinned?: boolean; threadId?: string; name?: string;
+    target?: { path?: string; threadId?: string | null }; action?: { type: string; application?: string } }[] = [];
   const threads = [{ id: 'one', name: '项目对话', cwd: '/project', preview: '', updatedAt: 1 },
     { id: 'two', name: '其他项目对话', cwd: '/other', preview: '', updatedAt: 2 }];
   let revision = 0;
@@ -19,6 +20,7 @@ async function setup(page: Page, mode: string, failPin = false) {
       return route.fulfill({ status: 500, json: {} });
     }
     if (input.operation === 'list') return route.fulfill({ json: { data: threads, nextCursor: null, sidebar: sidebar() } });
+    if (input.operation === 'guiFileAction') return route.fulfill({ json: { path: input.target?.path, saved: false } });
     if (input.operation === 'guiProjectPin') pinnedProjects = input.pinned ? [input.cwd!] : [];
     if (input.operation === 'guiProjectRemove') {
       pinnedProjects = [];
@@ -140,11 +142,21 @@ for (const mode of ['local', 'remote', 'web']) {
     const project = page.locator('section[aria-label="project"]');
     const heading = project.locator('button[aria-expanded]').first();
     await heading.click({ button: 'right' });
-    await expect(page.getByRole('menuitem')).toHaveText(['置顶', '移除项目']);
+    const openInExplorer = testText('client.projectBrowser.openInExplorer', {}, 'zh');
+    const pin = testText('client.conversation.pin', {}, 'zh');
+    const removeProject = testText('client.conversation.removeProject', {}, 'zh');
+    await expect(page.getByRole('menuitem')).toHaveText(mode === 'local'
+      ? [pin, removeProject] : [pin, openInExplorer, removeProject]);
     await expect(heading).toHaveAttribute('aria-expanded', 'true');
     expect((await page.getByRole('menu').boundingBox())!.width).toBeLessThanOrEqual(400);
     await page.screenshot({ path: `../../.codex-tmp/project-menu-${mode}.png` });
-    await page.getByRole('menuitem', { name: '置顶', exact: true }).click();
+    if (mode !== 'local') {
+      await page.getByRole('menuitem', { name: openInExplorer, exact: true }).click();
+      expect(calls.at(-1)).toEqual({ operation: 'guiFileAction', target: { path: '/project', threadId: null },
+        action: { type: 'open', application: 'default' } });
+      await heading.click({ button: 'right' });
+    }
+    await page.getByRole('menuitem', { name: pin, exact: true }).click();
     await expect(project.getByLabel('已置顶', { exact: true })).toBeVisible();
     if (mode === 'web') await heading.click({ button: 'right' });
     else await page.getByRole('button', { name: '管理项目：project', exact: true }).click();
@@ -152,9 +164,17 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.getByRole('menuitem', { name: '取消置顶', exact: true }).click();
     await expect(project.getByLabel('已置顶', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '项目对话', exact: true }).click({ button: 'right' });
-    await expect(page.getByRole('menuitem')).toHaveText(['置顶', '重命名', '创建分支', '归档', '删除']);
+    const threadMenu = mode === 'local'
+      ? [pin, '重命名', '创建分支', '归档', '删除']
+      : [pin, openInExplorer, '重命名', '创建分支', '归档', '删除'];
+    await expect(page.getByRole('menuitem')).toHaveText(threadMenu);
     await expect(page.getByTestId('selected')).toHaveText('none');
     await page.screenshot({ path: `../../.codex-tmp/thread-menu-${mode}.png` });
+    if (mode !== 'local') {
+      await page.getByRole('menuitem', { name: openInExplorer, exact: true }).click();
+      expect(calls.at(-1)).toEqual({ operation: 'guiFileAction', target: { path: '/project', threadId: null },
+        action: { type: 'open', application: 'default' } });
+    }
     await page.keyboard.press('Escape');
     await heading.press('Shift+F10');
     await expect(page.getByRole('menuitem', { name: '移除项目', exact: true })).toBeVisible();
