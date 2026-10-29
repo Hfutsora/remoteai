@@ -9,6 +9,8 @@ import { setGuiLanguage } from '../src/i18n/uiText';
 import { useGuiLanguage } from '../src/i18n/useGuiLanguage';
 import { applyThemeMode } from '../src/utils/themeMode';
 import type { CloudAuthState } from '../src/types';
+import { RemoteAssistance } from '../src/remoteAssistance/RemoteAssistance';
+import { assistanceStore } from '../src/remoteAssistance/store';
 import 'antd/dist/reset.css';
 import '../src/styles.css';
 
@@ -39,9 +41,11 @@ function Fixture() {
           variant="sidebar" t={(key, values) => translate(language, key, values)} />
       </aside>
       <main className="lounge-desktop-main">{page === 'lounge' ? <LoungePage controller={lounge.controller}
+        onAssistance={parameters.has('assistance') ? assistanceStore.request : undefined}
         mobile={parameters.has('mobile')} onBack={() => setPage('accounts')} />
         : <div style={{ padding: 32 }} data-testid="other-page">{parameters.get('mode') ?? 'local'}</div>}</main>
     </div>
+    {parameters.has('assistance') && <RemoteAssistance auth={auth} onLogin={() => {}} />}
   </ConfigProvider>;
 }
 createRoot(document.getElementById('root')!).render(<Fixture />);

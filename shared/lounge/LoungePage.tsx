@@ -27,12 +27,15 @@ import { historyKey } from './archive';
 import { useLoungeNavigation } from './useLoungeNavigation';
 import { scrollToLoungeMessage } from './scrollToMessage';
 import { LoungeDesktopProfile } from './LoungeDesktopProfile';
+import { LoungeAssistanceButton, LoungeAssistanceProvider, type RequestLoungeAssistance } from './LoungeAssistance';
 
 export function LoungePage(props: {
   controller: LoungeController; onLogin?: () => void; mobile?: boolean; onBack?: () => void;
+  onAssistance?: RequestLoungeAssistance;
 }) {
   return props.mobile ? <MobileLoungePage key={props.controller.snapshot().user?.id} {...props} />
-    : <DesktopLoungePage {...props} />;
+    : <LoungeAssistanceProvider request={props.onAssistance}>
+      <DesktopLoungePage {...props} /></LoungeAssistanceProvider>;
 }
 
 function DesktopLoungePage({ controller, onLogin, mobile = false }: {
@@ -108,6 +111,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
           onClick={() => setBlocking(contact.user)}><Ban size={18} /></button>}
         {state.policy.moderator && state.onlineCount !== undefined && <span className="lounge-online-count">
           {t('client.lounge.onlineCount', { count: state.onlineCount })}</span>}
+        {!state.conversation && <LoungeAssistanceButton />}
       </div></header>
     <div className="lounge-conversation" ref={list} role="log" aria-live="off" aria-label={t('client.lounge.title')}
       onScroll={() => {
@@ -165,6 +169,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
     {navigation.error && <p className="lounge-mute-notice" role="status">{t(navigation.error)}</p>}
     <LoungeComposer key={`${state.user?.id ?? 'guest'}:${state.conversation}`}
       composerRef={composer}
+      assistance={contact && <LoungeAssistanceButton user={contact.user} />}
       connected={state.status === 'connected' && !muted && (!state.conversation || state.directAvailable)} mobile={mobile}
       reply={reply} cancelReply={sent => setReply(current => !sent || current === sent ? undefined : current)}
       send={draft => controller.send({ ...draft, to: state.conversation || undefined })}

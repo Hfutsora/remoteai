@@ -65,3 +65,30 @@ it('sends a trimmed recipient and records local consent only after successful cr
   store.reset(false);
   expect(store.allows('invite')).toBe(false);
 });
+
+it('opens an email form for group chat without sending an invitation', () => {
+  store.request();
+  expect(store.snapshot()).toMatchObject({ dialog: true, email: '', busy: false });
+  expect(invoke).not.toHaveBeenCalled();
+});
+
+it('starts a confirmed chat invitation through the existing permission check and preserves the recipient on failure',
+  async () => {
+    invoke.mockResolvedValueOnce({ enabled: false, control: false });
+    store.request('bob@example.test');
+    await vi.waitFor(() => expect(store.snapshot().busy).toBe(false));
+    expect(invoke).toHaveBeenCalledExactlyOnceWith('remote_desktop_permissions');
+    expect(store.snapshot()).toMatchObject({ dialog: true, email: 'bob@example.test', requests: [] });
+    expect(store.snapshot().error).toContain('允许远程桌面和键鼠控制');
+    store.reset(false);
+    expect(store.snapshot().email).toBe('');
+  });
+
+it('reopens an active invitation without inviting another chat recipient', async () => {
+  invoke.mockResolvedValueOnce(reply()); await store.refresh();
+  invoke.mockClear();
+  store.request('someone-else@example.test');
+  expect(store.snapshot().dialog).toBe(true);
+  expect(store.snapshot().requests).toEqual([invitation]);
+  expect(invoke).not.toHaveBeenCalled();
+});

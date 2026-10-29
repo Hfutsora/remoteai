@@ -15,12 +15,13 @@ import { insertLoungeEmoji } from './emoji';
 export interface LoungeComposerHandle { mention: (user: LoungeAccount) => void }
 
 export function LoungeComposer({ connected, send, onHistory, mobile = false, reply, cancelReply,
-  draftState, extraActions, onOverlayChange, composerRef }: {
+  draftState, extraActions, onOverlayChange, composerRef, assistance }: {
   connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void; mobile?: boolean;
   reply?: LoungeReply; cancelReply: (sent?: LoungeReply) => void;
   draftState?: ComposerDraftState; extraActions?: (close: () => void) => ReactNode;
   onOverlayChange?: (open: boolean) => void;
   composerRef?: Ref<LoungeComposerHandle>;
+  assistance?: ReactNode;
 }) {
   const { text, setText, images, setImages, clearSent } = useComposerDraft(draftState);
   const [extras, setExtras] = useState(false);
@@ -131,8 +132,10 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
       <input ref={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
         onChange={event => { void addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
       {processing && <span role="status">{t('client.lounge.preparingImage')}</span>}
-      {!mobile && <button type="button" className="lounge-history-button" onClick={onHistory}
-        aria-label={t('client.lounge.history')} title={t('client.lounge.history')}><History size={22} /></button>}
+      {!mobile && <div className="lounge-toolbar-end">{assistance}
+        <button type="button" className="lounge-history-button" onClick={onHistory}
+          aria-label={t('client.lounge.history')} title={t('client.lounge.history')}><History size={22} /></button>
+      </div>}
     </div>
     {reply && <LoungeReplyPreview reply={reply} cancel={() => cancelReply()} />}
     {!!images.length && <div className="lounge-attachments">{images.map((image, index) => <div key={index}>
