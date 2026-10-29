@@ -27,6 +27,7 @@ export interface LoungeMessage {
 export interface LoungeDraft { text: string; images: string[]; reply?: LoungeReply; to?: string }
 export interface LoungePolicy { moderator: boolean; mutedUntil: string | null }
 export interface LoungeSession {
+  sync?: import('./syncConnection').LoungeSyncTransport;
   baseUrl: string;
   account?: string;
   authorize: () => Promise<{ ticket: string }>;
@@ -42,6 +43,7 @@ export interface LoungeSnapshot {
   historyRevision: number;
   historyError: boolean;
   contactsSyncError?: boolean;
+  deviceSyncError?: boolean;
   onlineCount?: number;
   contacts: LoungeContact[];
   blocked: string[];

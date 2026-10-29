@@ -7,7 +7,7 @@ import { useLoungeNavigation } from './useLoungeNavigation';
 export type LoungeSheet = 'members' | 'about' | 'extras' | 'new-chat' | undefined;
 const EMPTY_DRAFT: LoungeDraft = { text: '', images: [] };
 
-/** Page-local navigation and drafts shared by native and mobile web. No chat content leaves the device. */
+/** Page-local navigation and drafts shared by native and mobile web. */
 export function useMobileLounge(controller: LoungeController) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const navigation = useLoungeNavigation(controller, state);

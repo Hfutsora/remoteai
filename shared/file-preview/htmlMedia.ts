@@ -6,12 +6,20 @@ const MEDIA_WORKERS = 3;
 export interface HtmlMediaAsset { id: string; attribute: string; read: () => Promise<string> }
 export interface HtmlMediaUpdate { channel: string; id: string; attribute: string; value: string }
 
+/** CSS variables update individual image references without replacing styles edited by page scripts. */
+export function deferCssImage(options: {
+  assets: HtmlMediaAsset[]; channel: string; read: () => Promise<string>;
+}) {
+  const id = String(options.assets.length);
+  options.assets.push({ id, attribute: 'css', read: options.read });
+  return `var(--preview-${options.channel}-${id}, url("data:,"))`;
+}
+
 /** Media loads after the document is visible, without replacing its DOM or resetting its scripts. */
 export function deferHtmlMedia(options: {
-  document: Document; base: string; resolve: ResolveAsset; channel: string;
+  document: Document; base: string; resolve: ResolveAsset; channel: string; assets: HtmlMediaAsset[];
 }) {
-  const { document, base, resolve, channel } = options;
-  const assets: HtmlMediaAsset[] = [];
+  const { document, base, resolve, channel, assets } = options;
   for (const element of document.querySelectorAll('img, video, audio, source, track')) {
     for (const attribute of ['src', 'poster', 'srcset']) {
       const source = element.getAttribute(attribute);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { displayText as t } from '../localization/messages';
 import type { PreviewLoader } from './kinds';
 import { prepareHtmlPreview } from './htmlAssets';
@@ -34,12 +34,22 @@ export function HtmlPreviewFrame({ text, path, load, className }: {
       const update: HtmlMediaUpdate = { channel, id: asset.id, attribute: asset.attribute, value };
       frame.current?.contentWindow?.postMessage(update, '*');
       if (result.hasFailed()) setFailed(true);
-    } }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
+    } }).then(() => {
+      if (!controller.signal.aborted) frame.current?.contentWindow?.postMessage({ channel, type: 'complete' }, '*');
+    }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
   };
+  useLayoutEffect(() => {
+    const ready = (event: MessageEvent) => {
+      if (event.source === frame.current?.contentWindow && event.data?.channel === result?.channel
+        && event.data?.type === 'ready') loadMedia();
+    };
+    window.addEventListener('message', ready);
+    return () => window.removeEventListener('message', ready);
+  }, [result]);
   if (!result) return <p role="status">{t(failed ? 'client.filePreview.unavailable' : 'client.projectBrowser.loading')}</p>;
   return <>
     {failed && <p role="status">{t('client.filePreview.someHtmlAssetsUnavailable')}</p>}
-    <iframe ref={frame} onLoad={loadMedia} title={t('client.downloads.htmlPreview')}
+    <iframe ref={frame} title={t('client.downloads.htmlPreview')}
       srcDoc={result.html} sandbox="allow-scripts"
       referrerPolicy="no-referrer" className={className} />
   </>;

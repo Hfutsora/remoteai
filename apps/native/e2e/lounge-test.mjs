@@ -20,6 +20,7 @@ import { verifyNativeChatActions } from './lounge-chat-actions-check.mjs';
 import { verifyNativeNames } from './lounge-names-check.mjs';
 import { createNamesFixture } from './lounge-names-fixture.mjs';
 import { verifyNativeContacts } from './lounge-contacts-check.mjs';
+import { loadHistorySource, verifyNativeSync } from './lounge-sync-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -47,12 +48,26 @@ let failDelete = false;
 let lookupReply = true;
 const lookups = [];
 const contactsMode = process.env.LOUNGE_CONTACTS_ONLY === '1';
+const syncMode = process.env.LOUNGE_DEVICE_SYNC_ONLY === '1';
+if (syncMode) globalThis.WebSocket = WebSocket;
+const syncSource = syncMode ? await loadHistorySource(root) : undefined;
 let savedContacts = [];
 const server = createServer((request, response) => {
   response.writeHead(online ? 200 : 503, { 'content-type': 'application/json' });
   response.end(JSON.stringify({ ticket: 'fixture-ticket' }));
 });
-const sockets = new WebSocket.Server({ server, path: '/lounge/socket' });
+const sockets = new WebSocket.Server({ noServer: true });
+const syncSockets = new WebSocket.Server({ noServer: true });
+server.on('upgrade', (request, socket, head) => {
+  const target = request.url === '/device-chat' && syncSource ? syncSockets : sockets;
+  target.handleUpgrade(request, socket, head, client => target.emit('connection', client));
+});
+syncSockets.on('connection', socket => {
+  const client = syncSource.broker.attach({ send: data => socket.send(data), close: () => socket.close(1001) });
+  socket.on('message', data => client.receive(Buffer.from(data).subarray(0, 4).toString() === 'CSB1'
+    ? new Uint8Array(data) : String(data)));
+  socket.on('close', client.disconnect);
+});
 function incoming(text, images = []) {
   return { type: 'message', id: crypto.randomUUID(), text, images,
     sender: { id: 'bob', account: 'bob@example.test' }, sentAt: new Date().toISOString() };
@@ -64,7 +79,7 @@ sockets.on('connection', socket => socket.on('message', raw => {
   if (process.env.LOUNGE_NAMES_ONLY === '1') names.handle(socket, frame);
   if (frame.type === 'authenticate') {
     socket.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
-      savedContacts: contactsMode,
+      savedContacts: contactsMode, deviceSync: syncMode,
       names: process.env.LOUNGE_NAMES_ONLY === '1',
       user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
       policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
@@ -190,6 +205,11 @@ const originalScale = await adb('shell', 'settings', 'get', 'system', 'font_scal
 try {
   await mkdir(output, { recursive: true });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  if (syncSource) {
+    syncSource.add('来自另一台设备的群聊记录 SyncGroup', [image]);
+    syncSource.add('来自另一台设备的私聊记录', [image], true);
+    syncSource.start(`http://127.0.0.1:${server.address().port}`);
+  }
   await adb('reverse', 'tcp:1497', `tcp:${server.address().port}`);
   await adb('install', '-r', process.env.LOUNGE_TEST_APK
     ?? path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
@@ -209,6 +229,10 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (syncSource) {
+      await verifyNativeSync({ adb, tap, find, screenshot, scale, source: syncSource, assertEventually, hideKeyboard });
+      continue;
+    }
     if (contactsMode) {
       await verifyNativeContacts({ tap, find, nodes, screenshot, scale,
         addContact: user => { savedContacts.push(user); broadcast({ type: 'saved-contacts-changed' }); },
@@ -402,6 +426,9 @@ try {
   await adb('shell', 'am', 'force-stop', app);
   await adb('reverse', '--remove', 'tcp:1497');
   for (const socket of sockets.clients) socket.terminate();
+  syncSource?.stop();
+  for (const socket of syncSockets.clients) socket.terminate();
+  syncSockets.close();
   sockets.close(); server.close();
   const packages = await adb('shell', 'pm', 'list', 'packages', 'com.codexswitch.mobile');
   if (packages.split(/\r?\n/).includes('package:com.codexswitch.mobile')) {
