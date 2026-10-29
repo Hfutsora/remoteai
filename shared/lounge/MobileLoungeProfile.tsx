@@ -5,11 +5,14 @@ import { contactStatus } from './contacts';
 import { LoungeAvatar } from './LoungeAvatar';
 import type { MobileLounge } from './useMobileLounge';
 import './profile.css';
+import { LoungeNameFields } from './LoungeNameFields';
+import { accountName } from './names';
+import type { LoungeController } from './controller';
 
 const PROFILE_LAYER = 1100;
 const DELETE_LAYER = 1200;
 
-export function MobileLoungeProfile({ model }: { model: MobileLounge }) {
+export function MobileLoungeProfile({ model, controller }: { model: MobileLounge; controller: LoungeController }) {
   const user = model.profile;
   const own = user?.id === model.state.user?.id;
   const contact = model.state.contacts.find(value => value.user.id === user?.id);
@@ -23,10 +26,12 @@ export function MobileLoungeProfile({ model }: { model: MobileLounge }) {
       </header>
       <div className="lounge-profile-cover" aria-hidden />
       <div className="lounge-profile-details">
-        <LoungeAvatar user={user} onProfile={own ? () => model.setAvatar(true) : undefined} /><h2>{user.account}</h2>
+        <LoungeAvatar user={user} onProfile={own ? () => model.setAvatar(true) : undefined} /><h2>{accountName(user)}</h2>
+        {accountName(user) !== user.account && <p className="lounge-profile-email">{user.account}</p>}
         {contact?.direct && <p className="lounge-profile-status">
           <i className={model.state.status === 'connected' && contact.online === true ? 'is-online' : ''} />
           {t(contactStatus(contact))}</p>}
+        <LoungeNameFields key={user.id} user={user} state={model.state} controller={controller} />
       </div>
       <footer className="lounge-profile-actions">
         {own ? <button type="button" className="lounge-profile-send" onClick={() => model.setAvatar(true)}>

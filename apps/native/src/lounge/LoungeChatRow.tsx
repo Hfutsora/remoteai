@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { ConversationRow } from '../../../../shared/lounge/conversationRows';
@@ -23,12 +24,12 @@ export function LoungeChatRow({ row, model, actions }: {
       </View> : <Pressable accessible={false} style={styles.avatar} onPress={() => model.select()}>
         <Ionicons name="chatbubbles-outline" size={22} color={color('#456c96', 'info')} /></Pressable>}
       <Pressable accessibilityRole="button" style={styles.chatRowMain}
-        accessibilityLabel={row.user ? t('client.lounge.directWith', { account: row.user.account })
+        accessibilityLabel={row.user ? t('client.lounge.directWith', { account: accountName(row.user) })
           : t('client.lounge.groupChat')}
         accessibilityHint={row.contact ? t(contactStatus(row.contact)) : undefined}
         onPress={() => model.select(row.user)} onLongPress={row.user ? actions : undefined}>
         <View style={styles.heading}>
-          <Text style={styles.rowTitle}>{row.user?.account ?? t('client.lounge.groupChat')}</Text>
+          <Text style={styles.rowTitle}>{row.user ? accountName(row.user) : t('client.lounge.groupChat')}</Text>
           <Text numberOfLines={1} ellipsizeMode="tail" style={styles.muted}>{conversationPreviewText(row)}</Text>
         </View>
         <View style={styles.rowMeta}>

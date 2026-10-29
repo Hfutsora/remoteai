@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { Menu } from 'antd';
 import { Ban, MessageCircle, Pin, PinOff, Trash2 } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
@@ -18,10 +19,10 @@ export function MobileLoungeChatActions({ row, model, controller, close }: {
   const actions = conversationActions({ row, model, controller, close });
   return <MobileLoungeSheet className="lounge-chat-actions-sheet" close={close} title={
     <div className="lounge-chat-actions-contact"><LoungeAvatar user={row.user} />
-      <div><h2>{row.user.account}</h2><p>{t('client.lounge.privateChats')}</p></div>
+      <div><h2>{accountName(row.user)}</h2><p>{t('client.lounge.privateChats')}</p></div>
     </div>
   }>
-    <Menu className="lounge-chat-actions" selectable={false} aria-label={row.user.account}
+    <Menu className="lounge-chat-actions" selectable={false} aria-label={accountName(row.user)}
       items={actions.map(action => {
         const Icon = action.key === 'pin' && action.active ? PinOff : icons[action.key];
         return { key: action.key, label: t(action.label), disabled: action.disabled,

@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { useNewLoungeChat, type NewLoungeChatOptions } from '../../../../shared/lounge/useNewLoungeChat';
 import { displayText, t } from '../i18n';
@@ -32,8 +33,8 @@ export function LoungeNewChat(props: NewLoungeChatOptions) {
       {!model.speakers.length && <Text style={styles.muted}>{t('client.lounge.noRecentSpeakers')}</Text>}
     </View>
     {model.speakers.map(user => <Pressable key={user.id} accessibilityRole="button" style={styles.chatRow}
-      accessibilityLabel={t('client.lounge.directWith', { account: user.account })} onPress={() => model.open(user)}>
-      <LoungeAvatar user={user} /><Text style={[styles.rowTitle, styles.heading]}>{user.account}</Text>
+      accessibilityLabel={t('client.lounge.directWith', { account: accountName(user) })} onPress={() => model.open(user)}>
+      <LoungeAvatar user={user} /><Text style={[styles.rowTitle, styles.heading]}>{accountName(user)}</Text>
     </Pressable>)}
   </LoungeSheet>;
 }

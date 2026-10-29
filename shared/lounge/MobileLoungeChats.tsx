@@ -1,5 +1,6 @@
+import { accountName, accountMatches } from './names';
 import { useState } from 'react';
-import { ChevronLeft, Plus, Search } from 'lucide-react';
+import { ChevronLeft, Plus, Search, UserRound } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import type { LoungeController } from './controller';
 import type { MobileLounge } from './useMobileLounge';
@@ -18,12 +19,15 @@ export function MobileLoungeChats({ model, controller, onBack }: {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<string>();
   const rows = conversationRows({ state: model.state, controller, drafts: model.drafts }).filter(row =>
-    (row.user?.account ?? t('client.lounge.groupChat')).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+    row.user ? accountMatches(row.user, query)
+      : t('client.lounge.groupChat').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const actionRow = rows.find(row => row.id === menu);
   return <section className="lounge-chat-list">
     <header className="lounge-mobile-heading">
       <button type="button" aria-label={t('client.discovery.back')} onClick={onBack}>
         <ChevronLeft size={22} /></button><h1>{t('client.lounge.chats')}</h1>
+      {model.state.user && <button type="button" aria-label={t('client.lounge.profile')}
+        onClick={() => model.setProfile(model.state.user)}><UserRound size={22} /></button>}
       <button type="button" className="lounge-new-chat" onClick={() => model.setSheet('new-chat')}
         disabled={!model.state.directAvailable}>
         <Plus size={18} aria-hidden="true" />{t('client.lounge.newChat')}</button>
@@ -56,9 +60,9 @@ export function MobileLoungeMembers({ model }: { model: MobileLounge }) {
     {!members.length && <p className="lounge-sheet-copy">{t('client.lounge.noMembers')}</p>}
     {members.map(contact => <button type="button" key={contact.user.id} className="lounge-chat-row"
       onClick={() => model.setProfile(contact.user)}
-      aria-label={t('client.lounge.viewProfile', { account: contact.user.account })}>
+      aria-label={t('client.lounge.viewProfile', { account: accountName(contact.user) })}>
       <LoungeAvatar user={contact.user} /><span className="lounge-chat-row-copy">
-        <strong>{contact.user.account}</strong>{contact.direct && <small>{t(contactStatus(contact))}</small>}</span>
+        <strong>{accountName(contact.user)}</strong>{contact.direct && <small>{t(contactStatus(contact))}</small>}</span>
       <span className="lounge-member-action">{t('client.lounge.profile')}</span>
     </button>)}
   </MobileLoungeSheet>;

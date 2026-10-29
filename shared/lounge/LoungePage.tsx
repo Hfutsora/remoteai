@@ -1,5 +1,6 @@
+import { accountName } from './names';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowDown, Ban, Coffee, Users } from 'lucide-react';
+import { ArrowDown, Ban, Coffee, Users, UserRound } from 'lucide-react';
 import { Drawer } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
@@ -24,6 +25,7 @@ import { MobileLoungePage } from './MobileLoungePage';
 import { historyKey } from './archive';
 import { useLoungeNavigation } from './useLoungeNavigation';
 import { scrollToLoungeMessage } from './scrollToMessage';
+import { LoungeDesktopProfile } from './LoungeDesktopProfile';
 
 export function LoungePage(props: {
   controller: LoungeController; onLogin?: () => void; mobile?: boolean; onBack?: () => void;
@@ -49,6 +51,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   const [newChatOpen, setNewChatOpen] = useState(false);
   const newChat = () => { setPeopleOpen(false); setNewChatOpen(true); };
   const [blocking, setBlocking] = useState<LoungeAccount>();
+  const [profile, setProfile] = useState<LoungeAccount>();
   const contact = state.contacts.find(value => value.user.id === state.conversation);
   const select = (user?: LoungeAccount) => {
     navigation.clear(); controller.selectConversation(user); setPeopleOpen(false); setAtBottom(true);
@@ -74,10 +77,10 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   }, [muted, mutedUntil]);
   useEffect(() => {
     controller.setViewing(atBottom && !navigation.focus && !historyOpen && !avatarOpen && !peopleOpen
-      && !preview && !moderating && !blocking && !newChatOpen);
+      && !preview && !moderating && !blocking && !newChatOpen && !profile);
     return () => controller.setViewing(false);
   }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen, preview, moderating, blocking,
-    navigation.focus, newChatOpen]);
+    navigation.focus, newChatOpen, profile]);
   useLayoutEffect(() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; },
     [state.messages, atBottom]);
   const scrollBottom = () => {
@@ -87,12 +90,12 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   return <section className="lounge-layout">
     <aside className="lounge-sidebar">
       <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat}
-        pin={(id, pinned) => controller.setPinned(id, pinned)} /></aside>
+        pin={(id, pinned) => controller.setPinned(id, pinned)} profile={setProfile} /></aside>
     <section className="lounge-page">
     <header className="lounge-heading"><div className="lounge-heading-title">
       <button className="lounge-people-toggle" type="button" aria-label={t('client.lounge.people')}
         onClick={() => setPeopleOpen(true)}><Users size={21} /></button>
-      {!contact && <Coffee size={21} />}<h1>{contact?.user.account ?? t('client.lounge.title')}</h1></div>
+      {!contact && <Coffee size={21} />}<h1>{contact ? accountName(contact.user) : t('client.lounge.title')}</h1></div>
       <div className="lounge-heading-actions"><span className={`lounge-connection is-${state.status}`} role="status">
         <i />{t(`client.lounge.${state.status}`)}</span>
         {contact && <span className="lounge-peer-status">{t(contactStatus(contact))}</span>}
@@ -102,6 +105,8 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
           onClick={() => setBlocking(contact.user)}><Ban size={18} /></button>}
         {state.policy.moderator && state.onlineCount !== undefined && <span className="lounge-online-count">
           {t('client.lounge.onlineCount', { count: state.onlineCount })}</span>}
+        {state.user && <button type="button" className="lounge-block-button" onClick={() => setProfile(state.user)}
+          aria-label={t('client.lounge.profile')} title={t('client.lounge.profile')}><UserRound size={20} /></button>}
         {state.user && <button type="button" className="lounge-avatar-trigger" onClick={() => setAvatarOpen(true)}
           aria-label={t('client.lounge.avatarSettings')} title={t('client.lounge.avatarSettings')}>
           <LoungeAvatar user={state.user} /></button>}</div></header>
@@ -130,9 +135,9 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
               onDirect={!own && state.directAvailable ? () => select(message.sender) : undefined} />
             <div className="lounge-message-main">
               {state.policy.moderator && !own ? <button type="button" className="lounge-account lounge-account-action"
-                aria-label={t('client.lounge.manageUser', { account: message.sender.account })}
-                onClick={() => setModerating(message.sender)}>{message.sender.account}</button>
-                : <div className="lounge-account">{message.sender.account}</div>}
+                aria-label={t('client.lounge.manageUser', { account: accountName(message.sender) })}
+                onClick={() => setModerating(message.sender)}>{accountName(message.sender)}</button>
+                : <div className="lounge-account">{accountName(message.sender)}</div>}
               <LoungeMessageBody message={message} preview={setPreview} controller={controller} locate={locate}
                 actions={{ reply: quote, blocked: state.blocked.includes(message.sender.id),
                   direct: !own && state.directAvailable ? () => select(message.sender) : undefined,
@@ -170,10 +175,12 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
       controller={controller} close={() => setBlocking(undefined)} />}
     {newChatOpen && <LoungeNewChat key={state.user?.id} controller={controller} state={state}
       select={select} close={() => setNewChatOpen(false)} />}
+    {profile && <LoungeDesktopProfile user={profile} state={state} controller={controller}
+      close={() => setProfile(undefined)} editAvatar={() => { setProfile(undefined); setAvatarOpen(true); }} />}
     <Drawer open={peopleOpen} width="min(320px, 100vw)" placement="left" title={t('client.lounge.people')}
       onClose={() => setPeopleOpen(false)} styles={{ body: { padding: 0 } }}>
       <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat}
-        pin={(id, pinned) => controller.setPinned(id, pinned)} />
+        pin={(id, pinned) => controller.setPinned(id, pinned)} profile={setProfile} />
     </Drawer>
     </section>
   </section>;

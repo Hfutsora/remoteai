@@ -87,6 +87,13 @@ while the operating system has suspended networking.
 
 ## Automated checks
 
+Set `LOUNGE_NAMES_ONLY=1` to verify nickname and owner-private contact remark editing, failed saves,
+remote-device updates, clearing, long-press sheet labels and server recovery after clearing app data.
+The fixture runs at font scales 1.0 and 1.3; inspect `names-*.png` for Chinese glyphs and keyboard layout.
+`apps/desktop/e2e/lounge-names.pw.ts` covers desktop local/remote/Web and 320px/390px mobile Web.
+Actual PostgreSQL persistence, authenticated ownership and remark privacy are verified separately by
+`go -C apps/admin-go test ./internal/lounge -run TestLoungeNames` with `LOUNGE_TEST_DATABASE_URL` set.
+
 ```powershell
 npm run check -w @codex-switch/native
 npx vitest run --root apps/native src/lounge

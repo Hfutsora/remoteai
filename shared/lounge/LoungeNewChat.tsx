@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useRef, type RefObject } from 'react';
 import { Button, Input, Modal, type InputRef } from 'antd';
 import { displayText as t } from '../localization/messages';
@@ -42,8 +43,8 @@ function NewChatContent({ model, inputRef }: { model: NewLoungeChat; inputRef?: 
     <div className="lounge-new-chat-people">
       {!speakers.length && <p>{t('client.lounge.noRecentSpeakers')}</p>}
       {speakers.map(user => <button type="button" key={user.id} className="lounge-person"
-        aria-label={t('client.lounge.directWith', { account: user.account })} onClick={() => open(user)}>
-        <LoungeAvatar user={user} /><span className="lounge-person-copy">{user.account}</span>
+        aria-label={t('client.lounge.directWith', { account: accountName(user) })} onClick={() => open(user)}>
+        <LoungeAvatar user={user} /><span className="lounge-person-copy">{accountName(user)}</span>
       </button>)}
     </div>
   </>;

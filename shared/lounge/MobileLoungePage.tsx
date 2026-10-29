@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useSyncExternalStore } from 'react';
 import { ArrowDown, Ban, ChevronLeft, Info, MessagesSquare, UserRound } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
@@ -67,7 +68,7 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
       controller={controller} close={() => model.setBlocking(undefined)} />}
     {model.preview && <LoungePreview key={model.preview} uri={model.preview}
       close={() => model.setPreview(undefined)} />}
-    <MobileLoungeProfile model={model} />
+    <MobileLoungeProfile model={model} controller={controller} />
     <LoungeDeleteDialog model={model} />
   </section>;
 }
@@ -81,7 +82,7 @@ function MobileHeading({ model }: { model: MobileLounge }) {
     <button type="button" aria-label={t('client.lounge.backToChats')}
       onClick={() => model.setChats(true)}><ChevronLeft size={22} /></button>
     <div className={`lounge-heading-identity${contact ? ' is-private' : ''}`}>
-      <h1>{contact?.user.account ?? t('client.lounge.title')}</h1>
+      <h1>{contact ? accountName(contact.user) : t('client.lounge.title')}</h1>
       <button type="button" className="lounge-members-trigger" onClick={() => model.setSheet('members')}>
         <i className={state.status === 'connected' && (!contact || contact.online === true) ? 'is-online' : ''} />
         <span className={contact ? 'lounge-peer-status' : state.onlineCount !== undefined

@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { MobileLounge } from '../../../../shared/lounge/useMobileLounge';
@@ -20,7 +21,7 @@ export function LoungeHeading({ model, back }: { model: MobileLounge; back: () =
     <View style={[styles.headerIdentity, contact && styles.privateIdentity]}>
       <Text accessibilityRole="header" style={[styles.title, styles.headerTitle]}
         numberOfLines={contact ? 1 : undefined} ellipsizeMode="tail">
-        {contact?.user.account ?? t('client.lounge.title')}</Text>
+        {contact ? accountName(contact.user) : t('client.lounge.title')}</Text>
       <Pressable accessibilityRole="button" style={[styles.memberTrigger, contact && styles.privateStatus]}
         onPress={() => model.setSheet('members')}>
         <View style={[styles.onlineDot, (state.status !== 'connected' || contact && contact.online !== true)

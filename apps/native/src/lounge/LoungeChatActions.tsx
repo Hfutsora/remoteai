@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { conversationActions, type ConversationAction } from '../../../../shared/lounge/conversationActions';
@@ -21,7 +22,7 @@ export function LoungeChatActions({ row, model, controller, close }: {
   const actions = conversationActions({ row, model, controller, close });
   return <LoungeSheet close={close} title={<View style={styles.contact}>
     <LoungeAvatar user={row.user} /><View style={styles.identity}>
-      <Text accessibilityRole="header" style={styles.account}>{row.user.account}</Text>
+      <Text accessibilityRole="header" style={styles.account}>{accountName(row.user)}</Text>
       <Text style={styles.subtitle}>{t('client.lounge.privateChats')}</Text>
     </View>
   </View>}>

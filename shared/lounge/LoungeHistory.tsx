@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useSyncExternalStore } from 'react';
 import { Button, Drawer, Input } from 'antd';
 import { Search } from 'lucide-react';
@@ -46,7 +47,7 @@ export function LoungeHistory({ controller, open, close, preview, reply, direct,
           className="lounge-history-message">
           <LoungeAvatar user={message.sender} onDirect={startDirect}
             onProfile={profile ? () => profile(message.sender) : undefined} />
-          <div className="lounge-history-message-main"><div className="lounge-account">{message.sender.account}</div>
+          <div className="lounge-history-message-main"><div className="lounge-account">{accountName(message.sender)}</div>
             <time dateTime={message.sentAt}>{format.format(new Date(message.sentAt))}</time>
             <LoungeMessageBody message={message} preview={preview} actions={{ reply, direct: startDirect }}
               controller={controller} locate={locate} />

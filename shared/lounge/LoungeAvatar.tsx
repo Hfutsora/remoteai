@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useState } from 'react';
 import { initials, type LoungeAccount } from './types';
 import { displayText as t } from '../localization/messages';
@@ -8,10 +9,10 @@ export function LoungeAvatar({ user, onDirect, onProfile }: {
   const [failedSource, setFailedSource] = useState<string>();
   const content = user.avatar && failedSource !== user.avatar
       ? <img src={user.avatar} alt="" width={48} height={48} onError={() => setFailedSource(user.avatar)} />
-      : initials(user.account);
+      : initials(accountName(user));
   const action = onProfile ?? onDirect;
   return action ? <button type="button" className="lounge-avatar lounge-avatar-direct" onClick={action}
     aria-label={t(onProfile ? 'client.lounge.viewProfile' : 'client.lounge.directWith', {
-      account: user.account })}>{content}</button>
+      account: accountName(user) })}>{content}</button>
     : <span className="lounge-avatar" aria-hidden>{content}</span>;
 }

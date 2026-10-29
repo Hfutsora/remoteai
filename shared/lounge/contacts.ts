@@ -1,5 +1,6 @@
 import type { LoungeAccount, LoungeMessage } from './types';
 import { avatarData } from './avatar';
+import { validName, MAX_NICKNAME, MAX_REMARK } from './names';
 
 export interface LoungeContact {
   user: LoungeAccount;
@@ -14,7 +15,9 @@ export function parseAccount(input: unknown): LoungeAccount | undefined {
   const user = input as Partial<LoungeAccount>;
   if (typeof user.id !== 'string' || !user.id || user.id.length > 80
     || typeof user.account !== 'string' || !user.account || [...user.account].length > 320) return;
-  return { id: user.id, account: user.account, avatar: avatarData(user.avatar) ? user.avatar : undefined };
+  return { id: user.id, account: user.account, avatar: avatarData(user.avatar) ? user.avatar : undefined,
+    ...(validName(user.nickname, MAX_NICKNAME) ? { nickname: user.nickname } : {}),
+    ...(validName(user.remark, MAX_REMARK) ? { remark: user.remark } : {}) };
 }
 
 export function parseContact(input: unknown): LoungeContact | undefined {
@@ -30,7 +33,8 @@ export function parseContact(input: unknown): LoungeContact | undefined {
 export function mergeContact(contacts: LoungeContact[], incoming: LoungeContact): LoungeContact[] {
   const previous = contacts.find(contact => contact.user.id === incoming.user.id);
   const updated = { ...previous, ...incoming, direct: incoming.direct || !!previous?.direct,
-    user: { ...incoming.user, avatar: incoming.user.avatar ?? previous?.user.avatar } };
+    user: { ...incoming.user, avatar: incoming.user.avatar ?? previous?.user.avatar,
+      nickname: incoming.user.nickname ?? previous?.user.nickname, remark: incoming.user.remark ?? previous?.user.remark } };
   if (updated.direct) updated.lastMessageAt = Math.max(previous?.lastMessageAt ?? 0, incoming.lastMessageAt ?? 0);
   if (previous?.pinned !== undefined || incoming.pinned !== undefined) updated.pinned = incoming.pinned ?? previous?.pinned;
   return [...contacts.filter(contact => contact.user.id !== incoming.user.id), updated];

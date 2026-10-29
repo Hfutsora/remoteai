@@ -123,7 +123,7 @@ export class LoungeController {
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
       status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, directResetAvailable: false,
-      accountLookupAvailable: false,
+      accountLookupAvailable: false, namesAvailable: false,
       conversation: '', unreadByConversation: {} });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
@@ -226,6 +226,7 @@ export class LoungeController {
     }
     if (this.accountLookup.receive(frame)) return;
     if (frame.type === 'profiles') { this.receiveProfiles(frame.profiles); return; }
+    if (frame.type === 'names') { this.receiveProfiles(frame, true); return; }
     if (frame.type === 'direct-permissions') { this.directState.receive(frame); return; }
     if (frame.type === 'rejected') this.delivery.reject(frame);
     if (frame.type === 'policy' || frame.type === 'ready') this.receivePolicy(frame.policy);
@@ -253,12 +254,13 @@ export class LoungeController {
       const user = frame.user as LoungeSnapshot['user'];
       if (!user || typeof user.id !== 'string' || typeof user.account !== 'string') return;
       this.authorized = Date.now(); this.attempt = 0; this.renewalStarted = 0;
-      this.profiles.ready(user, frame.profiles === true);
+      this.profiles.ready(user, frame.profiles === true, frame.names === true);
       this.profiles.cache(user, this.session?.avatars);
       this.directState.resetAvailable = frame.directReset === true;
       this.update({ status: 'connected', user, historyRevision: this.state.historyRevision + 1,
         directAvailable: frame.direct === true && frame.receipts === true,
         accountLookupAvailable: frame.accountLookup === true,
+        namesAvailable: frame.names === true,
         directResetAvailable: frame.directReset === true,
         contacts: this.state.contacts.filter(contact => contact.user.id !== user.id) });
       this.syncWatch(); return;
@@ -406,14 +408,17 @@ export class LoungeController {
     try { await this.submit({ type: 'avatar', avatar }); }
     catch { throw new Error('client.lounge.avatarSaveFailed'); }
   }
-  private receiveProfiles(input: unknown) {
-    if (!this.profiles.receive(input)) return;
+  setName(options: { kind: 'nickname' | 'remark'; userId: string; value: string }) {
+    return this.profiles.names.save(options, frame => this.submit(frame));
+  }
+  private receiveProfiles(input: unknown, names = false) {
+    if (!(names ? this.profiles.names.receive(input as Record<string, unknown>) : this.profiles.receive(input))) return;
     this.recent = this.recent.map(this.profiles.message);
     this.profiles.cache(this.state.user, this.session?.avatars);
     const previous = this.state.contacts;
     this.update({ historyRevision: this.state.historyRevision + 1 });
     this.state.contacts.forEach((contact, index) => {
-      if (contact.user.avatar !== previous[index]?.user.avatar) this.persistContact(contact);
+      if (contact.user !== previous[index]?.user) this.persistContact(contact);
     });
   }
   moderate(userId: string, minutes: number): Promise<void> {
@@ -452,9 +457,12 @@ export class LoungeController {
   }
   private rememberContact(contact: LoungeContact) {
     if (contact.user.id === this.state.user?.id || contact.user.account === this.session?.account) return;
+    contact = { ...contact, user: this.profiles.user(contact.user) };
     const previous = this.state.contacts.find(value => value.user.id === contact.user.id);
     if (previous && (!contact.direct || previous.direct) && previous.user.account === contact.user.account
       && (!contact.user.avatar || previous.user.avatar === contact.user.avatar)
+      && (contact.user.nickname === undefined || previous.user.nickname === contact.user.nickname)
+      && (contact.user.remark === undefined || previous.user.remark === contact.user.remark)
       && (contact.lastMessageAt ?? 0) <= (previous.lastMessageAt ?? 0)
       && (contact.pinned === undefined || previous.pinned === contact.pinned)) return;
     const contacts = mergeContact(this.state.contacts, contact);

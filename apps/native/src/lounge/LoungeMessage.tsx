@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { Image, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useState, type ReactNode } from 'react';
 import { initials, type LoungeAccount, type LoungeMessage as Message } from '../../../../shared/lounge/types';
@@ -24,12 +25,12 @@ export function LoungeAvatar({ user, size, onDirect, onProfile, onLongPress }: {
     style={avatarStyle} />
     : <View style={avatarStyle}>
       <Text style={[small ? styles.messageName : styles.initials, size === 'profile' && styles.profileInitials]}>
-        {initials(user.account)}</Text></View>;
+        {initials(accountName(user))}</Text></View>;
   const action = onProfile ?? onDirect;
   return action ? <Pressable accessibilityRole="button" onPress={action} onLongPress={onLongPress}
     hitSlop={small ? MESSAGE_AVATAR_TOUCH_PADDING : 0}
     accessibilityLabel={t(onProfile ? 'client.lounge.viewProfile' : 'client.lounge.directWith', {
-      account: user.account })}>{avatar}</Pressable> : avatar;
+      account: accountName(user) })}>{avatar}</Pressable> : avatar;
 }
 
 export function LoungeUnread({ count, children }: { count: number; children: ReactNode }) {
@@ -64,10 +65,10 @@ export function LoungeMessage({ message, own, manage, preview, onImageLoad, repl
     <View style={[styles.messageMain, own && styles.ownMain]}
       onLayout={event => setAvailableWidth(event.nativeEvent.layout.width)}>
       {!own && manage ? <Pressable accessibilityRole="button"
-        accessibilityLabel={t('client.lounge.manageUser', { account: message.sender.account })}
+        accessibilityLabel={t('client.lounge.manageUser', { account: accountName(message.sender) })}
         onPress={() => manage(message.sender)}>
-        <Text style={styles.messageName}>{message.sender.account}</Text>
-      </Pressable> : <Text style={styles.messageName}>{message.sender.account}</Text>}
+        <Text style={styles.messageName}>{accountName(message.sender)}</Text>
+      </Pressable> : <Text style={styles.messageName}>{accountName(message.sender)}</Text>}
       <Pressable onLongPress={openMenu} style={[styles.bubble, own && styles.ownBubble,
         { minWidth }, message.reply && styles.quotedBubble,
         !message.text.trim() && !message.reply && styles.imageOnly]}>

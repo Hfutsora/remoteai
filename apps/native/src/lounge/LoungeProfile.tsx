@@ -1,4 +1,4 @@
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { MobileLounge } from '../../../../shared/lounge/useMobileLounge';
@@ -10,11 +10,14 @@ import { useLoungeStyles } from './styles';
 import { createLoungeStyles, useLoungeColor } from './theme';
 import type { LoungeController } from '../../../../shared/lounge/controller';
 import { LoungeAvatarSettings } from './LoungeDialogs';
+import { LoungeNameFields } from './LoungeNameFields';
+import { accountName } from '../../../../shared/lounge/names';
 
 const useProfileStyles = createLoungeStyles(color => ({
   cover: { height: 100, backgroundColor: color('#deebf7', 'infoSoft') },
   details: { marginTop: -24, paddingHorizontal: 24, paddingBottom: 32 },
   account: { ...textMetrics(20, 30), color: color('#202b33', 'ink'), fontWeight: '600', marginTop: 20, marginBottom: 10 },
+  email: { ...textMetrics(13, 21), color: color('#687c89', 'muted'), marginBottom: 10 },
   status: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   statusText: { ...textMetrics(14, 21), color: color('#687c89', 'muted'), flexShrink: 1 },
   actions: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingVertical: 16 },
@@ -35,20 +38,23 @@ export function LoungeProfile({ model, controller }: { model: MobileLounge; cont
   const canDelete = model.state.directResetAvailable && model.state.status === 'connected';
   return <Modal animationType="slide" onRequestClose={() => model.setProfile(undefined)}>
     <SafeAreaView style={styles.page}>
+    <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.header}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('client.lounge.profileBack')}
           style={styles.iconButton} onPress={() => model.setProfile(undefined)}>
           <Ionicons name="chevron-back" size={22} color={color('#202b33', 'ink')} /></Pressable>
         <Text accessibilityRole="header" style={styles.title}>{t('client.lounge.profile')}</Text>
       </View>
-      <ScrollView style={styles.spacer}>
+      <ScrollView style={styles.spacer} keyboardShouldPersistTaps="handled">
         <View style={profileStyles.cover} />
         <View style={profileStyles.details}><LoungeAvatar user={user} size="profile"
           onProfile={own ? () => model.setAvatar(true) : undefined} />
-          <Text style={profileStyles.account}>{user.account}</Text>
+          <Text style={profileStyles.account}>{accountName(user)}</Text>
+          {accountName(user) !== user.account && <Text style={profileStyles.email}>{user.account}</Text>}
           {contact?.direct && <View style={profileStyles.status}>
             <View style={[styles.onlineDot, (model.state.status !== 'connected' || contact.online !== true)
               && styles.offlineDot]} /><Text style={profileStyles.statusText}>{t(contactStatus(contact))}</Text></View>}
+          <LoungeNameFields key={user.id} user={user} state={model.state} controller={controller} />
         </View>
       </ScrollView>
       <View style={profileStyles.actions}>
@@ -63,6 +69,7 @@ export function LoungeProfile({ model, controller }: { model: MobileLounge; cont
       </View>
       {own && model.avatar && <LoungeAvatarSettings user={user} controller={controller}
         close={() => model.setAvatar(false)} />}
+    </KeyboardAvoidingView>
     </SafeAreaView>
   </Modal>;
 }

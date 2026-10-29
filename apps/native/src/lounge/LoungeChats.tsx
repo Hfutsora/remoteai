@@ -1,3 +1,4 @@
+import { accountName, accountMatches } from '../../../../shared/lounge/names';
 import { useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,13 +22,17 @@ export function LoungeChats({ model, controller, onBack }: {
   const [query, setQuery] = useState('');
   const [actions, setActions] = useState<ConversationRow>();
   const rows = conversationRows({ state: model.state, controller, drafts: model.drafts }).filter(row =>
-    (row.user?.account ?? t('client.lounge.groupChat')).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+    row.user ? accountMatches(row.user, query)
+      : t('client.lounge.groupChat').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <View style={styles.page}>
     <View style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel={t('client.discovery.back')}
         style={styles.iconButton} onPress={onBack}>
         <Ionicons name="chevron-back" size={22} color={color('#202b33', 'ink')} /></Pressable>
       <Text accessibilityRole="header" style={[styles.title, styles.heading]}>{t('client.lounge.chats')}</Text>
+      {model.state.user && <Pressable accessibilityRole="button" accessibilityLabel={t('client.lounge.profile')}
+        style={styles.iconButton} onPress={() => model.setProfile(model.state.user)}>
+        <Ionicons name="person-circle-outline" size={22} color={color('#456c96', 'info')} /></Pressable>}
       <Pressable accessibilityRole="button" accessibilityLabel={t('client.lounge.newChat')}
         disabled={!model.state.directAvailable} accessibilityState={{ disabled: !model.state.directAvailable }}
         style={[styles.newChatButton, !model.state.directAvailable && styles.disabled]}
@@ -59,10 +64,10 @@ export function LoungeMembers({ model }: { model: MobileLounge }) {
     <Text style={styles.muted}>{t('client.lounge.membersHint')}</Text>
     {!members.length && <Text style={styles.muted}>{t('client.lounge.noMembers')}</Text>}
     {members.map(contact => <Pressable key={contact.user.id} accessibilityRole="button"
-      accessibilityLabel={t('client.lounge.viewProfile', { account: contact.user.account })}
+      accessibilityLabel={t('client.lounge.viewProfile', { account: accountName(contact.user) })}
       style={styles.chatRow} onPress={() => model.setProfile(contact.user)}>
       <LoungeAvatar user={contact.user} /><View style={styles.heading}>
-        <Text style={styles.rowTitle}>{contact.user.account}</Text>
+        <Text style={styles.rowTitle}>{accountName(contact.user)}</Text>
         {contact.direct && <Text style={styles.muted}>{t(contactStatus(contact))}</Text>}</View>
       <Text style={styles.chatsLabel}>{t('client.lounge.profile')}</Text>
     </Pressable>)}

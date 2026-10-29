@@ -17,6 +17,8 @@ import { verifyNativePreview } from './lounge-preview-check.mjs';
 import { verifyNativeNewChat } from './lounge-new-chat-check.mjs';
 import { verifyNativeOrdering } from './lounge-ordering-check.mjs';
 import { verifyNativeChatActions } from './lounge-chat-actions-check.mjs';
+import { verifyNativeNames } from './lounge-names-check.mjs';
+import { createNamesFixture } from './lounge-names-fixture.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -53,11 +55,14 @@ function incoming(text, images = []) {
     sender: { id: 'bob', account: 'bob@example.test' }, sentAt: new Date().toISOString() };
 }
 function broadcast(frame) { for (const socket of sockets.clients) socket.send(JSON.stringify(frame)); }
+const names = createNamesFixture(broadcast);
 sockets.on('connection', socket => socket.on('message', raw => {
   const frame = JSON.parse(String(raw));
+  if (process.env.LOUNGE_NAMES_ONLY === '1') names.handle(socket, frame);
   if (frame.type === 'authenticate') {
     socket.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
-      user: { id: 'alice', account: 'alice@example.test', avatar },
+      names: process.env.LOUNGE_NAMES_ONLY === '1',
+      user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
       policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
       directReset: resetAvailable,
       blocked: blocked ? [{ id: 'bob', account: 'bob@example.test' }] : [] }));
@@ -182,6 +187,7 @@ try {
   await adb('install', '-r', process.env.LOUNGE_TEST_APK
     ?? path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
   for (const scale of [1, 1.3]) {
+    names.reset();
     online = true;
     blocked = false;
     generation = 0; directState = 'new'; failDelete = false;
@@ -195,6 +201,16 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (process.env.LOUNGE_NAMES_ONLY === '1') {
+      await verifyNativeNames({ adb, tap, find, nodes, screenshot, hideKeyboard, longPress,
+        scale, names, broadcast, incoming, restart: async () => {
+          await adb('shell', 'am', 'force-stop', app); await adb('shell', 'pm', 'clear', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
+          await tap('在线交流'); await find('搜索聊天');
+        } });
+      continue;
+    }
     if (process.env.LOUNGE_CHAT_ACTIONS_ONLY === '1') {
       await verifyNativeChatActions({ adb, tap, find, nodes, screenshot, longPress, scale, broadcast, incoming });
       continue;

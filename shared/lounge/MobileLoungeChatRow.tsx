@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { MessagesSquare, Pin } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { contactStatus } from './contacts';
@@ -14,10 +15,10 @@ export function MobileLoungeChatRow({ row, model }: { row: ConversationRow; mode
     </span> : <span className="lounge-avatar" aria-hidden onClick={() => model.select()}>
       <MessagesSquare size={22} /></span>}
     <button className="lounge-chat-row-main" type="button"
-      aria-label={row.user ? t('client.lounge.directWith', { account: row.user.account }) : t('client.lounge.groupChat')}
+      aria-label={row.user ? t('client.lounge.directWith', { account: accountName(row.user) }) : t('client.lounge.groupChat')}
       aria-description={row.contact ? t(contactStatus(row.contact)) : undefined}
       onClick={() => model.select(row.user)}>
-      <span className="lounge-chat-row-copy"><strong>{row.user?.account ?? t('client.lounge.groupChat')}</strong>
+      <span className="lounge-chat-row-copy"><strong>{row.user ? accountName(row.user) : t('client.lounge.groupChat')}</strong>
         <span>{conversationPreviewText(row)}</span></span>
       <span className="lounge-chat-row-meta">
         {row.contact?.pinned && <Pin size={14} className="lounge-pin" role="img"
