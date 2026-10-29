@@ -226,11 +226,11 @@
             ]
         );
         assert_eq!(
-            provider_api_cache::cached_format(&provider.id, &provider.base_url, "model-a"),
+            provider_api_cache::cached_format(&provider, "model-a"),
             Some(ProviderApiFormat::OpenaiChat)
         );
         assert_eq!(
-            provider_api_cache::cached_format(&provider.id, &provider.base_url, "model-b"),
+            provider_api_cache::cached_format(&provider, "model-b"),
             Some(ProviderApiFormat::OpenaiResponses)
         );
     }
@@ -243,8 +243,7 @@
             .model_api_formats
             .insert("model-a".to_string(), ProviderApiFormat::OpenaiChat);
         provider_api_cache::remember_format(
-            &provider.id,
-            &provider.base_url,
+            &provider,
             "model-a",
             ProviderApiFormat::OpenaiResponses,
         );
@@ -263,7 +262,7 @@
         handle.join().unwrap();
         assert_eq!(rx.recv().unwrap(), "/v1/chat/completions");
         assert_eq!(
-            provider_api_cache::cached_format(&provider.id, &provider.base_url, "model-a"),
+            provider_api_cache::cached_format(&provider, "model-a"),
             None
         );
     }

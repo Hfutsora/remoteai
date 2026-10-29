@@ -1,0 +1,76 @@
+import { useState } from 'react';
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import type { LoungeController } from '../../../../shared/lounge/controller';
+import type { MobileLounge } from '../../../../shared/lounge/useMobileLounge';
+import { conversationRows, type ConversationRow } from '../../../../shared/lounge/conversationRows';
+import { contactStatus } from '../../../../shared/lounge/contacts';
+import { t } from '../i18n';
+import { LoungeAvatar } from './LoungeMessage';
+import { LoungeSheet } from './LoungeSheet';
+import { useLoungeStyles } from './styles';
+import { useLoungeColor } from './theme';
+import { LoungeChatRow } from './LoungeChatRow';
+
+export function LoungeChats({ model, controller, onBack }: {
+  model: MobileLounge; controller: LoungeController; onBack: () => void;
+}) {
+  const styles = useLoungeStyles();
+  const color = useLoungeColor();
+  const [query, setQuery] = useState('');
+  const [actions, setActions] = useState<ConversationRow>();
+  const rows = conversationRows({ state: model.state, controller, drafts: model.drafts }).filter(row =>
+    (row.user?.account ?? t('client.lounge.groupChat')).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  return <View style={styles.page}>
+    <View style={styles.header}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('client.discovery.back')}
+        style={styles.iconButton} onPress={onBack}>
+        <Ionicons name="chevron-back" size={22} color={color('#202b33', 'ink')} /></Pressable>
+      <Text accessibilityRole="header" style={[styles.title, styles.heading]}>{t('client.lounge.chats')}</Text>
+      <Pressable accessibilityRole="button" style={styles.iconButton} onPress={() => model.setSheet('members')}>
+        <Text style={styles.chatsLabel}>{t('client.lounge.newChat')}</Text></Pressable>
+    </View>
+    <View style={styles.search}><Ionicons name="search" size={18} color={color('#687c89', 'muted')} />
+      <TextInput value={query} onChangeText={setQuery} style={styles.searchInput}
+        accessibilityLabel={t('client.lounge.searchChats')} placeholder={t('client.lounge.searchChats')}
+        placeholderTextColor={color('#687c89', 'muted')} /></View>
+    <FlatList data={rows} keyExtractor={row => row.id} keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingHorizontal: 12 }}
+      ListEmptyComponent={<Text style={styles.muted}>{t('client.lounge.noChats')}</Text>}
+      renderItem={({ item, index }) => <>
+        {(index === 0 || !rows[index - 1].user) && <Text style={styles.sectionLabel}>
+          {t(item.user ? 'client.lounge.privateChats' : 'client.lounge.publicRoom')}</Text>}
+        <LoungeChatRow row={item} model={model} actions={() => setActions(item)} />
+      </>} />
+    {actions?.user && <LoungeSheet title={actions.user.account} close={() => setActions(undefined)}>
+      <Pressable accessibilityRole="button" style={styles.iconButton}
+        onPress={() => { model.select(actions.user); setActions(undefined); }}>
+        <Text style={styles.link}>{t('client.lounge.directChat')}</Text></Pressable>
+      {model.state.directAvailable && <Pressable accessibilityRole="button" style={styles.iconButton}
+        onPress={() => { model.setBlocking(actions.user); setActions(undefined); }}>
+        <Text style={styles.link}>{t(model.state.blocked.includes(actions.id)
+          ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')}</Text></Pressable>}
+      <Pressable accessibilityRole="button" style={styles.iconButton}
+        disabled={!model.state.directResetAvailable || model.state.status !== 'connected'}
+        onPress={() => { model.setDeleting(actions.user); setActions(undefined); }}>
+        <Text style={styles.error}>{t('client.lounge.deleteChat')}</Text></Pressable>
+    </LoungeSheet>}
+  </View>;
+}
+
+export function LoungeMembers({ model }: { model: MobileLounge }) {
+  const styles = useLoungeStyles();
+  const members = model.state.contacts.filter(contact => contact.user.id !== model.state.user?.id);
+  return <LoungeSheet title={t('client.lounge.members')} close={() => model.setSheet(undefined)}>
+    <Text style={styles.muted}>{t('client.lounge.membersHint')}</Text>
+    {!members.length && <Text style={styles.muted}>{t('client.lounge.noMembers')}</Text>}
+    {members.map(contact => <Pressable key={contact.user.id} accessibilityRole="button"
+      accessibilityLabel={t('client.lounge.viewProfile', { account: contact.user.account })}
+      style={styles.chatRow} onPress={() => model.setProfile(contact.user)}>
+      <LoungeAvatar user={contact.user} /><View style={styles.heading}>
+        <Text style={styles.rowTitle}>{contact.user.account}</Text>
+        {contact.direct && <Text style={styles.muted}>{t(contactStatus(contact))}</Text>}</View>
+      <Text style={styles.chatsLabel}>{t('client.lounge.profile')}</Text>
+    </Pressable>)}
+  </LoungeSheet>;
+}

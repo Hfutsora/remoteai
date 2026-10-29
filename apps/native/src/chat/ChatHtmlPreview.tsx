@@ -1,12 +1,12 @@
 import { createThemedStyles } from '../theme/styles';
 import { t, useLanguage } from '../i18n';
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SheetScrollView } from '../components/SheetScrollView';
 import { ChatCodeBlock } from './ChatCodeBlock';
+import { textMetrics } from '../theme/text';
 
-const PREVIEW_HEIGHT_RATIO = 0.55;
 const PREVIEW_MODES = [{ value: 'preview', get label() { return t("client.chat.preview"); } }, { value: 'source', get label() { return t("client.downloads.source"); } }] as const;
 
 export function isHtmlPath(path: string) {
@@ -18,9 +18,8 @@ export function ChatHtmlPreview({ text }: { text: string }) {
   useLanguage();
   const [mode, setMode] = useState<'preview' | 'source'>('preview');
   const [failed, setFailed] = useState(false);
-  const { height } = useWindowDimensions();
   const source = useMemo(() => ({ html: text, baseUrl: 'about:blank' }), [text]);
-  return <View style={[styles.container, { height: height * PREVIEW_HEIGHT_RATIO }]}>
+  return <View style={styles.container}>
     <View style={styles.tabs} accessibilityRole="tablist">
       {PREVIEW_MODES.map(item => <Pressable key={item.value} accessibilityRole="tab"
         accessibilityState={{ selected: mode === item.value }} onPress={() => setMode(item.value)}
@@ -50,12 +49,12 @@ export function ChatHtmlPreview({ text }: { text: string }) {
 }
 
 const useStyles = createThemedStyles((color) => ({
-  container: { flexShrink: 1 },
+  container: { flex: 1, minHeight: 0 },
   content: { flex: 1, backgroundColor: color('#fff', 'surface') },
   tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
   tab: { minHeight: 44, paddingHorizontal: 20, justifyContent: 'center', borderRadius: 12 },
   selectedTab: { backgroundColor: color('#e3f3ed', 'canvas') },
-  tabText: { color: color('#0b8065', 'accent'), fontSize: 14, fontWeight: '700' },
+  tabText: { ...textMetrics(14, 21), color: color('#0b8065', 'accent'), fontWeight: '700' },
   notice: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  message: { maxWidth: 400, color: color('#708078', 'muted'), fontSize: 14, textAlign: 'center' },
+  message: { ...textMetrics(14, 21), maxWidth: 400, color: color('#708078', 'muted'), textAlign: 'center' },
 }));

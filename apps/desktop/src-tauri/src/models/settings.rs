@@ -15,6 +15,8 @@ pub(crate) struct AppSettings {
     #[serde(default = "default_floating_bubble_enabled")]
     pub(crate) floating_bubble_enabled: bool,
     #[serde(default)]
+    pub(crate) quota_display_all_accounts: bool,
+    #[serde(default)]
     pub(crate) pet_dock_enabled: bool,
     #[serde(default)]
     pub(crate) pet_dock_show_labels: bool,
@@ -276,6 +278,7 @@ impl Default for AppSettings {
             close_to_tray: default_close_to_tray(),
             non_proxy_enhancements_enabled: default_non_proxy_enhancements_enabled(),
             floating_bubble_enabled: default_floating_bubble_enabled(),
+            quota_display_all_accounts: false,
             pet_dock_enabled: false,
             pet_dock_show_labels: false,
             theme_color: None,

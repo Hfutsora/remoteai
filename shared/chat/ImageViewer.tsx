@@ -5,8 +5,7 @@ import { Download, Image as ImageIcon, LoaderCircle } from 'lucide-react';
 import { useImageViewer } from './useImageViewer';
 import type { PreviewImageLoader } from '../remote-chat/previewProgress';
 import { PreviewTransferProgress } from './PreviewTransferProgress';
-import { IMAGE_ZOOM_FACTOR, useImageGestures } from './useImageGestures';
-import './imageViewer.css';
+import { ImageViewerFrame } from './ImageViewerFrame';
 import { ImageAiToolbar } from './ImageAiToolbar';
 
 interface Props {
@@ -24,21 +23,12 @@ export function ImageViewer({ thumbnail, description, load, close, download, con
   const image = useImageViewer(load, autoLoadOriginal);
   const [downloadError, setDownloadError] = useState('');
   const [saving, setSaving] = useState(false);
-  const gestures = useImageGestures();
-  return <dialog ref={(dialog) => { if (dialog && !dialog.open) dialog.showModal(); }}
-    className="cs-image-viewer" aria-label={description} onCancel={close}
-    onWheel={event => event.stopPropagation()}>
-    <div className="cs-image-stage" ref={gestures.stageRef} {...gestures.stageProps}
-      onDragStart={event => event.preventDefault()}
-      onContextMenu={(event) => {
-        if (!contextMenu) return;
-        event.preventDefault();
-        if (image.url && !image.error) contextMenu(event, image.url);
-      }}>
-      <img src={image.url ?? thumbnail} alt={description} draggable={false} referrerPolicy="no-referrer"
-        onError={image.fail} ref={gestures.imageRef} />
-    </div>
-    <button type="button" className="cs-image-close" aria-label={translate("client.shared.closeImage")} onClick={close}>×</button>
+  return <ImageViewerFrame src={image.url ?? thumbnail} description={description} close={close}
+    translate={translate} onError={image.fail} onContextMenu={(event) => {
+      if (!contextMenu) return;
+      event.preventDefault();
+      if (image.url && !image.error) contextMenu(event, image.url);
+    }}>
     {download && <button type="button" className="cs-image-download" disabled={saving || image.loading}
       aria-label={translate(saving ? "client.projectBrowser.saving" : "client.shared.downloadImage")} aria-busy={saving}
       onClick={async () => {
@@ -50,15 +40,6 @@ export function ImageViewer({ thumbnail, description, load, close, download, con
       }}>{saving ? <LoaderCircle size={24} className="cs-image-download-spinner" aria-hidden="true" />
         : <Download size={24} aria-hidden="true" />}
       <span>{translate(saving ? "client.projectBrowser.saving" : "client.shared.downloadImage")}</span></button>}
-    <div className="cs-image-toolbar">
-      <button type="button" aria-label={translate("client.shared.zoomOut")}
-        onClick={() => gestures.zoom(1 / IMAGE_ZOOM_FACTOR)}>−</button>
-      <button type="button" aria-label={translate("client.shared.resetZoom")} onClick={gestures.reset}>
-        {Math.round(gestures.scale * 100)}%</button>
-      <button type="button" aria-label={translate("client.shared.zoomIn")}
-        onClick={() => gestures.zoom(IMAGE_ZOOM_FACTOR)}>+</button>
-      <button type="button" aria-label={translate("client.shared.rotateImage")} onClick={gestures.rotate}>↻</button>
-    </div>
     <ImageAiToolbar load={image.loadOriginal} close={close} translate={translate}
       originalAction={!image.url && !image.loading && <button type="button" className="cs-image-original"
         onClick={image.request}><ImageIcon size={20} aria-hidden="true" />
@@ -68,5 +49,5 @@ export function ImageViewer({ thumbnail, description, load, close, download, con
     {downloadError && <div className="cs-image-status" role="status">{formatError(downloadError)}</div>}
     {feedback && <div className="cs-image-status" role="status">{feedback}</div>}
     {image.error && <div className="cs-image-status" role="status">{translate("client.shared.couldNotLoadFullImage")}</div>}
-  </dialog>;
+  </ImageViewerFrame>;
 }

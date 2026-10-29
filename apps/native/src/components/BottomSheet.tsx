@@ -46,6 +46,8 @@ interface BottomSheetProps {
   actions?: BottomSheetAction[];
   dismissible?: boolean;
   tall?: boolean;
+  fillHeight?: boolean;
+  fullscreen?: boolean;
   fullWidthContent?: boolean;
   horizontalPadding?: number;
   maxWidth?: number;
@@ -67,6 +69,8 @@ export function BottomSheet({
   actions = [],
   dismissible = true,
   tall = false,
+  fillHeight = false,
+  fullscreen = false,
   fullWidthContent = false,
   horizontalPadding = SHEET_HORIZONTAL_PADDING,
   maxWidth,
@@ -83,7 +87,7 @@ export function BottomSheet({
   useLanguage();
   const layer = useSheetLayers(visible);
   const { translateY, scrollGesture, panHandlers, handleHandlers } = useBottomSheetDrag({
-    visible, enabled: dismissible && !overlay && !layer.covered, onClose,
+    visible, enabled: dismissible && !fullscreen && !overlay && !layer.covered, onClose,
   });
 
   const close = () => {
@@ -110,26 +114,30 @@ export function BottomSheet({
     >
       <Pressable accessible={false} style={styles.backdrop} onPress={close} />
       <AnimatedSafeAreaView
-        edges={['bottom']}
+        edges={fullscreen ? ['top', 'bottom', 'left', 'right'] : ['bottom']}
         pointerEvents={overlay ? 'none' : 'auto'}
         style={[
           styles.sheet,
           maxWidth !== undefined && { maxWidth, width: '100%', alignSelf: 'center' },
           tall && styles.sheetTall,
+          fillHeight && { height: tall ? '92%' : '82%' },
+          fullscreen && styles.sheetFullscreen,
           { transform: [{ translateY }] },
         ]}
       >
         <SheetLayerContext.Provider value={layer.register}>
         <SheetScrollGestureContext.Provider value={scrollGesture}>
-        <View collapsable={false} style={styles.gestureSurface} {...panHandlers}>
+        <View collapsable={false} style={[styles.gestureSurface,
+          (fillHeight || fullscreen) && styles.fill]} {...panHandlers}>
         <View style={insetStyle} {...sheetAccessibility}>
-          <View testID="bottom-sheet-handle" collapsable={false} {...handleHandlers}
+          {!fullscreen && <View testID="bottom-sheet-handle" collapsable={false} {...handleHandlers}
             style={[styles.handleArea, compactHeader && styles.compactHandle]}
             accessible={dismissible} accessibilityRole="button"
             accessibilityLabel={t('client.sheet.dragToClose')} onAccessibilityTap={close}>
             <View pointerEvents="none" style={styles.handle} />
-          </View>
-          {!hideHeader && <View style={[styles.header, compactHeader && styles.compactHeader]}>
+          </View>}
+          {!hideHeader && <View style={[styles.header, compactHeader && styles.compactHeader,
+            fullscreen && styles.fullscreenHeader]}>
             {onBack && <Pressable accessibilityRole="button" accessibilityLabel={t("client.app.goBackOneLevel")}
               hitSlop={8} onPress={onBack} style={styles.closeButton}>
               <Text style={styles.closeText}>‹</Text>
@@ -152,6 +160,7 @@ export function BottomSheet({
           </View>}
         </View>
         {children ? <View {...sheetAccessibility} style={[styles.content, compactHeader && styles.compactContent,
+          (fillHeight || fullscreen) && styles.fill,
           hideHeader && styles.headerlessContent,
           !fullWidthContent && insetStyle]}>{children}</View> : null}
         {actions.length ? <View {...sheetAccessibility} style={[styles.actions, insetStyle]}>
@@ -206,6 +215,9 @@ const useStyles = createThemedStyles((color) => ({
     elevation: SHEET_ELEVATION,
   },
   sheetTall: { maxHeight: '92%' },
+  sheetFullscreen: { height: '100%', maxHeight: '100%', borderTopLeftRadius: 0, borderTopRightRadius: 0 },
+  fullscreenHeader: { paddingTop: 8 },
+  fill: { flex: 1, minHeight: 0 },
   gestureSurface: { flexShrink: 1 },
   handleArea: { minHeight: 32, paddingTop: 9, paddingBottom: 17, alignItems: 'center' },
   handle: { width: 44, height: 5, borderRadius: 3, backgroundColor: color('#d5dfd9', 'elevated') },

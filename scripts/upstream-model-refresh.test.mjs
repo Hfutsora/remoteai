@@ -9,6 +9,9 @@ const sourcePath = new URL(
 );
 const rustSource = readFileSync(sourcePath, "utf8");
 const upstreamModels = ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"];
+const modelOrderFixtures = JSON.parse(readFileSync(
+  new URL("../shared/model-order/fixtures.json", import.meta.url), "utf8",
+));
 const defaultModel = "gpt-5.6-sol";
 const modelQueryKey = ["models", "list", "local", "no-auth", 100];
 const patchStateKey = "__CODEX_SWITCH_MODEL_QUERY_PATCH__";
@@ -526,3 +529,29 @@ test("an expired empty reset cannot invalidate config after a newer full catalog
   assertVisibleCatalog(harness.observer, upstreamModels, cachedOfficialCapabilities);
   assertVisibleCatalog(harness.addObserver(), upstreamModels, cachedOfficialCapabilities);
 });
+
+
+for (const fixture of modelOrderFixtures) {
+  test(`a cached mixed catalog preserves official-first ${fixture.name} order and every model's metadata`, async () => {
+    const official = ["gpt-6.1-sol-official-account", "gpt-6-astra-official-account"];
+    const relayModels = fixture.input.map(model => `${model}-Gateway`);
+    const selectedModel = relayModels[0];
+    const original = [...relayModels, ...official.toReversed()];
+    const expected = [...official, ...fixture.expected.map(model => `${model}-Gateway`)];
+    const harness = createHarness({ models: original });
+    // Inactive pickers retain their cache during invalidation and are patched when reopened.
+    harness.query.observers = [];
+    for (const model of harness.query.state.data.data) model.description = `metadata:${model.id}`;
+    await harness.refresh(expected, { selectedModel });
+    assert.deepEqual(harness.query.modelIds(), expected);
+    for (const model of harness.query.state.data.data) {
+      assert.equal(model.description, `metadata:${model.id}`);
+      assert.equal(model.isDefault, model.id === selectedModel);
+    }
+    const observer = harness.addObserver();
+    assert.deepEqual(observer.modelIds(), expected);
+    harness.client.upstreamModels = original;
+    await harness.client.refetch(harness.query);
+    assert.deepEqual(observer.modelIds(), expected);
+  });
+}

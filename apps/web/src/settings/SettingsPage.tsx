@@ -93,6 +93,7 @@ export function SettingsPage({ totpManager }: { totpManager: ReturnType<typeof u
       <div className="settings-sync">
         <p>{petDockText(getLanguage(), 'settings.petDock.cloudHint')}</p>
         <p>{petDockText(getLanguage(), 'settings.petDock.labelsHint')}</p>
+        <p>{petDockText(getLanguage(), 'settings.petDock.averageHint')}</p>
       </div>
     </AdaptiveSheet>
     <AdaptiveSheet open={panel === 'files'} title={t("client.projectBrowser.fileBrowserSettings")} onClose={close} width={400}>

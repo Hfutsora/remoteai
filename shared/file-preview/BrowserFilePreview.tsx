@@ -5,8 +5,8 @@ import { filePreviewKind, type PreviewLoader } from './kinds';
 import { usePreviewFile } from './usePreviewFile';
 import { PreviewContent } from '../../apps/desktop/src/pages/codexGui/filePreview/PreviewContent';
 import { BrowserMarkdown } from './BrowserMarkdown';
-import { BrowserImagePreview } from './BrowserImagePreview';
 import { HtmlPreviewFrame } from './HtmlPreviewFrame';
+import { BrowserImagePreview } from './BrowserImagePreview';
 import './browserFilePreview.css';
 
 const PdfPreview = lazy(() => import('./PdfPreview'));
