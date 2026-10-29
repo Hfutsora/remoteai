@@ -6,6 +6,7 @@ import { displayText as t } from '../localization/messages';
 import type { LoungeAccount, LoungeSnapshot } from './types';
 import { contactStatus, orderedDirectContacts } from './contacts';
 import { LoungeAvatar } from './LoungeAvatar';
+import { LoungeMyAccount } from './LoungeMyAccount';
 
 export function LoungePeople({ state, select, block, newChat, pin, profile }: {
   state: LoungeSnapshot; select: (user?: LoungeAccount) => void; block: (user: LoungeAccount) => void;
@@ -56,6 +57,7 @@ export function LoungePeople({ state, select, block, newChat, pin, profile }: {
         </button>
       </ThreadContextMenu>)}
     </div>
+    {state.user && <LoungeMyAccount key={state.user.id} user={state.user} settings={profile} />}
   </nav>;
 }
 

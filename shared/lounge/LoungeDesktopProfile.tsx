@@ -12,7 +12,8 @@ export function LoungeDesktopProfile({ user, state, controller, close, editAvata
   const current = user.id === state.user?.id ? state.user
     : state.contacts.find(contact => contact.user.id === user.id)?.user ?? user;
   const own = current.id === state.user?.id;
-  return <Modal open width={400} title={t('client.lounge.profile')} onCancel={close} footer={null}>
+  return <Modal open width={400} title={t(own ? 'client.lounge.accountSettings' : 'client.lounge.profile')}
+    onCancel={close} footer={null}>
     <section className="lounge-desktop-profile">
       <LoungeAvatar user={current} /><h2>{accountName(current)}</h2>
       {accountName(current) !== current.account && <p className="lounge-profile-email">{current.account}</p>}

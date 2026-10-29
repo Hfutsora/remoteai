@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { setupLounge } from './lounge-support';
+import { openAccountSettings } from './lounge-account-actions';
 
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
 async function enter(page: Page, mobile: boolean) {
@@ -33,7 +34,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile-320', 'mobile-390']) {
     await page.goto(mobile || mode === 'web' ? 'http://127.0.0.1:1486/web/'
       : `/e2e/lounge-harness.html?mode=${mode}`);
     await relay.ready(); await enter(page, mobile);
-    await button(page, '个人资料').click();
+    if (mobile) await button(page, '个人资料').click();
+    else await openAccountSettings(page);
     const nickname = page.getByRole('textbox', { name: '昵称', exact: true });
     await nickname.fill('我的昵称'); await button(page, '保存').click();
     await expect(page.getByText('已保存', { exact: true })).toBeVisible();
@@ -87,7 +89,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile-320', 'mobile-390']) {
     await expect(button(page, '与 bob@example.test 私聊')).toBeVisible();
     await page.reload(); await enter(page, mobile);
     await expect(button(page, '与 bob@example.test 私聊')).toBeVisible();
-    await button(page, '个人资料').click();
+    if (mobile) await button(page, '个人资料').click();
+    else await openAccountSettings(page);
     await expect(nickname).toHaveValue('我的昵称');
     await nickname.fill(''); await button(page, '保存').click();
     await expect(page.getByText('已保存', { exact: true })).toBeVisible();

@@ -1,6 +1,6 @@
 import { accountName } from './names';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowDown, Ban, Coffee, Users, UserRound } from 'lucide-react';
+import { ArrowDown, Ban, Coffee, Users } from 'lucide-react';
 import { Drawer } from 'antd';
 import { displayText as t } from '../localization/messages';
 import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localization/interfaceLanguage';
@@ -52,6 +52,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   const newChat = () => { setPeopleOpen(false); setNewChatOpen(true); };
   const [blocking, setBlocking] = useState<LoungeAccount>();
   const [profile, setProfile] = useState<LoungeAccount>();
+  const showProfile = (user: LoungeAccount) => { setPeopleOpen(false); setProfile(user); };
   const contact = state.contacts.find(value => value.user.id === state.conversation);
   const select = (user?: LoungeAccount) => {
     navigation.clear(); controller.selectConversation(user); setPeopleOpen(false); setAtBottom(true);
@@ -90,7 +91,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   return <section className="lounge-layout">
     <aside className="lounge-sidebar">
       <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat}
-        pin={(id, pinned) => controller.setPinned(id, pinned)} profile={setProfile} /></aside>
+        pin={(id, pinned) => controller.setPinned(id, pinned)} profile={showProfile} /></aside>
     <section className="lounge-page">
     <header className="lounge-heading"><div className="lounge-heading-title">
       <button className="lounge-people-toggle" type="button" aria-label={t('client.lounge.people')}
@@ -105,11 +106,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
           onClick={() => setBlocking(contact.user)}><Ban size={18} /></button>}
         {state.policy.moderator && state.onlineCount !== undefined && <span className="lounge-online-count">
           {t('client.lounge.onlineCount', { count: state.onlineCount })}</span>}
-        {state.user && <button type="button" className="lounge-block-button" onClick={() => setProfile(state.user)}
-          aria-label={t('client.lounge.profile')} title={t('client.lounge.profile')}><UserRound size={20} /></button>}
-        {state.user && <button type="button" className="lounge-avatar-trigger" onClick={() => setAvatarOpen(true)}
-          aria-label={t('client.lounge.avatarSettings')} title={t('client.lounge.avatarSettings')}>
-          <LoungeAvatar user={state.user} /></button>}</div></header>
+      </div></header>
     <div className="lounge-conversation" ref={list} role="log" aria-live="off" aria-label={t('client.lounge.title')}
       onScroll={() => {
         const node = list.current;
@@ -180,7 +177,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
     <Drawer open={peopleOpen} width="min(320px, 100vw)" placement="left" title={t('client.lounge.people')}
       onClose={() => setPeopleOpen(false)} styles={{ body: { padding: 0 } }}>
       <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat}
-        pin={(id, pinned) => controller.setPinned(id, pinned)} profile={setProfile} />
+        pin={(id, pinned) => controller.setPinned(id, pinned)} profile={showProfile} />
     </Drawer>
     </section>
   </section>;

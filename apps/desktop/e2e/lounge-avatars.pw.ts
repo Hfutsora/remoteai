@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { pixel, setupLounge } from './lounge-support';
 import { openLoungeAction } from './lounge-mobile-actions';
+import { openDesktopAvatarSettings } from './lounge-account-actions';
 
 for (const mode of ['local', 'remote', 'web', 'mobile']) {
   test(`${mode}: avatars save to the server, sync, reset and report failures`, async ({ page }) => {
@@ -16,7 +17,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
         await page.getByRole('button', { name: '群聊', exact: true }).click();
       } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     };
-    const openSettings = () => openLoungeAction(page, '设置头像');
+    const openSettings = () => mobile ? openLoungeAction(page, '设置头像') : openDesktopAvatarSettings(page);
     const dialog = page.getByRole('dialog', { name: '设置头像' });
     const save = dialog.getByRole('button', { name: /^保\s*存$/ });
     await page.goto(web ? 'http://127.0.0.1:1486/web/' : `/e2e/lounge-harness.html?mode=${mode}`);

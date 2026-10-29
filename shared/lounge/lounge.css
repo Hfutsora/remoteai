@@ -32,8 +32,6 @@
 .lounge-avatar img { display: block; width: 48px; height: 48px; object-fit: cover; }
 .lounge-avatar-direct { border: 0; padding: 0; font-family: inherit; cursor: pointer; }
 .lounge-avatar-direct:focus-visible { outline: 2px solid var(--lounge-text); outline-offset: 2px; }
-.lounge-avatar-trigger { border: 0; border-radius: 50%; padding: 0; background: transparent; cursor: pointer; }
-.lounge-avatar-trigger:hover { outline: 2px solid var(--lounge-line); outline-offset: 2px; }
 .lounge-avatar-settings { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 12px 0; }
 .lounge-avatar-settings p { margin: 0; max-width: 352px; line-height: 1.7; }
 .lounge-avatar-settings > div { display: flex; gap: 8px; }
