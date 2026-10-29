@@ -193,9 +193,9 @@ for (const mode of ['local', 'remote', 'web']) {
     await expect(page.locator('.lounge-history-message')).toHaveCount(1);
     await expect(page.locator('.lounge-history-message')).toContainText('喝杯咖啡');
     await page.locator('.lounge-history-message .lounge-image').click();
-    await expect(page.locator('.ant-modal .lounge-preview')).toBeVisible();
-    await page.locator('.ant-modal-close').click();
-    await expect(page.locator('.ant-modal .lounge-preview')).toBeHidden();
+    await expect(page.locator('.cs-image-viewer img')).toBeVisible();
+    await page.getByRole('button', { name: '关闭图片', exact: true }).click();
+    await expect(page.locator('.cs-image-viewer')).toBeHidden();
     await search.fill('不存在的内容');
     await expect(page.getByText('没有找到匹配的记录')).toBeVisible();
     await search.fill('hello');
