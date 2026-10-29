@@ -1,9 +1,26 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import { testText } from '../../../scripts/i18n-fixture.mjs';
 
-async function setup(page: Page, mode: string, failPin = false) {
-  const calls: { operation: string; cwd?: string; pinned?: boolean; threadId?: string; name?: string }[] = [];
+async function nativeFolderBridge(page: Page) {
+  await page.addInitScript(() => {
+    Object.assign(window, { __TAURI_INTERNALS__: {
+      transformCallback: () => 1, unregisterCallback: () => {},
+      invoke: async (command: string, args?: { request?: object }) => {
+        if (command !== 'codex_gui_file_action') return 1;
+        const response = await fetch('/web/thread-action', { method: 'POST',
+          body: JSON.stringify({ operation: 'guiFileAction', ...args?.request }) });
+        return response.json();
+      },
+    } });
+  });
+}
+
+async function setup(page: Page, mode: string, options: { failPin?: boolean; sidebarPathsOnly?: boolean } = {}) {
+  let { failPin = false } = options;
+  if (mode === 'local') await nativeFolderBridge(page);
+  const calls: { operation: string; cwd?: string; pinned?: boolean; threadId?: string; name?: string;
+    target?: { path?: string; threadId?: string | null }; action?: { type: string; application?: string } }[] = [];
   const threads = [{ id: 'one', name: '项目对话', cwd: '/project', preview: '', updatedAt: 1 },
     { id: 'two', name: '其他项目对话', cwd: '/other', preview: '', updatedAt: 2 }];
   let revision = 0;
@@ -18,7 +35,11 @@ async function setup(page: Page, mode: string, failPin = false) {
       failPin = false;
       return route.fulfill({ status: 500, json: {} });
     }
-    if (input.operation === 'list') return route.fulfill({ json: { data: threads, nextCursor: null, sidebar: sidebar() } });
+    if (input.operation === 'list') return route.fulfill({ json: {
+      data: options.sidebarPathsOnly ? threads.map(thread => ({ ...thread, cwd: '' })) : threads,
+      nextCursor: null, sidebar: sidebar(),
+    } });
+    if (input.operation === 'guiFileAction') return route.fulfill({ json: { path: input.target?.path, saved: false } });
     if (input.operation === 'guiProjectPin') pinnedProjects = input.pinned ? [input.cwd!] : [];
     if (input.operation === 'guiProjectRemove') {
       pinnedProjects = [];
@@ -36,8 +57,24 @@ async function setup(page: Page, mode: string, failPin = false) {
   return calls;
 }
 
+async function openProjectMenuItem(page: Page, calls: unknown[], label: string) {
+  await page.getByRole('menuitem', { name: label, exact: true }).click();
+  await expect(page.getByRole('menu')).toBeHidden();
+  await expect.poll(() => calls.at(-1)).toEqual({ operation: 'guiFileAction',
+    target: { path: '/project', threadId: null }, action: { type: 'open', application: 'default' } });
+}
+
+async function longPressContext(target: Locator) {
+  await target.dispatchEvent('pointerdown', { pointerType: 'touch', isPrimary: true,
+    button: 0, clientX: 80, clientY: 200 });
+  await expect(target.page().getByRole('menu')).toBeVisible();
+  await target.dispatchEvent('pointerup', { pointerType: 'touch', isPrimary: true });
+}
+
 async function longPressProject(page: Page) {
   const heading = page.locator('section[aria-label="project"] .chat-project-toggle');
+  // Raw CDP touch input needs the drawer animation to settle before measuring its target.
+  await heading.click({ trial: true });
   const bounds = (await heading.boundingBox())!;
   const session = await page.context().newCDPSession(page);
   try {
@@ -96,7 +133,7 @@ test('mobile project long press pins, unpins and confirms removal while preservi
 
 test('mobile project gestures cancel on movement and failed actions can be retried', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'Mobile project actions');
-  const calls = await setup(page, 'web', true);
+  const calls = await setup(page, 'web', { failPin: true });
   const heading = page.locator('section[aria-label="project"] .chat-project-toggle');
   await heading.dispatchEvent('pointerdown', { isPrimary: true, button: 0, clientX: 40, clientY: 80 });
   await heading.dispatchEvent('pointermove', { isPrimary: true, clientX: 40, clientY: 120 });
@@ -140,11 +177,17 @@ for (const mode of ['local', 'remote', 'web']) {
     const project = page.locator('section[aria-label="project"]');
     const heading = project.locator('button[aria-expanded]').first();
     await heading.click({ button: 'right' });
-    await expect(page.getByRole('menuitem')).toHaveText(['置顶', '移除项目']);
+    const openInExplorer = testText('client.projectBrowser.openInExplorer', {}, 'zh');
+    const pin = testText('client.conversation.pin', {}, 'zh');
+    const removeProject = testText('client.conversation.removeProject', {}, 'zh');
+    await expect(page.getByRole('menuitem')).toHaveText([pin, openInExplorer, removeProject]);
     await expect(heading).toHaveAttribute('aria-expanded', 'true');
     expect((await page.getByRole('menu').boundingBox())!.width).toBeLessThanOrEqual(400);
     await page.screenshot({ path: `../../.codex-tmp/project-menu-${mode}.png` });
-    await page.getByRole('menuitem', { name: '置顶', exact: true }).click();
+    await openProjectMenuItem(page, calls, openInExplorer);
+    await longPressContext(heading);
+    await expect(page.getByRole('menuitem')).toHaveText([pin, openInExplorer, removeProject]);
+    await page.getByRole('menuitem', { name: pin, exact: true }).click();
     await expect(project.getByLabel('已置顶', { exact: true })).toBeVisible();
     if (mode === 'web') await heading.click({ button: 'right' });
     else await page.getByRole('button', { name: '管理项目：project', exact: true }).click();
@@ -152,9 +195,14 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.getByRole('menuitem', { name: '取消置顶', exact: true }).click();
     await expect(project.getByLabel('已置顶', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '项目对话', exact: true }).click({ button: 'right' });
-    await expect(page.getByRole('menuitem')).toHaveText(['置顶', '重命名', '创建分支', '归档', '删除']);
+    const threadMenu = [pin, openInExplorer, '重命名', '创建分支', '归档', '删除'];
+    await expect(page.getByRole('menuitem')).toHaveText(threadMenu);
     await expect(page.getByTestId('selected')).toHaveText('none');
     await page.screenshot({ path: `../../.codex-tmp/thread-menu-${mode}.png` });
+    await openProjectMenuItem(page, calls, openInExplorer);
+    await longPressContext(page.getByRole('button', { name: '项目对话', exact: true }));
+    await expect(page.getByRole('menuitem')).toHaveText(threadMenu);
+    await openProjectMenuItem(page, calls, openInExplorer);
     await page.keyboard.press('Escape');
     await heading.press('Shift+F10');
     await expect(page.getByRole('menuitem', { name: '移除项目', exact: true })).toBeVisible();
@@ -167,6 +215,15 @@ for (const mode of ['local', 'remote', 'web']) {
       .toEqual([{ operation: 'guiProjectRemove', cwd: '/project' }]);
   });
 }
+
+test('web thread menu opens the project path supplied by the sidebar snapshot', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'Desktop sidebar menus');
+  const calls = await setup(page, 'web', { sidebarPathsOnly: true });
+  const project = page.locator('section[aria-label="project"]');
+  await project.locator('.chat-thread').first().click({ button: 'right' });
+  await openProjectMenuItem(page, calls, testText('client.projectBrowser.openInExplorer', {}, 'zh'));
+  await expect(page.getByTestId('selected')).toHaveText('none');
+});
 
 for (const mode of ['remote', 'web']) {
   test(`${mode} pins a thread and branches the clicked conversation without preselecting`, async ({ page, isMobile }) => {

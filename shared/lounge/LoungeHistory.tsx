@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useSyncExternalStore } from 'react';
 import { Button, Drawer, Input } from 'antd';
 import { Search } from 'lucide-react';
@@ -11,10 +12,12 @@ import type { LoungeController } from './controller';
 import type { LoungeAccount, LoungeMessage } from './types';
 import type { LoungeReply } from './reply';
 
-export function LoungeHistory({ controller, open, close, preview, reply, direct, profile, locate, navigationError }: {
+export function LoungeHistory({ controller, open, close, preview, reply, direct, profile, mention, locate,
+  navigationError }: {
   controller: LoungeController; open: boolean; close: () => void; preview: (source: string) => void;
   reply: (message: LoungeMessage) => void; direct: (user: LoungeAccount) => void;
   profile?: (user: LoungeAccount) => void;
+  mention?: (user: LoungeAccount) => void;
   locate?: (reference: LoungeReply) => void; navigationError?: string;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
@@ -45,8 +48,9 @@ export function LoungeHistory({ controller, open, close, preview, reply, direct,
         return <article key={`${message.sender.id}:${message.id}`}
           className="lounge-history-message">
           <LoungeAvatar user={message.sender} onDirect={startDirect}
+            onMention={mention && message.sender.id !== state.user?.id ? () => mention(message.sender) : undefined}
             onProfile={profile ? () => profile(message.sender) : undefined} />
-          <div className="lounge-history-message-main"><div className="lounge-account">{message.sender.account}</div>
+          <div className="lounge-history-message-main"><div className="lounge-account">{accountName(message.sender)}</div>
             <time dateTime={message.sentAt}>{format.format(new Date(message.sentAt))}</time>
             <LoungeMessageBody message={message} preview={preview} actions={{ reply, direct: startDirect }}
               controller={controller} locate={locate} />

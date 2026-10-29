@@ -93,7 +93,7 @@ async function search(scope: string, query: HistoryQuery) {
   return historyPage(values, query);
 }
 
-/** IndexedDB belongs to this browser/WebView; no archive data crosses the network. */
+/** Account-scoped local storage; same-account devices exchange records through the encrypted sync transport. */
 export function browserLoungeHistory(baseUrl: string, account: string): LoungeHistoryStore {
   const scope = historyScope(baseUrl, account);
   return { save: message => save(scope, message), page: query => search(scope, query),
@@ -131,11 +131,13 @@ async function get(scope: string, key: string) {
 
 async function contacts(scope: string) {
   const db = await openDatabase();
-  const tx = db.transaction(CONTACTS); const done = complete(tx);
-  const request = tx.objectStore(CONTACTS).getAll(IDBKeyRange.bound([scope, ''], [scope, []]));
+  const tx = db.transaction([CONTACTS, META], 'readwrite'); const done = complete(tx);
+  const store = tx.objectStore(CONTACTS);
+  const request = store.getAll(IDBKeyRange.bound([scope, ''], [scope, []]));
   const values: LoungeContact[] = [];
   request.onsuccess = () => {
     for (const row of request.result) { const value = parseContact(row); if (value) values.push(value); }
+    restoreContactTimes({ tx, scope, values });
   };
   await done; return values;
 }
@@ -148,7 +150,31 @@ async function saveContact(scope: string, contact: LoungeContact) {
   previous.onsuccess = () => {
     const saved = parseContact(previous.result);
     const [value] = mergeContact(saved ? [saved] : [], contact);
-    store.put({ scope, id: value.user.id, user: value.user, direct: value.direct });
+    store.put({ scope, id: value.user.id, ...parseContact(value) });
   };
   await done;
+}
+
+/** Upgrade old contacts from lightweight timeline metadata without loading image payloads. */
+function restoreContactTimes({ tx, scope, values }: {
+  tx: IDBTransaction; scope: string; values: LoungeContact[];
+}) {
+  const missing = new Map(values.filter(value => value.direct && value.lastMessageAt === undefined)
+    .map(value => [value.user.id, value]));
+  if (!missing.size) return;
+  const cursor = tx.objectStore(META).index('timeline').openCursor(
+    IDBKeyRange.bound([scope, -Number.MAX_SAFE_INTEGER, ''], [scope, Number.MAX_SAFE_INTEGER, []]), 'prev');
+  const save = (contact: LoungeContact, time: number) => {
+    contact.lastMessageAt = time;
+    tx.objectStore(CONTACTS).put({ scope, id: contact.user.id, ...contact });
+    missing.delete(contact.user.id);
+  };
+  cursor.onsuccess = () => {
+    const row = cursor.result;
+    if (!row) { for (const contact of missing.values()) save(contact, 0); return; }
+    const metadata = row.value as Metadata;
+    const contact = missing.get(metadata.conversation ?? '');
+    if (contact) save(contact, metadata.time);
+    if (missing.size) row.continue();
+  };
 }

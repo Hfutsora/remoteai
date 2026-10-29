@@ -1,7 +1,8 @@
 import { beforeAll, afterAll, expect, it, vi } from 'vitest';
 import initSqlJs, { type Database, type BindParams } from 'sql.js';
 import { nativeLoungeHistory } from './historyStore';
-import { recentMessages } from '../../../../shared/lounge/archive';
+import { historyScope, recentMessages } from '../../../../shared/lounge/archive';
+import { orderedDirectContacts } from '../../../../shared/lounge/contacts';
 import type { LoungeMessage } from '../../../../shared/lounge/types';
 
 const state = vi.hoisted(() => ({ db: null as Database | null }));
@@ -28,6 +29,35 @@ afterAll(() => state.db?.close());
 const store = () => nativeLoungeHistory('https://cloud.test/', 'Alice@example.test');
 const message = (id: string): LoungeMessage => ({ type: 'message', id, text: `hello ${id}`, images: [],
   sender: { id: 'bob', account: 'Bob@example.test' }, sentAt: '2026-10-28T00:00:00Z' });
+
+it('upgrades legacy contact ordering from archived messages and retains pins across restart per account', async () => {
+  const account = 'legacy-order';
+  const history = nativeLoungeHistory('https://cloud.test', account);
+  await history.contacts!();
+  const scope = historyScope('https://cloud.test', account);
+  const bob = message('bob-order').sender;
+  const carol = { id: 'carol', account: 'Carol@example.test' };
+  for (const user of [bob, carol]) state.db!.run('INSERT INTO contacts(scope, id, content) VALUES (?, ?, ?)',
+    [scope, user.id, JSON.stringify({ user, direct: true })]);
+  await history.save({ ...message('bob-order'), conversation: 'bob', recipient: carol });
+  await history.save({ ...message('carol-order'), sender: carol, conversation: 'carol', recipient: bob,
+    sentAt: '2026-10-29T00:00:00Z' });
+  let contacts = await history.contacts!();
+  expect(orderedDirectContacts(contacts).map(value => value.user.id)).toEqual(['carol', 'bob']);
+  expect(contacts.find(value => value.user.id === 'bob')?.lastMessageAt).toBe(Date.parse('2026-10-28T00:00:00Z'));
+  await history.saveContact!({ user: bob, direct: true, pinned: true, online: true });
+  const data = state.db!.export(); state.db!.close(); state.db = new SQL.Database(data);
+  contacts = await history.contacts!();
+  expect(orderedDirectContacts(contacts).map(value => value.user.id)).toEqual(['bob', 'carol']);
+  expect(contacts.find(value => value.user.id === 'bob')).not.toHaveProperty('online');
+  expect(await nativeLoungeHistory('https://other.test', account).contacts!()).toEqual([]);
+  expect(await nativeLoungeHistory('https://cloud.test', 'another-account').contacts!()).toEqual([]);
+  await history.saveContact!({ user: bob, direct: true, pinned: false, lastMessageAt: 1 });
+  contacts = await history.contacts!();
+  expect(orderedDirectContacts(contacts).map(value => value.user.id)).toEqual(['carol', 'bob']);
+  await history.deleteConversation!('bob');
+  expect((await history.contacts!()).map(value => value.user.id)).toEqual(['carol']);
+});
 
 it('deletes only old private history in the current account and preserves a fresh concurrent message', async () => {
   const history = nativeLoungeHistory('https://cloud.test', 'delete');
@@ -76,7 +106,7 @@ it('keeps group and private searches separate and persists contacts without thei
   const data = state.db!.export(); state.db!.close(); state.db = new SQL.Database(data);
   expect((await history.page({ query: '', conversation: '' })).messages.map(value => value.id)).toEqual(['group']);
   expect((await history.page({ query: '', conversation: 'bob' })).messages).toEqual([privateMessage]);
-  expect(await history.contacts!()).toEqual([{ user: privateMessage.sender, direct: true }]);
+  expect(await history.contacts!()).toEqual([{ user: privateMessage.sender, direct: true, lastMessageAt: 0 }]);
 });
 
 it('preserves messages, images and avatars after reopening, without duplicating or sharing between accounts', async () => {

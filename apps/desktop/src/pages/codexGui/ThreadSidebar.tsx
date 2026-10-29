@@ -19,6 +19,8 @@ import { ThreadPagination } from "./ThreadPagination";
 import { ResizableThreadSidebar } from "./ResizableThreadSidebar";
 import { useThreadPagination } from "./useThreadPagination";
 import { isDesktopApp } from "../../api/backend";
+import { fileApi } from "./fileApi";
+import { useOpenProjectFolder } from "../../../../../shared/chat/useOpenProjectFolder";
 import { FocusModeButton, type GuiFocusMode } from "./FocusModeButton";
 import { GuiNavigation, type GuiView } from "./GuiNavigation";
 import styles from "./styles.module.less";
@@ -37,6 +39,7 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
   const [renaming, setRenaming] = useState<Thread | null>(null);
   const [deleting, setDeleting] = useState<Thread | null>(null);
   const { message } = App.useApp();
+  const openProject = useOpenProjectFolder(fileApi, uiText);
   const [name, setName] = useState("");
   const { views, toggle } = useThreadGroupViews();
   const closeSearch = () => {
@@ -50,6 +53,7 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
     const busy = state.sending || Boolean(state.deleting);
     const needsInput = state.approvals.some((event) => event.params.threadId === thread.id);
     const items = threadMenuItems({ pinned: state.pins.includes(thread.id), archived: state.archived, translate: uiText,
+      openProject: isDesktopApp && Boolean(thread.cwd),
       disabled: action => {
         if (action === 'pin') return false;
         if (action === 'fork') return !canForkLatestConversation(state, thread);
@@ -60,6 +64,7 @@ export function ThreadSidebar({ state, controller, accountPicker, focused, onTog
     return <ThreadContextMenu key={thread.id}
       menu={{ items, onClick: ({ key }) => {
         if (key === "pin") controller.pin(thread.id);
+        if (key === "openProject") void openProject(thread.cwd);
         if (key === "rename") { setRenaming(thread); setName(threadTitle(thread)); }
         if (key === "fork") { onNavigate("conversation"); void controller.forkConversation(thread.id); }
         if (key === "archive") void controller.manage(state.archived ? "unarchive" : "archive", thread.id);

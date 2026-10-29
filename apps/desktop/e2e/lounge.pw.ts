@@ -1,4 +1,5 @@
 import { openLoungeAction } from './lounge-mobile-actions';
+import { openDesktopAvatarSettings } from './lounge-account-actions';
 import { expect, test } from '@playwright/test';
 import { pixel, setupLounge } from './lounge-support';
 import type {} from './lounge-harness';
@@ -165,7 +166,7 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.goto(mode === 'web' ? 'http://127.0.0.1:1486/web/' : `/e2e/lounge-harness.html?mode=${mode}`);
     await relay.ready();
     await page.getByRole('button', { name: '在线交流', exact: true }).click();
-    await page.getByRole('button', { name: '设置头像', exact: true }).click();
+    await openDesktopAvatarSettings(page);
     await page.locator('.lounge-avatar-settings input[type=file]').setInputFiles({ name: 'avatar.png',
       mimeType: 'image/png', buffer: Buffer.from(pixel.split(',')[1], 'base64') });
     const preview = page.locator('.lounge-avatar-settings img');
@@ -209,11 +210,11 @@ for (const mode of ['local', 'remote', 'web']) {
     await page.reload();
     await expect.poll(relay.count).toBe(2);
     await page.getByRole('button', { name: '在线交流', exact: true }).click();
-    await expect(page.locator('.lounge-heading .lounge-avatar img')).toBeVisible();
-    await page.getByRole('button', { name: '设置头像', exact: true }).click();
+    await expect(page.locator('.lounge-my-account .lounge-avatar img')).toBeVisible();
+    await openDesktopAvatarSettings(page);
     await page.getByRole('button', { name: '恢复默认头像' }).click();
     await page.getByRole('button', { name: /^保\s*存$/ }).click();
-    await expect(page.locator('.lounge-heading .lounge-avatar')).toHaveText('AL');
+    await expect(page.locator('.lounge-my-account .lounge-avatar')).toHaveText('AL');
     await historyButton.click();
     await search.fill('hello');
     await expect(page.locator('.lounge-history-message')).toHaveCount(1);

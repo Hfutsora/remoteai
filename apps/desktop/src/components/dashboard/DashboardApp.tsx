@@ -111,6 +111,7 @@ import cozeStyles from "../../pages/coze/CozePage.module.less";
 import { useNotificationNavigation } from "../../pages/codexGui/useNotificationNavigation";
 import { useGuiTheme } from "../../pages/codexGui/guiTheme";
 import { RemoteAssistance } from '../../remoteAssistance/RemoteAssistance';
+import { assistanceStore } from '../../remoteAssistance/store';
 import codexGuiStyles from "../../pages/codexGui/styles.module.less";
 import { CODEX_CONFIG_TOPBAR_ID, CodexConfigPage } from "../../pages/CodexConfigPage";
 import codexConfigStyles from "../../pages/codexConfig/pageStyles.module.less";
@@ -1408,7 +1409,8 @@ export function DashboardApp() {
 
           {page === "totp" && <TotpPage accounts={manager.accounts} manager={totpManager} t={t} />}
           {page === "downloads" && <DownloadsPage auth={cloud.state} />}
-          {page === "lounge" && <LoungePage controller={lounge.controller} onLogin={openCloudLogin} />}
+          {page === "lounge" && <LoungePage controller={lounge.controller} onLogin={openCloudLogin}
+            onAssistance={isDesktopApp ? assistanceStore.request : undefined} />}
           {page === "logDiagnostics" && <LogDiagnosticsPage activeTab={diagnosticsTab}
             onTabChange={setDiagnosticsTab} language={language} t={t}
             onExportLogs={() => void exportLogs()} exportingLogs={exportingLogs} />}

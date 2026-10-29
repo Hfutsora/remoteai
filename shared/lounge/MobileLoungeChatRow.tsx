@@ -1,36 +1,36 @@
-import { MessagesSquare } from 'lucide-react';
+import { accountName } from './names';
+import { BellOff, MessagesSquare, Pin } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { contactStatus } from './contacts';
 import type { ConversationRow } from './conversationRows';
+import { conversationPreviewText } from './conversationPreview';
 import type { MobileLounge } from './useMobileLounge';
 import { LoungeAvatar } from './LoungeAvatar';
+import { LoungeUnreadBadge } from './LoungeUnreadBadge';
 
 export function MobileLoungeChatRow({ row, model }: { row: ConversationRow; model: MobileLounge }) {
-  return <div className={`lounge-chat-row${row.current ? ' is-current' : ''}`}>
-    {row.user ? <span className="lounge-chat-avatar">
+  return <div className="lounge-chat-row">
+    <span className="lounge-chat-avatar">
+    {row.user ? <>
       <LoungeAvatar user={row.user} onProfile={() => model.setProfile(row.user)} />
       <span aria-hidden className={`lounge-avatar-presence${row.online ? ' is-online' : ''}`} />
-    </span> : <span className="lounge-avatar" aria-hidden onClick={() => model.select()}>
+    </> : <span className="lounge-avatar" aria-hidden onClick={() => model.select()}>
       <MessagesSquare size={22} /></span>}
+    <LoungeUnreadBadge count={row.unread} /></span>
     <button className="lounge-chat-row-main" type="button"
-      aria-label={row.user ? t('client.lounge.directWith', { account: row.user.account }) : t('client.lounge.groupChat')}
+      aria-label={row.user ? t('client.lounge.directWith', { account: accountName(row.user) }) : t('client.lounge.groupChat')}
       aria-description={row.contact ? t(contactStatus(row.contact)) : undefined}
-      aria-current={row.current ? 'page' : undefined} onClick={() => model.select(row.user)}>
-      <span className="lounge-chat-row-copy"><strong>{row.user?.account ?? t('client.lounge.groupChat')}</strong>
-        <span>{previewText(row)}</span></span>
+      onClick={() => model.select(row.user)}>
+      <span className="lounge-chat-row-copy"><strong>{row.user ? accountName(row.user) : t('client.lounge.groupChat')}</strong>
+        <span>{conversationPreviewText(row)}</span></span>
       <span className="lounge-chat-row-meta">
+        {row.contact?.pinned && <Pin size={14} className="lounge-pin" role="img"
+          aria-label={t('client.lounge.pinned')} />}
         {row.last && <time>{new Date(row.last.sentAt).toLocaleTimeString([], {
           hour: '2-digit', minute: '2-digit' })}</time>}
-        {row.unread > 0 ? <span className="lounge-chat-badge">{row.unread > 99 ? '99+' : row.unread}</span>
-          : row.current && <small>{t('client.lounge.current')}</small>}
+        {row.notificationsMuted && <BellOff size={14} className="lounge-pin"
+          aria-label={t('client.lounge.notificationsMuted')} />}
       </span>
     </button>
   </div>;
-}
-
-function previewText(row: ConversationRow) {
-  if (row.draft?.text || row.draft?.images.length) return t('client.lounge.draftPreview', {
-    text: row.draft.text || t('client.lounge.quotedImages', { count: row.draft.images.length }) });
-  if (row.last) return row.last.text || t('client.lounge.quotedImages', { count: row.last.images.length });
-  return t(row.user ? 'client.lounge.directEmpty' : 'client.lounge.emptyHint');
 }

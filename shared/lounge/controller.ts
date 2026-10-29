@@ -2,10 +2,11 @@ import { MAX_FRAME_BYTES, parseMessage, type LoungeDraft, type LoungeMessage,
   type LoungeSession, type LoungeSnapshot } from './types';
 import { avatarData } from './avatar';
 import { browserLoungeRuntime, type LoungeRuntime } from './runtime';
-import { historyKey, historyPage, historyPosition, recentMessages, RECENT_MESSAGE_LIMIT,
+import { historyKey, historyScope, historyPage, historyPosition, recentMessages, RECENT_MESSAGE_LIMIT,
   type HistoryPage, type HistoryQuery } from './archive';
 import { searchLoungeHistory } from './history';
-import { mergeContact, messageConversation, parseAccount, type LoungeContact } from './contacts';
+import { mergeContact, messageConversation, type LoungeContact } from './contacts';
+import { LoungeContactSync } from './contactSync';
 import { LoungeDirectDelivery } from './directDelivery';
 import { LoungeDeliveryTransport } from './deliveryTransport';
 import { LoungeDirectState } from './directState';
@@ -15,12 +16,14 @@ import { needsDeliveryWork } from './delivery';
 import { LoungeProfiles } from './profiles';
 import type { LoungeReply } from './reply';
 import { LoungeAccountLookup, recentSpeakers } from './accountLookup';
+import { LoungeSubmissions } from './submissions';
+import { LoungeDeviceSync } from './deviceSync';
+import { synchronizedSnapshot } from './syncSnapshot';
+import { notificationSettingsUpdate, notificationUnread } from './notificationSettings';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
 const AUTH_RENEW_MS = 4 * 60_000;
-const SEND_TIMEOUT_MS = 20_000;
-interface Pending { resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }
 
 /** Owns the live connection and recent messages; optional storage archives received content locally. */
 export class LoungeController {
@@ -38,7 +41,7 @@ export class LoungeController {
   private renewalStarted = 0;
   private retry?: ReturnType<typeof setTimeout>;
   private heartbeat?: ReturnType<typeof setInterval>;
-  private pending = new Map<string, Pending>();
+  private readonly submissions = new LoungeSubmissions();
   private unsubscribe?: () => void;
   private lifecycle = 0;
   private writes: Promise<void> = Promise.resolve();
@@ -51,11 +54,21 @@ export class LoungeController {
   private readonly delivery: LoungeDirectDelivery;
   private readonly transport = new LoungeDeliveryTransport();
   private readonly accountLookup = new LoungeAccountLookup();
+  private readonly contactSync: LoungeContactSync;
+  private readonly deviceSync: LoungeDeviceSync;
 
   constructor(private readonly session?: LoungeSession, private readonly runtime: LoungeRuntime = browserLoungeRuntime) {
     this.state = { status: session ? 'connecting' : 'signed-out', messages: [], unread: 0,
       policy: { moderator: false, mutedUntil: null }, historyRevision: 0, historyError: false,
       contacts: [], blocked: [], directAvailable: false, conversation: '', unreadByConversation: {} };
+    this.deviceSync = new LoungeDeviceSync({ session, deviceId: runtime.randomId, flush: () => this.writes,
+      restored: messages => this.restoreSynchronized(messages),
+      accept: message => isCurrentDirect(message, peer => this.directState.generation(peer)),
+      error: failed => { if (this.running) this.update({ deviceSyncError: failed }); } });
+    this.contactSync = new LoungeContactSync({ snapshot: () => this.state, update: change => this.update(change),
+      persist: contact => this.persistContact(contact), watch: () => this.syncWatch(),
+      profile: user => this.profiles.user(user), account: session?.account,
+      send: frame => this.state.status === 'connected' && this.transport.send(this.socket, frame) });
     this.delivery = new LoungeDirectDelivery({
       self: () => this.state.user,
       enabled: () => this.running && this.state.status === 'connected' && this.state.directAvailable,
@@ -72,7 +85,11 @@ export class LoungeController {
     });
   }
   snapshot = () => this.state;
-  recentSpeakers = () => recentSpeakers(this.recent, this.state.user?.id).map(user => this.profiles.user(user));
+  recentSpeakers = (after = -Infinity) => recentSpeakers(this.recent, this.state.user?.id, after)
+    .map(user => this.profiles.user(user));
+  get historyScope() {
+    return historyScope(this.session?.baseUrl ?? '', this.state.user?.account ?? this.session?.account ?? '');
+  }
   findAccount(query: string, signal: AbortSignal) {
     if (this.state.status !== 'connected' || !this.state.directAvailable
       || !this.state.accountLookupAvailable || !this.socket) {
@@ -80,16 +97,20 @@ export class LoungeController {
     }
     return this.accountLookup.find({ socket: this.socket, id: this.runtime.randomId(), query, signal });
   }
-  /** Latest locally available message for a conversation-list preview. */
+  /** Prefer the latest incoming unread message for private conversation previews. */
   conversationPreview(conversation: string) {
+    const unread = !!conversation && (this.state.unreadByConversation[conversation] ?? 0) > 0;
     for (let index = this.recent.length - 1; index >= 0; index--) {
       const message = this.recent[index];
-      if ((message.conversation ?? '') === conversation) return message;
+      if ((message.conversation ?? '') !== conversation) continue;
+      if (unread && (message.sender.id === this.state.user?.id || message.delivery?.status === 'read')) continue;
+      return message;
     }
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
   private update(value: Partial<LoungeSnapshot>) {
     this.state = this.profiles.decorate({ ...this.state, ...value });
+    this.state.unread = notificationUnread(this.state);
     this.listeners.forEach(listener => listener());
   }
 
@@ -105,6 +126,7 @@ export class LoungeController {
     void this.connect();
   }
   stop() {
+    this.deviceSync.stop();
     this.delivery.stop();
     this.running = false;
     this.lifecycle++;
@@ -119,9 +141,12 @@ export class LoungeController {
     this.directState.clear();
     this.profiles.clear();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
-      status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined,
+      status: this.session ? 'connecting' : 'signed-out', historyError: false, contactsSyncError: false,
+      deviceSyncError: false,
+      onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, directResetAvailable: false,
-      accountLookupAvailable: false,
+      accountLookupAvailable: false, namesAvailable: false,
+      notificationSettingsAvailable: false, mutedConversations: [],
       conversation: '', unreadByConversation: {} });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
@@ -174,7 +199,7 @@ export class LoungeController {
       this.renewalStarted = Date.now();
       socket.onopen = () => {
         if (this.socket === socket) socket.send(JSON.stringify({
-          type: 'authenticate', ticket: credentials.ticket, direct: true, receipts: true }));
+          type: 'authenticate', ticket: credentials.ticket, direct: true, receipts: true, groupAcks: true }));
       };
       socket.onmessage = event => { if (this.socket === socket) this.receive(event.data); };
       socket.onerror = () => { if (this.socket === socket) { this.disconnect(); this.schedule(); } };
@@ -189,12 +214,14 @@ export class LoungeController {
     try {
       const credentials = await authorize(this.session);
       if (socket !== this.socket || !this.running) return;
-      socket.send(JSON.stringify({ type: 'authenticate', ticket: credentials.ticket, direct: true, receipts: true }));
+      socket.send(JSON.stringify({ type: 'authenticate', ticket: credentials.ticket,
+        direct: true, receipts: true, groupAcks: true }));
       this.renewalStarted = Date.now();
     } catch { if (this.socket === socket) { this.disconnect(); this.schedule(); } }
     finally { this.renewing = false; }
   }
   private disconnect() {
+    this.contactSync.disconnect();
     this.accountLookup.disconnect();
     const socket = this.socket;
     this.socket = undefined;
@@ -203,10 +230,7 @@ export class LoungeController {
       socket.close();
     }
     this.renewalStarted = 0;
-    for (const pending of this.pending.values()) {
-      clearTimeout(pending.timer); pending.reject(new Error('client.lounge.sendFailed'));
-    }
-    this.pending.clear();
+    this.submissions.disconnect();
     this.watched = '';
     this.profiles.disconnect();
     this.directState.disconnect();
@@ -219,8 +243,17 @@ export class LoungeController {
     try { frame = JSON.parse(data) as Record<string, unknown>; } catch { return; }
     if (!frame || typeof frame !== 'object') return;
     this.received = Date.now();
+    const notifications = notificationSettingsUpdate(this.state, frame);
+    if (notifications) this.update(notifications);
+    if (frame.type === 'accepted') {
+      const message = this.submissions.accepted(frame);
+      if (message && this.state.status === 'connected') this.append(message);
+      return;
+    }
     if (this.accountLookup.receive(frame)) return;
+    if (this.contactSync.receive(frame)) return;
     if (frame.type === 'profiles') { this.receiveProfiles(frame.profiles); return; }
+    if (frame.type === 'names') { this.receiveProfiles(frame, true); return; }
     if (frame.type === 'direct-permissions') { this.directState.receive(frame); return; }
     if (frame.type === 'rejected') this.delivery.reject(frame);
     if (frame.type === 'policy' || frame.type === 'ready') this.receivePolicy(frame.policy);
@@ -228,36 +261,37 @@ export class LoungeController {
       const count = frame.onlineCount;
       if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) this.update({ onlineCount: count });
     }
-    if (frame.type === 'privacy' || frame.type === 'ready') this.receivePrivacy(frame.blocked);
-    if (frame.type === 'contacts') this.receiveContacts(frame.contacts);
+    if (frame.type === 'privacy' || frame.type === 'ready') this.contactSync.privacy(frame.blocked);
+    if (frame.type === 'contacts') this.contactSync.presence(frame.contacts);
     if (frame.type === 'receipt' || frame.type === 'receipt-confirm') {
       this.delivery.receipt(frame); return;
     }
     if (frame.type === 'moderated' || frame.type === 'updated' || frame.type === 'rejected') {
-      const pending = this.pending.get(String(frame.id));
-      if (!pending) return;
+      if (!this.submissions.has(String(frame.id))) return;
       if (frame.type === 'updated' && typeof frame.userId === 'string' && typeof frame.generation === 'number') {
         this.directState.receive({ states: { [frame.userId]: 'new' }, generations: { [frame.userId]: frame.generation } });
       }
-      clearTimeout(pending.timer); this.pending.delete(String(frame.id));
-      if (frame.type !== 'rejected') pending.resolve();
-      else pending.reject(new Error(['client.lounge.muted', 'client.lounge.directUnavailable',
+      this.submissions.finish(String(frame.id), frame.type === 'rejected' ? new Error([
+        'client.lounge.muted', 'client.lounge.directUnavailable',
         'client.lounge.awaitingReply'].includes(String(frame.code))
-        ? String(frame.code) : 'client.lounge.actionFailed'));
+        ? String(frame.code) : 'client.lounge.actionFailed') : undefined);
       return;
     }
     if (frame.type === 'ready') {
       const user = frame.user as LoungeSnapshot['user'];
       if (!user || typeof user.id !== 'string' || typeof user.account !== 'string') return;
       this.authorized = Date.now(); this.attempt = 0; this.renewalStarted = 0;
-      this.profiles.ready(user, frame.profiles === true);
+      this.profiles.ready(user, frame.profiles === true, frame.names === true);
       this.profiles.cache(user, this.session?.avatars);
       this.directState.resetAvailable = frame.directReset === true;
       this.update({ status: 'connected', user, historyRevision: this.state.historyRevision + 1,
         directAvailable: frame.direct === true && frame.receipts === true,
         accountLookupAvailable: frame.accountLookup === true,
+        namesAvailable: frame.names === true,
         directResetAvailable: frame.directReset === true,
         contacts: this.state.contacts.filter(contact => contact.user.id !== user.id) });
+      this.contactSync.ready(frame.savedContacts === true);
+      this.deviceSync.ready(user.id, frame.deviceSync === true);
       this.syncWatch(); return;
     }
     const message = parseMessage(frame);
@@ -279,10 +313,7 @@ export class LoungeController {
     if (message.recipient && !own && message.recipient.id !== this.state.user?.id) return;
     const conversation = messageConversation(message, this.state.user?.id ?? '');
     message = { ...message, conversation: conversation || undefined };
-    if (own) {
-      const pending = this.pending.get(message.id);
-      if (pending) { clearTimeout(pending.timer); pending.resolve(); this.pending.delete(message.id); }
-    }
+    if (own) this.submissions.finish(message.id);
     if (this.recent.some(item => item.id === message.id && item.sender.id === message.sender.id)) return;
     this.recent = recentMessages([...this.recent, message]);
     const previous = this.state.messages.map(item => item.sender.id === message.sender.id
@@ -295,7 +326,8 @@ export class LoungeController {
     this.update({ messages, unreadByConversation,
       unread: Object.values(unreadByConversation).reduce((sum, n) => sum + n, 0) });
     const user = own ? message.recipient : message.sender;
-    if (user) this.rememberContact({ user, direct: !!message.recipient });
+    if (user) this.contactSync.remember({ user, direct: !!message.recipient,
+      ...(message.recipient ? { lastMessageAt: Date.parse(message.sentAt) } : {}) });
     this.archive(message);
   }
   private archive(message: LoungeMessage) {
@@ -304,6 +336,7 @@ export class LoungeController {
     const lifecycle = this.lifecycle;
     this.writes = this.writes.then(() => store.save(message)).then(() => {
       if (this.running && lifecycle === this.lifecycle) {
+        this.deviceSync.changed(message);
         this.update({ historyRevision: this.state.historyRevision + 1 });
       }
     }).catch(() => {
@@ -315,6 +348,18 @@ export class LoungeController {
     await this.writes;
     const memory = [...this.state.messages, ...this.recent].find(message => historyKey(message) === key);
     return await this.session?.history?.get?.(key) ?? memory;
+  }
+  retryDeviceSync() { this.deviceSync.retry(); }
+  private restoreSynchronized(messages: LoungeMessage[]) {
+    if (!this.running) return;
+    const merged = synchronizedSnapshot(this.state, messages, this.recent);
+    this.recent = merged.recent; this.update(merged.change);
+    for (const message of messages) {
+      const user = message.sender.id === this.state.user?.id ? message.recipient : message.sender;
+      if (user) this.contactSync.remember({ user, direct: !!message.recipient,
+        ...(message.recipient ? { lastMessageAt: Date.parse(message.sentAt) } : {}) });
+    }
+    this.markRead();
   }
   private async publishDirect(message: LoungeMessage, fresh: boolean) {
     if (!isCurrentDirect(message, peer => this.directState.generation(peer))) return;
@@ -340,7 +385,7 @@ export class LoungeController {
         .find(user => user?.account === this.session?.account);
       this.update({ user: restoredUser, messages: recentMessages([...page.messages.reverse(), ...this.state.messages]) });
       for (const message of page.messages) {
-        if (message.sender.id !== this.state.user?.id) this.rememberContact({ user: message.sender,
+        if (message.sender.id !== this.state.user?.id) this.contactSync.remember({ user: message.sender,
           direct: !!message.recipient });
       }
       this.markRead();
@@ -397,7 +442,7 @@ export class LoungeController {
       if (!recipient) return Promise.reject(new Error('client.lounge.directUnavailable'));
       return this.delivery.send(draft, this.runtime.randomId(), recipient);
     }
-    return this.submit({ type: 'message', ...draft, avatar: this.state.user?.avatar ?? '' });
+    return this.submit({ type: 'message', ...draft, avatar: this.state.user?.avatar ?? '' }, draft);
   }
   async setAvatar(avatar: string): Promise<void> {
     if (!this.state.user || !this.profiles.available) throw new Error('client.lounge.avatarSaveFailed');
@@ -405,14 +450,17 @@ export class LoungeController {
     try { await this.submit({ type: 'avatar', avatar }); }
     catch { throw new Error('client.lounge.avatarSaveFailed'); }
   }
-  private receiveProfiles(input: unknown) {
-    if (!this.profiles.receive(input)) return;
+  setName(options: { kind: 'nickname' | 'remark'; userId: string; value: string }) {
+    return this.profiles.names.save(options, frame => this.submit(frame));
+  }
+  private receiveProfiles(input: unknown, names = false) {
+    if (!(names ? this.profiles.names.receive(input as Record<string, unknown>) : this.profiles.receive(input))) return;
     this.recent = this.recent.map(this.profiles.message);
     this.profiles.cache(this.state.user, this.session?.avatars);
     const previous = this.state.contacts;
     this.update({ historyRevision: this.state.historyRevision + 1 });
     this.state.contacts.forEach((contact, index) => {
-      if (contact.user.avatar !== previous[index]?.user.avatar) this.persistContact(contact);
+      if (contact.user !== previous[index]?.user) this.persistContact(contact);
     });
   }
   moderate(userId: string, minutes: number): Promise<void> {
@@ -420,12 +468,22 @@ export class LoungeController {
   }
   selectConversation(user?: LoungeSnapshot['user']) {
     const conversation = user?.id ?? '';
-    if (user && user.id !== this.state.user?.id) this.rememberContact({ user, direct: true });
+    if (user && user.id !== this.state.user?.id) this.contactSync.remember({ user, direct: true });
     if (conversation === this.state.conversation) return;
     this.update({ conversation, messages: this.recent.filter(message => (message.conversation ?? '') === conversation) });
     this.markRead(); this.syncWatch(); void this.restoreHistory();
   }
   block(userId: string, blocked: boolean) { return this.submit({ type: 'block', userId, blocked }); }
+  async setNotificationsMuted(conversation: string, muted: boolean) {
+    if (!this.state.notificationSettingsAvailable) throw new Error('client.lounge.notificationSaveFailed');
+    try { await this.submit({ type: 'notification-setting', conversation, muted }); }
+    catch { throw new Error('client.lounge.notificationSaveFailed'); }
+  }
+  setPinned(userId: string, pinned: boolean) {
+    const contact = this.state.contacts.find(value => value.direct && value.user.id === userId);
+    if (!contact || contact.pinned === pinned) return;
+    this.contactSync.remember({ ...contact, pinned });
+  }
   async deleteContact(userId: string) {
     const store = this.session?.history;
     if (!this.state.directResetAvailable || !userId || userId === this.state.user?.id
@@ -444,16 +502,7 @@ export class LoungeController {
       this.recent = removed.recent; this.update(removed.snapshot); this.syncWatch();
     });
   }
-  private rememberContact(contact: LoungeContact) {
-    if (contact.user.id === this.state.user?.id || contact.user.account === this.session?.account) return;
-    const previous = this.state.contacts.find(value => value.user.id === contact.user.id);
-    if (previous && (!contact.direct || previous.direct) && previous.user.account === contact.user.account
-      && (!contact.user.avatar || previous.user.avatar === contact.user.avatar)) return;
-    const contacts = mergeContact(this.state.contacts, contact);
-    this.update({ contacts }); this.syncWatch();
-    const stored = contacts.find(value => value.user.id === contact.user.id)!;
-    this.persistContact(stored);
-  }
+  retryContacts() { this.contactSync.retry(); }
   private persistContact(stored: LoungeContact) {
     const lifecycle = this.lifecycle;
     if (this.session?.history?.saveContact) this.writes = this.writes
@@ -474,23 +523,6 @@ export class LoungeController {
         .filter(contact => contact.user.id !== this.state.user?.id && contact.user.account !== this.session?.account);
       this.update({ contacts }); this.syncWatch();
     } catch { if (this.running && lifecycle === this.lifecycle) this.update({ historyError: true }); }
-  }
-  private receivePrivacy(input: unknown) {
-    if (!Array.isArray(input)) return;
-    const users = input.map(parseAccount).filter((user): user is NonNullable<typeof user> => !!user);
-    this.update({ blocked: users.map(user => user.id) });
-    for (const user of users) this.rememberContact({ user, direct: false });
-  }
-  private receiveContacts(input: unknown) {
-    if (!Array.isArray(input)) return;
-    const statuses = new Map<string, boolean | null>();
-    for (const value of input) {
-      if (typeof value?.id === 'string' && (value.online === null || typeof value.online === 'boolean')) {
-        statuses.set(value.id, value.online);
-      }
-    }
-    this.update({ contacts: this.state.contacts.map(contact => contact.direct && statuses.has(contact.user.id)
-      ? { ...contact, online: statuses.get(contact.user.id) } : contact) });
   }
   private syncWatch() {
     if (this.state.status !== 'connected' || !this.socket) return;
@@ -513,18 +545,11 @@ export class LoungeController {
     this.update({ policy: { moderator: value.moderator, mutedUntil: value.mutedUntil as string | null },
       onlineCount: value.moderator ? this.state.onlineCount : undefined });
   }
-  private submit(frame: Record<string, unknown>): Promise<void> {
+  private submit(frame: Record<string, unknown>, draft?: LoungeDraft): Promise<void> {
     const socket = this.socket;
-    if (this.state.status !== 'connected' || !socket || socket.readyState !== WebSocket.OPEN
-      || socket.bufferedAmount > MAX_FRAME_BYTES) return Promise.reject(new Error('client.lounge.sendFailed'));
+    if (this.state.status !== 'connected' || !socket) return Promise.reject(new Error('client.lounge.sendFailed'));
     const id = this.runtime.randomId();
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id); reject(new Error('client.lounge.sendFailed'));
-      }, SEND_TIMEOUT_MS);
-      this.pending.set(id, { resolve, reject, timer });
-      try { socket.send(JSON.stringify({ id, ...frame })); }
-      catch { clearTimeout(timer); this.pending.delete(id); reject(new Error('client.lounge.sendFailed')); }
-    });
+    return this.submissions.send({ socket, id, frame,
+      group: draft && this.state.user ? { draft, sender: this.state.user } : undefined });
   }
 }

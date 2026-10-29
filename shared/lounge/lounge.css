@@ -32,8 +32,6 @@
 .lounge-avatar img { display: block; width: 48px; height: 48px; object-fit: cover; }
 .lounge-avatar-direct { border: 0; padding: 0; font-family: inherit; cursor: pointer; }
 .lounge-avatar-direct:focus-visible { outline: 2px solid var(--lounge-text); outline-offset: 2px; }
-.lounge-avatar-trigger { border: 0; border-radius: 50%; padding: 0; background: transparent; cursor: pointer; }
-.lounge-avatar-trigger:hover { outline: 2px solid var(--lounge-line); outline-offset: 2px; }
 .lounge-avatar-settings { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 12px 0; }
 .lounge-avatar-settings p { margin: 0; max-width: 352px; line-height: 1.7; }
 .lounge-avatar-settings > div { display: flex; gap: 8px; }
@@ -89,7 +87,10 @@
   max-width: min(400px, calc(100vw - 28px)); max-height: min(240px, 35dvh); overflow: auto;
   background: var(--lounge-paper); color: var(--lounge-text); border: 1px solid var(--lounge-line);
   border-radius: 10px; box-shadow: 0 4px 18px #0002; }
-.lounge-toolbar > .lounge-history-button { margin-left: auto; }
+.lounge-toolbar-end { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.lounge-toolbar-end > button { display: grid; place-items: center; background: transparent; border: 0;
+  padding: 4px; color: var(--lounge-text); cursor: pointer; border-radius: 6px; }
+.lounge-toolbar-end > button:hover { background: var(--lounge-line); }
 .lounge-toolbar > span { font-size: 12px; color: var(--lounge-muted); }
 .lounge-composer textarea { display: block; resize: none; width: 100%; box-sizing: border-box; min-height: 82px;
   max-height: 180px; background: transparent; border: 0; outline: none; color: inherit; font: inherit; line-height: 1.6; }

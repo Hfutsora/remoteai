@@ -3,13 +3,15 @@ import type { LoungeController } from './controller';
 import type { LoungeAccount, LoungeDraft, LoungeMessage } from './types';
 import { quoteMessage, type LoungeReply } from './reply';
 import { useLoungeNavigation } from './useLoungeNavigation';
+import { useLoungeNotificationSettings } from './useLoungeNotificationSettings';
 
-export type LoungeSheet = 'members' | 'about' | 'extras' | undefined;
+export type LoungeSheet = 'members' | 'about' | 'extras' | 'new-chat' | undefined;
 const EMPTY_DRAFT: LoungeDraft = { text: '', images: [] };
 
-/** Page-local navigation and drafts shared by native and mobile web. No chat content leaves the device. */
+/** Page-local navigation and drafts shared by native and mobile web. */
 export function useMobileLounge(controller: LoungeController) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
+  const notifications = useLoungeNotificationSettings(controller);
   const navigation = useLoungeNavigation(controller, state);
   const [chats, setChats] = useState(true);
   const [sheet, setSheet] = useState<LoungeSheet>();
@@ -72,7 +74,7 @@ export function useMobileLounge(controller: LoungeController) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [muted]);
-  return { state, contact, chats, setChats, sheet, setSheet, drafts, draftState: { draft, change },
+  return { state, notifications, contact, chats, setChats, sheet, setSheet, drafts, draftState: { draft, change },
     offsets, scrollPositions, history, setHistory, avatar, setAvatar, preview, setPreview, moderating, setModerating,
     blocking, setBlocking, profile, setProfile, deleting, setDeleting, deleteBusy, deleteError, deleteContact,
     atBottom, setAtBottom, muted, select, quote, cancelReply, setComposerOverlay, navigation, locate, latest };

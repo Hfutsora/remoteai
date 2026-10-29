@@ -59,4 +59,7 @@ it('lists actual recent speakers once, newest first, excluding self', () => {
     text: 'hello', images: [], sentAt: new Date(index).toISOString(),
   }));
   expect(recentSpeakers(messages, 'self').map(user => user.id)).toEqual(['bob', 'carol']);
+  expect(recentSpeakers(messages, 'self', 1).map(user => user.id)).toEqual(['bob']);
+  expect(recentSpeakers(messages, 'self', 2)).toEqual([]);
+  expect(recentSpeakers(messages.slice(0, 1), 'self').map(user => user.id)).toEqual(['bob']);
 });

@@ -103,7 +103,6 @@
 .lounge-section-label { font-size: 11px; font-weight: 400; padding: 9px 7px 5px; margin: 0; color: var(--lounge-muted); }
 .lounge-chat-row { display: flex; align-items: center; gap: 12px; padding: 15px 7px; min-height: 78px;
   width: 100%; border: 0; background: transparent; color: inherit; text-align: start; border-radius: 14px; }
-.lounge-chat-row.is-current { background: var(--lounge-blue-bg); }
 .lounge-chat-avatar { position: relative; display: flex; flex-shrink: 0; }
 .lounge-chat-row-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; min-height: 48px;
   border: 0; padding: 0; color: inherit; background: transparent; text-align: start; }
@@ -122,7 +121,7 @@
 .lounge-chat-row-copy > span, .lounge-chat-row-copy small { font-size: 12px; color: var(--lounge-muted); }
 .lounge-chat-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
 .lounge-chat-row-meta time { font-size: 10px; color: var(--lounge-muted); }
-.lounge-chat-row-meta small, .lounge-member-action { font-size: 10px; color: var(--lounge-blue); }
+.lounge-member-action { font-size: 10px; color: var(--lounge-blue); }
 .lounge-no-chats { padding: 42px 16px; text-align: center; color: var(--lounge-muted); }
 .lounge-mobile-sheet .ant-drawer-content { border-radius: 25px 25px 0 0; background: var(--lounge-paper);
   color: var(--lounge-text); }

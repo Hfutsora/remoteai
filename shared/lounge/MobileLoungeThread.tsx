@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useLayoutEffect, useRef } from 'react';
 import { MessagesSquare } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
@@ -57,9 +58,9 @@ export function MobileLoungeThread({ model, controller }: { model: MobileLounge;
         <LoungeAvatar user={message.sender} onProfile={() => model.setProfile(message.sender)} />
         <div className="lounge-message-main">
           {!own && state.policy.moderator ? <button type="button" className="lounge-account lounge-account-action"
-            aria-label={t('client.lounge.manageUser', { account: message.sender.account })}
-            onClick={() => model.setModerating(message.sender)}>{message.sender.account}</button>
-            : <div className="lounge-account">{message.sender.account}</div>}
+            aria-label={t('client.lounge.manageUser', { account: accountName(message.sender) })}
+            onClick={() => model.setModerating(message.sender)}>{accountName(message.sender)}</button>
+            : <div className="lounge-account">{accountName(message.sender)}</div>}
           <LoungeMessageBody message={message} preview={model.setPreview} onImageLoad={scrollBottom}
             controller={controller} locate={model.locate}
             actions={{ reply: model.quote, blocked: state.blocked.includes(message.sender.id),

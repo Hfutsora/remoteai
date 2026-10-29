@@ -1,3 +1,5 @@
+import { accountName } from './names';
+import { LoungeSyncNotice } from './LoungeSyncNotice';
 import { useSyncExternalStore } from 'react';
 import { ArrowDown, Ban, ChevronLeft, Info, MessagesSquare, UserRound } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
@@ -15,6 +17,7 @@ import { LoungeAbout } from './MobileLoungeSheet';
 import { MobileLoungeChats, MobileLoungeMembers } from './MobileLoungeChats';
 import { MobileLoungeThread } from './MobileLoungeThread';
 import { MobileLoungeProfile, LoungeDeleteDialog } from './MobileLoungeProfile';
+import { MobileLoungeNewChat } from './LoungeNewChat';
 import './mobile.css';
 
 export function MobileLoungePage({ controller, onBack }: { controller: LoungeController; onBack?: () => void }) {
@@ -51,7 +54,10 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
               ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')}</button>}
         </>} />
     </>}
+    <LoungeSyncNotice failed={state.deviceSyncError} controller={controller} />
     {model.sheet === 'members' && <MobileLoungeMembers model={model} />}
+    {model.sheet === 'new-chat' && <MobileLoungeNewChat controller={controller} state={state}
+      select={model.select} close={() => model.setSheet(undefined)} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     <LoungeHistory open={model.history} close={() => model.setHistory(false)} controller={controller}
       preview={model.setPreview} reply={model.quote} direct={model.select} profile={model.setProfile}
@@ -64,7 +70,7 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
       controller={controller} close={() => model.setBlocking(undefined)} />}
     {model.preview && <LoungePreview key={model.preview} uri={model.preview}
       close={() => model.setPreview(undefined)} />}
-    <MobileLoungeProfile model={model} />
+    <MobileLoungeProfile model={model} controller={controller} />
     <LoungeDeleteDialog model={model} />
   </section>;
 }
@@ -78,7 +84,7 @@ function MobileHeading({ model }: { model: MobileLounge }) {
     <button type="button" aria-label={t('client.lounge.backToChats')}
       onClick={() => model.setChats(true)}><ChevronLeft size={22} /></button>
     <div className={`lounge-heading-identity${contact ? ' is-private' : ''}`}>
-      <h1>{contact?.user.account ?? t('client.lounge.title')}</h1>
+      <h1>{contact ? accountName(contact.user) : t('client.lounge.title')}</h1>
       <button type="button" className="lounge-members-trigger" onClick={() => model.setSheet('members')}>
         <i className={state.status === 'connected' && (!contact || contact.online === true) ? 'is-online' : ''} />
         <span className={contact ? 'lounge-peer-status' : state.onlineCount !== undefined

@@ -2,16 +2,22 @@ import { expect, type Page, type WebSocketRoute } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import type { LoungeReply } from '../../../shared/lounge/reply';
 import type { LoungeAccount } from '../../../shared/lounge/types';
+import { LoungeNamesFixture } from './lounge-names-support';
+import type { LoungeContactsFixture } from './lounge-contact-support';
+import { LoungeNotificationsFixture } from './lounge-notifications-support';
 
 export const pixel = 'data:image/png;base64,'
   + readFileSync(new URL('../src-tauri/icons/32x32.png', import.meta.url)).toString('base64');
-export async function setupLounge(page: Page, web = false, reset = false) {
+export async function setupLounge(page: Page, web = false, reset = false, savedContacts?: LoungeContactsFixture) {
+  const names = new LoungeNamesFixture();
+  const notifications = new LoungeNotificationsFixture();
   let socket: WebSocketRoute;
   let connections = 0;
   let authentications = 0;
   let ticketsAvailable = true;
   let blocked = false;
   let acknowledge = true;
+  let groupReply: 'echo' | 'manual' = 'echo';
   let contactOnline: boolean | null = true;
   let avatar = '';
   let rejectAvatar = false;
@@ -19,6 +25,7 @@ export async function setupLounge(page: Page, web = false, reset = false) {
   let rejectDelete = false;
   let directState = 'new';
   let lookupReply = true;
+  let deviceSync = false;
   const lookups: string[] = [];
   const receipts: { type: string; id: string; to: string; status: string }[] = [];
   const moderation: { userId: string; minutes: number }[] = [];
@@ -39,9 +46,14 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     socket = route; connections++;
     route.onMessage(raw => {
       const frame = JSON.parse(String(raw));
+      names.handle(route, frame);
+      notifications.handle(route, frame);
+      savedContacts?.handle(route, frame);
       if (frame.type === 'authenticate') {
-        route.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
-          user: { id: 'alice', account: 'alice@example.test', avatar },
+        route.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true, names: names.enabled,
+          savedContacts: !!savedContacts, deviceSync,
+          notificationSettings: true, mutedConversations: notifications.muted,
+          user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
           direct: true, receipts: true, directReset: reset, blocked: blocked ? [bob] : [] }));
         authentications++;
       }
@@ -86,6 +98,7 @@ export async function setupLounge(page: Page, web = false, reset = false) {
       if (frame.type === 'message') {
         if (frame.to && reset && directState === 'new') directState = 'waiting';
         sent.push(frame);
+        if (!frame.to && groupReply === 'manual') return;
         route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
           ...(frame.to ? { recipient: bob } : {}),
           sentAt: new Date().toISOString() }));
@@ -120,6 +133,17 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     } });
   }, web);
   return {
+    notifications,
+    enableDeviceSync: () => { deviceSync = true; },
+    frame: (frame: object) => socket.send(JSON.stringify(frame)),
+    names,
+    groupReply: (value: typeof groupReply) => { groupReply = value; },
+    acceptGroup: (index: number) => socket.send(JSON.stringify({ type: 'accepted', id: sent[index].id,
+      sentAt: new Date().toISOString() })),
+    echoGroup: (index: number) => socket.send(JSON.stringify({ ...sent[index], type: 'message',
+      sender: { id: 'alice', account: 'alice@example.test' }, sentAt: new Date().toISOString() })),
+    rejectGroup: (index: number) => socket.send(JSON.stringify({ type: 'rejected', id: sent[index].id,
+      code: 'client.lounge.unavailable' })),
     lookups, lookupReply: (value: boolean) => { lookupReply = value; },
     rejectDelete: (value: boolean) => { rejectDelete = value; },
     sent, moderation, receipts, count: () => connections,

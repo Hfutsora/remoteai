@@ -1,9 +1,9 @@
 export const MESSAGE_FONT_SIZE = 14;
 export const BUBBLE_HORIZONTAL_PADDING = 13;
-const TEXT_WIDTH_ALLOWANCE = 2;
+const TEXT_WIDTH_ALLOWANCE = 1;
 const LATIN_CHARACTER_WIDTH = 0.65;
 
-/** Reserve two extra glyphs before Yoga's content sizing, including at enlarged system font scales. */
+/** Reserve one extra glyph before Yoga's content sizing, including at enlarged system font scales. */
 export function messageMinimumWidth(text: string, fontScale: number) {
   if (!text) return 0;
   const lines = text.split('\n').map(line => Array.from(line).reduce((width, character) => {

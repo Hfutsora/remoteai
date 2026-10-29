@@ -1,4 +1,4 @@
-import { avatarData, type LoungeAvatarStore } from './avatar';
+import type { LoungeAvatarStore } from './avatar';
 import type { LoungeHistoryStore } from './archive';
 import { parseReply, type LoungeReply } from './reply';
 import { parseAccount, type LoungeContact } from './contacts';
@@ -10,7 +10,11 @@ export const MAX_IMAGE_BYTES = 1024 * 1024;
 export const MAX_TOTAL_IMAGE_BYTES = 3 * 1024 * 1024;
 export const MAX_FRAME_BYTES = 6 * 1024 * 1024;
 export const MAX_MUTE_MINUTES = 30 * 24 * 60;
-export interface LoungeAccount { id: string; account: string; avatar?: string }
+export interface LoungeAccount {
+  id: string; account: string; avatar?: string; nickname?: string;
+  /** Private label for the current account; presentation/cache only, never transmitted to other users. */
+  remark?: string;
+}
 export interface LoungeMessage {
   type: 'message'; id: string; sender: LoungeAccount; text: string; images: string[]; sentAt: string;
   reply?: LoungeReply;
@@ -23,6 +27,7 @@ export interface LoungeMessage {
 export interface LoungeDraft { text: string; images: string[]; reply?: LoungeReply; to?: string }
 export interface LoungePolicy { moderator: boolean; mutedUntil: string | null }
 export interface LoungeSession {
+  sync?: import('./syncConnection').LoungeSyncTransport;
   baseUrl: string;
   account?: string;
   authorize: () => Promise<{ ticket: string }>;
@@ -34,14 +39,19 @@ export interface LoungeSnapshot {
   messages: LoungeMessage[];
   user?: LoungeAccount;
   unread: number;
+  notificationSettingsAvailable?: boolean;
+  mutedConversations?: string[];
   policy: LoungePolicy;
   historyRevision: number;
   historyError: boolean;
+  contactsSyncError?: boolean;
+  deviceSyncError?: boolean;
   onlineCount?: number;
   contacts: LoungeContact[];
   blocked: string[];
   directAvailable: boolean;
   accountLookupAvailable?: boolean;
+  namesAvailable?: boolean;
   directResetAvailable?: boolean;
   conversation: string;
   unreadByConversation: Record<string, number>;
@@ -65,7 +75,8 @@ export function parseMessage(value: unknown): LoungeMessage | undefined {
   const recipient = parseAccount(item.recipient);
   if (item.generation !== undefined && (!Number.isSafeInteger(item.generation) || item.generation < 0)) return;
   if (item.recipient && !recipient) return;
-  const sender = { ...item.sender, avatar: avatarData(item.sender.avatar) ? item.sender.avatar : undefined };
+  const sender = parseAccount(item.sender);
+  if (!sender) return;
   return { ...item, sender, images, recipient, reply: parseReply(item.reply),
     receipts: item.receipts === true || undefined, delivery: parseDelivery(item.delivery),
     conversation: typeof item.conversation === 'string' ? item.conversation : undefined } as LoungeMessage;
