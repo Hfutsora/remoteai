@@ -73,6 +73,8 @@ async function longPressContext(target: Locator) {
 
 async function longPressProject(page: Page) {
   const heading = page.locator('section[aria-label="project"] .chat-project-toggle');
+  // Raw CDP touch input needs the drawer animation to settle before measuring its target.
+  await heading.click({ trial: true });
   const bounds = (await heading.boundingBox())!;
   const session = await page.context().newCDPSession(page);
   try {
