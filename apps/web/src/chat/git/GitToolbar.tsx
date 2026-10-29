@@ -10,7 +10,9 @@ import { t } from '../../i18n';
 
 const ACTION_ICONS = { fetch: Download, pull: ArrowDown, update: ArrowDownUp, push: ArrowUp };
 const MENU_POPOVER_PROPS: PopoverProps = {
-  trigger: 'click', arrow: false, destroyOnHidden: true, align: { offset: [0, 4] },
+  trigger: 'click', arrow: false, destroyOnHidden: true,
+  // Edge-aligned popovers must also shift when neither side fits inside a narrow drawer.
+  align: { offset: [0, 4], overflow: { adjustX: true, adjustY: true, shiftX: true } },
   rootClassName: 'git-toolbar-popover',
   // Keep the popup within the Git drawer so it inherits the workspace theme and visibility.
   getPopupContainer: trigger => trigger.closest<HTMLElement>('.git-toolbar-container') ?? trigger,
