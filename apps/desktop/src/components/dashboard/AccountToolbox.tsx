@@ -21,8 +21,8 @@ export function AccountToolbox({ children, navigation, onSystemPrompts, t }: Acc
 
   return (
     <Popover open={open} onOpenChange={setOpen} placement="bottomRight" arrow={false}
-      trigger={["hover", "click"]} mouseLeaveDelay={0.2}
-      styles={{ root: { maxWidth: 400 }, body: { padding: 0, borderRadius: 0 } }}
+      trigger="click"
+      styles={{ root: { maxWidth: 400 }, body: { padding: 0, overflow: "hidden" } }}
       content={(
         <div id={panelId} className={styles.actions} role="group" aria-label={t("actions.toolbox")}
           onKeyDown={(event) => {
