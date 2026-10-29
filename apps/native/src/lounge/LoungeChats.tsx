@@ -27,7 +27,11 @@ export function LoungeChats({ model, controller, onBack }: {
         style={styles.iconButton} onPress={onBack}>
         <Ionicons name="chevron-back" size={22} color={color('#202b33', 'ink')} /></Pressable>
       <Text accessibilityRole="header" style={[styles.title, styles.heading]}>{t('client.lounge.chats')}</Text>
-      <Pressable accessibilityRole="button" style={styles.iconButton} onPress={() => model.setSheet('members')}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('client.lounge.newChat')}
+        disabled={!model.state.directAvailable} accessibilityState={{ disabled: !model.state.directAvailable }}
+        style={[styles.newChatButton, !model.state.directAvailable && styles.disabled]}
+        onPress={() => model.setSheet('new-chat')}>
+        <Ionicons name="add" size={18} color={color('#456c96', 'info')} />
         <Text style={styles.chatsLabel}>{t('client.lounge.newChat')}</Text></Pressable>
     </View>
     <View style={styles.search}><Ionicons name="search" size={18} color={color('#687c89', 'muted')} />

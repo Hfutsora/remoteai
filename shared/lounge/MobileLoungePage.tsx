@@ -15,6 +15,7 @@ import { LoungeAbout } from './MobileLoungeSheet';
 import { MobileLoungeChats, MobileLoungeMembers } from './MobileLoungeChats';
 import { MobileLoungeThread } from './MobileLoungeThread';
 import { MobileLoungeProfile, LoungeDeleteDialog } from './MobileLoungeProfile';
+import { MobileLoungeNewChat } from './LoungeNewChat';
 import './mobile.css';
 
 export function MobileLoungePage({ controller, onBack }: { controller: LoungeController; onBack?: () => void }) {
@@ -52,6 +53,8 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
         </>} />
     </>}
     {model.sheet === 'members' && <MobileLoungeMembers model={model} />}
+    {model.sheet === 'new-chat' && <MobileLoungeNewChat controller={controller} state={state}
+      select={model.select} close={() => model.setSheet(undefined)} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     <LoungeHistory open={model.history} close={() => model.setHistory(false)} controller={controller}
       preview={model.setPreview} reply={model.quote} direct={model.select} profile={model.setProfile}

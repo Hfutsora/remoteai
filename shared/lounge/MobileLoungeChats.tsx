@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, MessageSquarePlus, Search } from 'lucide-react';
+import { ChevronLeft, Plus, Search } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import type { LoungeController } from './controller';
@@ -22,8 +22,9 @@ export function MobileLoungeChats({ model, controller, onBack }: {
     <header className="lounge-mobile-heading">
       <button type="button" aria-label={t('client.discovery.back')} onClick={onBack}>
         <ChevronLeft size={22} /></button><h1>{t('client.lounge.chats')}</h1>
-      <button type="button" className="lounge-new-chat" onClick={() => model.setSheet('members')}>
-        <MessageSquarePlus size={18} />{t('client.lounge.newChat')}</button>
+      <button type="button" className="lounge-new-chat" onClick={() => model.setSheet('new-chat')}
+        disabled={!model.state.directAvailable}>
+        <Plus size={18} aria-hidden="true" />{t('client.lounge.newChat')}</button>
     </header>
     <label className="lounge-chat-search"><Search size={18} /><input value={query}
       onChange={event => setQuery(event.target.value)} aria-label={t('client.lounge.searchChats')}

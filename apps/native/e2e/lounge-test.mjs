@@ -14,6 +14,7 @@ import { verifyNativeText } from './lounge-text-check.mjs';
 import { verifyNativePresence } from './lounge-presence-check.mjs';
 import { verifyNativeProfile } from './lounge-profile-check.mjs';
 import { verifyNativePreview } from './lounge-preview-check.mjs';
+import { verifyNativeNewChat } from './lounge-new-chat-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -38,6 +39,8 @@ const resetAvailable = process.env.LOUNGE_PROFILE_ONLY === '1';
 let generation = 0;
 let directState = 'new';
 let failDelete = false;
+let lookupReply = true;
+const lookups = [];
 const server = createServer((request, response) => {
   response.writeHead(online ? 200 : 503, { 'content-type': 'application/json' });
   response.end(JSON.stringify({ ticket: 'fixture-ticket' }));
@@ -51,7 +54,7 @@ function broadcast(frame) { for (const socket of sockets.clients) socket.send(JS
 sockets.on('connection', socket => socket.on('message', raw => {
   const frame = JSON.parse(String(raw));
   if (frame.type === 'authenticate') {
-    socket.send(JSON.stringify({ type: 'ready', profiles: true,
+    socket.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
       user: { id: 'alice', account: 'alice@example.test', avatar },
       policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
       directReset: resetAvailable,
@@ -59,6 +62,15 @@ sockets.on('connection', socket => socket.on('message', raw => {
     socket.send(JSON.stringify(incoming('真机中文测试：忙里偷闲，聊点轻松的 ☕', [image])));
   }
   if (frame.type === 'ping') socket.send('{"type":"pong"}');
+  if (frame.type === 'lookup-account') {
+    lookups.push(frame.query);
+    if (!lookupReply) return;
+    const query = frame.query.toLowerCase();
+    const suffix = query === 'shared' ? 'Ambiguous' : query === 'alice@example.test' ? 'Self' : 'NotFound';
+    socket.send(JSON.stringify(query === 'bob' || query === 'bob@example.test'
+      ? { type: 'account-found', id: frame.id, user: { id: 'bob', account: 'bob@example.test' } }
+      : { type: 'rejected', id: frame.id, code: `client.lounge.accountLookup${suffix}` }));
+  }
   if (frame.type === 'watch' && resetAvailable) socket.send(JSON.stringify({ type: 'direct-permissions',
     states: Object.fromEntries(frame.watch.map(id => [id, directState])),
     generations: Object.fromEntries(frame.watch.map(id => [id, generation])) }));
@@ -181,6 +193,11 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (process.env.LOUNGE_NEW_CHAT_ONLY === '1') {
+      await verifyNativeNewChat({ adb, tap, find, nodes, screenshot, hideKeyboard, scale, sent, lookups,
+        lookupReply: value => { lookupReply = value; } });
+      continue;
+    }
     if (process.env.LOUNGE_PREVIEW_ONLY === '1') {
       await verifyNativePreview({ adb, tap, find, nodes, screenshot, scale, broadcast, incoming });
       continue;

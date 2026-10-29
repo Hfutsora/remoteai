@@ -18,6 +18,7 @@ import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
 import { LoungeProfile } from './LoungeProfile';
 import { LoungeDeleteDialog } from './LoungeDeleteDialog';
+import { LoungeNewChat } from './LoungeNewChat';
 import { historyKey } from '../../../../shared/lounge/archive';
 import { useLoungeListFocus } from './useLoungeListFocus';
 
@@ -108,6 +109,8 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
         </>} />
     </>}
     {model.sheet === 'members' && <LoungeMembers model={model} />}
+    {model.sheet === 'new-chat' && <LoungeNewChat controller={controller} state={state}
+      select={model.select} close={() => model.setSheet(undefined)} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     {model.history && <LoungeHistory controller={controller} close={() => model.setHistory(false)}
       reply={model.quote} direct={model.select} profile={model.setProfile} locate={model.locate}

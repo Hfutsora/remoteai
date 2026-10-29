@@ -15,6 +15,10 @@
 .lounge-new-chat-dialog h3 { margin: 18px 0 8px; font-size: 14px; }
 .lounge-new-chat-people { max-height: min(300px, 40vh); overflow-y: auto; }
 .lounge-new-chat-dialog [role="alert"] { color: var(--app-danger, #d14343); }
+.lounge-new-chat-mobile { max-width: 400px; margin-inline: auto; }
+.lounge-new-chat-mobile input { font-size: 16px; min-height: 44px; }
+.lounge-new-chat-mobile form > button { min-height: 44px; height: auto; white-space: normal; }
+.lounge-new-chat-mobile .lounge-new-chat-people { max-height: none; }
 .lounge-people input { width: 100%; min-width: 0; border: 1px solid var(--app-border, var(--line, #e6e8ec));
   border-radius: 7px; padding: 8px; background: transparent; color: inherit; font: inherit; box-sizing: border-box; }
 .lounge-people-list { overflow-y: auto; min-height: 0; flex: 1; }

@@ -43,6 +43,11 @@ They cover server save failures, successful saves, external profile updates, res
 reconnection with stale caches, and the translated settings copy. Server tests separately validate
 48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
+Set `LOUNGE_NEW_CHAT_ONLY=1` to verify the New chat sheet, recent speaker selection, exact email/local-part
+lookup, ambiguous/missing/self results, keyboard layout, cancellation, retained drafts, translations and
+back navigation at font scales 1.0 and 1.3. Inspect the `new-chat-*.png` captures for complete Chinese glyphs.
+The mobile Web counterpart is `apps/desktop/e2e/lounge-new-chat-mobile.pw.ts` at 320px and 390px.
+
 Set `LOUNGE_PREVIEW_ONLY=1` to check the chat list without selected rows, the latest incoming unread
 text, single-line truncation, retained previews after reading, outgoing replies and back navigation
 at font scales 1.0 and 1.3. Inspect `preview-*.png` in `.codex-tmp/lounge-android/` for glyphs and truncation.
