@@ -23,6 +23,7 @@ export async function setupLounge(page: Page, web = false, reset = false, savedC
   let rejectDelete = false;
   let directState = 'new';
   let lookupReply = true;
+  let deviceSync = false;
   const lookups: string[] = [];
   const receipts: { type: string; id: string; to: string; status: string }[] = [];
   const moderation: { userId: string; minutes: number }[] = [];
@@ -47,7 +48,7 @@ export async function setupLounge(page: Page, web = false, reset = false, savedC
       savedContacts?.handle(route, frame);
       if (frame.type === 'authenticate') {
         route.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true, names: names.enabled,
-          savedContacts: !!savedContacts,
+          savedContacts: !!savedContacts, deviceSync,
           user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
           direct: true, receipts: true, directReset: reset, blocked: blocked ? [bob] : [] }));
         authentications++;
@@ -128,6 +129,8 @@ export async function setupLounge(page: Page, web = false, reset = false, savedC
     } });
   }, web);
   return {
+    enableDeviceSync: () => { deviceSync = true; },
+    frame: (frame: object) => socket.send(JSON.stringify(frame)),
     names,
     groupReply: (value: typeof groupReply) => { groupReply = value; },
     acceptGroup: (index: number) => socket.send(JSON.stringify({ type: 'accepted', id: sent[index].id,

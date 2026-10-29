@@ -1,4 +1,5 @@
 import { accountName } from './names';
+import { LoungeSyncNotice } from './LoungeSyncNotice';
 import { useSyncExternalStore } from 'react';
 import { ArrowDown, Ban, ChevronLeft, Info, MessagesSquare, UserRound } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
@@ -53,6 +54,7 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
               ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')}</button>}
         </>} />
     </>}
+    <LoungeSyncNotice failed={state.deviceSyncError} controller={controller} />
     {model.sheet === 'members' && <MobileLoungeMembers model={model} />}
     {model.sheet === 'new-chat' && <MobileLoungeNewChat controller={controller} state={state}
       select={model.select} close={() => model.setSheet(undefined)} />}

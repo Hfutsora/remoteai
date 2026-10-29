@@ -93,7 +93,7 @@ async function search(scope: string, query: HistoryQuery) {
   return historyPage(values, query);
 }
 
-/** IndexedDB belongs to this browser/WebView; no archive data crosses the network. */
+/** Account-scoped local storage; same-account devices exchange records through the encrypted sync transport. */
 export function browserLoungeHistory(baseUrl: string, account: string): LoungeHistoryStore {
   const scope = historyScope(baseUrl, account);
   return { save: message => save(scope, message), page: query => search(scope, query),
