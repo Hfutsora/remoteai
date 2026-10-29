@@ -68,7 +68,7 @@ for (const mode of ['native', 'mobile web']) {
     const gutter = editor.locator('.pf-blame-gutter');
     await expect(gutter).toContainText('Alice 中文');
     await longPress(page, gutter.locator('.pf-blame-text').first(), '关闭 Git Blame 批注');
-    await expect(gutter.locator('.pf-blame-tooltip:visible')).toHaveCount(0);
+    await expect(editor.getByRole('tooltip')).toBeHidden();
     const menu = page.getByRole('menu', { name: '关闭 Git Blame 批注', exact: true });
     const bounds = (await menu.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(0);

@@ -543,6 +543,7 @@ export interface AppSettings {
   closeToTray?: boolean;
   nonProxyEnhancementsEnabled?: boolean;
   floatingBubbleEnabled: boolean;
+  quotaDisplayAllAccounts?: boolean;
   petDockEnabled?: boolean;
   petDockShowLabels?: boolean;
   privacyMode: boolean;

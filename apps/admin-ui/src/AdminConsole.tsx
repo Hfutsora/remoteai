@@ -1555,6 +1555,7 @@ export function AdminConsole({ dark, onThemeChange }: AdminConsoleProps) {
 
     return (
       <UsersPage
+        api={api}
         users={users}
         loading={usersLoading}
         filters={userFilters}

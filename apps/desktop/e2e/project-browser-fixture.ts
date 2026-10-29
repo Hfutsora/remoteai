@@ -71,13 +71,16 @@ export async function browserRequest<T>(request: ProjectBrowserRequest): Promise
     const body = typeof document === 'undefined' ? undefined : document.body;
     if (body) body.dataset.blameReads = String(Number(body.dataset.blameReads ?? 0) + 1);
     const status = (body?.dataset.blameStatus ?? 'ready') as ProjectBlame['status'];
-    const commits = ['Alice 中文', 'Bob'].map((author, index) => ({
-      hash: String(index + 1).repeat(40), author, time: 1_700_000_000 + index * 86400,
+    const ages = body?.dataset.blameAges?.split(',').map(Number);
+    const authors = ages ? ['Alice 中文', 'Bob', 'Carol', 'Dave'] : ['Alice 中文', 'Bob'];
+    const commits = authors.map((author, index) => ({
+      hash: String(index + 1).repeat(40), author,
+      time: ages ? Math.floor(Date.now() / 1000) - ages[index] * 86400 : 1_700_000_000 + index * 86400,
       timezone: '+0800', summary: index ? 'Update content' : 'Initial content',
     }));
     const lines = (documents[relative] ?? '').split('\n');
     const ranges = lines.length > 100 ? [{ start: 1, count: lines.length, commit: 0 }]
-      : lines.map((_, index) => ({ start: index + 1, count: 1, commit: index % 2 }));
+      : lines.map((_, index) => ({ start: index + 1, count: 1, commit: index % commits.length }));
     const result: ProjectBlame = { status, revision: fileRevision(relative), commits, ranges };
     if (body?.dataset.blameDelay) {
       await new Promise(resolve => setTimeout(resolve, Number(body.dataset.blameDelay)));

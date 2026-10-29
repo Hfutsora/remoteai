@@ -231,6 +231,7 @@ fn codex_model_refresh_expression(request: &crate::codex_runtime::ModelRefreshRe
 
   const currentQueries = queryClient.getQueryCache().getAll().filter(matchesModelsQuery);
   const expected = new Set(expectedModels);
+  const modelOrder = new Map(expectedModels.map((model, index) => [model, index]));
   const injectedModels = expectedModels.map((model, index) => ({{
     id: model,
     model,
@@ -284,6 +285,8 @@ fn codex_model_refresh_expression(request: &crate::codex_runtime::ModelRefreshRe
       const containsExpectedModels = expectedModels.every(model => currentIds.includes(model));
       const visibleCurrentModels = currentModels.filter(model =>
         expected.has(model?.model ?? model?.id)
+      ).sort((left, right) =>
+        modelOrder.get(left.model ?? left.id) - modelOrder.get(right.model ?? right.id)
       );
       if (!containsExpectedModels || currentIds.length !== expectedModels.length) injected = true;
       const data = containsExpectedModels

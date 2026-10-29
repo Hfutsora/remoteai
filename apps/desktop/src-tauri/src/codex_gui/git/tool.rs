@@ -19,6 +19,9 @@ mod conflicts;
 mod file_actions;
 #[cfg(test)]
 mod file_actions_tests;
+mod file_activity;
+#[cfg(test)]
+mod file_activity_tests;
 mod history;
 mod integration;
 mod message;
@@ -224,8 +227,7 @@ pub(crate) async fn codex_gui_git_tool(
         Request::Action { cwd, request } if request.changes_worktree() => {
             Some(super::workspace_change(&app, cwd.clone()).await?)
         }
-        Request::FileAction { cwd, .. }
-        | Request::Revision { cwd, .. }
+        Request::Revision { cwd, .. }
         | Request::ResolveConflict { cwd, .. }
         | Request::ContinueIntegration { cwd, .. } => {
             Some(super::workspace_change(&app, cwd.clone()).await?)
@@ -233,6 +235,7 @@ pub(crate) async fn codex_gui_git_tool(
         _ => None,
     };
     let guard = state.0.clone();
+    let activity = app.state::<crate::codex_gui::GuiState>().workspaces.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let _workspace = workspace;
         // GitHub requests do not mutate local files and must not block unrelated Git tools during network waits.
@@ -248,6 +251,7 @@ pub(crate) async fn codex_gui_git_tool(
         } else {
             None
         };
+        let _files = file_activity::reserve(&request, &activity)?;
         match request {
             Request::Settings { auto_message } => {
                 let data = app.path().app_data_dir().map_err(|_| GitError::Settings)?;

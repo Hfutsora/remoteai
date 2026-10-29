@@ -7,10 +7,12 @@ import { t, useLanguage } from '../i18n';
 import { useThemeColor } from '../theme/store';
 import { createThemedStyles } from '../theme/styles';
 import { textMetrics } from '../theme/text';
+import { LoungeUnread } from '../lounge/LoungeMessage';
 
-export function BottomNavigation({ activePage, owner, onChange }: {
+export function BottomNavigation({ activePage, owner, loungeUnread = 0, onChange }: {
   activePage: string;
   owner?: string;
+  loungeUnread?: number;
   onChange: (page: 'chat' | 'accounts' | 'discover' | 'settings') => void;
 }) {
   const resolveThemeColor = useThemeColor();
@@ -35,10 +37,10 @@ export function BottomNavigation({ activePage, owner, onChange }: {
     </Pressable>
     <Pressable accessibilityRole="tab" accessibilityState={{ selected: discoveryActive }}
       onPress={() => onChange('discover')} style={styles.navItem}>
-      <DownloadCountIcon owner={owner}>
+      <LoungeUnread count={loungeUnread}><DownloadCountIcon owner={loungeUnread ? undefined : owner}>
         <Ionicons name={discoveryActive ? 'compass' : 'compass-outline'} size={23}
           color={discoveryActive ? resolveThemeColor('#00c98b', 'accent') : resolveThemeColor('#858991', 'muted')} />
-      </DownloadCountIcon>
+      </DownloadCountIcon></LoungeUnread>
       <Text style={[styles.navText, discoveryActive && styles.navTextActive]}>{t('client.discovery.title')}</Text>
     </Pressable>
     <Pressable accessibilityRole="tab" accessibilityState={{ selected: settingsActive }}

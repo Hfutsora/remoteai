@@ -40,7 +40,10 @@ export function previewSamples() {
     'report.PDF': samplePdf(), 'broken.pdf': Buffer.from('broken pdf'),
     'guide.md': Buffer.from('# Preview heading\n\n**Formatted document**\n\n| A | B |\n| --- | --- |\n| 1 | 2 |'
       + '\n\n![Document image](image.svg)\n\n[Open PDF](report.PDF)'),
-    'page.html': Buffer.from('<h1>HTML preview</h1><script>parent.document.body.dataset.escaped="yes"</script>'),
+    'page.html': Buffer.from('<link rel="stylesheet" href="page.css"><h1>HTML preview</h1>'
+      + '<img alt="HTML asset" src="image.svg">'
+      + '<script>parent.document.body.dataset.escaped="yes"</script>'),
+    'page.css': Buffer.from('h1{color:rgb(17,119,85)}'),
     'image.svg': Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">'
       + '<rect width="200" height="100" fill="#14806f"/></svg>'),
     'sound.wav': sampleWav(),

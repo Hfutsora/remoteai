@@ -1,9 +1,16 @@
 import { expect, test } from '@playwright/test';
 import type {} from './download-manager-harness';
 
+// A cold Vite start loads both desktop and shared web modules for this harness.
+test.setTimeout(90_000);
+
+test.beforeEach(async ({ page }) => {
+  await page.route('https://fonts.googleapis.com/**', route => route.abort());
+});
+
 test('PC workspace groups local and remote tasks, searches, sorts and scopes batch selection', async ({ page }) => {
   await page.setViewportSize({ width: 1674, height: 940 });
-  await page.goto('/e2e/download-manager-harness.html?collapsed');
+  await page.goto('/e2e/download-manager-harness.html?collapsed', { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => {
     window.desktopDownloads.delay = 10;
     await window.desktopDownloads.addLocal('review-notes.md');
@@ -49,7 +56,7 @@ test('PC workspace groups local and remote tasks, searches, sorts and scopes bat
 });
 
 test('PC workspace remains readable offline in every released language and dark mode', async ({ page }) => {
-  await page.goto('/e2e/download-manager-harness.html?collapsed&dark');
+  await page.goto('/e2e/download-manager-harness.html?collapsed&dark', { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => { window.desktopDownloads.delay = 10; await window.desktopDownloads.addLocal(); });
   await page.getByRole('navigation').getByRole('button', { name: '下载管理', exact: true }).click();
   await expect(page.locator('.dw-ready-row')).toHaveCount(1);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { Chunk } from '@codemirror/merge';
-import { blameCommitAt, originalBlameLine } from '../../../../shared/project-browser/blameGutter';
+import { blameCommitAt, blameRecencyOpacity, originalBlameLine } from '../../../../shared/project-browser/blameGutter';
 import type { ProjectBlame } from '../../../../shared/project-browser/protocol';
 
 describe('blame mapping for drafts', () => {
@@ -31,5 +31,21 @@ describe('blame mapping for drafts', () => {
     ] };
     expect(blameCommitAt(blame, 2)).toBe(author);
     for (const line of [null, 0, 4, 5]) expect(blameCommitAt(blame, line)).toBeUndefined();
+  });
+});
+
+describe('blame recency', () => {
+  const now = Date.parse('2026-10-28T00:00:00Z') / 1000;
+  const day = 86_400;
+  it('fades with absolute age and stays visible for old commits', () => {
+    const shades = [0, 1, 30, 120, 365, 3650].map(age => blameRecencyOpacity(now - age * day, now));
+    for (let index = 1; index < shades.length; index += 1) expect(shades[index]).toBeLessThan(shades[index - 1]);
+    expect(shades.at(-1)).toBeGreaterThan(0);
+    expect(shades[0]).toBeLessThan(0.5);
+  });
+  it('clamps future timestamps and keeps invalid dates at the oldest shade', () => {
+    expect(blameRecencyOpacity(now + day, now)).toBe(blameRecencyOpacity(now, now));
+    expect(blameRecencyOpacity(Number.NaN, now)).toBe(0.08);
+    expect(blameRecencyOpacity(Number.POSITIVE_INFINITY, now)).toBe(0.08);
   });
 });

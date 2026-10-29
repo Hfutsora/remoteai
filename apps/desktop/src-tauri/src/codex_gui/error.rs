@@ -60,8 +60,10 @@ pub(super) enum GuiError {
     Directory,
     #[error("暂时无法准备对话，请稍后重试。")]
     Workspace,
-    #[error("此工作目录正在使用中，请等待当前任务或分支操作完成后重试。")]
+    #[error("client.gitActivity.operationBusy")]
     WorkspaceBusy,
+    #[error(transparent)]
+    WorkspaceConflict(super::workspace_activity::Conflict),
     #[error("对话请求无效，请刷新后重试。")]
     InvalidRequest,
     #[error("模型列表暂时无法读取，请点击重试。")]

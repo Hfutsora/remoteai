@@ -59,6 +59,24 @@ var sshProfilesSchema string
 //go:embed 018_ssh_credentials.sql
 var sshCredentialsSchema string
 
+//go:embed 019_lounge_moderation.sql
+var loungeModerationSchema string
+
+//go:embed 020_lounge_blocks.sql
+var loungeBlocksSchema string
+
+//go:embed 021_lounge_direct_permissions.sql
+var loungeDirectPermissionsSchema string
+
+//go:embed 022_lounge_profiles.sql
+var loungeProfilesSchema string
+
+//go:embed 023_lounge_direct_reset.sql
+var loungeDirectResetSchema string
+
+//go:embed 024_lounge_names.sql
+var loungeNamesSchema string
+
 // InitializeEmpty never changes existing tables, constraints, indexes, or customer data.
 // Existing deployments continue to apply the versioned apps/admin-go/sql migrations.
 func InitializeEmpty(db *gorm.DB) error {
@@ -123,6 +141,24 @@ func InitializeEmpty(db *gorm.DB) error {
 		if err := tx.Exec(sshProfilesSchema).Error; err != nil {
 			return err
 		}
-		return tx.Exec(sshCredentialsSchema).Error
+		if err := tx.Exec(sshCredentialsSchema).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(loungeModerationSchema).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(loungeBlocksSchema).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(loungeDirectPermissionsSchema).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(loungeProfilesSchema).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(loungeDirectResetSchema).Error; err != nil {
+			return err
+		}
+		return tx.Exec(loungeNamesSchema).Error
 	})
 }

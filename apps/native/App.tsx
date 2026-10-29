@@ -80,6 +80,8 @@ import { TotpPage } from './src/totp/TotpPage';
 import { downloadOwner } from './src/downloads/manager';
 import { BottomNavigation } from './src/discovery/BottomNavigation';
 import { DiscoveryBackButton, DiscoveryPage } from './src/discovery/DiscoveryPage';
+import { LoungePage } from './src/lounge/LoungePage';
+import { useNativeLounge } from './src/lounge/useNativeLounge';
 import { isDiscoveryPage } from '../../shared/navigation/discovery';
 import { usePageStyles as useTotpPageStyles } from './src/totp/pageStyles';
 import { ChatPage } from './src/chat/ChatPage';
@@ -593,7 +595,7 @@ function DeviceManagementPage({
 }
 
 type AppPage = 'accounts' | 'devices' | 'chat' | 'discover' | 'totp' | 'admin' | 'settings' | 'about'
-  | 'token-summary' | 'downloads';
+  | 'token-summary' | 'downloads' | 'lounge';
 const DEFAULT_APP_PAGE: AppPage = 'chat';
 
 function DeviceSwitchDrawer({ account, devices, switching, onClose, onSwitch }: {
@@ -1250,7 +1252,8 @@ function AppContent() {
     setActivePage(DEFAULT_APP_PAGE);
   }, []);
 
-  const showBottomNavigation = activePage !== 'token-summary' && activePage !== 'downloads';
+  const lounge = useNativeLounge(session);
+  const showBottomNavigation = !['token-summary', 'downloads', 'lounge'].includes(activePage);
   if (initializing) return <View style={styles.boot}><ThemeStatusBar /><ActivityIndicator size="large" color={color(COLORS.green, 'accent')} /><Text style={styles.bootText}>Remote AI</Text></View>;
   if (!session) return <View style={styles.app}>
     <ThemeStatusBar /><LoginScreen initialBaseUrl={DEFAULT_CLOUD_BASE_URL} onLoggedIn={handleLogin} />
@@ -1272,7 +1275,8 @@ function AppContent() {
       tokenSummary={activePage === 'token-summary'} closeTokenSummary={() => setActivePage('discover')}
       notification={chatNotification.target} notificationError={chatNotification.error}
       notificationHandled={chatNotification.handled} />,
-    discover: <DiscoveryPage owner={session ? downloadOwner(session) : undefined} onOpen={setActivePage} />,
+    discover: <DiscoveryPage owner={session ? downloadOwner(session) : undefined}
+      loungeUnread={lounge.state.unread} onOpen={setActivePage} />,
     accounts: <Dashboard session={session} accounts={accounts} devices={devices} loading={loading}
         syncingServer={syncingServer} refreshingUsage={refreshingUsage} consumingQuota={consumingQuota}
         refreshingAccountId={refreshingAccountId} switchingAccountId={switchingAccountId}
@@ -1287,8 +1291,9 @@ function AppContent() {
       onLogout={handleLogout} totpManager={totpManager} />,
     }}>
     {activePage === 'downloads' && <DownloadManagerPage session={session} onBack={() => setActivePage('discover')} />}
-    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary'
+    {isDiscoveryPage(activePage) && activePage !== 'downloads' && activePage !== 'token-summary' && activePage !== 'lounge'
       && <DiscoveryBackButton onBack={() => setActivePage('discover')} />}
+    {activePage === 'lounge' && <LoungePage controller={lounge.controller} onBack={() => setActivePage('discover')} />}
     {activePage === 'devices'
         ? <DeviceManagementPage session={session} accounts={accounts} providers={providers} devices={devices}
           refreshing={syncingServer} deletingDeviceId={deletingDeviceId}
@@ -1307,7 +1312,7 @@ function AppContent() {
               : null}
     </PrimaryPagePager>
     {showBottomNavigation && <BottomNavigation activePage={activePage}
-      owner={session ? downloadOwner(session) : undefined} onChange={setActivePage} />}
+      owner={session ? downloadOwner(session) : undefined} loungeUnread={lounge.state.unread} onChange={setActivePage} />}
   </SafeAreaView>;
 }
 

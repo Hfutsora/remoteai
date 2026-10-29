@@ -22,6 +22,7 @@ interface AdaptiveSheetProps {
   afterOpenChange?: (open: boolean) => void;
   tabId?: string;
   hideMobileHeader?: boolean;
+  mobileFullscreen?: boolean;
 }
 
 export function AdaptiveSheet({
@@ -40,12 +41,13 @@ export function AdaptiveSheet({
   afterOpenChange,
   tabId,
   hideMobileHeader = false,
+  mobileFullscreen = false,
 }: AdaptiveSheetProps) {
   useLanguage();
   const workspace = useContext(WorkspaceDrawerContext);
   const generatedId = useId();
   const screens = Grid.useBreakpoint();
-  const drag = useSheetDrag(onClose);
+  const drag = useSheetDrag(onClose, !mobileFullscreen);
   const back = onBack && <button type="button" className="sheet-close" onClick={onBack}
     aria-label={t("client.app.goBackOneLevel")}>‹</button>;
   const titleClassName = truncateTitle ? 'sheet-title-truncated' : undefined;
@@ -78,14 +80,14 @@ export function AdaptiveSheet({
     </Modal>;
   }
   return <Popup visible={open} onMaskClick={onClose} destroyOnClose bodyStyle={drag.style}
-    bodyClassName={['mobile-popup', className].filter(Boolean).join(' ')}>
+    bodyClassName={['mobile-popup', mobileFullscreen && 'mobile-popup-fullscreen', className].filter(Boolean).join(' ')}>
     <div ref={drag.ref} className="sheet-drag-surface">
-    <div className="sheet-drag-handle" role="button" tabIndex={0}
+    {!mobileFullscreen && <div className="sheet-drag-handle" role="button" tabIndex={0}
       aria-label={t('client.sheet.dragToClose')} onKeyDown={event => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         onClose();
-      }}><div className="sheet-handle" /></div>
+      }}><div className="sheet-handle" /></div>}
     {!hideMobileHeader && <div className="sheet-header">{back}{titleIcon}<div style={{ flex: 1, minWidth: 0 }}>
       {titleAction ? <div className="sheet-title-row">{mobileTitle}{titleAction}</div> : mobileTitle}
       {subtitle ? <p>{subtitle}</p> : null}</div>
