@@ -9,9 +9,9 @@ import { ChatThreadContextMenu } from './ChatThreadContextMenu';
 import { t } from '../i18n';
 import './thread-actions.css';
 
-export function ChatThreadRow({ thread, state, select, actions, onFork }: {
+export function ChatThreadRow({ thread, state, select, actions, onFork, onOpenProject }: {
   thread: Thread; state: ChatState; select: () => void; actions: ThreadActionsModel;
-  onFork: () => void;
+  onFork: () => void; onOpenProject?: () => Promise<void>;
 }) {
   const desktop = useDesktopLayout();
   const view = threadPresentation(thread, state.sidebar, displayText);
@@ -30,7 +30,8 @@ export function ChatThreadRow({ thread, state, select, actions, onFork }: {
     {!desktop && <button type="button" className="chat-thread-more" aria-label={t("client.threadActions.manageChat", { name: view.title })}
       aria-haspopup="dialog" disabled={disabled} onClick={openActions}><MoreHorizontal size={18} /></button>}
   </div>;
-  return desktop ? <ChatThreadContextMenu thread={thread} state={state} actions={actions} onFork={onFork}>
+  return desktop ? <ChatThreadContextMenu thread={thread} state={state} actions={actions} onFork={onFork}
+    onOpenProject={onOpenProject}>
     {row}</ChatThreadContextMenu>
     : row;
 }

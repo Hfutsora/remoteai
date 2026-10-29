@@ -15,6 +15,7 @@ import { useDesktopLayout } from '../useDesktopLayout';
 import { useChatSearch } from '../../../../shared/chat/useChatSearch';
 import { SidebarSearchInput } from '../../../../shared/chat/SidebarSearchInput';
 import { ChatSearchResults } from './ChatSearchResults';
+import { useOpenProjectFolder } from '../../../../shared/chat/useOpenProjectFolder';
 
 interface Props {
   state: ChatState; controller: ChatController; newChat: (project?: ChatProject) => void; onClose: () => void;
@@ -33,6 +34,7 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
   const ready = state.ready;
   const actions = useThreadActions(state, controller);
   const projectActions = useProjectActions(state, controller);
+  const openProject = useOpenProjectFolder(controller.guiTools.files, t);
   const renderHeading = (group: typeof groups[number]) => desktop ? <h3 className="chat-grow">
     <button type="button" className="chat-project-toggle" aria-expanded={!group.collapsed}
       aria-label={`${group.collapsed ? t('client.chat.expandProject') : t('client.chat.collapseProject')}：${group.label}`}
@@ -73,7 +75,8 @@ export function ChatThreads({ state, controller, newChat, onClose, openSearch, p
           </div>
           {group.data.map(thread => <ChatThreadRow key={thread.id} thread={thread} state={state}
             select={() => { void controller.select(thread); onClose(); }} actions={actions}
-            onFork={() => { void controller.forkConversation(thread).then(opened => { if (opened) onClose(); }); }} />)}
+            onFork={() => { void controller.forkConversation(thread).then(opened => { if (opened) onClose(); }); }}
+            onOpenProject={group.cwd ? () => openProject(group.cwd) : undefined} />)}
           {group.canToggle && <button type="button" className="chat-group-more" aria-expanded={group.expanded}
             aria-label={`${group.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}：${group.label}`} onClick={() => toggle(group.cwd)}>
             {group.expanded ? t("client.chat.collapse") : t("client.chat.showMore.83ad87")}</button>}
