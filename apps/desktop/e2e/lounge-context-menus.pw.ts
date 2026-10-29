@@ -59,7 +59,7 @@ for (const mode of ['local', 'remote', 'web']) {
         node.setSelectionRange(3, 3); node.dispatchEvent(new Event('select', { bubbles: true }));
       });
       const avatar = await openMenu(page, row.locator('.lounge-avatar'), touch);
-      await expect(avatar).toHaveText(['@该用户']);
+      await expect(avatar).toHaveText(['@该用户', '远程协助']);
       if (!touch) await screenshotMenu(page, `lounge-avatar-menu-${mode}`);
       await avatar.first().click();
       await expect(input).toHaveValue('你好，@bob@example.test 继续'); await expect(input).toBeFocused();
@@ -69,7 +69,7 @@ for (const mode of ['local', 'remote', 'web']) {
     const person = page.locator('.lounge-people-list .lounge-person').filter({ hasText: 'bob@example.test' });
     for (const touch of [false, true]) {
       const menu = await openMenu(page, person, touch);
-      await expect(menu).toHaveText(['发起私聊', '个人资料', '置顶', '屏蔽此人']);
+      await expect(menu).toHaveText(['发起私聊', '个人资料', '置顶', '消息免打扰', '屏蔽此人']);
       await page.screenshot({ path: `../../.codex-tmp/lounge-people-menu-${mode}.png`, animations: 'disabled' });
       await page.keyboard.press('Escape');
     }

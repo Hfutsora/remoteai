@@ -19,6 +19,7 @@ import { LoungeAccountLookup, recentSpeakers } from './accountLookup';
 import { LoungeSubmissions } from './submissions';
 import { LoungeDeviceSync } from './deviceSync';
 import { synchronizedSnapshot } from './syncSnapshot';
+import { notificationSettingsUpdate, notificationUnread } from './notificationSettings';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -109,6 +110,7 @@ export class LoungeController {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
   private update(value: Partial<LoungeSnapshot>) {
     this.state = this.profiles.decorate({ ...this.state, ...value });
+    this.state.unread = notificationUnread(this.state);
     this.listeners.forEach(listener => listener());
   }
 
@@ -144,6 +146,7 @@ export class LoungeController {
       onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, directResetAvailable: false,
       accountLookupAvailable: false, namesAvailable: false,
+      notificationSettingsAvailable: false, mutedConversations: [],
       conversation: '', unreadByConversation: {} });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
@@ -240,6 +243,8 @@ export class LoungeController {
     try { frame = JSON.parse(data) as Record<string, unknown>; } catch { return; }
     if (!frame || typeof frame !== 'object') return;
     this.received = Date.now();
+    const notifications = notificationSettingsUpdate(this.state, frame);
+    if (notifications) this.update(notifications);
     if (frame.type === 'accepted') {
       const message = this.submissions.accepted(frame);
       if (message && this.state.status === 'connected') this.append(message);
@@ -469,6 +474,11 @@ export class LoungeController {
     this.markRead(); this.syncWatch(); void this.restoreHistory();
   }
   block(userId: string, blocked: boolean) { return this.submit({ type: 'block', userId, blocked }); }
+  async setNotificationsMuted(conversation: string, muted: boolean) {
+    if (!this.state.notificationSettingsAvailable) throw new Error('client.lounge.notificationSaveFailed');
+    try { await this.submit({ type: 'notification-setting', conversation, muted }); }
+    catch { throw new Error('client.lounge.notificationSaveFailed'); }
+  }
   setPinned(userId: string, pinned: boolean) {
     const contact = this.state.contacts.find(value => value.direct && value.user.id === userId);
     if (!contact || contact.pinned === pinned) return;

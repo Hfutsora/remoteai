@@ -22,7 +22,7 @@ export function ChatThreadContextMenu({ thread, state, actions, onFork, onOpenPr
   const hint = (current && actions.error) || reason(archive);
   const items = [
     ...threadMenuItems({ pinned: pin === 'unpin', archived: state.archived, translate: t,
-      openProject: Boolean(thread.cwd) && Boolean(onOpenProject),
+      openProject: Boolean(onOpenProject),
       disabled: action => action === 'fork' ? Boolean(forkUnavailableReason(state, thread))
         : Boolean(reason(action === 'pin' ? pin : action === 'archive' ? archive : action)) }),
     ...(hint ? [{ key: 'hint', disabled: true, label: <span role="alert">{displayText(hint)}</span> }] : []),
@@ -35,10 +35,13 @@ export function ChatThreadContextMenu({ thread, state, actions, onFork, onOpenPr
       if (key === 'rename' || key === 'delete') actions.changeView(key);
       if (key === 'archive') void actions.submit(archive);
       if (key === 'pin') void actions.submit(pin);
-      if (key === 'openProject' && onOpenProject) void onOpenProject().catch(() => {
-        void message.error({ content: t('client.errors.theOperationFailedPleaseTryAgain'),
-          style: { maxWidth: 400, marginInline: 'auto' } });
-      });
+      if (key === 'openProject' && onOpenProject) {
+        actions.close();
+        void onOpenProject().catch(() => {
+          void message.error({ content: t('client.errors.theOperationFailedPleaseTryAgain'),
+            style: { maxWidth: 400, marginInline: 'auto' } });
+        });
+      }
       if (key === 'fork') { actions.close(); onFork(); }
     } }}>{children}</ThreadContextMenu>;
 }
