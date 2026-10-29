@@ -14,6 +14,7 @@ import { isCurrentDirect, removedConversation } from './removeConversation';
 import { needsDeliveryWork } from './delivery';
 import { LoungeProfiles } from './profiles';
 import type { LoungeReply } from './reply';
+import { LoungeAccountLookup, recentSpeakers } from './accountLookup';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -49,6 +50,7 @@ export class LoungeController {
   private readonly profiles = new LoungeProfiles();
   private readonly delivery: LoungeDirectDelivery;
   private readonly transport = new LoungeDeliveryTransport();
+  private readonly accountLookup = new LoungeAccountLookup();
 
   constructor(private readonly session?: LoungeSession, private readonly runtime: LoungeRuntime = browserLoungeRuntime) {
     this.state = { status: session ? 'connecting' : 'signed-out', messages: [], unread: 0,
@@ -70,6 +72,14 @@ export class LoungeController {
     });
   }
   snapshot = () => this.state;
+  recentSpeakers = () => recentSpeakers(this.recent, this.state.user?.id).map(user => this.profiles.user(user));
+  findAccount(query: string, signal: AbortSignal) {
+    if (this.state.status !== 'connected' || !this.state.directAvailable
+      || !this.state.accountLookupAvailable || !this.socket) {
+      return Promise.reject(new Error('client.lounge.accountLookupFailed'));
+    }
+    return this.accountLookup.find({ socket: this.socket, id: this.runtime.randomId(), query, signal });
+  }
   /** Latest locally available message for a conversation-list preview. */
   conversationPreview(conversation: string) {
     for (let index = this.recent.length - 1; index >= 0; index--) {
@@ -111,6 +121,7 @@ export class LoungeController {
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
       status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, directResetAvailable: false,
+      accountLookupAvailable: false,
       conversation: '', unreadByConversation: {} });
   }
   setViewing(viewing: boolean) { this.viewing = viewing; this.markRead(); }
@@ -184,6 +195,7 @@ export class LoungeController {
     finally { this.renewing = false; }
   }
   private disconnect() {
+    this.accountLookup.disconnect();
     const socket = this.socket;
     this.socket = undefined;
     if (socket) {
@@ -207,6 +219,7 @@ export class LoungeController {
     try { frame = JSON.parse(data) as Record<string, unknown>; } catch { return; }
     if (!frame || typeof frame !== 'object') return;
     this.received = Date.now();
+    if (this.accountLookup.receive(frame)) return;
     if (frame.type === 'profiles') { this.receiveProfiles(frame.profiles); return; }
     if (frame.type === 'direct-permissions') { this.directState.receive(frame); return; }
     if (frame.type === 'rejected') this.delivery.reject(frame);
@@ -242,6 +255,7 @@ export class LoungeController {
       this.directState.resetAvailable = frame.directReset === true;
       this.update({ status: 'connected', user, historyRevision: this.state.historyRevision + 1,
         directAvailable: frame.direct === true && frame.receipts === true,
+        accountLookupAvailable: frame.accountLookup === true,
         directResetAvailable: frame.directReset === true,
         contacts: this.state.contacts.filter(contact => contact.user.id !== user.id) });
       this.syncWatch(); return;

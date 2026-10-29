@@ -41,6 +41,7 @@ export interface LoungeSnapshot {
   contacts: LoungeContact[];
   blocked: string[];
   directAvailable: boolean;
+  accountLookupAvailable?: boolean;
   directResetAvailable?: boolean;
   conversation: string;
   unreadByConversation: Record<string, number>;

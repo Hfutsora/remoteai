@@ -1,20 +1,23 @@
 import { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Plus } from 'lucide-react';
 import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import { displayText as t } from '../localization/messages';
 import type { LoungeAccount, LoungeSnapshot } from './types';
 import { contactStatus } from './contacts';
 import { LoungeAvatar } from './LoungeAvatar';
 
-export function LoungePeople({ state, select, block }: {
+export function LoungePeople({ state, select, block, newChat }: {
   state: LoungeSnapshot; select: (user?: LoungeAccount) => void; block: (user: LoungeAccount) => void;
+  newChat: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<string>();
   const contacts = state.contacts.filter(contact => contact.direct && contact.user.id !== state.user?.id
     && contact.user.account.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <nav className="lounge-people" aria-label={t('client.lounge.people')}>
-    <h2>{t('client.lounge.people')}</h2>
+    <div className="lounge-people-heading"><h2>{t('client.lounge.people')}</h2>
+      <button type="button" className="lounge-new-chat-button" onClick={newChat} disabled={!state.directAvailable}>
+        <Plus size={15} aria-hidden="true" />{t('client.lounge.newChat')}</button></div>
     <input aria-label={t('client.lounge.peopleSearch')} placeholder={t('client.lounge.peopleSearch')}
       value={query} onChange={event => setQuery(event.target.value)} />
     <button type="button" className={`lounge-person${!state.conversation ? ' is-selected' : ''}`}

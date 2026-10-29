@@ -18,6 +18,8 @@ export async function setupLounge(page: Page, web = false, reset = false) {
   let generation = 0;
   let rejectDelete = false;
   let directState = 'new';
+  let lookupReply = true;
+  const lookups: string[] = [];
   const receipts: { type: string; id: string; to: string; status: string }[] = [];
   const moderation: { userId: string; minutes: number }[] = [];
   const sent: { id: string; text: string; images: string[]; avatar?: string; reply?: LoungeReply; to?: string }[] = [];
@@ -38,12 +40,21 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     route.onMessage(raw => {
       const frame = JSON.parse(String(raw));
       if (frame.type === 'authenticate') {
-        route.send(JSON.stringify({ type: 'ready', profiles: true,
+        route.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
           user: { id: 'alice', account: 'alice@example.test', avatar },
           direct: true, receipts: true, directReset: reset, blocked: blocked ? [bob] : [] }));
         authentications++;
       }
       if (frame.type === 'ping') route.send('{"type":"pong"}');
+      if (frame.type === 'lookup-account') {
+        lookups.push(frame.query);
+        if (!lookupReply) return;
+        const query = frame.query.toLowerCase();
+        const suffix = query === 'shared' ? 'Ambiguous' : query === 'alice@example.test' ? 'Self' : 'NotFound';
+        route.send(JSON.stringify(query === 'bob' || query === bob.account
+          ? { type: 'account-found', id: frame.id, user: bob }
+          : { type: 'rejected', id: frame.id, code: `client.lounge.accountLookup${suffix}` }));
+      }
       if (frame.type === 'watch' && reset) route.send(JSON.stringify({ type: 'direct-permissions',
         states: Object.fromEntries(frame.watch.map((id: string) => [id, directState])),
         generations: Object.fromEntries(frame.watch.map((id: string) => [id, generation])) }));
@@ -109,6 +120,7 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     } });
   }, web);
   return {
+    lookups, lookupReply: (value: boolean) => { lookupReply = value; },
     rejectDelete: (value: boolean) => { rejectDelete = value; },
     sent, moderation, receipts, count: () => connections,
     avatar: (value: string) => {

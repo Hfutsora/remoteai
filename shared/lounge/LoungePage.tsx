@@ -15,6 +15,7 @@ import { LoungeHistory } from './LoungeHistory';
 import { LoungePreview } from './LoungePreview';
 import { quoteMessage, type LoungeReply } from './reply';
 import { LoungePeople } from './LoungePeople';
+import { LoungeNewChat } from './LoungeNewChat';
 import { LoungeBlockDialog } from './LoungeBlockDialog';
 import { contactStatus } from './contacts';
 import './lounge.css';
@@ -45,6 +46,8 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [reply, setReply] = useState<LoungeReply>();
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [newChatOpen, setNewChatOpen] = useState(false);
+  const newChat = () => { setPeopleOpen(false); setNewChatOpen(true); };
   const [blocking, setBlocking] = useState<LoungeAccount>();
   const contact = state.contacts.find(value => value.user.id === state.conversation);
   const select = (user?: LoungeAccount) => {
@@ -71,9 +74,10 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   }, [muted, mutedUntil]);
   useEffect(() => {
     controller.setViewing(atBottom && !navigation.focus && !historyOpen && !avatarOpen && !peopleOpen
-      && !preview && !moderating && !blocking);
+      && !preview && !moderating && !blocking && !newChatOpen);
     return () => controller.setViewing(false);
-  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen, preview, moderating, blocking, navigation.focus]);
+  }, [controller, atBottom, historyOpen, avatarOpen, peopleOpen, preview, moderating, blocking,
+    navigation.focus, newChatOpen]);
   useLayoutEffect(() => { if (atBottom && list.current) list.current.scrollTop = list.current.scrollHeight; },
     [state.messages, atBottom]);
   const scrollBottom = () => {
@@ -81,7 +85,8 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   };
   const signedOut = state.status === 'signed-out';
   return <section className="lounge-layout">
-    <aside className="lounge-sidebar"><LoungePeople state={state} select={select} block={setBlocking} /></aside>
+    <aside className="lounge-sidebar">
+      <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat} /></aside>
     <section className="lounge-page">
     <header className="lounge-heading"><div className="lounge-heading-title">
       <button className="lounge-people-toggle" type="button" aria-label={t('client.lounge.people')}
@@ -162,9 +167,11 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
     {preview && <LoungePreview key={preview} uri={preview} close={() => setPreview(undefined)} />}
     {blocking && <LoungeBlockDialog user={blocking} blocked={state.blocked.includes(blocking.id)}
       controller={controller} close={() => setBlocking(undefined)} />}
+    {newChatOpen && <LoungeNewChat key={state.user?.id} controller={controller} state={state}
+      select={select} close={() => setNewChatOpen(false)} />}
     <Drawer open={peopleOpen} width="min(320px, 100vw)" placement="left" title={t('client.lounge.people')}
       onClose={() => setPeopleOpen(false)} styles={{ body: { padding: 0 } }}>
-      <LoungePeople state={state} select={select} block={setBlocking} />
+      <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat} />
     </Drawer>
     </section>
   </section>;

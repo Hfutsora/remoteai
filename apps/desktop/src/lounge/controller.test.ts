@@ -39,6 +39,25 @@ beforeEach(async () => {
 afterEach(() => { controller.stop(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('application lifetime lounge', () => {
+  it('looks up unknown accounts without adding contacts until selected and refuses unsupported servers', async () => {
+    const socket = Socket.instances[0]; socket.ready();
+    const abort = new AbortController();
+    await expect(controller.findAccount('bob', abort.signal)).rejects.toThrow('client.lounge.accountLookupFailed');
+    socket.frame({ type: 'ready', direct: true, receipts: true, accountLookup: true,
+      user: { id: 'self', account: 'alice@example.test' } });
+    const result = controller.findAccount('bob', abort.signal);
+    const request = JSON.parse(socket.send.mock.calls.at(-1)![0]);
+    socket.frame({ type: 'account-found', id: request.id, user: { id: 'bob', account: 'bob@example.test' } });
+    const user = await result;
+    expect(controller.snapshot().contacts).toEqual([]);
+    expect(controller.snapshot().conversation).toBe('');
+    controller.selectConversation(user);
+    expect(controller.snapshot().conversation).toBe('bob');
+    expect(controller.snapshot().contacts[0]).toMatchObject({ user, direct: true });
+    const pending = controller.findAccount('carol', abort.signal).catch((error: Error) => error.message);
+    socket.onclose?.();
+    expect(await pending).toBe('client.lounge.accountLookupFailed');
+  });
   it('shows current online counts only with moderator permission and clears stale counts', async () => {
     const socket = Socket.instances[0]; socket.ready();
     socket.frame({ type: 'presence', onlineCount: 5 });

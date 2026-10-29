@@ -3,6 +3,18 @@
 .lounge-people { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 8px; padding: 12px;
   box-sizing: border-box; color: var(--app-ink, var(--ink, #24262c)); background: var(--app-surface, var(--panel, #fff)); }
 .lounge-people h2 { font-size: 14px; margin: 4px 0; }
+.lounge-people-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lounge-new-chat-button { display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  border: 0; border-radius: 6px; padding: 5px 3px; background: transparent; color: inherit;
+  font: inherit; font-size: 12px; cursor: pointer; }
+.lounge-new-chat-button svg { flex-shrink: 0; }
+.lounge-new-chat-button:hover { background: #20a99818; }
+.lounge-new-chat-button:disabled { opacity: .5; cursor: default; }
+.lounge-new-chat-dialog p { max-width: 400px; overflow-wrap: anywhere; line-height: 1.6; }
+.lounge-new-chat-dialog form > button { margin-top: 10px; }
+.lounge-new-chat-dialog h3 { margin: 18px 0 8px; font-size: 14px; }
+.lounge-new-chat-people { max-height: min(300px, 40vh); overflow-y: auto; }
+.lounge-new-chat-dialog [role="alert"] { color: var(--app-danger, #d14343); }
 .lounge-people input { width: 100%; min-width: 0; border: 1px solid var(--app-border, var(--line, #e6e8ec));
   border-radius: 7px; padding: 8px; background: transparent; color: inherit; font: inherit; box-sizing: border-box; }
 .lounge-people-list { overflow-y: auto; min-height: 0; flex: 1; }

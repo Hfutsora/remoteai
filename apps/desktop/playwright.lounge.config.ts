@@ -5,7 +5,7 @@ export default defineConfig({
   testDir: './e2e', testMatch: ['lounge.pw.ts', 'lounge-replies.pw.ts', 'lounge-direct.pw.ts', 'lounge-receipts.pw.ts',
     'lounge-mobile-redesign.pw.ts', 'lounge-opening-limit.pw.ts', 'lounge-avatars.pw.ts', 'lounge-images.pw.ts',
     'lounge-emoji.pw.ts', 'lounge-text.pw.ts', 'lounge-presence.pw.ts', 'lounge-profile.pw.ts',
-    'lounge-navigation.pw.ts'],
+    'lounge-navigation.pw.ts', 'lounge-new-chat.pw.ts'],
   workers: 1, timeout: 60_000,
   outputDir: '../../.codex-tmp/lounge-playwright',
   use: { baseURL: 'http://127.0.0.1:1487', launchOptions: testBrowserLaunchOptions(),
