@@ -3,11 +3,11 @@ import { Drawer } from 'antd';
 import { HardDrive, Server } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 
-export function MobileLoungeSheet({ title, close, children }: {
-  title: string; close: () => void; children: ReactNode;
+export function MobileLoungeSheet({ title, close, children, className = '' }: {
+  title: ReactNode; close: () => void; children: ReactNode; className?: string;
 }) {
   return <Drawer open placement="bottom" height="auto" title={title} onClose={close}
-    rootClassName="lounge-mobile-sheet" styles={{ body: { maxHeight: '70dvh', overflow: 'auto' } }}>
+    rootClassName={`lounge-mobile-sheet ${className}`} styles={{ body: { maxHeight: '70dvh', overflow: 'auto' } }}>
     {children}
   </Drawer>;
 }

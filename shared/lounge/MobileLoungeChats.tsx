@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, Plus, Search } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
-import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import type { LoungeController } from './controller';
 import type { MobileLounge } from './useMobileLounge';
 import { conversationRows } from './conversationRows';
@@ -10,6 +9,8 @@ import { contactStatus } from './contacts';
 import { MobileLoungeSheet } from './MobileLoungeSheet';
 import { MobileLoungeChatRow } from './MobileLoungeChatRow';
 import { LoungeSwipeRow } from './LoungeSwipeRow';
+import { MobileLoungeChatActions } from './MobileLoungeChatActions';
+import { MobileLoungeChatTrigger } from './MobileLoungeChatTrigger';
 
 export function MobileLoungeChats({ model, controller, onBack }: {
   model: MobileLounge; controller: LoungeController; onBack?: () => void;
@@ -18,6 +19,7 @@ export function MobileLoungeChats({ model, controller, onBack }: {
   const [menu, setMenu] = useState<string>();
   const rows = conversationRows({ state: model.state, controller, drafts: model.drafts }).filter(row =>
     (row.user?.account ?? t('client.lounge.groupChat')).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const actionRow = rows.find(row => row.id === menu);
   return <section className="lounge-chat-list">
     <header className="lounge-mobile-heading">
       <button type="button" aria-label={t('client.discovery.back')} onClick={onBack}>
@@ -36,25 +38,14 @@ export function MobileLoungeChats({ model, controller, onBack }: {
           {t(row.user ? 'client.lounge.privateChats' : 'client.lounge.publicRoom')}</h2>}
         <LoungeSwipeRow enabled={!!row.user && !!model.state.directResetAvailable && model.state.status === 'connected'}
           remove={() => model.setDeleting(row.user)}>
-        <ThreadContextMenu open={!!row.user && menu === row.id}
-          onOpenChange={open => setMenu(open && row.user ? row.id : undefined)}
-          menu={{ items: row.user ? [{ key: 'direct', label: t('client.lounge.directChat') },
-            { key: 'pin', label: t(row.contact?.pinned ? 'client.lounge.unpinChat' : 'client.lounge.pinChat') },
-            ...(model.state.directAvailable ? [{ key: 'block', label: t(model.state.blocked.includes(row.id)
-              ? 'client.lounge.unblockUser' : 'client.lounge.blockUser') }] : []),
-            { key: 'delete', danger: true, label: t('client.lounge.deleteChat'),
-              disabled: !model.state.directResetAvailable || model.state.status !== 'connected' }] : [],
-          onClick: ({ key }) => {
-            setMenu(undefined);
-            if (key === 'pin') controller.setPinned(row.id, !row.contact?.pinned);
-            else if (key === 'delete') model.setDeleting(row.user);
-            else if (key === 'block' && row.user) model.setBlocking(row.user); else model.select(row.user);
-          } }}>
-          <div><MobileLoungeChatRow row={row} model={model} /></div>
-        </ThreadContextMenu>
+        <MobileLoungeChatTrigger enabled={!!row.user} open={() => setMenu(row.id)}>
+          <MobileLoungeChatRow row={row} model={model} />
+        </MobileLoungeChatTrigger>
         </LoungeSwipeRow>
       </div>)}
     </div>
+    {actionRow?.user && <MobileLoungeChatActions row={actionRow} model={model} controller={controller}
+      close={() => setMenu(undefined)} />}
   </section>;
 }
 

@@ -11,6 +11,7 @@ import { LoungeSheet } from './LoungeSheet';
 import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
 import { LoungeChatRow } from './LoungeChatRow';
+import { LoungeChatActions } from './LoungeChatActions';
 
 export function LoungeChats({ model, controller, onBack }: {
   model: MobileLounge; controller: LoungeController; onBack: () => void;
@@ -46,23 +47,8 @@ export function LoungeChats({ model, controller, onBack }: {
           {t(item.user ? 'client.lounge.privateChats' : 'client.lounge.publicRoom')}</Text>}
         <LoungeChatRow row={item} model={model} actions={() => setActions(item)} />
       </>} />
-    {actions?.user && <LoungeSheet title={actions.user.account} close={() => setActions(undefined)}>
-      <Pressable accessibilityRole="button" style={styles.iconButton}
-        onPress={() => { model.select(actions.user); setActions(undefined); }}>
-        <Text style={styles.link}>{t('client.lounge.directChat')}</Text></Pressable>
-      <Pressable accessibilityRole="button" style={styles.iconButton}
-        onPress={() => { controller.setPinned(actions.id, !actions.contact?.pinned); setActions(undefined); }}>
-        <Text style={styles.link}>{t(actions.contact?.pinned
-          ? 'client.lounge.unpinChat' : 'client.lounge.pinChat')}</Text></Pressable>
-      {model.state.directAvailable && <Pressable accessibilityRole="button" style={styles.iconButton}
-        onPress={() => { model.setBlocking(actions.user); setActions(undefined); }}>
-        <Text style={styles.link}>{t(model.state.blocked.includes(actions.id)
-          ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')}</Text></Pressable>}
-      <Pressable accessibilityRole="button" style={styles.iconButton}
-        disabled={!model.state.directResetAvailable || model.state.status !== 'connected'}
-        onPress={() => { model.setDeleting(actions.user); setActions(undefined); }}>
-        <Text style={styles.error}>{t('client.lounge.deleteChat')}</Text></Pressable>
-    </LoungeSheet>}
+    {actions?.user && <LoungeChatActions row={actions} model={model} controller={controller}
+      close={() => setActions(undefined)} />}
   </View>;
 }
 

@@ -7,7 +7,7 @@ import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
 
 export function LoungeSheet({ title, close, children, keyboardAware = false }: {
-  title: string; close: () => void; children: ReactNode; keyboardAware?: boolean;
+  title: ReactNode; close: () => void; children: ReactNode; keyboardAware?: boolean;
 }) {
   const styles = useLoungeStyles();
   const color = useLoungeColor();
@@ -19,7 +19,8 @@ export function LoungeSheet({ title, close, children, keyboardAware = false }: {
         accessibilityRole="button" />
       <View style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom) }]} accessibilityViewIsModal>
         <View style={styles.sheetHandle} />
-        <View style={styles.sheetHeader}><Text accessibilityRole="header" style={styles.title}>{title}</Text>
+        <View style={styles.sheetHeader}>
+          {typeof title === 'string' ? <Text accessibilityRole="header" style={styles.title}>{title}</Text> : title}
           <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel={t('client.lounge.cancel')}
             onPress={close}><Ionicons name="close" size={22} color={color('#687c89', 'muted')} /></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>

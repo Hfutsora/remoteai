@@ -53,6 +53,11 @@ multiple pinned chats, offline restart, translation and navigation at font scale
 Inspect `ordering-*.png` for menu text, pin indicators and complete Chinese glyphs. The browser counterpart
 is `apps/desktop/e2e/lounge-ordering.pw.ts`, including desktop local/remote/Web and 320px/390px mobile Web.
 
+Set `LOUNGE_CHAT_ACTIONS_ONLY=1` to inspect the private chat action sheet, long account wrapping,
+pin/unpin, block/delete confirmations, dismissal and navigation at font scales 1.0 and 1.3.
+Inspect `chat-actions-*.png` for complete glyphs and light/dark appearance. The mobile Web counterpart
+is `apps/desktop/e2e/lounge-chat-actions.pw.ts`, covering right-click and long-press at 320px and 390px.
+
 Set `LOUNGE_PREVIEW_ONLY=1` to check the chat list without selected rows, the latest incoming unread
 text, single-line truncation, retained previews after reading, outgoing replies and back navigation
 at font scales 1.0 and 1.3. Inspect `preview-*.png` in `.codex-tmp/lounge-android/` for glyphs and truncation.
