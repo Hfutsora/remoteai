@@ -35,6 +35,8 @@ export function MobileLoungeChats({ model, controller, onBack }: {
     <label className="lounge-chat-search"><Search size={18} /><input value={query}
       onChange={event => setQuery(event.target.value)} aria-label={t('client.lounge.searchChats')}
       placeholder={t('client.lounge.searchChats')} /></label>
+    {model.notifications.error && <p role="alert" className="lounge-notification-error">
+      {t('client.lounge.notificationSaveFailed')}</p>}
     <div className="lounge-chat-rows">
       {!rows.length && <p className="lounge-no-chats">{t('client.lounge.noChats')}</p>}
       {rows.map((row, index) => <div key={row.id}>
@@ -42,13 +44,13 @@ export function MobileLoungeChats({ model, controller, onBack }: {
           {t(row.user ? 'client.lounge.privateChats' : 'client.lounge.publicRoom')}</h2>}
         <LoungeSwipeRow enabled={!!row.user && !!model.state.directResetAvailable && model.state.status === 'connected'}
           remove={() => model.setDeleting(row.user)}>
-        <MobileLoungeChatTrigger enabled={!!row.user} open={() => setMenu(row.id)}>
+        <MobileLoungeChatTrigger enabled open={() => setMenu(row.id)}>
           <MobileLoungeChatRow row={row} model={model} />
         </MobileLoungeChatTrigger>
         </LoungeSwipeRow>
       </div>)}
     </div>
-    {actionRow?.user && <MobileLoungeChatActions row={actionRow} model={model} controller={controller}
+    {actionRow && <MobileLoungeChatActions row={actionRow} model={model} controller={controller}
       close={() => setMenu(undefined)} />}
   </section>;
 }

@@ -1,6 +1,6 @@
 import { accountName, accountMatches } from './names';
 import { useState } from 'react';
-import { MessageCircle, Pin, Plus } from 'lucide-react';
+import { BellOff, MessageCircle, Pin, Plus } from 'lucide-react';
 import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import { displayText as t } from '../localization/messages';
 import type { LoungeAccount, LoungeSnapshot } from './types';
@@ -8,8 +8,13 @@ import { contactStatus, orderedDirectContacts } from './contacts';
 import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeMyAccount } from './LoungeMyAccount';
 import './contextMenu.css';
+import type { LoungeController } from './controller';
+import { useLoungeNotificationSettings } from './useLoungeNotificationSettings';
+import { notificationActionLabel } from './notificationSettings';
+import { LoungeUnreadBadge } from './LoungeUnreadBadge';
 
-export function LoungePeople({ state, select, block, newChat, pin, profile }: {
+export function LoungePeople({ state, controller, select, block, newChat, pin, profile }: {
+  controller: LoungeController;
   state: LoungeSnapshot; select: (user?: LoungeAccount) => void; block: (user: LoungeAccount) => void;
   newChat: () => void;
   pin: (userId: string, pinned: boolean) => void;
@@ -17,6 +22,11 @@ export function LoungePeople({ state, select, block, newChat, pin, profile }: {
 }) {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<string>();
+  const notifications = useLoungeNotificationSettings(controller);
+  const muted = (id: string) => state.mutedConversations?.includes(id) ?? false;
+  const notificationItem = (id: string) => ({ key: 'notifications', label: t(notificationActionLabel(muted(id))),
+    disabled: !state.notificationSettingsAvailable || state.status !== 'connected' || notifications.busy });
+  const toggleNotifications = (id: string) => { void notifications.save(id, !muted(id)); };
   const contacts = orderedDirectContacts(state.contacts, state.user?.id).filter(contact =>
     accountMatches(contact.user, query));
   return <nav className="lounge-people" aria-label={t('client.lounge.people')}>
@@ -25,10 +35,18 @@ export function LoungePeople({ state, select, block, newChat, pin, profile }: {
         <Plus size={15} aria-hidden="true" />{t('client.lounge.newChat')}</button></div>
     <input aria-label={t('client.lounge.peopleSearch')} placeholder={t('client.lounge.peopleSearch')}
       value={query} onChange={event => setQuery(event.target.value)} />
+    {notifications.error && <p role="alert" className="lounge-notification-error">
+      {t('client.lounge.notificationSaveFailed')}</p>}
+    <ThreadContextMenu overlayClassName="lounge-context-menu" open={menu === ''}
+      onOpenChange={open => setMenu(open ? '' : undefined)} menu={{ items: [notificationItem('')],
+        onClick: () => { setMenu(undefined); toggleNotifications(''); } }}>
     <button type="button" className={`lounge-person${!state.conversation ? ' is-selected' : ''}`}
       aria-current={!state.conversation ? 'page' : undefined} onClick={() => select()}>
-      <span className="lounge-avatar"><MessageCircle size={22} /></span>
-      <span>{t('client.lounge.groupChat')}</span><Unread value={state.unreadByConversation['']} /></button>
+      <span className="lounge-unread-avatar"><span className="lounge-avatar"><MessageCircle size={22} /></span>
+        <LoungeUnreadBadge count={state.unreadByConversation['']} /></span>
+      <span className="lounge-person-copy">{t('client.lounge.groupChat')}</span>
+      {muted('') && <BellOff size={14} className="lounge-pin" aria-label={t('client.lounge.notificationsMuted')} />}
+    </button></ThreadContextMenu>
     <div className="lounge-people-list">
       {!contacts.length && <p>{t('client.lounge.noPeople')}</p>}
       {contacts.map(contact => <ThreadContextMenu key={contact.user.id} overlayClassName="lounge-context-menu"
@@ -36,11 +54,13 @@ export function LoungePeople({ state, select, block, newChat, pin, profile }: {
         menu={{ items: [{ key: 'direct', label: t('client.lounge.directChat') },
           { key: 'profile', label: t('client.lounge.profile') },
           { key: 'pin', label: t(contact.pinned ? 'client.lounge.unpinChat' : 'client.lounge.pinChat') },
+          notificationItem(contact.user.id),
           ...(state.directAvailable ? [{ key: 'block', label: t(state.blocked.includes(contact.user.id)
             ? 'client.lounge.unblockUser' : 'client.lounge.blockUser') }] : [])],
         onClick: ({ key }) => {
           setMenu(undefined);
           if (key === 'pin') pin(contact.user.id, !contact.pinned);
+          else if (key === 'notifications') toggleNotifications(contact.user.id);
           else if (key === 'profile') profile(contact.user);
           else if (key === 'direct') select(contact.user); else block(contact.user);
         } }}>
@@ -48,20 +68,19 @@ export function LoungePeople({ state, select, block, newChat, pin, profile }: {
           className={`lounge-person${state.conversation === contact.user.id ? ' is-selected' : ''}`}
           aria-label={t('client.lounge.directWith', { account: accountName(contact.user) })}
           aria-current={state.conversation === contact.user.id ? 'page' : undefined} onClick={() => select(contact.user)}>
-          <LoungeAvatar user={contact.user} /><span className="lounge-person-copy">
+          <span className="lounge-unread-avatar"><LoungeAvatar user={contact.user} />
+            <LoungeUnreadBadge count={state.unreadByConversation[contact.user.id]} /></span>
+          <span className="lounge-person-copy">
             <span>{accountName(contact.user)}</span>
             {contact.direct && <small className={contact.online ? 'is-online' : ''}>{t(contactStatus(contact))}</small>}
             {state.blocked.includes(contact.user.id) && <small>{t('client.lounge.blocked')}</small>}
           </span>{contact.pinned && <Pin size={14} className="lounge-pin" role="img"
             aria-label={t('client.lounge.pinned')} />}
-          <Unread value={state.unreadByConversation[contact.user.id]} />
+          {muted(contact.user.id) && <BellOff size={14} className="lounge-pin"
+            aria-label={t('client.lounge.notificationsMuted')} />}
         </button>
       </ThreadContextMenu>)}
     </div>
     {state.user && <LoungeMyAccount key={state.user.id} user={state.user} settings={profile} />}
   </nav>;
-}
-
-function Unread({ value = 0 }: { value?: number }) {
-  return value > 0 ? <span className="lounge-person-unread">{value > 99 ? '99+' : value}</span> : null;
 }

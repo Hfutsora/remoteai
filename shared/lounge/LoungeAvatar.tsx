@@ -16,5 +16,5 @@ export function LoungeAvatar({ user, onDirect, onProfile, onMention }: {
     aria-label={t(onProfile ? 'client.lounge.viewProfile' : 'client.lounge.directWith', {
       account: accountName(user) })}>{content}</button>
     : <span className="lounge-avatar" aria-hidden>{content}</span>;
-  return onMention ? <LoungeAvatarMenu mention={onMention}>{avatar}</LoungeAvatarMenu> : avatar;
+  return onMention ? <LoungeAvatarMenu user={user} mention={onMention}>{avatar}</LoungeAvatarMenu> : avatar;
 }

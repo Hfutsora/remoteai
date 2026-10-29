@@ -63,6 +63,11 @@ pin/unpin, block/delete confirmations, dismissal and navigation at font scales 1
 Inspect `chat-actions-*.png` for complete glyphs and light/dark appearance. The mobile Web counterpart
 is `apps/desktop/e2e/lounge-chat-actions.pw.ts`, covering right-click and long-press at 320px and 390px.
 
+Set `LOUNGE_NOTIFICATIONS_ONLY=1` to verify group/private notification settings, failed saves, live updates,
+restart restoration, entry badge filtering and avatar unread badges at font scales 1.0 and 1.3.
+Inspect `notifications-*.png` for complete glyphs and the top-right `99+` badge. Browser coverage is in
+`apps/desktop/e2e/lounge-notifications.pw.ts`, including desktop local/remote, Web and mobile Web.
+
 Set `LOUNGE_PREVIEW_ONLY=1` to check the chat list without selected rows, the latest incoming unread
 text, single-line truncation, retained previews after reading, outgoing replies and back navigation
 at font scales 1.0 and 1.3. Inspect `preview-*.png` in `.codex-tmp/lounge-android/` for glyphs and truncation.

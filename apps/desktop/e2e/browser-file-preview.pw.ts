@@ -32,6 +32,7 @@ async function checkPreviews(page: Page) {
   await expect.poll(() => panel(page).frameLocator('iframe').getByAltText('HTML asset')
     .evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(200);
   expect(await page.evaluate(() => document.body.dataset.escaped)).toBeUndefined();
+  await page.screenshot({ path: test.info().outputPath('html-preview.png') });
   await row(page, 'image.svg').click();
   await expect.poll(() => panel(page).locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(200);
   await row(page, 'sound.wav').click();

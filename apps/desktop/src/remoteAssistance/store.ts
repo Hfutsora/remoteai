@@ -11,10 +11,10 @@ interface Reply { identity: GuiCloudIdentity; currentDeviceId: string; requests:
 type Command = { kind: 'list' } | { kind: 'invite'; email: string }
   | { kind: 'respond'; id: string; action: 'accept' | 'decline' | 'end' };
 interface Snapshot {
-  authenticated: boolean; dialog: boolean; busy: boolean; error: string; requests: AssistanceInvitation[];
+  authenticated: boolean; dialog: boolean; busy: boolean; error: string; requests: AssistanceInvitation[]; email: string;
   identity?: GuiCloudIdentity; currentDeviceId?: string; viewerId?: string;
 }
-const INITIAL: Snapshot = { authenticated: false, dialog: false, busy: false, error: '', requests: [] };
+const INITIAL: Snapshot = { authenticated: false, dialog: false, busy: false, error: '', requests: [], email: '' };
 
 export function liveInvitation(request: AssistanceInvitation) {
   return (request.state === 'pending' || request.state === 'accepted') && Date.parse(request.expiresAt) > Date.now();
@@ -43,6 +43,16 @@ export class AssistanceStore {
     this.listeners.forEach(listener => listener());
   }
   open = () => this.update({ dialog: true, error: '' });
+  setEmail = (email: string) => this.update({ email });
+  /** Targeted chat entries call this only after the user confirms the recipient. */
+  request = (email?: string) => {
+    if (this.state.busy || this.state.requests.some(request =>
+      request.hostDeviceId === this.state.currentDeviceId && liveInvitation(request))) {
+      this.open(); return;
+    }
+    this.update({ dialog: true, error: '', email: email ?? '' });
+    if (email) void this.invite(email);
+  };
   dismiss = () => this.update({ dialog: false });
   view = (id: string) => { if (!this.revoked.has(id)) this.update({ viewerId: id, dialog: false }); };
   allows(id: string) {

@@ -1,4 +1,6 @@
-import { checkPreviewSize, PREVIEW_BYTE_LIMIT, type PreviewLoader } from './kinds';
+import { checkPreviewSize, filePreviewKind, PREVIEW_BYTE_LIMIT, type PreviewLoader } from './kinds';
+import { loadHtmlAsset } from './htmlAssetLoad';
+import { deferCssImage, deferHtmlMedia, type HtmlMediaAsset } from './htmlMedia';
 
 const MAX_ASSETS = 256;
 const EMPTY_ASSET = 'data:,';
@@ -39,7 +41,7 @@ async function rewriteCss(css: string, base: string, resolve: ResolveAsset) {
     const source = match[1] ?? match[2] ?? match[3] ?? match[4] ?? match[5];
     const url = await resolve(source.trim(), base);
     result += css.slice(previous, match.index) + (match[0].startsWith('@') ? '@import ' : '')
-      + `url(${JSON.stringify(url)})`;
+      + (url.startsWith('var(--preview-') ? url : `url(${JSON.stringify(url)})`);
     previous = match.index! + match[0].length;
   }
   return result + css.slice(previous);
@@ -56,7 +58,8 @@ async function rewriteSrcset(value: string, base: string, resolve: ResolveAsset)
   return candidates.join(', ');
 }
 
-async function rewriteDocument(document: Document, base: string, resolve: ResolveAsset) {
+async function rewriteDocument(document: Document, base: string,
+  { resolve, resolveCss }: { resolve: ResolveAsset; resolveCss: ResolveAsset }) {
   for (const element of document.querySelectorAll('[src], [poster], [srcset], [style], link[href], style')) {
     for (const name of ['src', 'poster']) {
       if (element.hasAttribute(name)) element.setAttribute(name, await resolve(element.getAttribute(name)!, base));
@@ -74,13 +77,29 @@ async function rewriteDocument(document: Document, base: string, resolve: Resolv
       } else element.setAttribute('href', url);
     }
     if (element.hasAttribute('style')) {
-      element.setAttribute('style', await rewriteCss(element.getAttribute('style')!, base, resolve));
+      element.setAttribute('style', await rewriteCss(element.getAttribute('style')!, base, resolveCss));
     }
-    if (element.tagName === 'STYLE') element.textContent = await rewriteCss(element.textContent ?? '', base, resolve);
+    if (element.tagName === 'STYLE') element.textContent = await rewriteCss(element.textContent ?? '', base, resolveCss);
   }
 }
 
-function createAssetResolver(load: PreviewLoader, signal: AbortSignal) {
+interface DeferredAssets { assets: HtmlMediaAsset[]; channel?: string }
+
+function cssAssetResolver(resolve: ResolveAsset, deferred: DeferredAssets): ResolveAsset {
+  return async (source, base, ancestors) => {
+    if (!deferred.channel) return resolve(source, base, ancestors);
+    try {
+      const reference = localReference(source, base);
+      if (reference && filePreviewKind(reference.path) === 'image') {
+        return deferCssImage({ assets: deferred.assets, channel: deferred.channel,
+          read: () => resolve(source, base, ancestors) });
+      }
+    } catch { /* The normal resolver records invalid references as failed assets. */ }
+    return resolve(source, base, ancestors);
+  };
+}
+
+function createAssetResolver(load: PreviewLoader, signal: AbortSignal, deferred: DeferredAssets) {
   const cache = new Map<string, Promise<string>>();
   let bytes = 0, failed = false;
   const resolve: ResolveAsset = async (source, base, ancestors = []) => {
@@ -100,37 +119,44 @@ function createAssetResolver(load: PreviewLoader, signal: AbortSignal) {
       return EMPTY_ASSET;
     }
   };
+  const resolveCss = cssAssetResolver(resolve, deferred);
   async function readAsset(reference: { path: string; url: string }, ancestors: readonly string[]) {
-    const file = await load(reference.path, { signal, progress: () => {} });
+    const file = await loadHtmlAsset({ load, path: reference.path, signal });
     signal.throwIfAborted();
     checkPreviewSize(file.size);
     bytes += file.size;
     if (bytes > PREVIEW_BYTE_LIMIT) throw new Error('Preview assets exceed memory limit');
     if (/\.css$/i.test(reference.path)) {
       const css = await rewriteCss(await file.text(), reference.url,
-        (source, base) => resolve(source, base, [...ancestors, reference.path]));
+        (source, base) => resolveCss(source, base, [...ancestors, reference.path]));
       return dataUrl(new Blob([css], { type: 'text/css' }));
     }
     const script = /\.[cm]?js$/i.test(reference.path);
     return dataUrl(script ? new Blob([file], { type: 'text/javascript' }) : file);
   }
-  return { resolve, failed: () => failed };
+  return { resolve, resolveCss, failed: () => failed };
 }
 
 /** Package static dependencies through the selected computer's existing authenticated file reader.
  * The iframe keeps an opaque origin: never grant allow-same-origin to make resources work.
  */
 export async function prepareHtmlPreview(options: {
-  text: string; path: string; load: PreviewLoader; signal: AbortSignal;
+  text: string; path: string; load: PreviewLoader; signal: AbortSignal; mediaChannel?: string;
 }) {
   const { signal } = options;
-  const assets = createAssetResolver(options.load, signal);
+  const media: HtmlMediaAsset[] = [];
+  const assets = createAssetResolver(options.load, signal, { assets: media, channel: options.mediaChannel });
   const document = new DOMParser().parseFromString(options.text, 'text/html');
   const fileUrl = htmlFileUrl(options.path);
   const base = new URL(document.querySelector('base[href]')?.getAttribute('href') ?? '', fileUrl).href;
   // A file base is useful to the resolver, but not loadable in a browser iframe.
   document.querySelectorAll('base').forEach(element => element.remove());
-  await rewriteDocument(document, base, assets.resolve);
+  if (options.mediaChannel) deferHtmlMedia({ document, base, assets: media,
+    resolve: (source, base, attribute) => attribute === 'srcset'
+      ? rewriteSrcset(source, base, assets.resolve) : assets.resolve(source, base),
+    channel: options.mediaChannel });
+  await rewriteDocument(document, base, assets);
   signal.throwIfAborted();
-  return { html: '<!doctype html>\n' + document.documentElement.outerHTML, failed: assets.failed() };
+  return { html: '<!doctype html>\n' + document.documentElement.outerHTML, failed: assets.failed(),
+    media, hasFailed: assets.failed };
 }

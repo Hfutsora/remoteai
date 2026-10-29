@@ -1,5 +1,5 @@
 import { displayText, displayError } from '../i18n/uiText';
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useEffect, useSyncExternalStore } from 'react';
 import { Alert, Button, Input, Modal } from 'antd';
 import { Handshake } from 'lucide-react';
 import type { CloudAuthState } from '../types';
@@ -18,7 +18,7 @@ const STATE_LABELS = {
 export function RemoteAssistance({ auth, onLogin }: { auth: CloudAuthState; onLogin: () => void }) {
   useGuiLanguage();
   const state = useSyncExternalStore(store.subscribe, store.snapshot);
-  const [email, setEmail] = useState('');
+  const { email } = state;
   useEffect(() => {
     store.reset(auth.authenticated);
     if (!auth.authenticated) return;
@@ -34,7 +34,7 @@ export function RemoteAssistance({ auth, onLogin }: { auth: CloudAuthState; onLo
     && request.state === 'accepted' && liveInvitation(request));
   const viewer = accepted?.id === state.viewerId ? accepted : undefined;
   const end = (request: AssistanceInvitation) => { void store.respond(request.id, 'end'); };
-  const invite = async () => { if (await store.invite(email)) setEmail(''); };
+  const invite = async () => { if (await store.invite(email)) store.setEmail(''); };
   return <>
     {(active || accepted) && !viewer && <div className={styles.status} role="status">
       <Handshake size={16} aria-hidden="true" />
@@ -57,7 +57,7 @@ export function RemoteAssistance({ auth, onLogin }: { auth: CloudAuthState; onLo
           <label htmlFor="assistance-email">{uiText("client.remoteAssistance.theirSignInEmail")}</label>
           <Input id="assistance-email" type="email" autoFocus value={email} maxLength={254}
             placeholder="name@example.com" disabled={state.busy || !!active}
-            onChange={event => setEmail(event.target.value)} onPressEnter={() => { if (!active) void invite(); }} />
+            onChange={event => store.setEmail(event.target.value)} onPressEnter={() => { if (!active) void invite(); }} />
           <p className={styles.hint}>{uiText("client.remoteAssistance.askThemToSignInToRemoteAiOnTheir")}</p>
           <Button type="primary" loading={state.busy} disabled={!email.trim() || !!active}
             onClick={() => void invite()}>

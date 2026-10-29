@@ -44,7 +44,7 @@ for (const mode of ['local', 'remote', 'web']) {
       await enter(other, mode, cloud);
       await expect(other.locator('.lounge-people-list .lounge-person')).toHaveCount(2);
       await expect(other.locator('.lounge-message')).toHaveCount(0);
-      await expect(other.locator('.lounge-person-unread')).toHaveCount(0);
+      await expect(other.locator('.lounge-avatar-unread')).toHaveCount(0);
       await other.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
       await expect(other.locator('.lounge-heading h1')).toHaveText('bob@example.test');
       await expect(other.locator('.lounge-message')).toHaveCount(0);
