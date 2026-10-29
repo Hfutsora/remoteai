@@ -24,6 +24,7 @@ export function LoungeChats({ model, controller, onBack }: {
   const rows = conversationRows({ state: model.state, controller, drafts: model.drafts }).filter(row =>
     row.user ? accountMatches(row.user, query)
       : t('client.lounge.groupChat').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const actionRow = actions && rows.find(row => row.id === actions.id);
   return <View style={styles.page}>
     <View style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel={t('client.discovery.back')}
@@ -44,6 +45,8 @@ export function LoungeChats({ model, controller, onBack }: {
       <TextInput value={query} onChangeText={setQuery} style={styles.searchInput}
         accessibilityLabel={t('client.lounge.searchChats')} placeholder={t('client.lounge.searchChats')}
         placeholderTextColor={color('#687c89', 'muted')} /></View>
+    {model.notifications.error && <Text accessibilityRole="alert" style={[styles.error, styles.notice]}>
+      {t('client.lounge.notificationSaveFailed')}</Text>}
     <FlatList data={rows} keyExtractor={row => row.id} keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ paddingHorizontal: 12 }}
       ListEmptyComponent={<Text style={styles.muted}>{t('client.lounge.noChats')}</Text>}
@@ -52,7 +55,7 @@ export function LoungeChats({ model, controller, onBack }: {
           {t(item.user ? 'client.lounge.privateChats' : 'client.lounge.publicRoom')}</Text>}
         <LoungeChatRow row={item} model={model} actions={() => setActions(item)} />
       </>} />
-    {actions?.user && <LoungeChatActions row={actions} model={model} controller={controller}
+    {actionRow && <LoungeChatActions row={actionRow} model={model} controller={controller}
       close={() => setActions(undefined)} />}
   </View>;
 }

@@ -92,7 +92,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   const signedOut = state.status === 'signed-out';
   return <section className="lounge-layout">
     <aside className="lounge-sidebar">
-      <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat}
+      <LoungePeople state={state} controller={controller} select={select} block={setBlocking} newChat={newChat}
         pin={(id, pinned) => controller.setPinned(id, pinned)} profile={showProfile} /></aside>
     <section className="lounge-page">
     <header className="lounge-heading"><div className="lounge-heading-title">
@@ -185,7 +185,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
       close={() => setProfile(undefined)} editAvatar={() => { setProfile(undefined); setAvatarOpen(true); }} />}
     <Drawer open={peopleOpen} width="min(320px, 100vw)" placement="left" title={t('client.lounge.people')}
       onClose={() => setPeopleOpen(false)} styles={{ body: { padding: 0 } }}>
-      <LoungePeople state={state} select={select} block={setBlocking} newChat={newChat}
+      <LoungePeople state={state} controller={controller} select={select} block={setBlocking} newChat={newChat}
         pin={(id, pinned) => controller.setPinned(id, pinned)} profile={showProfile} />
     </Drawer>
     </section>

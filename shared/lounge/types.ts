@@ -39,6 +39,8 @@ export interface LoungeSnapshot {
   messages: LoungeMessage[];
   user?: LoungeAccount;
   unread: number;
+  notificationSettingsAvailable?: boolean;
+  mutedConversations?: string[];
   policy: LoungePolicy;
   historyRevision: number;
   historyError: boolean;

@@ -18,7 +18,7 @@ for (const width of [320, 390]) for (const theme of ['light', 'dark']) {
     const green = theme === 'dark' ? 'rgb(164, 200, 176)' : 'rgb(84, 134, 106)';
     const gray = theme === 'dark' ? 'rgb(160, 173, 181)' : 'rgb(104, 124, 137)';
     await expect(dot).toHaveCSS('background-color', green);
-    await expect(bob.locator('.lounge-chat-badge')).toHaveText('1');
+    await expect(row.locator('.lounge-avatar-unread')).toHaveText('1');
     expect(relay.receipts.some(receipt => receipt.id === id && receipt.status === 'read')).toBe(false);
     await expect(page.getByRole('button', { name: '群聊', exact: true })
       .locator('.lounge-avatar-presence')).toHaveCount(0);

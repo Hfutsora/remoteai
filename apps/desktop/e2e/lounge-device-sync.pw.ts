@@ -53,7 +53,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     try {
       const other = await context.newPage(); await connect(other, broker, mode, direct);
       await expect(other.locator('.lounge-message')).toHaveCount(62, { timeout: 30_000 });
-      await expect(other.locator('.lounge-person-unread')).toHaveCount(0);
+      await expect(other.locator('.lounge-avatar-unread')).toHaveCount(0);
       await expect(other.locator('.lounge-text').filter({ hasText: '带引用的历史消息' })).toBeVisible();
       expect(broker.relayFrames).toBeGreaterThan(0);
       if (direct) {
@@ -94,7 +94,7 @@ test('private history excludes deleted generations and never replays the sender�
     await other.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
     await expect(other.locator('.lounge-text')).toHaveText('删除后的新消息');
     expect(sink.sent).toHaveLength(0);
-    await expect(other.locator('.lounge-person-unread')).toHaveCount(0);
+    await expect(other.locator('.lounge-avatar-unread')).toHaveCount(0);
   } finally { await context.close(); broker.disconnectAll(); }
 });
 

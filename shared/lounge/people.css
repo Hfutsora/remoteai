@@ -31,7 +31,6 @@
 .lounge-person-copy > span { font-size: 13px; }
 .lounge-person-copy small, .lounge-peer-status { color: var(--app-muted, var(--muted, #838892)); font-size: 12px; }
 .lounge-person-copy small.is-online { color: #268c64; }
-.lounge-person-unread { border-radius: 12px; padding: 1px 5px; background: #e54d57; color: #fff; font-size: 11px; }
 .lounge-heading-title { min-width: 0; flex: 1; }
 .lounge-heading-title h1 { overflow-wrap: anywhere; }
 .lounge-heading-title > svg { flex-shrink: 0; }
