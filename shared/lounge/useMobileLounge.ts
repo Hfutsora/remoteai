@@ -4,7 +4,7 @@ import type { LoungeAccount, LoungeDraft, LoungeMessage } from './types';
 import { quoteMessage, type LoungeReply } from './reply';
 import { useLoungeNavigation } from './useLoungeNavigation';
 
-export type LoungeSheet = 'members' | 'about' | 'extras' | undefined;
+export type LoungeSheet = 'members' | 'about' | 'extras' | 'new-chat' | undefined;
 const EMPTY_DRAFT: LoungeDraft = { text: '', images: [] };
 
 /** Page-local navigation and drafts shared by native and mobile web. No chat content leaves the device. */

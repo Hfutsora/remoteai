@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import type { LoungeAccount } from '../../../../shared/lounge/types';
@@ -21,7 +22,7 @@ export function LoungeBlockDialog({ user, blocked, controller, close }: {
   return <Modal transparent animationType="fade" onRequestClose={() => { if (!busy) close(); }}>
     <View style={styles.overlay}><View style={styles.dialog}>
       <Text style={styles.title}>{blocked ? t('client.lounge.unblockUser')
-        : t('client.lounge.blockConfirm', { account: user.account })}</Text>
+        : t('client.lounge.blockConfirm', { account: accountName(user) })}</Text>
       <Text style={styles.text}>{blocked ? user.account : t('client.lounge.blockHint')}</Text>
       {error && <Text accessibilityRole="alert" style={styles.error}>{t('client.lounge.actionFailed')}</Text>}
       <View style={styles.actions}>

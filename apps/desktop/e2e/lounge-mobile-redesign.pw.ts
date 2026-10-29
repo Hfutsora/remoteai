@@ -3,6 +3,45 @@ import { setupLounge, pixel } from './lounge-support';
 import type {} from './lounge-harness';
 
 for (const width of [320, 390]) {
+  test(`mobile chat previews ${width}: latest unread text remains after reading without selection`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const relay = await setupLounge(page, true);
+    await page.goto('http://127.0.0.1:1486/web/'); await relay.ready();
+    await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
+    await page.locator('.discovery-lounge').click();
+    relay.private('较早的未读消息');
+    const latest = '最新未读消息的文字部分\n很长的文字需要单行显示，超过可用宽度后使用省略号。';
+    relay.private(latest);
+    const privateChat = page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true });
+    const preview = privateChat.locator('.lounge-chat-row-copy > span');
+    await expect(preview).toHaveText(latest.replace('\n', ' '));
+    await expect(privateChat.locator('.lounge-chat-badge')).toHaveText('2');
+    await expect(preview).toHaveCSS('white-space', 'nowrap');
+    await expect(preview).toHaveCSS('text-overflow', 'ellipsis');
+    expect(await preview.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
+    await expect(page.locator('.lounge-chat-rows [aria-current]')).toHaveCount(0);
+    await expect(page.getByText('当前', { exact: true })).toHaveCount(0);
+    await page.screenshot({ path: `../../.codex-tmp/lounge-preview-unread-${width}.png` });
+    await privateChat.click();
+    await expect(page.getByText(latest, { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '返回聊天列表', exact: true }).click();
+    await expect(preview).toHaveText(latest.replace('\n', ' '));
+    await expect(privateChat.locator('.lounge-chat-badge')).toHaveCount(0);
+    await expect(page.locator('.lounge-chat-row.is-current')).toHaveCount(0);
+    await expect(page.locator('.lounge-chat-row').last()).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await page.screenshot({ path: `../../.codex-tmp/lounge-preview-read-${width}.png` });
+    await privateChat.click();
+    await page.getByRole('textbox', { name: '消息', exact: true }).fill('我的回复');
+    await page.getByRole('button', { name: '发送', exact: true }).click();
+    await page.getByRole('button', { name: '返回聊天列表', exact: true }).click();
+    await expect(preview).toHaveText('我的回复');
+    await page.getByRole('button', { name: '群聊', exact: true }).click();
+    await page.getByRole('button', { name: '返回聊天列表', exact: true }).click();
+    await expect(page.locator('.lounge-chat-row.is-current, .lounge-chat-rows [aria-current]')).toHaveCount(0);
+  });
+}
+
+for (const width of [320, 390]) {
   for (const theme of ['light', 'dark']) {
     test(`mobile redesign ${width} ${theme}: empty, sheets, compact composer and navigation`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });

@@ -28,8 +28,11 @@ type incoming struct {
 	ID         string      `json:"id"`
 	Text       string      `json:"text"`
 	Query      string      `json:"query"`
+	Cursor     string      `json:"cursor"`
 	Images     []string    `json:"images"`
 	Avatar     string      `json:"avatar"`
+	Nickname   string      `json:"nickname"`
+	Remark     string      `json:"remark"`
 	UserID     string      `json:"userId"`
 	Minutes    *int        `json:"minutes"`
 	Reply      *replyQuote `json:"reply,omitempty"`
@@ -38,14 +41,16 @@ type incoming struct {
 	Watch      []string    `json:"watch"`
 	Direct     bool        `json:"direct"`
 	Receipts   bool        `json:"receipts"`
+	GroupAcks  bool        `json:"groupAcks"`
 	Status     string      `json:"status"`
 	Generation int64       `json:"generation,omitempty"`
 }
 
 type account struct {
-	ID      string `json:"id"`
-	Account string `json:"account"`
-	Avatar  string `json:"avatar,omitempty"`
+	ID       string `json:"id"`
+	Account  string `json:"account"`
+	Avatar   string `json:"avatar,omitempty"`
+	Nickname string `json:"nickname,omitempty"`
 }
 
 type message struct {

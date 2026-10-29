@@ -43,6 +43,30 @@ They cover server save failures, successful saves, external profile updates, res
 reconnection with stale caches, and the translated settings copy. Server tests separately validate
 48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
+Set `LOUNGE_CONTACTS_ONLY=1` to verify cloud contact restoration with empty local data, live contact additions,
+opening private chats and back navigation at font scales 1.0 and 1.3. The fixture never downloads chat content.
+Inspect the `cloud-contacts-*.png` screenshots. The shared sync also runs in desktop local/remote and Web tests
+in `apps/desktop/e2e/lounge-contact-sync.pw.ts`; PostgreSQL tests cover mutual-message eligibility and deletion.
+
+Set `LOUNGE_NEW_CHAT_ONLY=1` to verify the New chat sheet, recent speaker selection, exact email/local-part
+lookup, ambiguous/missing/self results, keyboard layout, cancellation, retained drafts, translations and
+back navigation at font scales 1.0 and 1.3. Inspect the `new-chat-*.png` captures for complete Chinese glyphs.
+The mobile Web counterpart is `apps/desktop/e2e/lounge-new-chat-mobile.pw.ts` at 320px and 390px.
+
+Set `LOUNGE_ORDERING_ONLY=1` to verify private chat ordering by last message, pin/unpin actions,
+multiple pinned chats, offline restart, translation and navigation at font scales 1.0 and 1.3.
+Inspect `ordering-*.png` for menu text, pin indicators and complete Chinese glyphs. The browser counterpart
+is `apps/desktop/e2e/lounge-ordering.pw.ts`, including desktop local/remote/Web and 320px/390px mobile Web.
+
+Set `LOUNGE_CHAT_ACTIONS_ONLY=1` to inspect the private chat action sheet, long account wrapping,
+pin/unpin, block/delete confirmations, dismissal and navigation at font scales 1.0 and 1.3.
+Inspect `chat-actions-*.png` for complete glyphs and light/dark appearance. The mobile Web counterpart
+is `apps/desktop/e2e/lounge-chat-actions.pw.ts`, covering right-click and long-press at 320px and 390px.
+
+Set `LOUNGE_PREVIEW_ONLY=1` to check the chat list without selected rows, the latest incoming unread
+text, single-line truncation, retained previews after reading, outgoing replies and back navigation
+at font scales 1.0 and 1.3. Inspect `preview-*.png` in `.codex-tmp/lounge-android/` for glyphs and truncation.
+
 Set `LOUNGE_TEXT_ONLY=1` to check `hi`, short Chinese messages, longer words, explicit newlines,
 wrapped Chinese messages and back navigation at font scales 1.0 and 1.3. Inspect the screenshots in
 `.codex-tmp/lounge-text-<device serial>/` for complete glyphs; positive accessibility bounds alone
@@ -67,6 +91,13 @@ device verification; this Android fixture is not evidence of iOS execution or ba
 while the operating system has suspended networking.
 
 ## Automated checks
+
+Set `LOUNGE_NAMES_ONLY=1` to verify nickname and owner-private contact remark editing, failed saves,
+remote-device updates, clearing, long-press sheet labels and server recovery after clearing app data.
+The fixture runs at font scales 1.0 and 1.3; inspect `names-*.png` for Chinese glyphs and keyboard layout.
+`apps/desktop/e2e/lounge-names.pw.ts` covers desktop local/remote/Web and 320px/390px mobile Web.
+Actual PostgreSQL persistence, authenticated ownership and remark privacy are verified separately by
+`go -C apps/admin-go test ./internal/lounge -run TestLoungeNames` with `LOUNGE_TEST_DATABASE_URL` set.
 
 ```powershell
 npm run check -w @codex-switch/native

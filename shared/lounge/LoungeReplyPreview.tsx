@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { ArrowUp, X } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import type { LoungeReply } from './reply';
@@ -21,7 +22,8 @@ function ReplyCard({ reply, cancel, locate, original }: Props & { original?: Lou
   const text = original?.text ?? reply.text;
   const content = <>
     <span className="lounge-reply-header"><span className="lounge-reply-account">
-      {cancel ? t('client.lounge.replyingTo', { account: reply.account }) : original?.sender.account ?? reply.account}</span>
+      {cancel ? t('client.lounge.replyingTo', { account: reply.account })
+        : (original ? accountName(original.sender) : reply.account)}</span>
       {original && <time dateTime={original.sentAt}>{new Date(original.sentAt).toLocaleTimeString([], {
         hour: '2-digit', minute: '2-digit' })}</time>}{locate && <ArrowUp size={16} />}</span>
     {!!text && <span className="lounge-reply-text">{text}</span>}

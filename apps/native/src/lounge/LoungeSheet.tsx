@@ -1,27 +1,31 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '../i18n';
 import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
 
-export function LoungeSheet({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
+export function LoungeSheet({ title, close, children, keyboardAware = false }: {
+  title: ReactNode; close: () => void; children: ReactNode; keyboardAware?: boolean;
+}) {
   const styles = useLoungeStyles();
   const color = useLoungeColor();
   const insets = useSafeAreaInsets();
   return <Modal transparent animationType="slide" onRequestClose={close}>
-    <View style={styles.sheetOverlay}>
+    <KeyboardAvoidingView style={styles.sheetOverlay} enabled={keyboardAware}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Pressable style={styles.sheetBackdrop} onPress={close} accessibilityLabel={t('client.lounge.cancel')}
         accessibilityRole="button" />
       <View style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom) }]} accessibilityViewIsModal>
         <View style={styles.sheetHandle} />
-        <View style={styles.sheetHeader}><Text accessibilityRole="header" style={styles.title}>{title}</Text>
+        <View style={styles.sheetHeader}>
+          {typeof title === 'string' ? <Text accessibilityRole="header" style={styles.title}>{title}</Text> : title}
           <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel={t('client.lounge.cancel')}
             onPress={close}><Ionicons name="close" size={22} color={color('#687c89', 'muted')} /></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   </Modal>;
 }
 

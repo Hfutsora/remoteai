@@ -1,3 +1,4 @@
+import { accountName } from './names';
 import { useState } from 'react';
 import { Modal } from 'antd';
 import { displayText as t } from '../localization/messages';
@@ -17,7 +18,7 @@ export function LoungeBlockDialog({ user, blocked, controller, close }: {
     finally { setBusy(false); }
   };
   return <Modal open width={400} title={blocked ? t('client.lounge.unblockUser')
-    : t('client.lounge.blockConfirm', { account: user.account })} onCancel={() => { if (!busy) close(); }}
+    : t('client.lounge.blockConfirm', { account: accountName(user) })} onCancel={() => { if (!busy) close(); }}
     confirmLoading={busy} onOk={() => void submit()} okText={t(blocked
       ? 'client.lounge.unblockUser' : 'client.lounge.blockUser')} cancelText={t('client.lounge.cancel')}>
     <p style={{ overflowWrap: 'anywhere' }}>{blocked ? user.account : t('client.lounge.blockHint')}</p>

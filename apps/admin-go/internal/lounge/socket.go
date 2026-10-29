@@ -89,6 +89,8 @@ func (h *hub) receive(client *peer, input incoming) bool {
 		return h.watchProfiles(client, input.Watch)
 	case "watch":
 		return h.watch(client, input.Watch)
+	case "sync-contacts":
+		return h.syncSavedContacts(client, input)
 	case "receipt", "receipt-confirm":
 		return h.forwardReceipt(client, input)
 	case "message":
@@ -105,6 +107,10 @@ func (h *hub) receiveAction(client *peer, input incoming) bool {
 	switch input.Type {
 	case "avatar":
 		h.saveAvatar(client, input)
+	case "nickname":
+		h.saveNickname(client, input)
+	case "remark":
+		h.saveRemark(client, input)
 	case "moderate":
 		h.moderate(client, input)
 	case "block":
@@ -155,12 +161,16 @@ func (h *hub) authorize(client *peer, input incoming) bool {
 	if len(profiles) != 0 {
 		user.Avatar = profiles[0].Avatar
 	}
+	if h.readNickname(&user) != nil {
+		return false
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	client.user, client.expires = user, expires
 	client.moderator = value.Moderator
 	client.direct = input.Direct
 	client.receipts = input.Receipts
+	client.groupAcks = input.GroupAcks
 	client.applyRelationships(privacy)
 	h.clients[client] = true
 	if !h.sendReadyLocked(client, value, privacy) {
@@ -184,8 +194,10 @@ func (h *hub) sendReadyLocked(client *peer, value policy, privacy relationships)
 		Profiles      bool      `json:"profiles"`
 		DirectReset   bool      `json:"directReset"`
 		AccountLookup bool      `json:"accountLookup"`
+		Names         bool      `json:"names"`
+		SavedContacts bool      `json:"savedContacts"`
 	}{"ready", client.user, value, h.onlineForLocked(value.Moderator), true, privacy.Blocked, true,
-		h.profiles != nil, h.directPolicy != nil, h.accountLookup != nil})
+		h.profiles != nil, h.directPolicy != nil, h.accountLookup != nil, h.names != nil, h.savedContacts != nil})
 	if err != nil {
 		return false
 	}

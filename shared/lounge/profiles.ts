@@ -1,5 +1,6 @@
 import { avatarData, type LoungeAvatarStore } from './avatar';
 import type { LoungeAccount, LoungeMessage, LoungeSnapshot } from './types';
+import { LoungeNames } from './names';
 
 const MAX_PROFILES = 200;
 
@@ -10,13 +11,15 @@ function mapChanged<T>(values: T[], transform: (value: T) => T): T[] {
 
 /** Server profiles override message snapshots and local caches, including explicit resets. */
 export class LoungeProfiles {
+  readonly names = new LoungeNames();
   available = false;
   private avatars = new Map<string, string>();
   private watched = '';
 
-  clear() { this.avatars.clear(); this.disconnect(); }
-  disconnect() { this.watched = ''; this.available = false; }
-  ready(user: LoungeAccount, available: boolean) {
+  clear() { this.avatars.clear(); this.names.clear(); this.disconnect(); }
+  disconnect() { this.watched = ''; this.available = false; this.names.available = false; }
+  ready(user: LoungeAccount, available: boolean, namesAvailable = false) {
+    this.names.ready(user, namesAvailable);
     this.available = available;
     this.watched = '';
     if (available) this.avatars.set(user.id, avatarData(user.avatar) ? user.avatar : '');
@@ -30,6 +33,7 @@ export class LoungeProfiles {
     return true;
   }
   user(user: LoungeAccount): LoungeAccount {
+    user = this.names.user(user);
     if (!this.avatars.has(user.id)) return user;
     const avatar = this.avatars.get(user.id) || undefined;
     return avatar === user.avatar ? user : { ...user, avatar };

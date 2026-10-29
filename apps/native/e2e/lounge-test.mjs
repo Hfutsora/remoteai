@@ -13,6 +13,13 @@ import { verifyNativeEmoji } from './lounge-emoji-check.mjs';
 import { verifyNativeText } from './lounge-text-check.mjs';
 import { verifyNativePresence } from './lounge-presence-check.mjs';
 import { verifyNativeProfile } from './lounge-profile-check.mjs';
+import { verifyNativePreview } from './lounge-preview-check.mjs';
+import { verifyNativeNewChat } from './lounge-new-chat-check.mjs';
+import { verifyNativeOrdering } from './lounge-ordering-check.mjs';
+import { verifyNativeChatActions } from './lounge-chat-actions-check.mjs';
+import { verifyNativeNames } from './lounge-names-check.mjs';
+import { createNamesFixture } from './lounge-names-fixture.mjs';
+import { verifyNativeContacts } from './lounge-contacts-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -33,10 +40,14 @@ let blocked = false;
 let avatar = '';
 let rejectAvatar = false;
 const avatarSaves = [];
-const resetAvailable = process.env.LOUNGE_PROFILE_ONLY === '1';
+const resetAvailable = process.env.LOUNGE_PROFILE_ONLY === '1' || process.env.LOUNGE_CHAT_ACTIONS_ONLY === '1';
 let generation = 0;
 let directState = 'new';
 let failDelete = false;
+let lookupReply = true;
+const lookups = [];
+const contactsMode = process.env.LOUNGE_CONTACTS_ONLY === '1';
+let savedContacts = [];
 const server = createServer((request, response) => {
   response.writeHead(online ? 200 : 503, { 'content-type': 'application/json' });
   response.end(JSON.stringify({ ticket: 'fixture-ticket' }));
@@ -47,17 +58,33 @@ function incoming(text, images = []) {
     sender: { id: 'bob', account: 'bob@example.test' }, sentAt: new Date().toISOString() };
 }
 function broadcast(frame) { for (const socket of sockets.clients) socket.send(JSON.stringify(frame)); }
+const names = createNamesFixture(broadcast);
 sockets.on('connection', socket => socket.on('message', raw => {
   const frame = JSON.parse(String(raw));
+  if (process.env.LOUNGE_NAMES_ONLY === '1') names.handle(socket, frame);
   if (frame.type === 'authenticate') {
-    socket.send(JSON.stringify({ type: 'ready', profiles: true,
-      user: { id: 'alice', account: 'alice@example.test', avatar },
+    socket.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
+      savedContacts: contactsMode,
+      names: process.env.LOUNGE_NAMES_ONLY === '1',
+      user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
       policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
       directReset: resetAvailable,
       blocked: blocked ? [{ id: 'bob', account: 'bob@example.test' }] : [] }));
     socket.send(JSON.stringify(incoming('真机中文测试：忙里偷闲，聊点轻松的 ☕', [image])));
   }
   if (frame.type === 'ping') socket.send('{"type":"pong"}');
+  if (frame.type === 'sync-contacts' && contactsMode) {
+    socket.send(JSON.stringify({ type: 'saved-contacts', id: frame.id, users: savedContacts }));
+  }
+  if (frame.type === 'lookup-account') {
+    lookups.push(frame.query);
+    if (!lookupReply) return;
+    const query = frame.query.toLowerCase();
+    const suffix = query === 'shared' ? 'Ambiguous' : query === 'alice@example.test' ? 'Self' : 'NotFound';
+    socket.send(JSON.stringify(query === 'bob' || query === 'bob@example.test'
+      ? { type: 'account-found', id: frame.id, user: { id: 'bob', account: 'bob@example.test' } }
+      : { type: 'rejected', id: frame.id, code: `client.lounge.accountLookup${suffix}` }));
+  }
   if (frame.type === 'watch' && resetAvailable) socket.send(JSON.stringify({ type: 'direct-permissions',
     states: Object.fromEntries(frame.watch.map(id => [id, directState])),
     generations: Object.fromEntries(frame.watch.map(id => [id, generation])) }));
@@ -89,7 +116,7 @@ sockets.on('connection', socket => socket.on('message', raw => {
     if (frame.to && resetAvailable && directState === 'new') directState = 'waiting';
     sent.push(frame);
     socket.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
-      ...(frame.to ? { recipient: { id: 'bob', account: 'bob@example.test' } } : {}),
+      ...(frame.to ? { recipient: { id: frame.to, account: `${frame.to}@example.test` } } : {}),
       sentAt: new Date().toISOString() }));
     if (frame.to) socket.send(JSON.stringify({ type: 'receipt', id: frame.id, from: frame.to,
       to: 'alice', status: 'delivered' }));
@@ -167,6 +194,8 @@ try {
   await adb('install', '-r', process.env.LOUNGE_TEST_APK
     ?? path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
   for (const scale of [1, 1.3]) {
+    names.reset();
+    savedContacts = [{ id: 'bob', account: 'bob@example.test' }];
     online = true;
     blocked = false;
     generation = 0; directState = 'new'; failDelete = false;
@@ -180,6 +209,50 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (contactsMode) {
+      await verifyNativeContacts({ tap, find, nodes, screenshot, scale,
+        addContact: user => { savedContacts.push(user); broadcast({ type: 'saved-contacts-changed' }); },
+        restart: async () => {
+          await adb('shell', 'am', 'force-stop', app); await adb('shell', 'pm', 'clear', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
+          await tap('在线交流'); await find('搜索聊天');
+        } });
+      continue;
+    }
+    if (process.env.LOUNGE_NAMES_ONLY === '1') {
+      await verifyNativeNames({ adb, tap, find, nodes, screenshot, hideKeyboard, longPress,
+        scale, names, broadcast, incoming, restart: async () => {
+          await adb('shell', 'am', 'force-stop', app); await adb('shell', 'pm', 'clear', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
+          await tap('在线交流'); await find('搜索聊天');
+        } });
+      continue;
+    }
+    if (process.env.LOUNGE_CHAT_ACTIONS_ONLY === '1') {
+      await verifyNativeChatActions({ adb, tap, find, nodes, screenshot, longPress, scale, broadcast, incoming });
+      continue;
+    }
+    if (process.env.LOUNGE_ORDERING_ONLY === '1') {
+      await verifyNativeOrdering({ adb, tap, find, nodes, screenshot, longPress, hideKeyboard, scale, broadcast, incoming,
+        restart: async () => {
+          online = false;
+          await adb('shell', 'am', 'force-stop', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); await tap('在线交流'); await find('搜索聊天');
+        } });
+      continue;
+    }
+    if (process.env.LOUNGE_NEW_CHAT_ONLY === '1') {
+      await verifyNativeNewChat({ adb, tap, find, nodes, screenshot, hideKeyboard, scale, sent, lookups,
+        lookupReply: value => { lookupReply = value; } });
+      continue;
+    }
+    if (process.env.LOUNGE_PREVIEW_ONLY === '1') {
+      await verifyNativePreview({ adb, tap, find, nodes, screenshot, scale, broadcast, incoming });
+      continue;
+    }
     if (resetAvailable) {
       await verifyNativeProfile({ adb, tap, find, nodes, screenshot, hideKeyboard, longPress, scale, sent,
         failDelete: value => { failDelete = value; },

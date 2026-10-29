@@ -16,17 +16,21 @@ const parameters = new URLSearchParams(location.search);
 const dark = parameters.has('dark');
 applyThemeMode(dark ? 'dark' : 'light');
 setGuiLanguage('zh');
-window.loungeFixture = { setLanguage: setGuiLanguage };
-declare global { interface Window { loungeFixture: { setLanguage: typeof setGuiLanguage } } }
+declare global { interface Window { loungeFixture: {
+  setLanguage: typeof setGuiLanguage; setTheme: (mode: 'light' | 'dark') => void;
+} } }
 const auth: CloudAuthState = { enabled: true, authenticated: true, baseUrl: 'https://lounge.test',
   userEmail: parameters.get('account') ?? 'alice@example.test', userId: 'alice',
   lastSyncAt: null, sessionExpired: false };
 
 function Fixture() {
+  const [themeMode, setThemeMode] = useState(dark ? 'dark' : 'light');
+  window.loungeFixture = { setLanguage: setGuiLanguage,
+    setTheme: mode => { applyThemeMode(mode); setThemeMode(mode); } };
   const language = useGuiLanguage();
   const [page, setPage] = useState<DashboardPage>('accounts');
   const lounge = useDesktopLounge(auth);
-  return <ConfigProvider theme={{ algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
+  return <ConfigProvider theme={{ algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
     <div className="app-shell sidebar-navigation-shell" style={{ gridTemplateRows: '38px 0 minmax(0, 1fr)' }}>
       <div className="window-titlebar" style={{ padding: 8 }}>Remote AI · {parameters.get('mode') ?? 'local'}</div>
       <aside className="app-sidebar"><div className="sidebar-brand">Remote AI</div>

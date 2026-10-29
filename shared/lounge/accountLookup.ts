@@ -39,9 +39,10 @@ export class LoungeAccountLookup {
   disconnect() { for (const pending of this.pending.values()) pending.finish(); }
 }
 
-export function recentSpeakers(messages: readonly LoungeMessage[], self?: string): LoungeAccount[] {
+export function recentSpeakers(messages: readonly LoungeMessage[], self?: string, after = -Infinity): LoungeAccount[] {
   const users = new Map<string, LoungeAccount>();
   for (let index = messages.length - 1; index >= 0 && users.size < RECENT_SPEAKER_LIMIT; index--) {
+    if (Date.parse(messages[index].sentAt) <= after) continue;
     const user = messages[index].sender;
     if (user.id !== self && !users.has(user.id)) users.set(user.id, user);
   }

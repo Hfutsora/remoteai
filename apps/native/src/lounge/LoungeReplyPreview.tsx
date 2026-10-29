@@ -1,3 +1,4 @@
+import { accountName } from '../../../../shared/lounge/names';
 import { Image, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { LoungeReply } from '../../../../shared/lounge/reply';
@@ -27,7 +28,7 @@ function ReplyCard({ reply, cancel, original, locate, onLongPress }: Props & { o
   const content = <>
     <View style={styles.replyHeader}>
       <Text style={styles.replyAccount}>{cancel ? t('client.lounge.replyingTo', { account: reply.account })
-        : original?.sender.account ?? reply.account}</Text>
+        : (original ? accountName(original.sender) : reply.account)}</Text>
       {original && <Text style={styles.replyText}>{new Date(original.sentAt).toLocaleTimeString(getLocale(),
         { hour: '2-digit', minute: '2-digit' })}</Text>}
       {locate && <Ionicons name="arrow-up" size={18} color={color('#687c89', 'muted')} />}
