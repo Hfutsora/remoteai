@@ -2,6 +2,9 @@ import { createLoungeStyles } from './theme';
 import { textMetrics } from '../theme/text';
 import { BUBBLE_HORIZONTAL_PADDING, MESSAGE_FONT_SIZE } from './messageLayout';
 
+export const UNREAD_BADGE_FONT_SIZE = 10;
+export const UNREAD_BADGE_HORIZONTAL_PADDING = 4;
+
 export const useLoungeStyles = createLoungeStyles(color => ({
   page: { flex: 1, minHeight: 0, backgroundColor: color('#f5f7f8', 'canvas') },
   header: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 4, paddingRight: 12,
@@ -64,8 +67,8 @@ export const useLoungeStyles = createLoungeStyles(color => ({
     borderColor: color('#e6e8ec', 'border'), paddingHorizontal: 12, borderRadius: 8 },
   badgeWrap: { position: 'relative' },
   badge: { position: 'absolute', right: -14, top: -10, backgroundColor: '#e54d57', borderRadius: 12,
-    minWidth: 20, paddingHorizontal: 4, alignItems: 'center' },
-  badgeText: { ...textMetrics(10, 13), color: '#fff' },
+    minWidth: 20, paddingHorizontal: UNREAD_BADGE_HORIZONTAL_PADDING, alignItems: 'center' },
+  badgeText: { ...textMetrics(UNREAD_BADGE_FONT_SIZE, 13), color: '#fff' },
   headerIdentity: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
   privateIdentity: { flexDirection: 'column', alignItems: 'flex-start' },
   headerTitle: { flexShrink: 1, minWidth: 0, maxWidth: '100%' },

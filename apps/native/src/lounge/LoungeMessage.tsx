@@ -2,7 +2,7 @@ import { Image, Pressable, Text, View, useWindowDimensions } from 'react-native'
 import { useState, type ReactNode } from 'react';
 import { initials, type LoungeAccount, type LoungeMessage as Message } from '../../../../shared/lounge/types';
 import { getLocale, t } from '../i18n';
-import { useLoungeStyles } from './styles';
+import { UNREAD_BADGE_FONT_SIZE, UNREAD_BADGE_HORIZONTAL_PADDING, useLoungeStyles } from './styles';
 import { LoungeReplyPreview } from './LoungeReplyPreview';
 import { LoungeMessageActions } from './LoungeMessageActions';
 import { LoungeImage } from './LoungeImage';
@@ -34,8 +34,12 @@ export function LoungeAvatar({ user, size, onDirect, onProfile, onLongPress }: {
 
 export function LoungeUnread({ count, children }: { count: number; children: ReactNode }) {
   const styles = useLoungeStyles();
-  return <View style={styles.badgeWrap}>{children}{count > 0 && <View style={styles.badge}>
-    <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+  const { fontScale } = useWindowDimensions();
+  const label = count > 99 ? '99+' : String(count);
+  // Absolute children are measured against the icon width; reserve scalable space for every glyph.
+  const minWidth = UNREAD_BADGE_HORIZONTAL_PADDING * 2 + label.length * UNREAD_BADGE_FONT_SIZE * fontScale;
+  return <View style={styles.badgeWrap}>{children}{count > 0 && <View style={[styles.badge, { minWidth }]}>
+    <Text style={styles.badgeText}>{label}</Text>
   </View>}</View>;
 }
 
