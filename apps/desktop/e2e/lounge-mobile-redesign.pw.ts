@@ -15,7 +15,8 @@ for (const width of [320, 390]) {
     const privateChat = page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true });
     const preview = privateChat.locator('.lounge-chat-row-copy > span');
     await expect(preview).toHaveText(latest.replace('\n', ' '));
-    await expect(privateChat.locator('.lounge-chat-badge')).toHaveText('2');
+    await expect(page.locator('.lounge-chat-row').filter({ has: privateChat })
+      .locator('.lounge-avatar-unread')).toHaveText('2');
     await expect(preview).toHaveCSS('white-space', 'nowrap');
     await expect(preview).toHaveCSS('text-overflow', 'ellipsis');
     expect(await preview.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
@@ -26,7 +27,8 @@ for (const width of [320, 390]) {
     await expect(page.getByText(latest, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '返回聊天列表', exact: true }).click();
     await expect(preview).toHaveText(latest.replace('\n', ' '));
-    await expect(privateChat.locator('.lounge-chat-badge')).toHaveCount(0);
+    await expect(page.locator('.lounge-chat-row').filter({ has: privateChat })
+      .locator('.lounge-avatar-unread')).toHaveCount(0);
     await expect(page.locator('.lounge-chat-row.is-current')).toHaveCount(0);
     await expect(page.locator('.lounge-chat-row').last()).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await page.screenshot({ path: `../../.codex-tmp/lounge-preview-read-${width}.png` });
@@ -116,7 +118,8 @@ test('mobile redesign: members, drafts, unread and scroll survive conversation s
   const incoming = relay.private('private-while-list', { id: 'carol', account: 'carol@example.test' });
   await page.getByRole('button', { name: /^聊天/ }).click();
   const carol = page.getByRole('button', { name: '与 carol@example.test 私聊', exact: true });
-  await expect(carol.locator('.lounge-chat-badge')).toHaveText('1');
+  await expect(page.locator('.lounge-chat-row').filter({ has: carol })
+    .locator('.lounge-avatar-unread')).toHaveText('1');
   expect(relay.receipts.some(receipt => receipt.id === incoming && receipt.status === 'read')).toBe(false);
   await page.getByRole('button', { name: '群聊', exact: true }).click();
   await expect(input).toHaveValue('群聊草稿');

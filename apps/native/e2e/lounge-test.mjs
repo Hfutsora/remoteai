@@ -21,6 +21,7 @@ import { verifyNativeNames } from './lounge-names-check.mjs';
 import { createNamesFixture } from './lounge-names-fixture.mjs';
 import { verifyNativeContacts } from './lounge-contacts-check.mjs';
 import { loadHistorySource, verifyNativeSync } from './lounge-sync-check.mjs';
+import { verifyNativeNotifications } from './lounge-notifications-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -73,6 +74,10 @@ function incoming(text, images = []) {
     sender: { id: 'bob', account: 'bob@example.test' }, sentAt: new Date().toISOString() };
 }
 function broadcast(frame) { for (const socket of sockets.clients) socket.send(JSON.stringify(frame)); }
+const notifications = { muted: new Set(), fail: false, update(conversation, muted) {
+  if (muted) this.muted.add(conversation); else this.muted.delete(conversation);
+  broadcast({ type: 'notification-settings', conversation, muted });
+} };
 const names = createNamesFixture(broadcast);
 sockets.on('connection', socket => socket.on('message', raw => {
   const frame = JSON.parse(String(raw));
@@ -80,6 +85,7 @@ sockets.on('connection', socket => socket.on('message', raw => {
   if (frame.type === 'authenticate') {
     socket.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true,
       savedContacts: contactsMode, deviceSync: syncMode,
+      notificationSettings: true, mutedConversations: [...notifications.muted],
       names: process.env.LOUNGE_NAMES_ONLY === '1',
       user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
       policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
@@ -88,6 +94,14 @@ sockets.on('connection', socket => socket.on('message', raw => {
     socket.send(JSON.stringify(incoming('真机中文测试：忙里偷闲，聊点轻松的 ☕', [image])));
   }
   if (frame.type === 'ping') socket.send('{"type":"pong"}');
+  if (frame.type === 'notification-setting') {
+    if (notifications.fail) socket.send(JSON.stringify({ type: 'rejected', id: frame.id,
+      code: 'client.lounge.notificationSaveFailed' }));
+    else {
+      notifications.update(frame.conversation, frame.muted);
+      socket.send(JSON.stringify({ type: 'updated', id: frame.id }));
+    }
+  }
   if (frame.type === 'sync-contacts' && contactsMode) {
     socket.send(JSON.stringify({ type: 'saved-contacts', id: frame.id, users: savedContacts }));
   }
@@ -214,6 +228,7 @@ try {
   await adb('install', '-r', process.env.LOUNGE_TEST_APK
     ?? path.join(root, 'apps/native/android/app/build/outputs/apk/release/lounge-fixture.apk'));
   for (const scale of [1, 1.3]) {
+    notifications.muted.clear(); notifications.fail = false;
     names.reset();
     savedContacts = [{ id: 'bob', account: 'bob@example.test' }];
     online = true;
@@ -231,6 +246,16 @@ try {
     await tap('在线交流'); await find('搜索聊天');
     if (syncSource) {
       await verifyNativeSync({ adb, tap, find, screenshot, scale, source: syncSource, assertEventually, hideKeyboard });
+      continue;
+    }
+    if (process.env.LOUNGE_NOTIFICATIONS_ONLY === '1') {
+      await verifyNativeNotifications({ adb, tap, find, nodes, screenshot, longPress, scale,
+        broadcast, incoming, notifications, restart: async () => {
+          await adb('shell', 'am', 'force-stop', app); await adb('shell', 'pm', 'clear', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
+          await tap('在线交流'); await find('搜索聊天');
+        } });
       continue;
     }
     if (contactsMode) {

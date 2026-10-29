@@ -12,18 +12,18 @@ import { LoungeSheet } from './LoungeSheet';
 import { createLoungeStyles, useLoungeColor } from './theme';
 
 const icons = { direct: 'chatbubble-ellipses-outline', pin: 'pin-outline',
-  block: 'ban-outline', delete: 'trash-outline' } as const;
+  block: 'ban-outline', delete: 'trash-outline', notifications: 'notifications-off-outline' } as const;
 
 export function LoungeChatActions({ row, model, controller, close }: {
   row: ConversationRow; model: MobileLounge; controller: LoungeController; close: () => void;
 }) {
   const styles = useStyles();
-  if (!row.user) return null;
   const actions = conversationActions({ row, model, controller, close });
   return <LoungeSheet close={close} title={<View style={styles.contact}>
-    <LoungeAvatar user={row.user} /><View style={styles.identity}>
-      <Text accessibilityRole="header" style={styles.account}>{accountName(row.user)}</Text>
-      <Text style={styles.subtitle}>{t('client.lounge.privateChats')}</Text>
+    {row.user && <LoungeAvatar user={row.user} />}<View style={styles.identity}>
+      <Text accessibilityRole="header" style={styles.account}>
+        {row.user ? accountName(row.user) : t('client.lounge.groupChat')}</Text>
+      <Text style={styles.subtitle}>{t(row.user ? 'client.lounge.privateChats' : 'client.lounge.publicRoom')}</Text>
     </View>
   </View>}>
     <View style={styles.actions}>
