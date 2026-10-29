@@ -29,6 +29,25 @@ const store = () => nativeLoungeHistory('https://cloud.test/', 'Alice@example.te
 const message = (id: string): LoungeMessage => ({ type: 'message', id, text: `hello ${id}`, images: [],
   sender: { id: 'bob', account: 'Bob@example.test' }, sentAt: '2026-10-28T00:00:00Z' });
 
+it('deletes only old private history in the current account and preserves a fresh concurrent message', async () => {
+  const history = nativeLoungeHistory('https://cloud.test', 'delete');
+  const other = nativeLoungeHistory('https://cloud.test', 'other-delete');
+  const old = { ...message('old'), conversation: 'bob', recipient: { id: 'alice', account: 'Alice' } };
+  await history.save(old); await other.save(old); await history.save(message('group-delete'));
+  await history.saveContact!({ user: old.sender, direct: true });
+  await history.deleteConversation!('bob', 1);
+  const data = state.db!.export(); state.db!.close(); state.db = new SQL.Database(data);
+  expect((await history.page({ query: '', conversation: 'bob' })).messages).toEqual([]);
+  expect(await history.contacts!()).toEqual([]);
+  expect((await other.page({ query: '' })).messages).toEqual([old]);
+  expect((await history.page({ query: '' })).messages.map(value => value.id)).toEqual(['group-delete']);
+  await history.save(old); await history.save({ ...old, id: 'fresh', generation: 1 });
+  await history.saveContact!({ user: old.sender, direct: true });
+  await history.deleteConversation!('bob', 1);
+  expect((await history.page({ query: '', conversation: 'bob' })).messages.map(value => value.id)).toEqual(['fresh']);
+  expect(await history.contacts!()).toHaveLength(1);
+});
+
 it('persists receipt state and selects unfinished local jobs without resending completed messages', async () => {
   const history = nativeLoungeHistory('https://cloud.test', 'receipts');
   const outgoing: LoungeMessage = { ...message('pending'), recipient: { id: 'other', account: 'other' }, receipts: true,

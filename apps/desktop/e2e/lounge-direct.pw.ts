@@ -20,7 +20,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     const people = async () => { if (mobile) await page.getByRole('button', { name: /^聊天/ }).click(); };
     await enter(); relay.push('group-before-private');
     await people();
-    const person = page.locator('.lounge-person, .lounge-chat-row')
+    const person = page.locator('.lounge-person, .lounge-chat-row-main')
       .and(page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true })).filter({ visible: true });
     await expect(person).toHaveCount(0);
     if (mobile) await expect(page.getByRole('button', { name: '群聊', exact: true })).toBeVisible();
@@ -128,7 +128,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await send.click(); await expect(input).toHaveValue(''); await expect(input).toBeFocused();
     await expect(input).toHaveAttribute('data-blurs', '0');
     await page.locator('.lounge-message').filter({ hasText: 'avatar-entry-message' })
-      .getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
+      .getByRole('button', { name: mobile ? '查看 bob@example.test 的资料' : '与 bob@example.test 私聊', exact: true }).click();
+    if (mobile) await page.getByRole('button', { name: '发消息', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'bob@example.test', exact: true })).toBeVisible();
     await input.fill('first private message'); await send.click();
     await expect(input).toHaveValue(''); await expect(input).toBeFocused();
@@ -144,7 +145,8 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await page.getByRole('button', { name: '群聊', exact: true }).filter({ visible: true }).click();
     await openLoungeAction(page, '历史记录');
     await page.locator('.lounge-history-message').filter({ hasText: 'avatar-entry-message' })
-      .getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
+      .getByRole('button', { name: mobile ? '查看 bob@example.test 的资料' : '与 bob@example.test 私聊', exact: true }).click();
+    if (mobile) await page.getByRole('button', { name: '发消息', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '历史记录', exact: true })).toBeHidden();
     await expect(page.getByRole('heading', { name: 'bob@example.test', exact: true })).toBeVisible();
   });

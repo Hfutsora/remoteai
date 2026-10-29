@@ -16,6 +16,7 @@ export function mergeDirectPermissions(permissions: Map<string, DirectPermission
 export async function checkDirectPermission(options: {
   self: string; peer: string; permission?: DirectPermission;
   page: (query: HistoryQuery) => Promise<HistoryPage>;
+  generation?: number;
 }) {
   if (options.permission === 'open') return;
   if (options.permission === 'waiting') throw new Error(AWAITING_REPLY);
@@ -24,6 +25,7 @@ export async function checkDirectPermission(options: {
   do {
     const page = await options.page({ query: '', conversation: options.peer, before });
     for (const message of page.messages) {
+      if (options.generation !== undefined && (message.generation ?? 0) !== options.generation) continue;
       if (message.sender.id === options.peer && message.recipient?.id === options.self) return;
       if (message.sender.id === options.self && message.recipient?.id === options.peer) sent = true;
     }

@@ -5,7 +5,7 @@ import type { LoungeAccount } from '../../../shared/lounge/types';
 
 export const pixel = 'data:image/png;base64,'
   + readFileSync(new URL('../src-tauri/icons/32x32.png', import.meta.url)).toString('base64');
-export async function setupLounge(page: Page, web = false) {
+export async function setupLounge(page: Page, web = false, reset = false) {
   let socket: WebSocketRoute;
   let connections = 0;
   let authentications = 0;
@@ -15,6 +15,9 @@ export async function setupLounge(page: Page, web = false) {
   let contactOnline: boolean | null = true;
   let avatar = '';
   let rejectAvatar = false;
+  let generation = 0;
+  let rejectDelete = false;
+  let directState = 'new';
   const receipts: { type: string; id: string; to: string; status: string }[] = [];
   const moderation: { userId: string; minutes: number }[] = [];
   const sent: { id: string; text: string; images: string[]; avatar?: string; reply?: LoungeReply; to?: string }[] = [];
@@ -37,10 +40,22 @@ export async function setupLounge(page: Page, web = false) {
       if (frame.type === 'authenticate') {
         route.send(JSON.stringify({ type: 'ready', profiles: true,
           user: { id: 'alice', account: 'alice@example.test', avatar },
-          direct: true, receipts: true, blocked: blocked ? [bob] : [] }));
+          direct: true, receipts: true, directReset: reset, blocked: blocked ? [bob] : [] }));
         authentications++;
       }
       if (frame.type === 'ping') route.send('{"type":"pong"}');
+      if (frame.type === 'watch' && reset) route.send(JSON.stringify({ type: 'direct-permissions',
+        states: Object.fromEntries(frame.watch.map((id: string) => [id, directState])),
+        generations: Object.fromEntries(frame.watch.map((id: string) => [id, generation])) }));
+      if (frame.type === 'delete-direct') {
+        if (rejectDelete) route.send(JSON.stringify({ type: 'rejected', id: frame.id, code: 'client.lounge.deleteFailed' }));
+        else {
+          generation++; directState = 'new';
+          route.send(JSON.stringify({ type: 'direct-permissions', states: { bob: directState },
+            generations: { bob: generation } }));
+          route.send(JSON.stringify({ type: 'updated', id: frame.id, userId: 'bob', generation }));
+        }
+      }
       if (frame.type === 'avatar') {
         if (rejectAvatar) route.send(JSON.stringify({ type: 'rejected', id: frame.id,
           code: 'client.lounge.avatarSaveFailed' }));
@@ -58,6 +73,7 @@ export async function setupLounge(page: Page, web = false) {
         route.send(JSON.stringify({ type: 'updated', id: frame.id }));
       }
       if (frame.type === 'message') {
+        if (frame.to && reset && directState === 'new') directState = 'waiting';
         sent.push(frame);
         route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
           ...(frame.to ? { recipient: bob } : {}),
@@ -93,6 +109,7 @@ export async function setupLounge(page: Page, web = false) {
     } });
   }, web);
   return {
+    rejectDelete: (value: boolean) => { rejectDelete = value; },
     sent, moderation, receipts, count: () => connections,
     avatar: (value: string) => {
       avatar = value;
@@ -113,8 +130,10 @@ export async function setupLounge(page: Page, web = false) {
       socket.send(JSON.stringify({ type: 'contacts', contacts: [{ id: 'bob', online }] }));
     },
     private: (text: string, sender: LoungeAccount = bob, id = crypto.randomUUID()) => {
+      directState = 'open';
       socket.send(JSON.stringify({ type: 'message', id, text, images: [], sender,
-        recipient: { id: 'alice', account: 'alice@example.test' }, receipts: true, sentAt: new Date().toISOString() }));
+        recipient: { id: 'alice', account: 'alice@example.test' }, generation,
+        receipts: true, sentAt: new Date().toISOString() }));
       return id;
     },
     ready: () => expect.poll(() => authentications).toBeGreaterThan(0),

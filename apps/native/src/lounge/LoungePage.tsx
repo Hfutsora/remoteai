@@ -16,6 +16,8 @@ import { LoungeAbout } from './LoungeSheet';
 import { LoungeHeading } from './LoungeHeading';
 import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
+import { LoungeProfile } from './LoungeProfile';
+import { LoungeDeleteDialog } from './LoungeDeleteDialog';
 
 export function LoungePage({ controller, onBack }: { controller: LoungeController; onBack: () => void }) {
   useLanguage();
@@ -49,6 +51,7 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
         }} renderItem={({ item }) => <LoungeMessage message={item} own={item.sender.id === state.user?.id}
           reply={model.quote} blocked={state.blocked.includes(item.sender.id)}
           direct={item.sender.id !== state.user?.id && state.directAvailable ? () => model.select(item.sender) : undefined}
+          profile={item.sender.id !== state.user?.id ? () => model.setProfile(item.sender) : undefined}
           block={item.sender.id !== state.user?.id && state.directAvailable ? () => model.setBlocking(item.sender) : undefined}
           manage={state.policy.moderator ? model.setModerating : undefined}
           preview={model.setPreview} onImageLoad={scrollBottom} />}
@@ -99,7 +102,7 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
     {model.sheet === 'members' && <LoungeMembers model={model} />}
     {model.sheet === 'about' && <LoungeAbout direct={!!contact} close={() => model.setSheet(undefined)} />}
     {model.history && <LoungeHistory controller={controller} close={() => model.setHistory(false)}
-      reply={model.quote} direct={model.select} />}
+      reply={model.quote} direct={model.select} profile={model.setProfile} />}
     {model.avatar && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => model.setAvatar(false)} />}
     {model.moderating && state.policy.moderator && <LoungeModeration user={model.moderating} controller={controller}
@@ -107,5 +110,7 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
     {model.preview && <LoungePreview uri={model.preview} close={() => model.setPreview(undefined)} />}
     {model.blocking && <LoungeBlockDialog user={model.blocking} blocked={state.blocked.includes(model.blocking.id)}
       controller={controller} close={() => model.setBlocking(undefined)} />}
+    <LoungeProfile model={model} />
+    <LoungeDeleteDialog model={model} />
   </KeyboardAvoidingView>;
 }

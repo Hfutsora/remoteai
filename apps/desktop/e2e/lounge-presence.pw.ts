@@ -13,7 +13,8 @@ for (const width of [320, 390]) for (const theme of ['light', 'dark']) {
     await expect(page.locator('.lounge-composer')).toHaveCount(0);
     const id = relay.private('Unread private message');
     const bob = page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true });
-    const dot = bob.locator('.lounge-avatar-presence');
+    const row = page.locator('.lounge-chat-row').filter({ has: bob });
+    const dot = row.locator('.lounge-avatar-presence');
     const green = theme === 'dark' ? 'rgb(164, 200, 176)' : 'rgb(84, 134, 106)';
     const gray = theme === 'dark' ? 'rgb(160, 173, 181)' : 'rgb(104, 124, 137)';
     await expect(dot).toHaveCSS('background-color', green);
@@ -21,7 +22,7 @@ for (const width of [320, 390]) for (const theme of ['light', 'dark']) {
     expect(relay.receipts.some(receipt => receipt.id === id && receipt.status === 'read')).toBe(false);
     await expect(page.getByRole('button', { name: '群聊', exact: true })
       .locator('.lounge-avatar-presence')).toHaveCount(0);
-    const avatar = (await bob.locator('.lounge-avatar').boundingBox())!;
+    const avatar = (await row.locator('.lounge-avatar').boundingBox())!;
     const badge = (await dot.boundingBox())!;
     expect(badge.x + badge.width).toBeCloseTo(avatar.x + avatar.width, 0);
     expect(badge.y + badge.height).toBeCloseTo(avatar.y + avatar.height, 0);
@@ -34,7 +35,7 @@ for (const width of [320, 390]) for (const theme of ['light', 'dark']) {
     await expect(dot).toHaveCSS('background-color', gray);
     await expect(bob).toHaveAccessibleDescription('在线状态不可见');
     relay.private('Picture avatar', { id: 'bob', account: 'bob@example.test', avatar: pixel });
-    await expect(bob.locator('img')).toBeVisible();
+    await expect(row.locator('img')).toBeVisible();
     relay.contact(true); await expect(dot).toHaveCSS('background-color', green);
     await page.screenshot({ path: `../../.codex-tmp/lounge-presence-${width}-${theme}-avatar.png` });
     await bob.click();

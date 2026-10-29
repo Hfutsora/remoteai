@@ -84,6 +84,17 @@ export function nativeLoungeHistory(baseUrl: string, account: string): LoungeHis
         scope, historyKey(message), Date.parse(message.sentAt), historyText(message), JSON.stringify({ ...message, delivery }));
     }),
     page: query => withDatabase(db => search(db, scope, query)),
+    deleteConversation: (peer, generation = Number.MAX_SAFE_INTEGER) => withDatabase(async db => {
+      await db.execAsync('BEGIN IMMEDIATE');
+      try {
+        await db.runAsync(`DELETE FROM messages WHERE scope = ? AND json_extract(content, '$.conversation') = ?
+          AND coalesce(json_extract(content, '$.generation'), 0) < ?`, scope, peer, generation);
+        const retained = await db.getFirstAsync<{ key: string }>(
+          "SELECT key FROM messages WHERE scope = ? AND json_extract(content, '$.conversation') = ? LIMIT 1", scope, peer);
+        if (!retained) await db.runAsync('DELETE FROM contacts WHERE scope = ? AND id = ?', scope, peer);
+        await db.execAsync('COMMIT');
+      } catch (error) { await db.execAsync('ROLLBACK'); throw error; }
+    }),
     get: key => withDatabase(async db => {
       const row = await db.getFirstAsync<{ content: string }>(
         'SELECT content FROM messages WHERE scope = ? AND key = ?', scope, key);

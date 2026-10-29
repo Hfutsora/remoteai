@@ -68,6 +68,7 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   onlineDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: color('#54866a', 'accent') },
   offlineDot: { backgroundColor: color('#687c89', 'muted') },
   chatAvatar: { position: 'relative', flexShrink: 0 },
+  chatRowMain: { flex: 1, minWidth: 0, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarPresence: { position: 'absolute', right: 0, bottom: 0, width: 12, height: 12, borderRadius: 6,
     borderWidth: 2, borderColor: color('#f5f7f8', 'canvas'), backgroundColor: color('#54866a', 'accent') },
   chatsTrigger: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 44, marginLeft: 'auto',
@@ -112,4 +113,7 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   messageTime: { ...textMetrics(9, 14), color: color('#687c89', 'muted') },
   messageName: { ...textMetrics(10, 15), color: color('#687c89', 'muted') },
   messageAvatar: { width: 30, height: 30, borderRadius: 11 },
+  profileAvatar: { width: 84, height: 84, borderRadius: 28, borderWidth: 4,
+    borderColor: color('#f5f7f8', 'canvas') },
+  profileInitials: { ...textMetrics(28, 38) },
 }));

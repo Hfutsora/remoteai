@@ -18,6 +18,7 @@ export interface LoungeMessage {
   conversation?: string;
   receipts?: boolean;
   delivery?: LoungeDelivery;
+  generation?: number;
 }
 export interface LoungeDraft { text: string; images: string[]; reply?: LoungeReply; to?: string }
 export interface LoungePolicy { moderator: boolean; mutedUntil: string | null }
@@ -40,6 +41,7 @@ export interface LoungeSnapshot {
   contacts: LoungeContact[];
   blocked: string[];
   directAvailable: boolean;
+  directResetAvailable?: boolean;
   conversation: string;
   unreadByConversation: Record<string, number>;
 }
@@ -60,6 +62,7 @@ export function parseMessage(value: unknown): LoungeMessage | undefined {
   const images = item.images ?? [];
   if (images.length > MAX_IMAGES || !images.every(imageData)) return;
   const recipient = parseAccount(item.recipient);
+  if (item.generation !== undefined && (!Number.isSafeInteger(item.generation) || item.generation < 0)) return;
   if (item.recipient && !recipient) return;
   const sender = { ...item.sender, avatar: avatarData(item.sender.avatar) ? item.sender.avatar : undefined };
   return { ...item, sender, images, recipient, reply: parseReply(item.reply),

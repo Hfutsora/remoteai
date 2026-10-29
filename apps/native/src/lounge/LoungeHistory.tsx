@@ -10,9 +10,10 @@ import { LoungeMessage } from './LoungeMessage';
 import { LoungePreview } from './LoungePreview';
 import { useLoungeStyles } from './styles';
 
-export function LoungeHistory({ controller, close, reply, direct }: {
+export function LoungeHistory({ controller, close, reply, direct, profile }: {
   controller: LoungeController; close: () => void; reply: (message: Message) => void;
   direct: (user: LoungeAccount) => void;
+  profile: (user: LoungeAccount) => void;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
   const styles = useLoungeStyles();
@@ -40,6 +41,7 @@ export function LoungeHistory({ controller, close, reply, direct }: {
       contentContainerStyle={styles.list}
       keyboardShouldPersistTaps="handled"
       renderItem={({ item }) => <LoungeMessage message={item} preview={setPreview} reply={reply}
+        profile={item.sender.id !== state.user?.id ? () => profile(item.sender) : undefined}
         direct={state.directAvailable && item.sender.id !== state.user?.id
           ? () => { close(); direct(item.sender); } : undefined} />}
       ListEmptyComponent={!history.loading && !history.error ? <Text style={styles.muted}>{t(history.query.trim()

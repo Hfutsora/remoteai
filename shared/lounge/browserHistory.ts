@@ -9,7 +9,9 @@ const DATABASE = 'remoteai-lounge-history-v1';
 const META = 'metadata';
 const CONTENT = 'content';
 const CONTACTS = 'contacts';
-interface Metadata { scope: string; key: string; time: number; search: string; conversation?: string; pending?: boolean }
+interface Metadata {
+  scope: string; key: string; time: number; search: string; conversation?: string; pending?: boolean; generation?: number;
+}
 let opening: Promise<IDBDatabase> | undefined;
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -51,7 +53,7 @@ async function save(scope: string, message: LoungeMessage) {
   const content = transaction.objectStore(CONTENT);
   const write = (delivery = message.delivery) => {
     transaction.objectStore(META).put({ scope, key, time: Date.parse(message.sentAt), search: historyText(message),
-      conversation: message.conversation ?? '', pending: needsDeliveryWork(delivery) });
+      conversation: message.conversation ?? '', pending: needsDeliveryWork(delivery), generation: message.generation });
     content.put({ ...message, delivery }, [scope, key]);
   };
   if (message.delivery) {
@@ -96,7 +98,26 @@ export function browserLoungeHistory(baseUrl: string, account: string): LoungeHi
   const scope = historyScope(baseUrl, account);
   return { save: message => save(scope, message), page: query => search(scope, query),
     contacts: () => contacts(scope), saveContact: contact => saveContact(scope, contact),
-    get: key => get(scope, key) };
+    get: key => get(scope, key), deleteConversation: (peer, generation) => deleteConversation(scope, peer, generation) };
+}
+
+async function deleteConversation(scope: string, peer: string, generation = Number.MAX_SAFE_INTEGER) {
+  const db = await openDatabase();
+  const tx = db.transaction([META, CONTENT, CONTACTS], 'readwrite'); const done = complete(tx);
+  let retained = false;
+  const cursor = tx.objectStore(META).openCursor(IDBKeyRange.bound([scope, ''], [scope, []]));
+  cursor.onsuccess = () => {
+    const row = cursor.result;
+    if (!row) { if (!retained) tx.objectStore(CONTACTS).delete([scope, peer]); return; }
+    const metadata = row.value as Metadata;
+    if (metadata.conversation === peer) {
+      if ((metadata.generation ?? 0) < generation) {
+        tx.objectStore(CONTENT).delete([scope, metadata.key]); row.delete();
+      } else retained = true;
+    }
+    row.continue();
+  };
+  await done;
 }
 
 async function get(scope: string, key: string) {

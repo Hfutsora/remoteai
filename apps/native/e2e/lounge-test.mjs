@@ -12,6 +12,7 @@ import { verifyNativeImage } from './lounge-image-check.mjs';
 import { verifyNativeEmoji } from './lounge-emoji-check.mjs';
 import { verifyNativeText } from './lounge-text-check.mjs';
 import { verifyNativePresence } from './lounge-presence-check.mjs';
+import { verifyNativeProfile } from './lounge-profile-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -32,6 +33,10 @@ let blocked = false;
 let avatar = '';
 let rejectAvatar = false;
 const avatarSaves = [];
+const resetAvailable = process.env.LOUNGE_PROFILE_ONLY === '1';
+let generation = 0;
+let directState = 'new';
+let failDelete = false;
 const server = createServer((request, response) => {
   response.writeHead(online ? 200 : 503, { 'content-type': 'application/json' });
   response.end(JSON.stringify({ ticket: 'fixture-ticket' }));
@@ -48,10 +53,22 @@ sockets.on('connection', socket => socket.on('message', raw => {
     socket.send(JSON.stringify({ type: 'ready', profiles: true,
       user: { id: 'alice', account: 'alice@example.test', avatar },
       policy: { moderator: true, mutedUntil: null }, onlineCount: 2, direct: true, receipts: true,
+      directReset: resetAvailable,
       blocked: blocked ? [{ id: 'bob', account: 'bob@example.test' }] : [] }));
     socket.send(JSON.stringify(incoming('真机中文测试：忙里偷闲，聊点轻松的 ☕', [image])));
   }
   if (frame.type === 'ping') socket.send('{"type":"pong"}');
+  if (frame.type === 'watch' && resetAvailable) socket.send(JSON.stringify({ type: 'direct-permissions',
+    states: Object.fromEntries(frame.watch.map(id => [id, directState])),
+    generations: Object.fromEntries(frame.watch.map(id => [id, generation])) }));
+  if (frame.type === 'delete-direct') {
+    if (failDelete) socket.send(JSON.stringify({ type: 'rejected', id: frame.id, code: 'client.lounge.deleteFailed' }));
+    else {
+      generation++; directState = 'new';
+      broadcast({ type: 'direct-permissions', states: { bob: directState }, generations: { bob: generation } });
+      socket.send(JSON.stringify({ type: 'updated', id: frame.id, userId: 'bob', generation }));
+    }
+  }
   if (frame.type === 'avatar') {
     if (rejectAvatar) socket.send(JSON.stringify({ type: 'rejected', id: frame.id,
       code: 'client.lounge.avatarSaveFailed' }));
@@ -69,6 +86,7 @@ sockets.on('connection', socket => socket.on('message', raw => {
     socket.send(JSON.stringify({ type: 'updated', id: frame.id }));
   }
   if (frame.type === 'message') {
+    if (frame.to && resetAvailable && directState === 'new') directState = 'waiting';
     sent.push(frame);
     socket.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
       ...(frame.to ? { recipient: { id: 'bob', account: 'bob@example.test' } } : {}),
@@ -151,6 +169,7 @@ try {
   for (const scale of [1, 1.3]) {
     online = true;
     blocked = false;
+    generation = 0; directState = 'new'; failDelete = false;
     const unique = `Hello-native-${Date.now()}`;
     const sentBefore = sent.length;
     const moderatedBefore = moderated.length;
@@ -161,6 +180,19 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (resetAvailable) {
+      await verifyNativeProfile({ adb, tap, find, nodes, screenshot, hideKeyboard, longPress, scale, sent,
+        failDelete: value => { failDelete = value; },
+        reply: text => { directState = 'open'; broadcast({ ...incoming(text), generation, receipts: true,
+          recipient: { id: 'alice', account: 'alice@example.test' } }); },
+        restart: async () => {
+          await adb('shell', 'am', 'force-stop', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); await tap('在线交流'); await find('搜索聊天');
+        },
+      });
+      continue;
+    }
     if (process.env.LOUNGE_PRESENCE_ONLY === '1') {
       await verifyNativePresence({ adb, tap, find, nodes, screenshot, scale, broadcast, incoming, image });
       continue;

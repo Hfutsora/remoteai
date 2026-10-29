@@ -69,7 +69,8 @@ test('mobile redesign: members, drafts, unread and scroll survive conversation s
   await expect(page.getByRole('button', { name: '回到最新消息' })).toBeVisible();
   const previousOffset = await page.locator('.lounge-conversation').evaluate(node => node.scrollTop);
   await page.getByRole('button', { name: '成员', exact: true }).click();
-  await page.locator('.lounge-mobile-sheet').getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();
+  await page.locator('.lounge-mobile-sheet').getByRole('button', { name: '查看 bob@example.test 的资料', exact: true }).click();
+  await page.getByRole('button', { name: '发消息', exact: true }).click();
   await expect(input).toHaveValue('');
   await input.fill('私聊草稿');
   relay.push('unread-group');

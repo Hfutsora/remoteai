@@ -15,6 +15,8 @@ interface DeliveryHost {
   transmit(frame: Record<string, unknown>): boolean;
   error(): void;
   permission?(peer: string): DirectPermission | undefined;
+  generation?(peer: string): number;
+  ready?(peer: string): boolean;
 }
 interface DeliveryJob { peer: string; due: number }
 
@@ -52,6 +54,14 @@ export class LoungeDirectDelivery {
   }
   peers() { return [...new Set([...this.jobs.values()].map(job => job.peer))]; }
 
+  remove(peer: string, erase: () => Promise<void>) {
+    return this.run(async () => {
+      await erase();
+      for (const [key, job] of this.jobs) if (job.peer === peer && !await this.host.find(key)) this.jobs.delete(key);
+      return true;
+    }).then(removed => { if (!removed) throw new Error('client.lounge.deleteFailed'); });
+  }
+
   private run<T>(operation: (current: () => boolean) => Promise<T>) {
     const generation = this.generation;
     const current = () => this.active && generation === this.generation;
@@ -72,13 +82,17 @@ export class LoungeDirectDelivery {
 
   async send(draft: LoungeDraft, id: string, recipient: LoungeAccount) {
     const sender = this.host.self();
-    if (!sender || !this.host.enabled()) throw new Error('client.lounge.directUnavailable');
+    if (!sender || !this.host.enabled() || this.host.ready?.(recipient.id) === false) {
+      throw new Error('client.lounge.directUnavailable');
+    }
     await this.run(async current => {
       await checkDirectPermission({ self: sender.id, peer: recipient.id,
-        permission: this.host.permission?.(recipient.id), page: query => this.host.page(query) });
+        permission: this.host.permission?.(recipient.id), generation: this.host.generation?.(recipient.id),
+        page: query => this.host.page(query) });
       if (!current()) return;
       const message: LoungeMessage = { type: 'message', id, sender, recipient, text: draft.text,
         images: draft.images, reply: draft.reply, sentAt: new Date().toISOString(), conversation: recipient.id,
+        generation: this.host.generation?.(recipient.id),
         receipts: true, delivery: { direction: 'outgoing', status: 'pending', retry: true, attemptedAt: Date.now() } };
       await this.host.publish(message, true);
       if (!current()) return;
@@ -87,7 +101,8 @@ export class LoungeDirectDelivery {
   }
 
   reject(frame: Record<string, unknown>) {
-    if (frame.code !== AWAITING_REPLY || typeof frame.id !== 'string' || !this.host.self()) return;
+    if (![AWAITING_REPLY, 'client.lounge.conversationReset'].includes(String(frame.code))
+      || typeof frame.id !== 'string' || !this.host.self()) return;
     const key = JSON.stringify([this.host.self()!.id, frame.id]);
     this.background(async current => {
       const saved = await this.host.find(key);
@@ -175,7 +190,8 @@ export class LoungeDirectDelivery {
   }
   private transmitMessage(message: LoungeMessage) {
     this.host.transmit({ type: 'message', id: message.id, to: message.recipient!.id, receipts: true,
-      text: message.text, images: message.images, reply: message.reply, avatar: message.sender.avatar ?? '' });
+      text: message.text, images: message.images, reply: message.reply, avatar: message.sender.avatar ?? '',
+      generation: message.generation ?? 0 });
   }
   private transmitReceipt(message: LoungeMessage) {
     if (message.delivery?.status === 'pending') return;

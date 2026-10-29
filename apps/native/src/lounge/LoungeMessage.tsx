@@ -10,17 +10,23 @@ import { LoungeDeliveryStatus } from './LoungeDeliveryStatus';
 
 const MESSAGE_AVATAR_TOUCH_PADDING = 7;
 
-export function LoungeAvatar({ user, small = false, onDirect }: {
-  user: LoungeAccount; small?: boolean; onDirect?: () => void;
+export function LoungeAvatar({ user, size, onDirect, onProfile, onLongPress }: {
+  user: LoungeAccount; size?: 'small' | 'profile'; onDirect?: () => void;
+  onProfile?: () => void; onLongPress?: () => void;
 }) {
   const styles = useLoungeStyles();
+  const small = size === 'small';
+  const avatarStyle = [styles.avatar, small && styles.messageAvatar, size === 'profile' && styles.profileAvatar];
   const avatar = user.avatar ? <Image source={{ uri: user.avatar }}
-    style={[styles.avatar, small && styles.messageAvatar]} />
-    : <View style={[styles.avatar, small && styles.messageAvatar]}>
-      <Text style={small ? styles.messageName : styles.initials}>{initials(user.account)}</Text></View>;
-  return onDirect ? <Pressable accessibilityRole="button" onPress={onDirect}
+    style={avatarStyle} />
+    : <View style={avatarStyle}>
+      <Text style={[small ? styles.messageName : styles.initials, size === 'profile' && styles.profileInitials]}>
+        {initials(user.account)}</Text></View>;
+  const action = onProfile ?? onDirect;
+  return action ? <Pressable accessibilityRole="button" onPress={action} onLongPress={onLongPress}
     hitSlop={small ? MESSAGE_AVATAR_TOUCH_PADDING : 0}
-    accessibilityLabel={t('client.lounge.directWith', { account: user.account })}>{avatar}</Pressable> : avatar;
+    accessibilityLabel={t(onProfile ? 'client.lounge.viewProfile' : 'client.lounge.directWith', {
+      account: user.account })}>{avatar}</Pressable> : avatar;
 }
 
 export function LoungeUnread({ count, children }: { count: number; children: ReactNode }) {
@@ -35,13 +41,14 @@ interface Props {
   preview: (uri: string) => void; onImageLoad?: () => void;
   reply?: (message: Message) => void;
   direct?: () => void; block?: () => void; blocked?: boolean;
+  profile?: () => void;
 }
-export function LoungeMessage({ message, own, manage, preview, onImageLoad, reply, direct, block, blocked }: Props) {
+export function LoungeMessage({ message, own, manage, preview, onImageLoad, reply, direct, block, blocked, profile }: Props) {
   const styles = useLoungeStyles();
   const [menu, setMenu] = useState(false);
   const openMenu = reply ? () => setMenu(true) : undefined;
   return <View style={[styles.message, own && styles.own]}>
-    {!own && <LoungeAvatar user={message.sender} small onDirect={direct} />}
+    {!own && <LoungeAvatar user={message.sender} size="small" onDirect={direct} onProfile={profile} />}
     <View style={[styles.messageMain, own && styles.ownMain]}>
       {!own && (manage ? <Pressable accessibilityRole="button"
         accessibilityLabel={t('client.lounge.manageUser', { account: message.sender.account })}
