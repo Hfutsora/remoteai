@@ -11,7 +11,7 @@ export function conversationRows(options: {
       const id = user?.id ?? '';
       return { id, user, contact, online: state.status === 'connected' && contact?.online === true,
         draft: drafts[id], last: controller.conversationPreview(id),
-        unread: state.unreadByConversation[id] ?? 0, current: state.conversation === id };
+        unread: state.unreadByConversation[id] ?? 0 };
     });
 }
 

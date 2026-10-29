@@ -13,6 +13,7 @@ import { verifyNativeEmoji } from './lounge-emoji-check.mjs';
 import { verifyNativeText } from './lounge-text-check.mjs';
 import { verifyNativePresence } from './lounge-presence-check.mjs';
 import { verifyNativeProfile } from './lounge-profile-check.mjs';
+import { verifyNativePreview } from './lounge-preview-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -180,6 +181,10 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (process.env.LOUNGE_PREVIEW_ONLY === '1') {
+      await verifyNativePreview({ adb, tap, find, nodes, screenshot, scale, broadcast, incoming });
+      continue;
+    }
     if (resetAvailable) {
       await verifyNativeProfile({ adb, tap, find, nodes, screenshot, hideKeyboard, longPress, scale, sent,
         failDelete: value => { failDelete = value; },

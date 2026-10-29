@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { LoungeController } from '../../../../shared/lounge/controller';
+import { conversationRows } from '../../../../shared/lounge/conversationRows';
+import { conversationPreviewText } from '../../../../shared/lounge/conversationPreview';
 
 class Socket {
   static OPEN = 1;
@@ -41,4 +43,35 @@ it('runs without a DOM, reconnects on foreground, and clears only visible messag
   wake(); await settle(); expect(Socket.instances).toHaveLength(2);
   controller.stop(); expect(cleanup).toHaveBeenCalledOnce();
   expect(controller.snapshot().messages).toEqual([]); expect(controller.snapshot().unread).toBe(0);
+});
+
+it('previews the latest unread incoming text, then retains the last message after reading', async () => {
+  vi.stubGlobal('WebSocket', Socket);
+  const self = { id: 'me', account: 'me@test' };
+  const peer = { id: 'other', account: 'other@test' };
+  const controller = new LoungeController({ baseUrl: 'https://chat.test', authorize: async () => ({ ticket: 'test' }) },
+    { isVisible: () => true, randomId: () => 'native-id', subscribe: () => () => {} });
+  controller.start(); await settle();
+  const socket = Socket.instances[0];
+  socket.frame({ type: 'ready', user: self });
+  const receive = (text: string, own = false) => socket.frame({ type: 'message', id: text, text, images: [],
+    sender: own ? self : peer, recipient: own ? peer : self, sentAt: new Date().toISOString() });
+  const row = (draft = '') => conversationRows({ state: controller.snapshot(), controller,
+    drafts: { other: { text: draft, images: [] } } }).find(item => item.id === 'other')!;
+  try {
+    receive('older unread'); receive('最新文字\n第二行\t继续');
+    expect(row().unread).toBe(2);
+    expect(conversationPreviewText(row('unsent draft'))).toBe('最新文字 第二行 继续');
+    receive('own outgoing', true);
+    expect(conversationPreviewText(row())).toBe('最新文字 第二行 继续');
+    receive('latest unread');
+    controller.selectConversation(peer); controller.setViewing(true);
+    expect(row().unread).toBe(0);
+    expect(conversationPreviewText(row())).toBe('latest unread');
+    receive('own reply', true);
+    expect(conversationPreviewText(row())).toBe('own reply');
+    controller.setViewing(false);
+    expect(conversationPreviewText(row())).toBe('own reply');
+    expect(conversationPreviewText(row('draft retained'))).toContain('draft retained');
+  } finally { controller.stop(); }
 });

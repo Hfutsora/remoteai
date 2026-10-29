@@ -43,6 +43,10 @@ They cover server save failures, successful saves, external profile updates, res
 reconnection with stale caches, and the translated settings copy. Server tests separately validate
 48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
+Set `LOUNGE_PREVIEW_ONLY=1` to check the chat list without selected rows, the latest incoming unread
+text, single-line truncation, retained previews after reading, outgoing replies and back navigation
+at font scales 1.0 and 1.3. Inspect `preview-*.png` in `.codex-tmp/lounge-android/` for glyphs and truncation.
+
 Set `LOUNGE_TEXT_ONLY=1` to check `hi`, short Chinese messages, longer words, explicit newlines,
 wrapped Chinese messages and back navigation at font scales 1.0 and 1.3. Inspect the screenshots in
 `.codex-tmp/lounge-text-<device serial>/` for complete glyphs; positive accessibility bounds alone

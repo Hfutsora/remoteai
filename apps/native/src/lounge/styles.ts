@@ -117,7 +117,6 @@ export const useLoungeStyles = createLoungeStyles(color => ({
   sectionLabel: { ...textMetrics(11, 17), color: color('#687c89', 'muted'), paddingHorizontal: 7, paddingTop: 9 },
   chatRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 7,
     paddingVertical: 15, minHeight: 78, borderRadius: 14 },
-  selectedRow: { backgroundColor: color('#deebf7', 'infoSoft') },
   rowTitle: { ...textMetrics(14, 21), color: color('#202b33', 'ink'), fontWeight: '500' },
   rowMeta: { alignItems: 'flex-end', gap: 6 },
   messageText: { ...textMetrics(MESSAGE_FONT_SIZE, 23), alignSelf: 'stretch', flexShrink: 0,

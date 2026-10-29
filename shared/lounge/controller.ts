@@ -80,11 +80,14 @@ export class LoungeController {
     }
     return this.accountLookup.find({ socket: this.socket, id: this.runtime.randomId(), query, signal });
   }
-  /** Latest locally available message for a conversation-list preview. */
+  /** Prefer the latest incoming unread message for private conversation previews. */
   conversationPreview(conversation: string) {
+    const unread = !!conversation && (this.state.unreadByConversation[conversation] ?? 0) > 0;
     for (let index = this.recent.length - 1; index >= 0; index--) {
       const message = this.recent[index];
-      if ((message.conversation ?? '') === conversation) return message;
+      if ((message.conversation ?? '') !== conversation) continue;
+      if (unread && (message.sender.id === this.state.user?.id || message.delivery?.status === 'read')) continue;
+      return message;
     }
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
