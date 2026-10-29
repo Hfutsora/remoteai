@@ -11,6 +11,7 @@ for (const width of [1440, 390]) {
     if (width < 600) {
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
     } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     const input = page.getByRole('textbox', { name: '消息', exact: true });
     const trigger = page.getByRole('button', { name: '表情', exact: true });

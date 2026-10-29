@@ -9,14 +9,16 @@ import { LoungeAvatar } from './LoungeAvatar';
 import { contactStatus } from './contacts';
 import { MobileLoungeSheet } from './MobileLoungeSheet';
 
-export function MobileLoungeChats({ model, controller }: { model: MobileLounge; controller: LoungeController }) {
+export function MobileLoungeChats({ model, controller, onBack }: {
+  model: MobileLounge; controller: LoungeController; onBack?: () => void;
+}) {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<string>();
   const rows = conversationRows({ state: model.state, controller, drafts: model.drafts }).filter(row =>
     (row.user?.account ?? t('client.lounge.groupChat')).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <section className="lounge-chat-list">
     <header className="lounge-mobile-heading">
-      <button type="button" aria-label={t('client.lounge.backToChat')} onClick={model.closeChats}>
+      <button type="button" aria-label={t('client.discovery.back')} onClick={onBack}>
         <ChevronLeft size={22} /></button><h1>{t('client.lounge.chats')}</h1>
       <button type="button" className="lounge-new-chat" onClick={() => model.setSheet('members')}>
         <MessageSquarePlus size={18} />{t('client.lounge.newChat')}</button>
@@ -40,8 +42,12 @@ export function MobileLoungeChats({ model, controller }: { model: MobileLounge; 
           } }}>
           <button className={`lounge-chat-row${row.current ? ' is-current' : ''}`} type="button"
             aria-label={row.user ? t('client.lounge.directWith', { account: row.user.account }) : t('client.lounge.groupChat')}
+            aria-description={row.contact ? t(contactStatus(row.contact)) : undefined}
             aria-current={row.current ? 'page' : undefined} onClick={() => model.select(row.user)}>
-            {row.user ? <LoungeAvatar user={row.user} /> : <span className="lounge-avatar"><MessagesSquare size={22} /></span>}
+            {row.user ? <span className="lounge-chat-avatar" aria-hidden>
+              <LoungeAvatar user={row.user} />
+              <span className={`lounge-avatar-presence${row.online ? ' is-online' : ''}`} />
+            </span> : <span className="lounge-avatar"><MessagesSquare size={22} /></span>}
             <span className="lounge-chat-row-copy"><strong>{row.user?.account ?? t('client.lounge.groupChat')}</strong>
               <span>{previewText(row)}</span></span>
             <span className="lounge-chat-row-meta">

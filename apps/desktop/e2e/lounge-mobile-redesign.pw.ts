@@ -11,6 +11,7 @@ for (const width of [320, 390]) {
       await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
       const header = page.locator('.lounge-mobile-heading');
       const composer = page.locator('.lounge-composer');
       await expect(header).toBeVisible();
@@ -25,7 +26,8 @@ for (const width of [320, 390]) {
       await expect(page.locator('.lounge-chat-row')).toContainText('[草稿] 大家好呀 👋');
       await page.getByRole('textbox', { name: '搜索聊天' }).fill('does-not-exist');
       await expect(page.getByText('没有找到相关聊天')).toBeVisible();
-      await page.getByRole('button', { name: '返回聊天', exact: true }).click();
+      await page.getByRole('textbox', { name: '搜索聊天' }).fill('');
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
       await expect(input).toHaveValue('大家好呀 👋');
       await page.locator('.lounge-retention').click();
       await expect(page.getByText('服务器不保存聊天内容')).toBeVisible();
@@ -42,6 +44,7 @@ for (const width of [320, 390]) {
         return send!.y + send!.height;
       }).toBeLessThanOrEqual(450);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.getByRole('button', { name: '返回聊天列表' }).click();
       await page.getByRole('button', { name: '返回发现' }).click();
       await expect(page.locator('.discovery-lounge')).toBeVisible();
     });
@@ -54,6 +57,7 @@ test('mobile redesign: members, drafts, unread and scroll survive conversation s
   await page.goto('http://127.0.0.1:1486/web/'); await relay.ready();
   await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
   await page.locator('.discovery-lounge').click();
+  await page.getByRole('button', { name: '群聊', exact: true }).click();
   for (let index = 0; index < 30; index++) relay.push(`group-${index}`);
   await expect(page.locator('.lounge-message')).toHaveCount(30);
   const input = page.getByRole('textbox', { name: '消息', exact: true });
@@ -96,6 +100,7 @@ test('mobile redesign: all released languages switch offline without losing a dr
   const relay = await setupLounge(page);
   await page.goto('/e2e/lounge-harness.html?mobile&dark'); await relay.ready();
   await page.getByRole('button', { name: '在线交流', exact: true }).click();
+  await page.getByRole('button', { name: '群聊', exact: true }).click();
   await page.locator('.lounge-composer textarea').fill('unsent multilingual draft');
   await page.context().setOffline(true);
   for (const language of ['en', 'ja', 'ru', 'zh'] as const) {
@@ -105,7 +110,7 @@ test('mobile redesign: all released languages switch offline without losing a dr
     await page.locator('.lounge-chats-trigger').click();
     await expect(page.locator('.lounge-chat-row')).toContainText('unsent multilingual draft');
     await expect(page.locator('.lounge-chat-list')).not.toContainText('client.lounge.');
-    await page.locator('.lounge-mobile-heading > button').first().click();
+    await page.locator('.lounge-chat-row').first().click();
     await page.locator('.lounge-retention').click();
     await expect(page.locator('.lounge-mobile-sheet')).not.toContainText('client.lounge.');
     await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-language-${language}.png` });

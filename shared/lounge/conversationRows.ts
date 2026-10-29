@@ -5,10 +5,12 @@ export function conversationRows(options: {
   state: LoungeSnapshot; controller: LoungeController; drafts: Record<string, LoungeDraft>;
 }) {
   const { state, controller, drafts } = options;
-  return [undefined, ...state.contacts.filter(contact => contact.direct).map(contact => contact.user)]
-    .map(user => {
+  return [undefined, ...state.contacts.filter(contact => contact.direct)]
+    .map(contact => {
+      const user = contact?.user;
       const id = user?.id ?? '';
-      return { id, user, draft: drafts[id], last: controller.conversationPreview(id),
+      return { id, user, contact, online: state.status === 'connected' && contact?.online === true,
+        draft: drafts[id], last: controller.conversationPreview(id),
         unread: state.unreadByConversation[id] ?? 0, current: state.conversation === id };
     });
 }

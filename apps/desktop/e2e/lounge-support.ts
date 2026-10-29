@@ -1,6 +1,7 @@
 import { expect, type Page, type WebSocketRoute } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import type { LoungeReply } from '../../../shared/lounge/reply';
+import type { LoungeAccount } from '../../../shared/lounge/types';
 
 export const pixel = 'data:image/png;base64,'
   + readFileSync(new URL('../src-tauri/icons/32x32.png', import.meta.url)).toString('base64');
@@ -111,7 +112,7 @@ export async function setupLounge(page: Page, web = false) {
       contactOnline = online;
       socket.send(JSON.stringify({ type: 'contacts', contacts: [{ id: 'bob', online }] }));
     },
-    private: (text: string, sender = bob, id = crypto.randomUUID()) => {
+    private: (text: string, sender: LoungeAccount = bob, id = crypto.randomUUID()) => {
       socket.send(JSON.stringify({ type: 'message', id, text, images: [], sender,
         recipient: { id: 'alice', account: 'alice@example.test' }, receipts: true, sentAt: new Date().toISOString() }));
       return id;

@@ -11,6 +11,7 @@ import { verifyNativeAvatar } from './lounge-avatar-check.mjs';
 import { verifyNativeImage } from './lounge-image-check.mjs';
 import { verifyNativeEmoji } from './lounge-emoji-check.mjs';
 import { verifyNativeText } from './lounge-text-check.mjs';
+import { verifyNativePresence } from './lounge-presence-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -159,7 +160,12 @@ try {
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
-    await tap('在线交流'); await find('真机中文测试：忙里偷闲，聊点轻松的 ☕');
+    await tap('在线交流'); await find('搜索聊天');
+    if (process.env.LOUNGE_PRESENCE_ONLY === '1') {
+      await verifyNativePresence({ adb, tap, find, nodes, screenshot, scale, broadcast, incoming, image });
+      continue;
+    }
+    await tap('群聊'); await find('真机中文测试：忙里偷闲，聊点轻松的 ☕');
     if (process.env.LOUNGE_TEXT_ONLY === '1') {
       await verifyNativeText({ adb, tap, find, screenshot, hideKeyboard, scale, broadcast, incoming });
       continue;
@@ -249,23 +255,26 @@ try {
     broadcast({ type: 'policy', policy: { moderator: false, mutedUntil: new Date(Date.now() + 60000).toISOString() } });
     await delay(500); await screenshot(`muted-${scale}`);
     assert.ok(!(await nodes()).some(node => node.text === '3 人在线'), 'Ordinary users cannot see presence');
-    await tap('聊天'); await tap('返回聊天'); await tap('返回发现'); await find('在线交流');
+    await tap('聊天'); await tap('返回发现'); await find('在线交流');
     broadcast(incoming('后台未读消息')); await find('1');
-    await tap('在线交流'); await find('后台未读消息');
+    await tap('在线交流'); await tap('群聊'); await find('后台未读消息');
     await adb('shell', 'input', 'keyevent', '3');
     broadcast(incoming('切回应用后收到')); await delay(300);
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('切回应用后收到');
-    await adb('shell', 'input', 'keyevent', '4'); await tap('English'); await tap('Online Chat');
+    await adb('shell', 'input', 'keyevent', '4'); await tap('返回发现');
+    await tap('English'); await tap('Online Chat'); await tap('Group chat');
     await find('Chats'); await screenshot(`english-${scale}`);
-    await adb('shell', 'input', 'keyevent', '4'); await tap('Sign out fixture'); await find('Signed out fixture');
+    await adb('shell', 'input', 'keyevent', '4'); await tap('Back to Discover');
+    await tap('Sign out fixture'); await find('Signed out fixture');
     await assertEventually(() => sockets.clients.size === 0, 'Sign out closes socket');
     online = false;
     await adb('shell', 'am', 'force-stop', app);
     await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
     await find('在线交流');
     assert.ok(!(await nodes()).some(node => node.text === '1'), 'Restored messages must not add unread');
-    await tap('在线交流'); await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户');
+    await tap('在线交流'); await tap('群聊');
+    await tap('添加内容'); await tap('历史记录'); await tap('搜索消息或账户');
     await adb('shell', 'input', 'text', unique); await find('本页 1 条记录'); await find(unique);
     await find('回复 bob@example.test');
     await hideKeyboard(); await screenshot(`offline-restart-${scale}`);

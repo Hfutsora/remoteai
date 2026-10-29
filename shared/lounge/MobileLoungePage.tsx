@@ -21,8 +21,8 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
   const model = useMobileLounge(controller);
   const { state, contact } = model;
   return <section className="lounge-page lounge-mobile">
-    {model.chats ? <MobileLoungeChats model={model} controller={controller} /> : <>
-      <MobileHeading model={model} onBack={onBack} />
+    {model.chats ? <MobileLoungeChats model={model} controller={controller} onBack={onBack} /> : <>
+      <MobileHeading model={model} />
       <MobileLoungeThread key={`thread:${state.conversation}`} model={model} />
       {!model.atBottom && <button className="lounge-jump" type="button" onClick={() => model.setAtBottom(true)}>
         <ArrowDown size={16} />{t('client.lounge.latest')}</button>}
@@ -64,14 +64,14 @@ export function MobileLoungePage({ controller, onBack }: { controller: LoungeCon
   </section>;
 }
 
-function MobileHeading({ model, onBack }: { model: MobileLounge; onBack?: () => void }) {
+function MobileHeading({ model }: { model: MobileLounge }) {
   const { state, contact } = model;
   const status = state.status !== 'connected' ? t(`client.lounge.${state.status}`)
     : contact ? t(contactStatus(contact)) : state.onlineCount !== undefined
       ? t('client.lounge.mobileOnlineCount', { count: state.onlineCount }) : t('client.lounge.membersShort');
   return <header className="lounge-mobile-heading lounge-heading">
-    <button type="button" aria-label={t(model.fromChats ? 'client.lounge.backToChats' : 'client.discovery.back')}
-      onClick={() => model.fromChats ? model.setChats(true) : onBack?.()}><ChevronLeft size={22} /></button>
+    <button type="button" aria-label={t('client.lounge.backToChats')}
+      onClick={() => model.setChats(true)}><ChevronLeft size={22} /></button>
     <div className={`lounge-heading-identity${contact ? ' is-private' : ''}`}>
       <h1>{contact?.user.account ?? t('client.lounge.title')}</h1>
       <button type="button" className="lounge-members-trigger" onClick={() => model.setSheet('members')}>

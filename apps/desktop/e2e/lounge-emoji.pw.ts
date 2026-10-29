@@ -12,6 +12,7 @@ for (const width of [320, 390]) {
       await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).tap();
       await page.locator('.discovery-lounge').tap();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
       const input = page.getByRole('textbox', { name: '消息', exact: true });
       const toggle = page.getByRole('button', { name: '表情', exact: true });
       const panel = page.getByRole('group', { name: '表情', exact: true });
@@ -61,6 +62,7 @@ test('mobile emoji reserves the actual keyboard height as the visual viewport ex
   await page.goto('http://127.0.0.1:1486/web/'); await relay.ready();
   await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).tap();
   await page.locator('.discovery-lounge').tap();
+  await page.getByRole('button', { name: '群聊', exact: true }).click();
   await page.getByRole('textbox', { name: '消息', exact: true }).fill('keyboard');
   const resizeViewport = async (height: number) => page.evaluate(value => {
     Object.defineProperty(window.visualViewport, 'height', { configurable: true, value });

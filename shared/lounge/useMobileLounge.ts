@@ -9,9 +9,7 @@ const EMPTY_DRAFT: LoungeDraft = { text: '', images: [] };
 /** Page-local navigation and drafts shared by native and mobile web. No chat content leaves the device. */
 export function useMobileLounge(controller: LoungeController) {
   const state = useSyncExternalStore(controller.subscribe, controller.snapshot);
-  const [chats, setChats] = useState(false);
-  const [fromChats, setFromChats] = useState(false);
-  const closeChats = () => { setChats(false); setFromChats(false); };
+  const [chats, setChats] = useState(true);
   const [sheet, setSheet] = useState<LoungeSheet>();
   const [drafts, setDrafts] = useState<Record<string, LoungeDraft>>({});
   const offsets = useRef(new Map<string, number>());
@@ -33,7 +31,7 @@ export function useMobileLounge(controller: LoungeController) {
     controller.setViewing(false);
     controller.selectConversation(user);
     setAtBottom((offsets.current.get(user?.id ?? '') ?? 0) < 48);
-    setSheet(undefined); setChats(false); setFromChats(true);
+    setSheet(undefined); setChats(false);
   };
   const quote = (message: LoungeMessage) => { change({ ...draft, reply: quoteMessage(message) }); setHistory(false); };
   const cancelReply = () => change({ ...draft, reply: undefined });
@@ -47,7 +45,7 @@ export function useMobileLounge(controller: LoungeController) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [muted]);
-  return { state, contact, chats, setChats, closeChats, fromChats, sheet, setSheet, drafts, draftState: { draft, change },
+  return { state, contact, chats, setChats, sheet, setSheet, drafts, draftState: { draft, change },
     offsets, scrollPositions, history, setHistory, avatar, setAvatar, preview, setPreview, moderating, setModerating,
     blocking, setBlocking, atBottom, setAtBottom, muted, select, quote, cancelReply, setComposerOverlay };
 }

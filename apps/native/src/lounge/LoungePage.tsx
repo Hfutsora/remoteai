@@ -27,17 +27,16 @@ export function LoungePage({ controller, onBack }: { controller: LoungeControlle
   const [viewportHeight, setViewportHeight] = useState(0);
   const scrollBottom = () => { if (model.atBottom) list.current?.scrollToOffset({ offset: 0, animated: false }); };
   const back = () => {
-    if (model.chats) model.closeChats();
-    else if (model.fromChats) model.setChats(true);
-    else onBack();
+    if (model.chats) onBack();
+    else model.setChats(true);
   };
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => { back(); return true; });
     return () => subscription.remove();
-  }, [model.chats, model.fromChats, onBack]);
+  }, [model.chats, onBack]);
   return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}>
-    {model.chats ? <LoungeChats model={model} controller={controller} /> : <>
+    {model.chats ? <LoungeChats model={model} controller={controller} onBack={onBack} /> : <>
       <LoungeHeading model={model} back={back} />
       <FlatList key={`thread:${state.conversation}`} ref={list} inverted data={[...state.messages].reverse()}
         contentContainerStyle={styles.list} style={styles.spacer} keyExtractor={item => `${item.sender.id}:${item.id}`}

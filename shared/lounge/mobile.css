@@ -103,6 +103,10 @@
 .lounge-chat-row { display: flex; align-items: center; gap: 12px; padding: 15px 7px; min-height: 78px;
   width: 100%; border: 0; background: transparent; color: inherit; text-align: start; border-radius: 14px; }
 .lounge-chat-row.is-current { background: var(--lounge-blue-bg); }
+.lounge-chat-avatar { position: relative; display: flex; flex-shrink: 0; }
+.lounge-avatar-presence { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px;
+  box-sizing: border-box; border-radius: 50%; border: 2px solid var(--lounge-bg); background: var(--lounge-muted); }
+.lounge-avatar-presence.is-online { background: var(--lounge-green); }
 .lounge-mobile .lounge-avatar, .lounge-mobile-sheet .lounge-avatar { width: 42px; height: 42px; flex-basis: 42px;
   border-radius: 15px; background: var(--lounge-blue-bg); color: var(--lounge-blue); }
 .lounge-chat-row-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }

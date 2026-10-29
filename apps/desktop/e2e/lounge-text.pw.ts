@@ -27,6 +27,7 @@ for (const width of [320, 390]) {
       await page.goto('http://127.0.0.1:1486/web/'); await relay.ready();
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
       await page.addStyleTag({ content: `.lounge-mobile .lounge-text { font-size: ${14 * scale}px; }` });
       relay.push('开始私聊');
       await page.getByRole('button', { name: '与 bob@example.test 私聊', exact: true }).click();

@@ -31,6 +31,7 @@ export async function verifyNativeEmoji({ adb, tap, find, nodes, screenshot, sca
   await adb('shell', 'input', 'keyevent', '4'); await find('聊天');
   assert.ok(!(await nodes()).some(node => node['content-desc'] === '😂'), 'Back closes the panel before leaving chat');
   await tap('表情'); await tap('添加内容'); await find('添加图片');
-  await adb('shell', 'input', 'keyevent', '4'); await tap('返回发现'); await find('在线交流');
+  await adb('shell', 'input', 'keyevent', '4'); await tap('返回聊天列表');
+  await tap('返回发现'); await find('在线交流');
   console.log(`PASS native emoji docking, cursor, send, keyboard toggle and back at font scale ${scale}`);
 }

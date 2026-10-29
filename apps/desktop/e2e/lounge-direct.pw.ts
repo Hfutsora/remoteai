@@ -14,6 +14,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
       if (mobile) {
         await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
         await page.locator('.discovery-lounge').click();
+        await page.getByRole('button', { name: '群聊', exact: true }).click();
       } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     };
     const people = async () => { if (mobile) await page.getByRole('button', { name: /^聊天/ }).click(); };
@@ -30,7 +31,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     await expect(page.getByRole('button', { name: '与 carol@example.test 私聊', exact: true })
       .filter({ visible: true })).toBeVisible();
     await expect(person).toHaveCount(0);
-    if (mobile) await page.getByRole('button', { name: '返回聊天', exact: true }).click();
+    if (mobile) await page.getByRole('button', { name: '群聊', exact: true }).click();
     await page.locator('.lounge-message').filter({ hasText: 'group-before-private' })
       .locator('.lounge-bubble').click({ button: 'right' });
     await page.getByRole('menuitem', { name: '发起私聊' }).click();
@@ -107,6 +108,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     if (mobile) {
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
     } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     relay.push('avatar-entry-message');
     const input = page.getByRole('textbox', { name: '消息', exact: true });

@@ -11,7 +11,9 @@ import { LoungeSheet } from './LoungeSheet';
 import { useLoungeStyles } from './styles';
 import { useLoungeColor } from './theme';
 
-export function LoungeChats({ model, controller }: { model: MobileLounge; controller: LoungeController }) {
+export function LoungeChats({ model, controller, onBack }: {
+  model: MobileLounge; controller: LoungeController; onBack: () => void;
+}) {
   const styles = useLoungeStyles();
   const color = useLoungeColor();
   const [query, setQuery] = useState('');
@@ -20,8 +22,8 @@ export function LoungeChats({ model, controller }: { model: MobileLounge; contro
     (row.user?.account ?? t('client.lounge.groupChat')).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <View style={styles.page}>
     <View style={styles.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('client.lounge.backToChat')}
-        style={styles.iconButton} onPress={model.closeChats}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('client.discovery.back')}
+        style={styles.iconButton} onPress={onBack}>
         <Ionicons name="chevron-back" size={22} color={color('#202b33', 'ink')} /></Pressable>
       <Text accessibilityRole="header" style={[styles.title, styles.heading]}>{t('client.lounge.chats')}</Text>
       <Pressable accessibilityRole="button" style={styles.iconButton} onPress={() => model.setSheet('members')}>
@@ -40,8 +42,12 @@ export function LoungeChats({ model, controller }: { model: MobileLounge; contro
         <Pressable accessibilityRole="button" style={[styles.chatRow, item.current && styles.selectedRow]}
           accessibilityLabel={item.user ? t('client.lounge.directWith', { account: item.user.account })
             : t('client.lounge.groupChat')} accessibilityState={{ selected: item.current }}
+          accessibilityHint={item.contact ? t(contactStatus(item.contact)) : undefined}
           onPress={() => model.select(item.user)} onLongPress={item.user ? () => setActions(item) : undefined}>
-          {item.user ? <LoungeAvatar user={item.user} /> : <View style={styles.avatar}>
+          {item.user ? <View style={styles.chatAvatar}>
+            <LoungeAvatar user={item.user} />
+            <View style={[styles.avatarPresence, !item.online && styles.offlineDot]} />
+          </View> : <View style={styles.avatar}>
             <Ionicons name="chatbubbles-outline" size={22} color={color('#456c96', 'info')} /></View>}
           <View style={styles.heading}>
             <Text style={styles.rowTitle}>{item.user?.account ?? t('client.lounge.groupChat')}</Text>

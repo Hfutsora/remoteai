@@ -16,6 +16,7 @@ for (const width of [390, 320]) {
     await expect(entry.locator('.lounge-nav-badge')).toHaveText('1');
     await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-discovery-${width}.png` });
     await entry.click();
+    await page.getByRole('button', { name: '群聊', exact: true }).click();
     await expect(page.getByText('手机收到的新消息')).toBeVisible();
     await expect(page.locator('.mobile-lounge-badge')).toHaveCount(0);
     await expect(page.locator('.mobile-tabbar')).toBeHidden();
@@ -46,6 +47,7 @@ for (const width of [390, 320]) {
     expect(sendBox!.y + sendBox!.height).toBeLessThanOrEqual(450);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `../../.codex-tmp/lounge-mobile-keyboard-${width}.png` });
+    await page.getByRole('button', { name: '返回聊天列表' }).click();
     await page.getByRole('button', { name: '返回发现' }).click();
     await expect(entry).toBeVisible();
   });

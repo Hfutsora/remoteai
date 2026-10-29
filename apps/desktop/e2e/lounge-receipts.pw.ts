@@ -13,6 +13,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
       if (mobile) {
         await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
         await page.locator('.discovery-lounge').click();
+        await page.getByRole('button', { name: '群聊', exact: true }).click();
       } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     };
     const people = async () => { if (mobile) await page.getByRole('button', { name: /^聊天/ }).click(); };

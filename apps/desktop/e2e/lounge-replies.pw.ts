@@ -29,6 +29,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     if (mode === 'mobile') {
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
     } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     const pictures = await page.evaluate(() => [[800, 300], [300, 900]].map(([width, height]) => {
       const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
@@ -93,6 +94,7 @@ for (const mode of ['local', 'remote', 'web', 'mobile']) {
     if (mode === 'mobile') {
       await page.locator('.mobile-tabbar').getByText('发现', { exact: true }).click();
       await page.locator('.discovery-lounge').click();
+      await page.getByRole('button', { name: '群聊', exact: true }).click();
     } else await page.getByRole('button', { name: '在线交流', exact: true }).click();
     await openLoungeAction(page, '历史记录');
     await page.getByRole('textbox', { name: '搜索消息或账户' }).fill('reply-text');

@@ -15,7 +15,7 @@ export function LoungeHeading({ model, back }: { model: MobileLounge; back: () =
       ? t('client.lounge.mobileOnlineCount', { count: state.onlineCount }) : t('client.lounge.membersShort');
   return <View style={styles.header}>
     <Pressable accessibilityRole="button" style={styles.iconButton} onPress={back}
-      accessibilityLabel={t(model.fromChats ? 'client.lounge.backToChats' : 'client.discovery.back')}>
+      accessibilityLabel={t('client.lounge.backToChats')}>
       <Ionicons name="chevron-back" size={22} color={color('#202b33', 'ink')} /></Pressable>
     <View style={[styles.headerIdentity, contact && styles.privateIdentity]}>
       <Text accessibilityRole="header" style={[styles.title, styles.headerTitle]}
