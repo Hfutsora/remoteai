@@ -1,4 +1,5 @@
 import { accountName } from './names';
+import { LoungeSyncNotice } from './LoungeSyncNotice';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ArrowDown, Ban, Coffee, Users } from 'lucide-react';
 import { Drawer } from 'antd';
@@ -160,6 +161,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
     {state.contactsSyncError && <p className="lounge-history-warning" role="alert">
       {t('client.lounge.contactsSyncFailed')}
       <button type="button" onClick={() => controller.retryContacts()}>{t('client.lounge.historyRetry')}</button></p>}
+    <LoungeSyncNotice failed={state.deviceSyncError} controller={controller} />
     {navigation.error && <p className="lounge-mute-notice" role="status">{t(navigation.error)}</p>}
     <LoungeComposer key={`${state.user?.id ?? 'guest'}:${state.conversation}`}
       composerRef={composer}

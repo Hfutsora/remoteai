@@ -17,6 +17,8 @@ import { LoungeProfiles } from './profiles';
 import type { LoungeReply } from './reply';
 import { LoungeAccountLookup, recentSpeakers } from './accountLookup';
 import { LoungeSubmissions } from './submissions';
+import { LoungeDeviceSync } from './deviceSync';
+import { synchronizedSnapshot } from './syncSnapshot';
 
 const HEARTBEAT_MS = 20_000;
 const STALE_MS = 65_000;
@@ -52,11 +54,16 @@ export class LoungeController {
   private readonly transport = new LoungeDeliveryTransport();
   private readonly accountLookup = new LoungeAccountLookup();
   private readonly contactSync: LoungeContactSync;
+  private readonly deviceSync: LoungeDeviceSync;
 
   constructor(private readonly session?: LoungeSession, private readonly runtime: LoungeRuntime = browserLoungeRuntime) {
     this.state = { status: session ? 'connecting' : 'signed-out', messages: [], unread: 0,
       policy: { moderator: false, mutedUntil: null }, historyRevision: 0, historyError: false,
       contacts: [], blocked: [], directAvailable: false, conversation: '', unreadByConversation: {} };
+    this.deviceSync = new LoungeDeviceSync({ session, deviceId: runtime.randomId, flush: () => this.writes,
+      restored: messages => this.restoreSynchronized(messages),
+      accept: message => isCurrentDirect(message, peer => this.directState.generation(peer)),
+      error: failed => { if (this.running) this.update({ deviceSyncError: failed }); } });
     this.contactSync = new LoungeContactSync({ snapshot: () => this.state, update: change => this.update(change),
       persist: contact => this.persistContact(contact), watch: () => this.syncWatch(),
       profile: user => this.profiles.user(user), account: session?.account,
@@ -117,6 +124,7 @@ export class LoungeController {
     void this.connect();
   }
   stop() {
+    this.deviceSync.stop();
     this.delivery.stop();
     this.running = false;
     this.lifecycle++;
@@ -132,6 +140,7 @@ export class LoungeController {
     this.profiles.clear();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
       status: this.session ? 'connecting' : 'signed-out', historyError: false, contactsSyncError: false,
+      deviceSyncError: false,
       onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, directResetAvailable: false,
       accountLookupAvailable: false, namesAvailable: false,
@@ -277,6 +286,7 @@ export class LoungeController {
         directResetAvailable: frame.directReset === true,
         contacts: this.state.contacts.filter(contact => contact.user.id !== user.id) });
       this.contactSync.ready(frame.savedContacts === true);
+      this.deviceSync.ready(user.id, frame.deviceSync === true);
       this.syncWatch(); return;
     }
     const message = parseMessage(frame);
@@ -321,6 +331,7 @@ export class LoungeController {
     const lifecycle = this.lifecycle;
     this.writes = this.writes.then(() => store.save(message)).then(() => {
       if (this.running && lifecycle === this.lifecycle) {
+        this.deviceSync.changed(message);
         this.update({ historyRevision: this.state.historyRevision + 1 });
       }
     }).catch(() => {
@@ -332,6 +343,18 @@ export class LoungeController {
     await this.writes;
     const memory = [...this.state.messages, ...this.recent].find(message => historyKey(message) === key);
     return await this.session?.history?.get?.(key) ?? memory;
+  }
+  retryDeviceSync() { this.deviceSync.retry(); }
+  private restoreSynchronized(messages: LoungeMessage[]) {
+    if (!this.running) return;
+    const merged = synchronizedSnapshot(this.state, messages, this.recent);
+    this.recent = merged.recent; this.update(merged.change);
+    for (const message of messages) {
+      const user = message.sender.id === this.state.user?.id ? message.recipient : message.sender;
+      if (user) this.contactSync.remember({ user, direct: !!message.recipient,
+        ...(message.recipient ? { lastMessageAt: Date.parse(message.sentAt) } : {}) });
+    }
+    this.markRead();
   }
   private async publishDirect(message: LoungeMessage, fresh: boolean) {
     if (!isCurrentDirect(message, peer => this.directState.generation(peer))) return;
