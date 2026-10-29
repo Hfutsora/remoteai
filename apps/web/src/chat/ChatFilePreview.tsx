@@ -47,7 +47,8 @@ function TextFile({ path, context, line }: { path: string; context: FilePreviewC
   if (error) return <p className="chat-file-preview-note" role="status">{displayError(error)}</p>;
   if (!result) return <PreviewTransferProgress progress={progress} label={t("client.chat.loadingFile")} />;
   return <>{line && <p className="chat-muted">{t("client.shared.referencedLine", { line })}</p>}
-    {isHtmlPath(path) ? <ChatHtmlPreview text={result.text} />
+    {isHtmlPath(path) ? <ChatHtmlPreview text={result.text} path={result.path}
+      client={context.client} threadId={context.threadId!} />
       : isMarkdownPath(path) ? <ChatMarkdownPreview text={result.text} />
       : isJsonPath(path) ? <><ChatCopyButton text={result.text} label={t('client.chat.copyFileContents')} />
         <JsonPreview text={result.text} size={result.size} line={line} /></>
