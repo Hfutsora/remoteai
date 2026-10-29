@@ -12,6 +12,7 @@ export async function setupLounge(page: Page, web = false, reset = false) {
   let ticketsAvailable = true;
   let blocked = false;
   let acknowledge = true;
+  let groupReply: 'echo' | 'manual' = 'echo';
   let contactOnline: boolean | null = true;
   let avatar = '';
   let rejectAvatar = false;
@@ -86,6 +87,7 @@ export async function setupLounge(page: Page, web = false, reset = false) {
       if (frame.type === 'message') {
         if (frame.to && reset && directState === 'new') directState = 'waiting';
         sent.push(frame);
+        if (!frame.to && groupReply === 'manual') return;
         route.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
           ...(frame.to ? { recipient: bob } : {}),
           sentAt: new Date().toISOString() }));
@@ -120,6 +122,13 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     } });
   }, web);
   return {
+    groupReply: (value: typeof groupReply) => { groupReply = value; },
+    acceptGroup: (index: number) => socket.send(JSON.stringify({ type: 'accepted', id: sent[index].id,
+      sentAt: new Date().toISOString() })),
+    echoGroup: (index: number) => socket.send(JSON.stringify({ ...sent[index], type: 'message',
+      sender: { id: 'alice', account: 'alice@example.test' }, sentAt: new Date().toISOString() })),
+    rejectGroup: (index: number) => socket.send(JSON.stringify({ type: 'rejected', id: sent[index].id,
+      code: 'client.lounge.unavailable' })),
     lookups, lookupReply: (value: boolean) => { lookupReply = value; },
     rejectDelete: (value: boolean) => { rejectDelete = value; },
     sent, moderation, receipts, count: () => connections,

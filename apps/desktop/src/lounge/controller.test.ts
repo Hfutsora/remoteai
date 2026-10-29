@@ -133,7 +133,7 @@ describe('application lifetime lounge', () => {
     const socket = Socket.instances[0];
     expect(String(socket.url)).toBe('wss://example.test/lounge/socket');
     socket.onopen?.(); expect(socket.send).toHaveBeenCalledWith(
-      '{"type":"authenticate","ticket":"ticket","direct":true,"receipts":true}');
+      '{"type":"authenticate","ticket":"ticket","direct":true,"receipts":true,"groupAcks":true}');
     socket.ready(); socket.message('one'); socket.message('one'); socket.message('own', true);
     expect(controller.snapshot().unread).toBe(1);
     expect(controller.snapshot().messages).toHaveLength(2);
@@ -149,7 +149,8 @@ describe('application lifetime lounge', () => {
     socket.onclose?.(); expect(await sent).toBe('client.lounge.sendFailed');
     await vi.advanceTimersByTimeAsync(1000); await settle();
     const next = Socket.instances[1]; next.onopen?.(); next.ready();
-    expect(next.send.mock.calls).toEqual([['{"type":"authenticate","ticket":"ticket","direct":true,"receipts":true}']]);
+    expect(next.send.mock.calls).toEqual([
+      ['{"type":"authenticate","ticket":"ticket","direct":true,"receipts":true,"groupAcks":true}']]);
     expect(controller.snapshot().messages).toHaveLength(1);
   });
   it('acknowledges only the authenticated sender echo and keeps renewal on the same connection', async () => {
@@ -165,6 +166,62 @@ describe('application lifetime lounge', () => {
     }
     expect(authorization).toHaveBeenCalledTimes(2);
     expect(Socket.instances).toHaveLength(1);
+  });
+  it('finishes a group send on server acceptance without an echo or waiting for local history', async () => {
+    controller.stop();
+    let finishSave!: () => void;
+    const save = vi.fn(() => new Promise<void>(resolve => { finishSave = resolve; }));
+    controller = new LoungeController({ baseUrl: 'https://example.test', authorize: authorization,
+      history: { page: async () => ({ messages: [] }), save } });
+    controller.start(); await settle();
+    const socket = Socket.instances.at(-1)!; socket.ready();
+    const image = 'data:image/png;base64,AAAA';
+    const reply = { id: 'quoted', senderId: 'other', account: 'bob', text: 'quote', imageCount: 0 };
+    const draft = { text: 'original', images: [image], reply };
+    let confirmed = false;
+    const sending = controller.send(draft).then(() => { confirmed = true; });
+    const { id } = JSON.parse(socket.send.mock.calls.at(-1)![0]);
+    await settle(); expect(confirmed).toBe(false);
+    draft.text = 'edited'; draft.images.length = 0; draft.reply.text = 'edited quote';
+    const accepted = { type: 'accepted', id, sentAt: '2026-10-29T01:00:00Z' };
+    socket.frame(accepted); await sending;
+    expect(confirmed).toBe(true);
+    expect(controller.snapshot().messages).toEqual([expect.objectContaining({ id, text: 'original',
+      images: [image], reply: expect.objectContaining({ text: 'quote' }), sentAt: accepted.sentAt })]);
+    expect(controller.snapshot().unread).toBe(0);
+    socket.frame(accepted); socket.message(id, true); await settle();
+    expect(controller.snapshot().messages).toHaveLength(1);
+    expect(save).toHaveBeenCalledOnce();
+    finishSave(); await settle();
+  });
+  it('ignores unknown or malformed acceptances and never uses group acknowledgements for actions', async () => {
+    const socket = Socket.instances[0]; socket.ready();
+    let confirmed = false;
+    const sending = controller.send({ text: 'draft', images: [] }).then(() => { confirmed = true; });
+    const { id } = JSON.parse(socket.send.mock.calls.at(-1)![0]);
+    socket.frame({ type: 'accepted', id: 'unknown', sentAt: new Date().toISOString() });
+    socket.frame({ type: 'accepted', id, sentAt: 'invalid' });
+    await settle(); expect(confirmed).toBe(false); expect(controller.snapshot().messages).toEqual([]);
+    socket.frame({ type: 'accepted', id, sentAt: new Date().toISOString() }); await sending;
+    let moderated = false;
+    const action = controller.moderate('other', 1).then(() => { moderated = true; });
+    const actionID = JSON.parse(socket.send.mock.calls.at(-1)![0]).id;
+    socket.frame({ type: 'accepted', id: actionID, sentAt: new Date().toISOString() });
+    await settle(); expect(moderated).toBe(false);
+    socket.frame({ type: 'moderated', id: actionID }); await action;
+  });
+  it('keeps rejected and timed-out group sends out of history and ignores late confirmations', async () => {
+    const socket = Socket.instances[0]; socket.ready();
+    const rejected = controller.send({ text: 'rejected', images: [] }).catch(error => error.message);
+    const rejectedID = JSON.parse(socket.send.mock.calls.at(-1)![0]).id;
+    socket.frame({ type: 'rejected', id: rejectedID, code: 'client.lounge.muted' });
+    expect(await rejected).toBe('client.lounge.muted');
+    const timedOut = controller.send({ text: 'timeout', images: [] }).catch(error => error.message);
+    const timeoutID = JSON.parse(socket.send.mock.calls.at(-1)![0]).id;
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(await timedOut).toBe('client.lounge.sendFailed');
+    for (const id of [rejectedID, timeoutID]) socket.frame({ type: 'accepted', id, sentAt: new Date().toISOString() });
+    expect(controller.snapshot().messages).toEqual([]);
   });
   it('recovers stale connections and rejects oversized or malformed incoming images', async () => {
     const socket = Socket.instances[0]; socket.ready();

@@ -20,6 +20,24 @@ class Socket {
 const settle = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); Socket.instances = []; });
 
+it('completes native group sending on server acceptance without a full message echo', async () => {
+  vi.stubGlobal('WebSocket', Socket);
+  const controller = new LoungeController({ baseUrl: 'https://chat.test', authorize: async () => ({ ticket: 'test' }) },
+    { isVisible: () => true, randomId: () => 'native-group', subscribe: () => () => {} });
+  controller.start(); await settle();
+  try {
+    const socket = Socket.instances[0]; socket.onopen?.();
+    expect(JSON.parse(socket.send.mock.calls[0][0]).groupAcks).toBe(true);
+    socket.frame({ type: 'ready', user: { id: 'me', account: 'me@test' } });
+    const sent = controller.send({ text: 'native group', images: [] });
+    expect(controller.snapshot().messages).toEqual([]);
+    socket.frame({ type: 'accepted', id: 'native-group', sentAt: new Date().toISOString() });
+    await sent;
+    expect(controller.snapshot().messages).toEqual([expect.objectContaining({ text: 'native group' })]);
+    expect(controller.snapshot().unread).toBe(0);
+  } finally { controller.stop(); }
+});
+
 it('runs without a DOM, reconnects on foreground, and clears only visible messages and session data', async () => {
   vi.useFakeTimers(); vi.stubGlobal('WebSocket', Socket);
   expect(typeof document).toBe('undefined');
