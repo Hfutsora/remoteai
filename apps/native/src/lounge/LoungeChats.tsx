@@ -50,6 +50,10 @@ export function LoungeChats({ model, controller, onBack }: {
       <Pressable accessibilityRole="button" style={styles.iconButton}
         onPress={() => { model.select(actions.user); setActions(undefined); }}>
         <Text style={styles.link}>{t('client.lounge.directChat')}</Text></Pressable>
+      <Pressable accessibilityRole="button" style={styles.iconButton}
+        onPress={() => { controller.setPinned(actions.id, !actions.contact?.pinned); setActions(undefined); }}>
+        <Text style={styles.link}>{t(actions.contact?.pinned
+          ? 'client.lounge.unpinChat' : 'client.lounge.pinChat')}</Text></Pressable>
       {model.state.directAvailable && <Pressable accessibilityRole="button" style={styles.iconButton}
         onPress={() => { model.setBlocking(actions.user); setActions(undefined); }}>
         <Text style={styles.link}>{t(model.state.blocked.includes(actions.id)

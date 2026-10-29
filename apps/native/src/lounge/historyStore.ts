@@ -102,7 +102,10 @@ export function nativeLoungeHistory(baseUrl: string, account: string): LoungeHis
     }),
     contacts: () => withDatabase(async db => {
       const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM contacts WHERE scope = ?', scope);
-      return rows.map(row => parseContact(JSON.parse(row.content))).filter((value): value is LoungeContact => !!value);
+      const contacts = rows.map(row => parseContact(JSON.parse(row.content)))
+        .filter((value): value is LoungeContact => !!value);
+      await restoreContactTimes(db, scope, contacts);
+      return contacts;
     }),
     saveContact: contact => withDatabase(async db => {
       const previous = await db.getFirstAsync<{ content: string }>(
@@ -110,7 +113,22 @@ export function nativeLoungeHistory(baseUrl: string, account: string): LoungeHis
       const saved = previous && parseContact(JSON.parse(previous.content));
       const [value] = mergeContact(saved ? [saved] : [], contact);
       await db.runAsync('INSERT OR REPLACE INTO contacts(scope, id, content) VALUES (?, ?, ?)',
-        scope, value.user.id, JSON.stringify({ user: value.user, direct: value.direct }));
+        scope, value.user.id, JSON.stringify(parseContact(value)));
     }),
   };
+}
+
+/** Backfill legacy contacts once; subsequent launches read the saved timestamps directly. */
+async function restoreContactTimes(db: SQLiteDatabase, scope: string, contacts: LoungeContact[]) {
+  const missing = contacts.filter(contact => contact.direct && contact.lastMessageAt === undefined);
+  if (!missing.length) return;
+  const rows = await db.getAllAsync<{ peer: string; time: number }>(
+    `SELECT json_extract(content, '$.conversation') AS peer, MAX(time) AS time
+      FROM messages WHERE scope = ? GROUP BY peer`, scope);
+  const times = new Map(rows.map(row => [row.peer, row.time]));
+  for (const contact of missing) {
+    contact.lastMessageAt = times.get(contact.user.id) ?? 0;
+    await db.runAsync('UPDATE contacts SET content = ? WHERE scope = ? AND id = ?',
+      JSON.stringify(contact), scope, contact.user.id);
+  }
 }

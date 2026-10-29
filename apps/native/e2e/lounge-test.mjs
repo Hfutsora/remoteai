@@ -15,6 +15,7 @@ import { verifyNativePresence } from './lounge-presence-check.mjs';
 import { verifyNativeProfile } from './lounge-profile-check.mjs';
 import { verifyNativePreview } from './lounge-preview-check.mjs';
 import { verifyNativeNewChat } from './lounge-new-chat-check.mjs';
+import { verifyNativeOrdering } from './lounge-ordering-check.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -102,7 +103,7 @@ sockets.on('connection', socket => socket.on('message', raw => {
     if (frame.to && resetAvailable && directState === 'new') directState = 'waiting';
     sent.push(frame);
     socket.send(JSON.stringify({ ...frame, sender: { id: 'alice', account: 'alice@example.test', avatar: frame.avatar },
-      ...(frame.to ? { recipient: { id: 'bob', account: 'bob@example.test' } } : {}),
+      ...(frame.to ? { recipient: { id: frame.to, account: `${frame.to}@example.test` } } : {}),
       sentAt: new Date().toISOString() }));
     if (frame.to) socket.send(JSON.stringify({ type: 'receipt', id: frame.id, from: frame.to,
       to: 'alice', status: 'delivered' }));
@@ -193,6 +194,16 @@ try {
     await find('在线交流'); if (scale === 1.3) await tap('Light fixture');
     await find('1'); await screenshot(`discovery-${scale}`);
     await tap('在线交流'); await find('搜索聊天');
+    if (process.env.LOUNGE_ORDERING_ONLY === '1') {
+      await verifyNativeOrdering({ adb, tap, find, nodes, screenshot, longPress, hideKeyboard, scale, broadcast, incoming,
+        restart: async () => {
+          online = false;
+          await adb('shell', 'am', 'force-stop', app);
+          await adb('shell', 'am', 'start', '-W', '-n', `${app}/com.codexswitch.mobile.MainActivity`);
+          await find('在线交流'); await tap('在线交流'); await find('搜索聊天');
+        } });
+      continue;
+    }
     if (process.env.LOUNGE_NEW_CHAT_ONLY === '1') {
       await verifyNativeNewChat({ adb, tap, find, nodes, screenshot, hideKeyboard, scale, sent, lookups,
         lookupReply: value => { lookupReply = value; } });

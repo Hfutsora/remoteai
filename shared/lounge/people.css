@@ -27,6 +27,7 @@
   background: transparent; color: inherit; align-items: center; text-align: start; cursor: pointer; }
 .lounge-person:hover, .lounge-person.is-selected { background: #20a99818; }
 .lounge-person-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.lounge-pin { color: var(--app-muted, var(--muted, #838892)); flex-shrink: 0; }
 .lounge-person-copy > span { font-size: 13px; }
 .lounge-person-copy small, .lounge-peer-status { color: var(--app-muted, var(--muted, #838892)); font-size: 12px; }
 .lounge-person-copy small.is-online { color: #268c64; }

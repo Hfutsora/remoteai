@@ -1,4 +1,4 @@
-import { MessagesSquare } from 'lucide-react';
+import { MessagesSquare, Pin } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
 import { contactStatus } from './contacts';
 import type { ConversationRow } from './conversationRows';
@@ -20,6 +20,8 @@ export function MobileLoungeChatRow({ row, model }: { row: ConversationRow; mode
       <span className="lounge-chat-row-copy"><strong>{row.user?.account ?? t('client.lounge.groupChat')}</strong>
         <span>{conversationPreviewText(row)}</span></span>
       <span className="lounge-chat-row-meta">
+        {row.contact?.pinned && <Pin size={14} className="lounge-pin" role="img"
+          aria-label={t('client.lounge.pinned')} />}
         {row.last && <time>{new Date(row.last.sentAt).toLocaleTimeString([], {
           hour: '2-digit', minute: '2-digit' })}</time>}
         {row.unread > 0 && <span className="lounge-chat-badge">{row.unread > 99 ? '99+' : row.unread}</span>}

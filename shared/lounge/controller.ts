@@ -295,7 +295,8 @@ export class LoungeController {
     this.update({ messages, unreadByConversation,
       unread: Object.values(unreadByConversation).reduce((sum, n) => sum + n, 0) });
     const user = own ? message.recipient : message.sender;
-    if (user) this.rememberContact({ user, direct: !!message.recipient });
+    if (user) this.rememberContact({ user, direct: !!message.recipient,
+      ...(message.recipient ? { lastMessageAt: Date.parse(message.sentAt) } : {}) });
     this.archive(message);
   }
   private archive(message: LoungeMessage) {
@@ -426,6 +427,11 @@ export class LoungeController {
     this.markRead(); this.syncWatch(); void this.restoreHistory();
   }
   block(userId: string, blocked: boolean) { return this.submit({ type: 'block', userId, blocked }); }
+  setPinned(userId: string, pinned: boolean) {
+    const contact = this.state.contacts.find(value => value.direct && value.user.id === userId);
+    if (!contact || contact.pinned === pinned) return;
+    this.rememberContact({ ...contact, pinned });
+  }
   async deleteContact(userId: string) {
     const store = this.session?.history;
     if (!this.state.directResetAvailable || !userId || userId === this.state.user?.id
@@ -448,7 +454,9 @@ export class LoungeController {
     if (contact.user.id === this.state.user?.id || contact.user.account === this.session?.account) return;
     const previous = this.state.contacts.find(value => value.user.id === contact.user.id);
     if (previous && (!contact.direct || previous.direct) && previous.user.account === contact.user.account
-      && (!contact.user.avatar || previous.user.avatar === contact.user.avatar)) return;
+      && (!contact.user.avatar || previous.user.avatar === contact.user.avatar)
+      && (contact.lastMessageAt ?? 0) <= (previous.lastMessageAt ?? 0)
+      && (contact.pinned === undefined || previous.pinned === contact.pinned)) return;
     const contacts = mergeContact(this.state.contacts, contact);
     this.update({ contacts }); this.syncWatch();
     const stored = contacts.find(value => value.user.id === contact.user.id)!;

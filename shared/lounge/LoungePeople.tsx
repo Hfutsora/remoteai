@@ -1,19 +1,20 @@
 import { useState } from 'react';
-import { MessageCircle, Plus } from 'lucide-react';
+import { MessageCircle, Pin, Plus } from 'lucide-react';
 import { ThreadContextMenu } from '../chat/ThreadContextMenu';
 import { displayText as t } from '../localization/messages';
 import type { LoungeAccount, LoungeSnapshot } from './types';
-import { contactStatus } from './contacts';
+import { contactStatus, orderedDirectContacts } from './contacts';
 import { LoungeAvatar } from './LoungeAvatar';
 
-export function LoungePeople({ state, select, block, newChat }: {
+export function LoungePeople({ state, select, block, newChat, pin }: {
   state: LoungeSnapshot; select: (user?: LoungeAccount) => void; block: (user: LoungeAccount) => void;
   newChat: () => void;
+  pin: (userId: string, pinned: boolean) => void;
 }) {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<string>();
-  const contacts = state.contacts.filter(contact => contact.direct && contact.user.id !== state.user?.id
-    && contact.user.account.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const contacts = orderedDirectContacts(state.contacts, state.user?.id).filter(contact =>
+    contact.user.account.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <nav className="lounge-people" aria-label={t('client.lounge.people')}>
     <div className="lounge-people-heading"><h2>{t('client.lounge.people')}</h2>
       <button type="button" className="lounge-new-chat-button" onClick={newChat} disabled={!state.directAvailable}>
@@ -29,9 +30,14 @@ export function LoungePeople({ state, select, block, newChat }: {
       {contacts.map(contact => <ThreadContextMenu key={contact.user.id}
         open={menu === contact.user.id} onOpenChange={open => setMenu(open ? contact.user.id : undefined)}
         menu={{ items: [{ key: 'direct', label: t('client.lounge.directChat') },
+          { key: 'pin', label: t(contact.pinned ? 'client.lounge.unpinChat' : 'client.lounge.pinChat') },
           ...(state.directAvailable ? [{ key: 'block', label: t(state.blocked.includes(contact.user.id)
             ? 'client.lounge.unblockUser' : 'client.lounge.blockUser') }] : [])],
-        onClick: ({ key }) => { setMenu(undefined); if (key === 'direct') select(contact.user); else block(contact.user); } }}>
+        onClick: ({ key }) => {
+          setMenu(undefined);
+          if (key === 'pin') pin(contact.user.id, !contact.pinned);
+          else if (key === 'direct') select(contact.user); else block(contact.user);
+        } }}>
         <button type="button"
           className={`lounge-person${state.conversation === contact.user.id ? ' is-selected' : ''}`}
           aria-label={t('client.lounge.directWith', { account: contact.user.account })}
@@ -40,7 +46,9 @@ export function LoungePeople({ state, select, block, newChat }: {
             <span>{contact.user.account}</span>
             {contact.direct && <small className={contact.online ? 'is-online' : ''}>{t(contactStatus(contact))}</small>}
             {state.blocked.includes(contact.user.id) && <small>{t('client.lounge.blocked')}</small>}
-          </span><Unread value={state.unreadByConversation[contact.user.id]} />
+          </span>{contact.pinned && <Pin size={14} className="lounge-pin" role="img"
+            aria-label={t('client.lounge.pinned')} />}
+          <Unread value={state.unreadByConversation[contact.user.id]} />
         </button>
       </ThreadContextMenu>)}
     </div>

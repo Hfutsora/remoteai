@@ -39,13 +39,15 @@ export function MobileLoungeChats({ model, controller, onBack }: {
         <ThreadContextMenu open={!!row.user && menu === row.id}
           onOpenChange={open => setMenu(open && row.user ? row.id : undefined)}
           menu={{ items: row.user ? [{ key: 'direct', label: t('client.lounge.directChat') },
+            { key: 'pin', label: t(row.contact?.pinned ? 'client.lounge.unpinChat' : 'client.lounge.pinChat') },
             ...(model.state.directAvailable ? [{ key: 'block', label: t(model.state.blocked.includes(row.id)
               ? 'client.lounge.unblockUser' : 'client.lounge.blockUser') }] : []),
             { key: 'delete', danger: true, label: t('client.lounge.deleteChat'),
               disabled: !model.state.directResetAvailable || model.state.status !== 'connected' }] : [],
           onClick: ({ key }) => {
             setMenu(undefined);
-            if (key === 'delete') model.setDeleting(row.user);
+            if (key === 'pin') controller.setPinned(row.id, !row.contact?.pinned);
+            else if (key === 'delete') model.setDeleting(row.user);
             else if (key === 'block' && row.user) model.setBlocking(row.user); else model.select(row.user);
           } }}>
           <div><MobileLoungeChatRow row={row} model={model} /></div>

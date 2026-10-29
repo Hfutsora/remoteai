@@ -5,6 +5,8 @@ export interface LoungeContact {
   user: LoungeAccount;
   direct: boolean;
   online?: boolean | null;
+  lastMessageAt?: number;
+  pinned?: boolean;
 }
 
 export function parseAccount(input: unknown): LoungeAccount | undefined {
@@ -19,14 +21,26 @@ export function parseContact(input: unknown): LoungeContact | undefined {
   if (!input || typeof input !== 'object') return;
   const value = input as Partial<LoungeContact>;
   const user = parseAccount(value.user);
-  if (user && typeof value.direct === 'boolean') return { user, direct: value.direct };
+  if (user && typeof value.direct === 'boolean') return { user, direct: value.direct,
+    ...(typeof value.lastMessageAt === 'number' && Number.isFinite(value.lastMessageAt) && value.lastMessageAt >= 0
+      ? { lastMessageAt: value.lastMessageAt } : {}),
+    ...(typeof value.pinned === 'boolean' ? { pinned: value.pinned } : {}) };
 }
 
 export function mergeContact(contacts: LoungeContact[], incoming: LoungeContact): LoungeContact[] {
   const previous = contacts.find(contact => contact.user.id === incoming.user.id);
   const updated = { ...previous, ...incoming, direct: incoming.direct || !!previous?.direct,
     user: { ...incoming.user, avatar: incoming.user.avatar ?? previous?.user.avatar } };
+  if (updated.direct) updated.lastMessageAt = Math.max(previous?.lastMessageAt ?? 0, incoming.lastMessageAt ?? 0);
+  if (previous?.pinned !== undefined || incoming.pinned !== undefined) updated.pinned = incoming.pinned ?? previous?.pinned;
   return [...contacts.filter(contact => contact.user.id !== incoming.user.id), updated];
+}
+
+/** Pinning partitions the list; both sections use message time, never presence, drafts or read receipts. */
+export function orderedDirectContacts(contacts: LoungeContact[], self?: string) {
+  return contacts.filter(contact => contact.direct && contact.user.id !== self).sort((a, b) =>
+    Number(!!b.pinned) - Number(!!a.pinned) || (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0)
+    || a.user.id.localeCompare(b.user.id));
 }
 
 export const messageConversation = (message: LoungeMessage, self: string) =>

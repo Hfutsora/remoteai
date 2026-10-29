@@ -1,11 +1,12 @@
 import type { LoungeController } from './controller';
 import type { LoungeDraft, LoungeSnapshot } from './types';
+import { orderedDirectContacts } from './contacts';
 
 export function conversationRows(options: {
   state: LoungeSnapshot; controller: LoungeController; drafts: Record<string, LoungeDraft>;
 }) {
   const { state, controller, drafts } = options;
-  return [undefined, ...state.contacts.filter(contact => contact.direct)]
+  return [undefined, ...orderedDirectContacts(state.contacts, state.user?.id)]
     .map(contact => {
       const user = contact?.user;
       const id = user?.id ?? '';

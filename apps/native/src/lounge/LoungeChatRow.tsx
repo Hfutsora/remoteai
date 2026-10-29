@@ -32,6 +32,8 @@ export function LoungeChatRow({ row, model, actions }: {
           <Text numberOfLines={1} ellipsizeMode="tail" style={styles.muted}>{conversationPreviewText(row)}</Text>
         </View>
         <View style={styles.rowMeta}>
+          {row.contact?.pinned && <View accessible accessibilityLabel={t('client.lounge.pinned')}>
+            <Ionicons name="pin" size={14} color={color('#687c89', 'muted')} accessible={false} /></View>}
           {row.last && <Text style={styles.messageTime}>{new Date(row.last.sentAt).toLocaleTimeString(getLocale(), {
             hour: '2-digit', minute: '2-digit' })}</Text>}
           {row.unread > 0 && <View style={styles.unread}><Text style={styles.unreadText}>

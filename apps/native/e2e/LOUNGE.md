@@ -48,6 +48,11 @@ lookup, ambiguous/missing/self results, keyboard layout, cancellation, retained 
 back navigation at font scales 1.0 and 1.3. Inspect the `new-chat-*.png` captures for complete Chinese glyphs.
 The mobile Web counterpart is `apps/desktop/e2e/lounge-new-chat-mobile.pw.ts` at 320px and 390px.
 
+Set `LOUNGE_ORDERING_ONLY=1` to verify private chat ordering by last message, pin/unpin actions,
+multiple pinned chats, offline restart, translation and navigation at font scales 1.0 and 1.3.
+Inspect `ordering-*.png` for menu text, pin indicators and complete Chinese glyphs. The browser counterpart
+is `apps/desktop/e2e/lounge-ordering.pw.ts`, including desktop local/remote/Web and 320px/390px mobile Web.
+
 Set `LOUNGE_PREVIEW_ONLY=1` to check the chat list without selected rows, the latest incoming unread
 text, single-line truncation, retained previews after reading, outgoing replies and back navigation
 at font scales 1.0 and 1.3. Inspect `preview-*.png` in `.codex-tmp/lounge-android/` for glyphs and truncation.
