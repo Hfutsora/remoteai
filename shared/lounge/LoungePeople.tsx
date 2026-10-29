@@ -7,6 +7,7 @@ import type { LoungeAccount, LoungeSnapshot } from './types';
 import { contactStatus, orderedDirectContacts } from './contacts';
 import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeMyAccount } from './LoungeMyAccount';
+import './contextMenu.css';
 
 export function LoungePeople({ state, select, block, newChat, pin, profile }: {
   state: LoungeSnapshot; select: (user?: LoungeAccount) => void; block: (user: LoungeAccount) => void;
@@ -30,7 +31,7 @@ export function LoungePeople({ state, select, block, newChat, pin, profile }: {
       <span>{t('client.lounge.groupChat')}</span><Unread value={state.unreadByConversation['']} /></button>
     <div className="lounge-people-list">
       {!contacts.length && <p>{t('client.lounge.noPeople')}</p>}
-      {contacts.map(contact => <ThreadContextMenu key={contact.user.id}
+      {contacts.map(contact => <ThreadContextMenu key={contact.user.id} overlayClassName="lounge-context-menu"
         open={menu === contact.user.id} onOpenChange={open => setMenu(open ? contact.user.id : undefined)}
         menu={{ items: [{ key: 'direct', label: t('client.lounge.directChat') },
           { key: 'profile', label: t('client.lounge.profile') },

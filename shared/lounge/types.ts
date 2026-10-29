@@ -41,6 +41,7 @@ export interface LoungeSnapshot {
   policy: LoungePolicy;
   historyRevision: number;
   historyError: boolean;
+  contactsSyncError?: boolean;
   onlineCount?: number;
   contacts: LoungeContact[];
   blocked: string[];

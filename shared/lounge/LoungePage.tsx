@@ -7,7 +7,7 @@ import { getInterfaceLanguage, subscribeInterfaceLanguage } from '../localizatio
 import { localeForLanguage } from '../localization/language';
 import { type LoungeAccount, type LoungeMessage } from './types';
 import type { LoungeController } from './controller';
-import { LoungeComposer } from './LoungeComposer';
+import { LoungeComposer, type LoungeComposerHandle } from './LoungeComposer';
 import { LoungeModeration } from './LoungeModeration';
 import { LoungeAvatar } from './LoungeAvatar';
 import { LoungeAvatarSettings } from './LoungeAvatarSettings';
@@ -41,6 +41,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
   const navigation = useLoungeNavigation(controller, state);
   const language = useSyncExternalStore(subscribeInterfaceLanguage, getInterfaceLanguage);
   const list = useRef<HTMLDivElement>(null);
+  const composer = useRef<LoungeComposerHandle>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [preview, setPreview] = useState<string>();
   const [moderating, setModerating] = useState<LoungeAccount>();
@@ -129,6 +130,7 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
             className={`lounge-message${own ? ' is-own' : ''}${navigation.highlight === historyKey(message)
               ? ' is-highlighted' : ''}`}>
             <LoungeAvatar user={message.sender}
+              onMention={!own ? () => composer.current?.mention(message.sender) : undefined}
               onDirect={!own && state.directAvailable ? () => select(message.sender) : undefined} />
             <div className="lounge-message-main">
               {state.policy.moderator && !own ? <button type="button" className="lounge-account lounge-account-action"
@@ -155,13 +157,18 @@ function DesktopLoungePage({ controller, onLogin, mobile = false }: {
       && <p className="lounge-mute-notice" role="status">{t('client.lounge.directUpgrade')}</p>}
     {state.historyError && <p className="lounge-history-warning" role="alert">{t('client.lounge.historySaveFailed')}
       <button type="button" onClick={() => void controller.retryHistory()}>{t('client.lounge.historyRetry')}</button></p>}
+    {state.contactsSyncError && <p className="lounge-history-warning" role="alert">
+      {t('client.lounge.contactsSyncFailed')}
+      <button type="button" onClick={() => controller.retryContacts()}>{t('client.lounge.historyRetry')}</button></p>}
     {navigation.error && <p className="lounge-mute-notice" role="status">{t(navigation.error)}</p>}
     <LoungeComposer key={`${state.user?.id ?? 'guest'}:${state.conversation}`}
+      composerRef={composer}
       connected={state.status === 'connected' && !muted && (!state.conversation || state.directAvailable)} mobile={mobile}
       reply={reply} cancelReply={sent => setReply(current => !sent || current === sent ? undefined : current)}
       send={draft => controller.send({ ...draft, to: state.conversation || undefined })}
       onHistory={() => setHistoryOpen(true)} />
     <LoungeHistory open={historyOpen} close={() => setHistoryOpen(false)} controller={controller}
+      mention={user => { setHistoryOpen(false); composer.current?.mention(user); }}
       preview={setPreview} reply={quote} direct={select} locate={locate} navigationError={navigation.error} />
     {avatarOpen && state.user && <LoungeAvatarSettings user={state.user} controller={controller}
       close={() => setAvatarOpen(false)} />}

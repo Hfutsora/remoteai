@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ClipboardEvent, type ReactNode } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type ClipboardEvent, type ReactNode, type Ref } from 'react';
 import { ArrowUp, History, ImagePlus, Keyboard, Plus, Send, Smile, X } from 'lucide-react';
 import { displayText as t } from '../localization/messages';
-import { MAX_IMAGES, MAX_TEXT, type LoungeDraft } from './types';
+import { MAX_IMAGES, MAX_TEXT, type LoungeAccount, type LoungeDraft } from './types';
 import { prepareImage } from './images';
 import { LoungeEmojiPicker } from './LoungeEmojiPicker';
 import { sendError } from './contacts';
@@ -12,12 +12,15 @@ import { MobileLoungeSheet } from './MobileLoungeSheet';
 import { MobileLoungeEmojiPanel, useMobileEmojiHeight } from './MobileLoungeEmojiPanel';
 import { insertLoungeEmoji } from './emoji';
 
+export interface LoungeComposerHandle { mention: (user: LoungeAccount) => void }
+
 export function LoungeComposer({ connected, send, onHistory, mobile = false, reply, cancelReply,
-  draftState, extraActions, onOverlayChange }: {
+  draftState, extraActions, onOverlayChange, composerRef }: {
   connected: boolean; send: (draft: LoungeDraft) => Promise<void>; onHistory: () => void; mobile?: boolean;
   reply?: LoungeReply; cancelReply: (sent?: LoungeReply) => void;
   draftState?: ComposerDraftState; extraActions?: (close: () => void) => ReactNode;
   onOverlayChange?: (open: boolean) => void;
+  composerRef?: Ref<LoungeComposerHandle>;
 }) {
   const { text, setText, images, setImages, clearSent } = useComposerDraft(draftState);
   const [extras, setExtras] = useState(false);
@@ -97,6 +100,13 @@ export function LoungeComposer({ connected, send, onHistory, mobile = false, rep
     };
     textarea.current?.blur(); setExtras(false); setEmojiOpen(true);
   };
+  // Use the public account identifier: a private contact remark must never be included in a mention.
+  useImperativeHandle(composerRef, () => ({ mention: user => {
+    if (textarea.current) selection.current = {
+      start: textarea.current.selectionStart, end: textarea.current.selectionEnd,
+    };
+    insertEmoji(`@${user.account} `);
+  } }));
   const paste = (event: ClipboardEvent) => {
     const files = Array.from(event.clipboardData.files).filter(file => file.type.startsWith('image/'));
     if (!files.length) return;

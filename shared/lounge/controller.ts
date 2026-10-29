@@ -2,10 +2,11 @@ import { MAX_FRAME_BYTES, parseMessage, type LoungeDraft, type LoungeMessage,
   type LoungeSession, type LoungeSnapshot } from './types';
 import { avatarData } from './avatar';
 import { browserLoungeRuntime, type LoungeRuntime } from './runtime';
-import { historyKey, historyPage, historyPosition, recentMessages, RECENT_MESSAGE_LIMIT,
+import { historyKey, historyScope, historyPage, historyPosition, recentMessages, RECENT_MESSAGE_LIMIT,
   type HistoryPage, type HistoryQuery } from './archive';
 import { searchLoungeHistory } from './history';
-import { mergeContact, messageConversation, parseAccount, type LoungeContact } from './contacts';
+import { mergeContact, messageConversation, type LoungeContact } from './contacts';
+import { LoungeContactSync } from './contactSync';
 import { LoungeDirectDelivery } from './directDelivery';
 import { LoungeDeliveryTransport } from './deliveryTransport';
 import { LoungeDirectState } from './directState';
@@ -50,11 +51,16 @@ export class LoungeController {
   private readonly delivery: LoungeDirectDelivery;
   private readonly transport = new LoungeDeliveryTransport();
   private readonly accountLookup = new LoungeAccountLookup();
+  private readonly contactSync: LoungeContactSync;
 
   constructor(private readonly session?: LoungeSession, private readonly runtime: LoungeRuntime = browserLoungeRuntime) {
     this.state = { status: session ? 'connecting' : 'signed-out', messages: [], unread: 0,
       policy: { moderator: false, mutedUntil: null }, historyRevision: 0, historyError: false,
       contacts: [], blocked: [], directAvailable: false, conversation: '', unreadByConversation: {} };
+    this.contactSync = new LoungeContactSync({ snapshot: () => this.state, update: change => this.update(change),
+      persist: contact => this.persistContact(contact), watch: () => this.syncWatch(),
+      profile: user => this.profiles.user(user), account: session?.account,
+      send: frame => this.state.status === 'connected' && this.transport.send(this.socket, frame) });
     this.delivery = new LoungeDirectDelivery({
       self: () => this.state.user,
       enabled: () => this.running && this.state.status === 'connected' && this.state.directAvailable,
@@ -71,7 +77,11 @@ export class LoungeController {
     });
   }
   snapshot = () => this.state;
-  recentSpeakers = () => recentSpeakers(this.recent, this.state.user?.id).map(user => this.profiles.user(user));
+  recentSpeakers = (after = -Infinity) => recentSpeakers(this.recent, this.state.user?.id, after)
+    .map(user => this.profiles.user(user));
+  get historyScope() {
+    return historyScope(this.session?.baseUrl ?? '', this.state.user?.account ?? this.session?.account ?? '');
+  }
   findAccount(query: string, signal: AbortSignal) {
     if (this.state.status !== 'connected' || !this.state.directAvailable
       || !this.state.accountLookupAvailable || !this.socket) {
@@ -121,7 +131,8 @@ export class LoungeController {
     this.directState.clear();
     this.profiles.clear();
     this.update({ messages: [], unread: 0, user: undefined, policy: { moderator: false, mutedUntil: null },
-      status: this.session ? 'connecting' : 'signed-out', historyError: false, onlineCount: undefined,
+      status: this.session ? 'connecting' : 'signed-out', historyError: false, contactsSyncError: false,
+      onlineCount: undefined,
       contacts: [], blocked: [], directAvailable: false, directResetAvailable: false,
       accountLookupAvailable: false, namesAvailable: false,
       conversation: '', unreadByConversation: {} });
@@ -198,6 +209,7 @@ export class LoungeController {
     finally { this.renewing = false; }
   }
   private disconnect() {
+    this.contactSync.disconnect();
     this.accountLookup.disconnect();
     const socket = this.socket;
     this.socket = undefined;
@@ -225,6 +237,7 @@ export class LoungeController {
       return;
     }
     if (this.accountLookup.receive(frame)) return;
+    if (this.contactSync.receive(frame)) return;
     if (frame.type === 'profiles') { this.receiveProfiles(frame.profiles); return; }
     if (frame.type === 'names') { this.receiveProfiles(frame, true); return; }
     if (frame.type === 'direct-permissions') { this.directState.receive(frame); return; }
@@ -234,8 +247,8 @@ export class LoungeController {
       const count = frame.onlineCount;
       if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) this.update({ onlineCount: count });
     }
-    if (frame.type === 'privacy' || frame.type === 'ready') this.receivePrivacy(frame.blocked);
-    if (frame.type === 'contacts') this.receiveContacts(frame.contacts);
+    if (frame.type === 'privacy' || frame.type === 'ready') this.contactSync.privacy(frame.blocked);
+    if (frame.type === 'contacts') this.contactSync.presence(frame.contacts);
     if (frame.type === 'receipt' || frame.type === 'receipt-confirm') {
       this.delivery.receipt(frame); return;
     }
@@ -263,6 +276,7 @@ export class LoungeController {
         namesAvailable: frame.names === true,
         directResetAvailable: frame.directReset === true,
         contacts: this.state.contacts.filter(contact => contact.user.id !== user.id) });
+      this.contactSync.ready(frame.savedContacts === true);
       this.syncWatch(); return;
     }
     const message = parseMessage(frame);
@@ -297,7 +311,7 @@ export class LoungeController {
     this.update({ messages, unreadByConversation,
       unread: Object.values(unreadByConversation).reduce((sum, n) => sum + n, 0) });
     const user = own ? message.recipient : message.sender;
-    if (user) this.rememberContact({ user, direct: !!message.recipient,
+    if (user) this.contactSync.remember({ user, direct: !!message.recipient,
       ...(message.recipient ? { lastMessageAt: Date.parse(message.sentAt) } : {}) });
     this.archive(message);
   }
@@ -343,7 +357,7 @@ export class LoungeController {
         .find(user => user?.account === this.session?.account);
       this.update({ user: restoredUser, messages: recentMessages([...page.messages.reverse(), ...this.state.messages]) });
       for (const message of page.messages) {
-        if (message.sender.id !== this.state.user?.id) this.rememberContact({ user: message.sender,
+        if (message.sender.id !== this.state.user?.id) this.contactSync.remember({ user: message.sender,
           direct: !!message.recipient });
       }
       this.markRead();
@@ -426,7 +440,7 @@ export class LoungeController {
   }
   selectConversation(user?: LoungeSnapshot['user']) {
     const conversation = user?.id ?? '';
-    if (user && user.id !== this.state.user?.id) this.rememberContact({ user, direct: true });
+    if (user && user.id !== this.state.user?.id) this.contactSync.remember({ user, direct: true });
     if (conversation === this.state.conversation) return;
     this.update({ conversation, messages: this.recent.filter(message => (message.conversation ?? '') === conversation) });
     this.markRead(); this.syncWatch(); void this.restoreHistory();
@@ -435,7 +449,7 @@ export class LoungeController {
   setPinned(userId: string, pinned: boolean) {
     const contact = this.state.contacts.find(value => value.direct && value.user.id === userId);
     if (!contact || contact.pinned === pinned) return;
-    this.rememberContact({ ...contact, pinned });
+    this.contactSync.remember({ ...contact, pinned });
   }
   async deleteContact(userId: string) {
     const store = this.session?.history;
@@ -455,21 +469,7 @@ export class LoungeController {
       this.recent = removed.recent; this.update(removed.snapshot); this.syncWatch();
     });
   }
-  private rememberContact(contact: LoungeContact) {
-    if (contact.user.id === this.state.user?.id || contact.user.account === this.session?.account) return;
-    contact = { ...contact, user: this.profiles.user(contact.user) };
-    const previous = this.state.contacts.find(value => value.user.id === contact.user.id);
-    if (previous && (!contact.direct || previous.direct) && previous.user.account === contact.user.account
-      && (!contact.user.avatar || previous.user.avatar === contact.user.avatar)
-      && (contact.user.nickname === undefined || previous.user.nickname === contact.user.nickname)
-      && (contact.user.remark === undefined || previous.user.remark === contact.user.remark)
-      && (contact.lastMessageAt ?? 0) <= (previous.lastMessageAt ?? 0)
-      && (contact.pinned === undefined || previous.pinned === contact.pinned)) return;
-    const contacts = mergeContact(this.state.contacts, contact);
-    this.update({ contacts }); this.syncWatch();
-    const stored = contacts.find(value => value.user.id === contact.user.id)!;
-    this.persistContact(stored);
-  }
+  retryContacts() { this.contactSync.retry(); }
   private persistContact(stored: LoungeContact) {
     const lifecycle = this.lifecycle;
     if (this.session?.history?.saveContact) this.writes = this.writes
@@ -490,23 +490,6 @@ export class LoungeController {
         .filter(contact => contact.user.id !== this.state.user?.id && contact.user.account !== this.session?.account);
       this.update({ contacts }); this.syncWatch();
     } catch { if (this.running && lifecycle === this.lifecycle) this.update({ historyError: true }); }
-  }
-  private receivePrivacy(input: unknown) {
-    if (!Array.isArray(input)) return;
-    const users = input.map(parseAccount).filter((user): user is NonNullable<typeof user> => !!user);
-    this.update({ blocked: users.map(user => user.id) });
-    for (const user of users) this.rememberContact({ user, direct: false });
-  }
-  private receiveContacts(input: unknown) {
-    if (!Array.isArray(input)) return;
-    const statuses = new Map<string, boolean | null>();
-    for (const value of input) {
-      if (typeof value?.id === 'string' && (value.online === null || typeof value.online === 'boolean')) {
-        statuses.set(value.id, value.online);
-      }
-    }
-    this.update({ contacts: this.state.contacts.map(contact => contact.direct && statuses.has(contact.user.id)
-      ? { ...contact, online: statuses.get(contact.user.id) } : contact) });
   }
   private syncWatch() {
     if (this.state.status !== 'connected' || !this.socket) return;

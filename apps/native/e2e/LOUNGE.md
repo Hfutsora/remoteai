@@ -43,6 +43,11 @@ They cover server save failures, successful saves, external profile updates, res
 reconnection with stale caches, and the translated settings copy. Server tests separately validate
 48×48 PNG uploads, metadata stripping, PostgreSQL persistence and account isolation.
 
+Set `LOUNGE_CONTACTS_ONLY=1` to verify cloud contact restoration with empty local data, live contact additions,
+opening private chats and back navigation at font scales 1.0 and 1.3. The fixture never downloads chat content.
+Inspect the `cloud-contacts-*.png` screenshots. The shared sync also runs in desktop local/remote and Web tests
+in `apps/desktop/e2e/lounge-contact-sync.pw.ts`; PostgreSQL tests cover mutual-message eligibility and deletion.
+
 Set `LOUNGE_NEW_CHAT_ONLY=1` to verify the New chat sheet, recent speaker selection, exact email/local-part
 lookup, ambiguous/missing/self results, keyboard layout, cancellation, retained drafts, translations and
 back navigation at font scales 1.0 and 1.3. Inspect the `new-chat-*.png` captures for complete Chinese glyphs.

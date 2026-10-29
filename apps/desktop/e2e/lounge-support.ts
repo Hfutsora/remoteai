@@ -3,10 +3,11 @@ import { readFileSync } from 'node:fs';
 import type { LoungeReply } from '../../../shared/lounge/reply';
 import type { LoungeAccount } from '../../../shared/lounge/types';
 import { LoungeNamesFixture } from './lounge-names-support';
+import type { LoungeContactsFixture } from './lounge-contact-support';
 
 export const pixel = 'data:image/png;base64,'
   + readFileSync(new URL('../src-tauri/icons/32x32.png', import.meta.url)).toString('base64');
-export async function setupLounge(page: Page, web = false, reset = false) {
+export async function setupLounge(page: Page, web = false, reset = false, savedContacts?: LoungeContactsFixture) {
   const names = new LoungeNamesFixture();
   let socket: WebSocketRoute;
   let connections = 0;
@@ -43,8 +44,10 @@ export async function setupLounge(page: Page, web = false, reset = false) {
     route.onMessage(raw => {
       const frame = JSON.parse(String(raw));
       names.handle(route, frame);
+      savedContacts?.handle(route, frame);
       if (frame.type === 'authenticate') {
         route.send(JSON.stringify({ type: 'ready', profiles: true, accountLookup: true, names: names.enabled,
+          savedContacts: !!savedContacts,
           user: { id: 'alice', account: 'alice@example.test', avatar, nickname: names.nicknames.get('alice') ?? '' },
           direct: true, receipts: true, directReset: reset, blocked: blocked ? [bob] : [] }));
         authentications++;
